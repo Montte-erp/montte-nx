@@ -1,0 +1,446 @@
+---
+export const prerender = true;
+import { Picture } from "astro:assets";
+import { getCollection, render } from "astro:content";
+import { ArrowRight, ArrowUpRight, Tag } from "@lucide/astro";
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
+import { readingTime } from "reading-time-estimator";
+import BaseLayout from "../../layouts/base-layout.astro";
+import FooterBlock from "../../blocks/footer-block.astro";
+import { getAuthor, getInitials } from "../../data/authors";
+
+dayjs.locale("pt-br");
+
+export async function getStaticPaths() {
+   const posts = await getCollection("blog");
+   return posts.map((post) => ({
+      params: { slug: post.id },
+      props: { post },
+   }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+const tocHeadings = headings.filter((h) => h.depth === 2);
+const author = getAuthor(post.data.author);
+
+const siteUrl = "https://montte.co";
+const canonical = new URL(`/blog/${post.id}`, siteUrl).toString();
+const generatedOgPath = `/open-graph/${post.id}.png`;
+const ogImagePath = post.data.ogImage?.src ?? generatedOgPath;
+const ogImageUrl = new URL(ogImagePath, siteUrl).toString();
+const computedReading = readingTime(post.body ?? "", 220, "pt-br");
+const readingMinutes =
+   post.data.readingMinutes ?? Math.max(1, computedReading.minutes);
+
+const blogPostingLd = {
+   "@context": "https://schema.org",
+   "@type": "BlogPosting",
+   headline: post.data.title,
+   description: post.data.description,
+   image: ogImageUrl,
+   datePublished: post.data.publishedAt.toISOString(),
+   dateModified: (post.data.updatedAt ?? post.data.publishedAt).toISOString(),
+   author: { "@type": "Person", name: post.data.author },
+   publisher: {
+      "@type": "Organization",
+      name: "Montte",
+      logo: {
+         "@type": "ImageObject",
+         url: new URL("/favicon.svg", siteUrl).toString(),
+      },
+   },
+   mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+   keywords: post.data.tags.join(", "),
+   articleSection: post.data.category,
+   inLanguage: "pt-BR",
+};
+
+const faqLd = post.data.faq?.length
+   ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: post.data.faq.map((item) => ({
+           "@type": "Question",
+           name: item.question,
+           acceptedAnswer: { "@type": "Answer", text: item.answer },
+        })),
+     }
+   : null;
+
+const jsonLd = faqLd ? [blogPostingLd, faqLd] : [blogPostingLd];
+
+const trackingProps = {
+   post_slug: post.id,
+   post_title: post.data.title,
+   post_category: post.data.category,
+   post_tags: post.data.tags,
+   post_author: post.data.author,
+   published_at: post.data.publishedAt.toISOString(),
+   updated_at: post.data.updatedAt?.toISOString() ?? null,
+   reading_minutes: readingMinutes,
+   featured: post.data.featured,
+   release_version: post.data.releaseVersion ?? null,
+};
+---
+
+<BaseLayout
+   title={`${post.data.title} — Montte`}
+   description={post.data.description}
+   ogImage={ogImagePath}
+   ogType="article"
+   article={{
+      publishedAt: post.data.publishedAt,
+      modifiedAt: post.data.updatedAt,
+      author: post.data.author,
+      tags: post.data.tags,
+      section: post.data.category,
+   }}
+   canonicalOverride={post.data.canonicalUrl}
+   jsonLd={jsonLd}
+>
+   <article class="relative bg-background">
+      <header
+         class="relative isolate overflow-hidden border-b border-border/60 pt-32 pb-12"
+      >
+         <div
+            class="absolute inset-0 -z-10"
+            style="background: linear-gradient(to bottom, color-mix(in oklch, var(--secondary) 22%, var(--background)) 0%, var(--background) 100%);"
+            aria-hidden="true"
+         >
+         </div>
+         <div class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 sm:px-4">
+            <a
+               href="/blog"
+               class="text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+            >
+               ← Blog
+            </a>
+            <h1
+               class="font-serif text-4xl leading-tight font-black text-foreground text-balance sm:text-5xl md:text-6xl"
+            >
+               {post.data.title}
+            </h1>
+            <div class="flex items-center gap-3">
+               {
+                  author ? (
+                     <Picture
+                        src={author.avatar}
+                        alt={author.name}
+                        formats={["webp"]}
+                        widths={[40, 72, 96]}
+                        sizes="36px"
+                        loading="eager"
+                        decoding="async"
+                        class="size-9 rounded-full border border-border/60 object-cover"
+                     />
+                  ) : (
+                     <span
+                        class="flex size-9 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary"
+                        aria-hidden="true"
+                     >
+                        {getInitials(post.data.author)}
+                     </span>
+                  )
+               }
+               <div class="flex flex-col">
+                  <span class="text-sm font-semibold text-foreground">
+                     {post.data.author}
+                  </span>
+                  <time
+                     datetime={post.data.publishedAt.toISOString()}
+                     class="text-xs text-muted-foreground"
+                  >
+                     {
+                        dayjs(post.data.publishedAt).format(
+                           "DD [de] MMMM [de] YYYY",
+                        )
+                     }
+                     {
+                        post.data.updatedAt && (
+                           <span class="ml-2 text-muted-foreground/70">
+                              · atualizado em{" "}
+                              {dayjs(post.data.updatedAt).format(
+                                 "DD [de] MMMM [de] YYYY",
+                              )}
+                           </span>
+                        )
+                     }
+                     <span class="ml-2 text-muted-foreground/70">
+                        · {readingMinutes} min de leitura
+                     </span>
+                  </time>
+               </div>
+            </div>
+         </div>
+      </header>
+
+      <div class="mx-auto w-full max-w-5xl px-4 py-12 sm:px-4">
+         <div class="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_240px]">
+            <div
+               class="prose-invert flex max-w-2xl flex-col gap-6 text-foreground/90 [&_a]:font-semibold [&_a]:text-primary [&_a]:underline-offset-4 [&_a]:hover:underline [&_code]:rounded [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:scroll-mt-32 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground [&_li]:leading-relaxed [&_ol]:flex [&_ol]:list-decimal [&_ol]:flex-col [&_ol]:gap-2 [&_ol]:pl-6 [&_p]:leading-relaxed [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-4 [&_ul]:flex [&_ul]:list-disc [&_ul]:flex-col [&_ul]:gap-2 [&_ul]:pl-6 [&_hr]:my-8 [&_hr]:border-border/60"
+            >
+               {
+                  post.data.keyTakeaways && post.data.keyTakeaways.length > 0 && (
+                     <aside
+                        class="flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 p-5 not-prose"
+                        aria-label="Resumo rápido"
+                     >
+                        <p class="text-xs font-semibold uppercase tracking-wider text-primary">
+                           Em 1 minuto
+                        </p>
+                        <ul class="flex list-disc flex-col gap-2 pl-5 text-sm text-foreground/90">
+                           {post.data.keyTakeaways.map((item) => (
+                              <li class="leading-relaxed">{item}</li>
+                           ))}
+                        </ul>
+                     </aside>
+                  )
+               }
+
+               <Content />
+
+               {
+                  post.data.faq && post.data.faq.length > 0 && (
+                     <section
+                        class="mt-8 flex flex-col gap-6 border-t border-border/60 pt-8"
+                        aria-label="Perguntas frequentes"
+                     >
+                        <h2 class="font-serif text-2xl font-bold text-foreground">
+                           Perguntas frequentes
+                        </h2>
+                        <div class="flex flex-col gap-5">
+                           {post.data.faq.map((item) => (
+                              <div class="flex flex-col gap-2">
+                                 <h3 class="text-lg font-semibold text-foreground">
+                                    {item.question}
+                                 </h3>
+                                 <p class="leading-relaxed text-foreground/85">
+                                    {item.answer}
+                                 </p>
+                              </div>
+                           ))}
+                        </div>
+                     </section>
+                  )
+               }
+
+               <div class="mt-12 flex flex-col gap-4 border-t border-border/60 pt-8">
+                  {
+                     post.data.releaseUrl && (
+                        <a
+                           href={post.data.releaseUrl}
+                           target="_blank"
+                           rel="noreferrer"
+                           class="group flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card/40 p-5 transition-all hover:border-border hover:bg-card/70"
+                        >
+                           <div class="flex items-center gap-4">
+                              <span
+                                 class="flex size-10 items-center justify-center rounded-lg border border-border/60 bg-background/60 text-foreground"
+                                 aria-hidden="true"
+                              >
+                                 <svg
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                    class="size-5"
+                                 >
+                                    <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55v-1.93c-3.2.7-3.87-1.54-3.87-1.54-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.69.08-.69 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.73.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.36.78 1.06.78 2.13v3.16c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z" />
+                                 </svg>
+                              </span>
+                              <div class="flex flex-col gap-0.5">
+                                 <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Release no GitHub
+                                 </span>
+                                 <span class="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                    {post.data.releaseVersion ?? "Ver release completa"}
+                                    {post.data.releaseVersion && (
+                                       <span class="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                          <Tag class="size-3" aria-hidden="true" />
+                                          tag
+                                       </span>
+                                    )}
+                                 </span>
+                              </div>
+                           </div>
+                           <ArrowUpRight
+                              class="size-5 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground"
+                              aria-hidden="true"
+                           />
+                        </a>
+                     )
+                  }
+
+                  <a
+                     href="/#waitlist"
+                     class="group relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/10 p-5 transition-all hover:border-primary/60 hover:bg-primary/15"
+                  >
+                     <div
+                        class="absolute inset-0 -z-10 opacity-0 transition-opacity group-hover:opacity-100"
+                        style="background: radial-gradient(ellipse at right, color-mix(in oklch, var(--primary) 25%, transparent), transparent 70%);"
+                        aria-hidden="true"
+                     />
+                     <div class="flex flex-col gap-0.5">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-primary">
+                           Waitlist
+                        </span>
+                        <span class="text-base font-semibold text-foreground">
+                           Quer testar o Montte antes dos outros?
+                        </span>
+                        <span class="text-sm text-muted-foreground">
+                           Entre na lista e a gente te chama no próximo lote.
+                        </span>
+                     </div>
+                     <ArrowRight
+                        class="size-5 shrink-0 text-primary transition-transform group-hover:translate-x-1"
+                        aria-hidden="true"
+                     />
+                  </a>
+               </div>
+            </div>
+
+            <aside class="hidden lg:block">
+               <div class="sticky top-24 flex flex-col gap-6">
+                  {
+                     tocHeadings.length > 0 && (
+                        <nav
+                           class="flex flex-col gap-3"
+                           aria-label="Nesta página"
+                        >
+                           <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Nesta página
+                           </p>
+                           <ul class="flex flex-col gap-2 border-l border-border/60 pl-4">
+                              {tocHeadings.map((h) => (
+                                 <li>
+                                    <a
+                                       href={`#${h.slug}`}
+                                       class="block text-sm leading-snug text-muted-foreground transition-colors hover:text-foreground"
+                                    >
+                                       {h.text}
+                                    </a>
+                                 </li>
+                              ))}
+                           </ul>
+                        </nav>
+                     )
+                  }
+
+                  <div
+                     class="flex flex-col gap-2 rounded-lg border border-border/60 bg-card/40 p-4"
+                  >
+                     <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Em breve no Montte?
+                     </p>
+                     <a
+                        href="/#waitlist"
+                        class="text-sm font-semibold text-primary hover:underline"
+                     >
+                        Entre na lista de espera →
+                     </a>
+                  </div>
+               </div>
+            </aside>
+         </div>
+      </div>
+   </article>
+
+   <FooterBlock />
+</BaseLayout>
+
+<script define:vars={{ trackingProps }}>
+   const waitForPosthog = (cb) => {
+      if (window.posthog?.__loaded) return cb(window.posthog);
+      let tries = 0;
+      const interval = setInterval(() => {
+         tries += 1;
+         if (window.posthog?.__loaded) {
+            clearInterval(interval);
+            cb(window.posthog);
+         } else if (tries > 50) {
+            clearInterval(interval);
+         }
+      }, 100);
+   };
+
+   waitForPosthog((ph) => {
+      ph.register(trackingProps);
+      ph.capture("blog_post_viewed", trackingProps);
+
+      const article = document.querySelector("article");
+      if (!article) return;
+
+      const thresholds = [25, 50, 75, 100];
+      const fired = new Set();
+      const onScroll = () => {
+         const rect = article.getBoundingClientRect();
+         const total = rect.height - window.innerHeight;
+         if (total <= 0) {
+            if (!fired.has(100)) {
+               fired.add(100);
+               ph.capture("blog_post_scroll_depth", { depth: 100 });
+            }
+            return;
+         }
+         const scrolled = Math.max(0, -rect.top);
+         const pct = Math.min(100, Math.round((scrolled / total) * 100));
+         for (const t of thresholds) {
+            if (pct >= t && !fired.has(t)) {
+               fired.add(t);
+               ph.capture("blog_post_scroll_depth", { depth: t });
+            }
+         }
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+
+      let engagedMs = 0;
+      let lastTick = performance.now();
+      let visible = document.visibilityState === "visible";
+      const tick = () => {
+         const now = performance.now();
+         if (visible && document.hasFocus()) engagedMs += now - lastTick;
+         lastTick = now;
+      };
+      const tickInterval = setInterval(tick, 1000);
+      document.addEventListener("visibilitychange", () => {
+         tick();
+         visible = document.visibilityState === "visible";
+      });
+      const flush = () => {
+         tick();
+         clearInterval(tickInterval);
+         ph.capture("blog_post_engaged_time", {
+            engaged_seconds: Math.round(engagedMs / 1000),
+         });
+      };
+      window.addEventListener("pagehide", flush, { once: true });
+
+      const host = window.location.host;
+      article.addEventListener("click", (event) => {
+         const target = event.target instanceof Element
+            ? event.target.closest("a")
+            : null;
+         if (!target) return;
+         const href = target.getAttribute("href");
+         if (!href) return;
+         if (href.startsWith("#") || href.startsWith("/")) {
+            ph.capture("blog_internal_link_click", { href, text: target.innerText?.trim() });
+            return;
+         }
+         try {
+            const url = new URL(href, window.location.origin);
+            if (url.host === host) {
+               ph.capture("blog_internal_link_click", { href, text: target.innerText?.trim() });
+            } else {
+               ph.capture("blog_external_link_click", {
+                  href,
+                  external_host: url.host,
+                  text: target.innerText?.trim(),
+               });
+            }
+         } catch {}
+      });
+   });
+</script>

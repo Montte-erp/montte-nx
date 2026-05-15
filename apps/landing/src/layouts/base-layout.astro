@@ -5,24 +5,53 @@ import PostHog from "../components/posthog.astro";
 import { CookieConsent } from "../components/cookie-consent";
 import NavbarBlock from "../blocks/navbar-block.astro";
 
+interface ArticleMeta {
+   publishedAt: Date;
+   modifiedAt?: Date;
+   author: string;
+   tags?: string[];
+   section?: string;
+}
+
 interface Props {
    description: string;
    title: string;
+   ogImage?: string;
+   ogType?: "website" | "article";
+   article?: ArticleMeta;
+   canonicalOverride?: string;
+   jsonLd?: unknown[];
 }
 
-const { description, title } = Astro.props;
+const {
+   description,
+   title,
+   ogImage,
+   ogType = "website",
+   article,
+   canonicalOverride,
+   jsonLd,
+} = Astro.props;
+
 const siteUrl = "https://montte.co";
-const canonicalUrl = new URL(Astro.url.pathname, siteUrl);
+const canonicalUrl = canonicalOverride
+   ? new URL(canonicalOverride)
+   : new URL(Astro.url.pathname, siteUrl);
 const canonical = canonicalUrl.toString();
-const socialImage = new URL("/favicon.svg", siteUrl).toString();
-const jsonLd = JSON.stringify({
+const socialImage = ogImage
+   ? new URL(ogImage, siteUrl).toString()
+   : new URL("/favicon.svg", siteUrl).toString();
+
+const orgJsonLd = {
    "@context": "https://schema.org",
    "@type": "Organization",
    name: "Montte",
    url: siteUrl,
    logo: new URL("/favicon.svg", siteUrl).toString(),
    sameAs: ["https://github.com/Montte-erp/montte-nx"],
-});
+};
+
+const jsonLdBlocks = [orgJsonLd, ...(jsonLd ?? [])];
 ---
 
 <!doctype html>
@@ -31,32 +60,69 @@ const jsonLd = JSON.stringify({
       <meta charset="UTF-8" />
       <meta name="description" content={description} />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <meta name="robots" content="index,follow" />
-      <meta name="author" content="Montte" />
+      <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1" />
+      <meta name="author" content={article?.author ?? "Montte"} />
       <meta name="application-name" content="Montte" />
       <meta name="theme-color" content="#0c5343" />
       <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       <link rel="canonical" href={canonical} />
+      <link
+         rel="alternate"
+         type="application/rss+xml"
+         title="Blog do Montte"
+         href="/rss.xml"
+      />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
       <link
          rel="stylesheet"
          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
       />
-      <meta property="og:type" content="website" />
+      <meta property="og:type" content={ogType} />
       <meta property="og:site_name" content="Montte" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />
       <meta property="og:image" content={socialImage} />
-      <meta property="og:image:alt" content="Montte" />
+      <meta property="og:image:alt" content={title} />
       <meta property="og:locale" content="pt_BR" />
+      {
+         ogType === "article" && article && (
+            <>
+               <meta
+                  property="article:published_time"
+                  content={article.publishedAt.toISOString()}
+               />
+               {article.modifiedAt && (
+                  <meta
+                     property="article:modified_time"
+                     content={article.modifiedAt.toISOString()}
+                  />
+               )}
+               <meta property="article:author" content={article.author} />
+               {article.section && (
+                  <meta property="article:section" content={article.section} />
+               )}
+               {article.tags?.map((tag) => (
+                  <meta property="article:tag" content={tag} />
+               ))}
+            </>
+         )
+      }
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={socialImage} />
       <title>{title}</title>
-      <script is:inline type="application/ld+json" set:html={jsonLd} />
+      {
+         jsonLdBlocks.map((block) => (
+            <script
+               is:inline
+               type="application/ld+json"
+               set:html={JSON.stringify(block)}
+            />
+         ))
+      }
       <PostHog />
    </head>
    <body class="relative min-h-dvh bg-background text-foreground antialiased">
