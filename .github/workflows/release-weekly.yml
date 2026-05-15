@@ -220,7 +220,7 @@ jobs:
                 echo "RELEASE_NOTES.md missing or empty — opencode step failed" >&2
                 exit 1
               fi
-              if grep -Eiq 'TODO|!\[Demo\]|\(TODO|link se existir|senão TODO' RELEASE_NOTES.md; then
+              if grep -Eiq '(^|[^[:alnum:]_])TODO([^[:alnum:]_]|$)|!\[Demo\]|\(TODO|link se existir|senão TODO' RELEASE_NOTES.md; then
                 echo "RELEASE_NOTES.md contains unfinished placeholder text" >&2
                 exit 1
               fi
