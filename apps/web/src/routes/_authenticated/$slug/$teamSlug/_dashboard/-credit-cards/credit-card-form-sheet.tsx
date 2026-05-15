@@ -1,9 +1,4 @@
 import { of, toMajorUnitsString } from "@f-o-t/money";
-import {
-   Avatar,
-   AvatarFallback,
-   AvatarImage,
-} from "@packages/ui/components/avatar";
 import { Button } from "@packages/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
@@ -26,12 +21,14 @@ import {
 import { toast } from "@packages/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
+import { CreditCardBrandAvatar } from "@/components/credit-card-brand-avatar";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
-import { BRAND_LABEL, brandLogoUrl, type CreditCardBrand } from "@/lib/logos";
+import { BRAND_LABEL, type CreditCardBrand } from "@/lib/logos";
 
 const CARD_BRANDS = [
    "visa",
@@ -99,25 +96,16 @@ function isCreditCardBrand(value: string): value is CreditCardBrand {
 
 interface CreditCardBrandOptionProps {
    brand: CreditCardBrand;
+   logoDevToken?: string;
 }
 
-function CreditCardBrandOption({ brand }: CreditCardBrandOptionProps) {
-   const logo = brandLogoUrl(brand);
-
+function CreditCardBrandOption({
+   brand,
+   logoDevToken,
+}: CreditCardBrandOptionProps) {
    return (
       <span className="flex min-w-0 w-full items-center gap-2">
-         <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
-            {logo ? (
-               <AvatarImage
-                  alt={BRAND_LABEL[brand]}
-                  className="object-contain"
-                  src={logo}
-               />
-            ) : null}
-            <AvatarFallback className="rounded-lg text-xs">
-               {BRAND_LABEL[brand][0]}
-            </AvatarFallback>
-         </Avatar>
+         <CreditCardBrandAvatar brand={brand} logoDevToken={logoDevToken} />
          <span className="min-w-0 flex-1 truncate">{BRAND_LABEL[brand]}</span>
       </span>
    );
@@ -143,6 +131,8 @@ export function CreditCardFormSheet() {
 
 function CreditCardFormSheetContent() {
    const { closeTopSheet } = useSheet();
+   const router = useRouter();
+   const logoDevToken = router.options.context.publicEnv?.LOGO_DEV_TOKEN;
 
    const { data: bankAccounts } = useSuspenseQuery(
       orpc.bankAccounts.getAll.queryOptions({}),
@@ -288,7 +278,10 @@ function CreditCardFormSheetContent() {
                         <SelectContent>
                            {CARD_BRANDS.map((brand) => (
                               <SelectItem key={brand} value={brand}>
-                                 <CreditCardBrandOption brand={brand} />
+                                 <CreditCardBrandOption
+                                    brand={brand}
+                                    logoDevToken={logoDevToken}
+                                 />
                               </SelectItem>
                            ))}
                         </SelectContent>

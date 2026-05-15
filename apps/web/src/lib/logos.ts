@@ -32,6 +32,14 @@ const BRAND_LOGO_SLUG: Record<string, string> = {
    hipercard: "hipercard",
 };
 
+const BRAND_LOGO_DOMAIN: Partial<Record<CreditCardBrand, string>> = {
+   visa: "visa.com",
+   mastercard: "mastercard.com",
+   elo: "elo.com.br",
+   amex: "americanexpress.com",
+   hipercard: "hipercard.com.br",
+};
+
 const BANK_DOMAIN: Record<string, string> = {
    "001": "bb.com.br",
    "033": "santander.com.br",
@@ -59,6 +67,38 @@ const BANK_DOMAIN: Record<string, string> = {
    "756": "sicoobnet.com.br",
 };
 
+const BANK_NAME_DOMAIN: Record<string, string> = {
+   agk: "agkcc.com.br",
+   bancoabc: "abcbrasil.com.br",
+   bancobmg: "bancobmg.com.br",
+   bancobrasil: "bb.com.br",
+   bancoc6: "c6bank.com.br",
+   bancointer: "bancointer.com.br",
+   bancopan: "bancopan.com.br",
+   bancooriginal: "original.com.br",
+   bancovotorantim: "bv.com.br",
+   bradesco: "bradesco.com.br",
+   brb: "brb.com.br",
+   btgpactual: "btgpactual.com",
+   caixa: "caixa.gov.br",
+   ccrseara: "ccrseara.com.br",
+   cetelem: "cetelem.com.br",
+   finamax: "finamax.com.br",
+   hipercard: "hipercard.com.br",
+   itau: "itau.com.br",
+   mercadopago: "mercadopago.com.br",
+   mercantildobrasil: "mercantildobrasil.com.br",
+   neon: "banconeon.com.br",
+   nubank: "nubank.com.br",
+   pagseguro: "pagseguro.com.br",
+   picpay: "picpay.com",
+   safra: "safra.com.br",
+   santander: "santander.com.br",
+   sicoob: "sicoob.com.br",
+   sicredi: "sicredi.com.br",
+   unicred: "unicred.com.br",
+};
+
 const BANK_COLOR: Record<string, string> = {
    "001": "#FCE300",
    "033": "#E10000",
@@ -78,6 +118,51 @@ const BANK_COLOR: Record<string, string> = {
    "748": "#00A651",
    "756": "#003641",
 };
+
+function logoDevUrl(path: string, logoDevToken?: string): string {
+   const token = logoDevToken?.trim();
+   const params = new URLSearchParams({
+      fallback: "monogram",
+      format: "webp",
+      retina: "true",
+      size: "128",
+   });
+   if (token) params.set("token", token);
+   return `https://img.logo.dev/${path}?${params.toString()}`;
+}
+
+function normalizeLogoLookup(value: string): string {
+   return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/&/g, " e ")
+      .replace(
+         /\b(s\.?a\.?|s\/a|sa|banco|bco|brasil|do|da|de|das|dos|dtv\.?m\.?|cfi|cc|scc|ltda|me|epp|ip|instituicao|pagamento|multiplo|comercial|federal)\b/g,
+         " ",
+      )
+      .replace(/[^a-z0-9]/g, "");
+}
+
+function bankNameDomain(
+   bankName: string | null | undefined,
+): string | undefined {
+   const normalized = normalizeLogoLookup(bankName ?? "");
+   if (!normalized) return undefined;
+   const exact = BANK_NAME_DOMAIN[normalized];
+   if (exact) return exact;
+   return Object.entries(BANK_NAME_DOMAIN).find(([key]) =>
+      normalized.includes(key),
+   )?.[1];
+}
+
+function bankNameLogoSlug(
+   bankName: string | null | undefined,
+): string | undefined {
+   const normalized = normalizeLogoLookup(bankName ?? "");
+   if (!normalized) return undefined;
+   return Object.keys(BANK_NAME_DOMAIN).find((key) => normalized.includes(key));
+}
 
 export function bankDomain(
    bankCode: string | null | undefined,
@@ -99,24 +184,32 @@ export function bankLogoUrl(
 ): string | undefined {
    const domain = bankDomain(bankCode);
    if (!domain) return undefined;
-   const token = logoDevToken?.trim();
-   const params = new URLSearchParams({
-      fallback: "monogram",
-      format: "webp",
-      retina: "true",
-      size: "128",
-   });
-   if (token) params.set("token", token);
-   return `https://img.logo.dev/${domain}?${params.toString()}`;
+   return logoDevUrl(domain, logoDevToken);
 }
 
 export function bankLogoSources(
    bankCode: string | null | undefined,
    logoDevToken?: string,
+   bankName?: string | null,
 ): string[] {
-   const logo = bankLogoUrl(bankCode, logoDevToken);
    const sources: string[] = [];
-   if (logo) sources.push(logo);
+   const codeDomain = bankDomain(bankCode);
+   const parsedDomain = bankNameDomain(bankName);
+   const parsedName = bankNameLogoSlug(bankName);
+   const candidates = [
+      codeDomain ? logoDevUrl(codeDomain, logoDevToken) : undefined,
+      parsedDomain ? logoDevUrl(parsedDomain, logoDevToken) : undefined,
+      parsedName ? logoDevUrl(`name/${parsedName}`, logoDevToken) : undefined,
+      codeDomain
+         ? `https://icons.duckduckgo.com/ip3/${codeDomain}.ico`
+         : undefined,
+      parsedDomain
+         ? `https://icons.duckduckgo.com/ip3/${parsedDomain}.ico`
+         : undefined,
+   ];
+   for (const candidate of candidates) {
+      if (candidate && !sources.includes(candidate)) sources.push(candidate);
+   }
    return sources;
 }
 
@@ -126,10 +219,33 @@ export const LOGO_DEV_ATTRIBUTION = {
    logoUrl: "https://www.logo.dev/favicon.ico",
 } as const;
 
-export function brandLogoUrl(brand: string): string | undefined {
+export function brandLogoSources(
+   brand: string,
+   logoDevToken?: string,
+): string[] {
    const slug = BRAND_LOGO_SLUG[brand];
-   if (!slug) return undefined;
-   return `https://cdn.simpleicons.org/${slug}`;
+   const domain =
+      brand === "visa" ||
+      brand === "mastercard" ||
+      brand === "elo" ||
+      brand === "amex" ||
+      brand === "hipercard"
+         ? BRAND_LOGO_DOMAIN[brand]
+         : undefined;
+   const candidates = [
+      domain ? logoDevUrl(domain, logoDevToken) : undefined,
+      slug ? logoDevUrl(`name/${slug}`, logoDevToken) : undefined,
+      slug ? `https://cdn.simpleicons.org/${slug}` : undefined,
+   ];
+   const sources: string[] = [];
+   for (const candidate of candidates) {
+      if (candidate && !sources.includes(candidate)) sources.push(candidate);
+   }
+   return sources;
+}
+
+export function brandLogoUrl(brand: string): string | undefined {
+   return brandLogoSources(brand).at(0);
 }
 
 export function creditCardBrandFromPrefix(

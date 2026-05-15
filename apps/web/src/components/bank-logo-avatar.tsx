@@ -33,7 +33,7 @@ export function BankLogoAvatar({
       bankCode: "",
       index: 0,
    });
-   const sources = bankLogoSources(bankCode, logoDevToken);
+   const sources = bankLogoSources(bankCode, logoDevToken, bankName);
    const sourceIndex =
       failedSource.bankCode === bankCode ? failedSource.index : 0;
    const source = sources[sourceIndex];
