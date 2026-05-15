@@ -58,6 +58,7 @@ export function BankLogoAvatar({
                      index: sourceIndex + 1,
                   })
                }
+               referrerPolicy="origin"
                src={source}
             />
          ) : null}

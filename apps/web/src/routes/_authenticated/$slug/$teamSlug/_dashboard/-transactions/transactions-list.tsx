@@ -213,6 +213,7 @@ function parseImportStatus(value: unknown): {
 
 export function TransactionsList() {
    const navigate = routeApi.useNavigate();
+   const { publicEnv } = routeApi.useRouteContext();
    const {
       sorting,
       columnFilters,
@@ -741,6 +742,7 @@ export function TransactionsList() {
          onCreateContact: handleCreateContact,
          onCreateCategory: handleCreateCategory,
          getRowStatus: (id) => transactionData.find((t) => t.id === id)?.status,
+         logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
       });
       const selectColumn: ColumnDef<TransactionRow> = {
          id: "__select",
@@ -845,6 +847,7 @@ export function TransactionsList() {
       categoriesResult,
       creditCardsResult,
       transactionData,
+      publicEnv?.LOGO_DEV_TOKEN,
       handleUpdate,
       handleCreateBankAccount,
       handleCreateContact,

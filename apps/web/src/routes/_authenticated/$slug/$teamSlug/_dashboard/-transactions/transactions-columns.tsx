@@ -7,6 +7,12 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
+import {
+   Tooltip,
+   TooltipContent,
+   TooltipProvider,
+   TooltipTrigger,
+} from "@packages/ui/components/tooltip";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
@@ -24,12 +30,19 @@ import { InlineEditDate } from "@/blocks/data-table/inline-edit/inline-edit-date
 import { InlineEditMoney } from "@/blocks/data-table/inline-edit/inline-edit-money";
 import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
+import { BankLogoAvatar } from "@/components/bank-logo-avatar";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 
 export type TransactionRow = Outputs["transactions"]["getAll"]["data"][number];
 
-export type BankAccountOption = { id: string; name: string };
+export type BankAccountOption = {
+   id: string;
+   name: string;
+   bankCode?: string | null;
+   bankName?: string | null;
+   color?: string | null;
+};
 export type ContactOption = { id: string; name: string };
 export type CategoryOption = { id: string; name: string };
 export type CreditCardOption = { id: string; name: string };
@@ -109,6 +122,7 @@ export function buildTransactionColumns(options?: {
    onCreateContact?: (name: string) => Promise<string>;
    onCreateCategory?: (name: string) => Promise<string>;
    getRowStatus?: (id: string) => string | undefined;
+   logoDevToken?: string;
 }): ColumnDef<TransactionRow>[] {
    const statusOptions = [
       { value: "pending", label: "Pendente" },
@@ -144,6 +158,9 @@ export function buildTransactionColumns(options?: {
       value: a.id,
       label: a.name,
    }));
+   const bankAccountsById = new Map(
+      (options?.bankAccounts ?? []).map((a) => [a.id, a]),
+   );
    const creditCardOptions = (options?.creditCards ?? []).map((c) => ({
       value: c.id,
       label: c.name,
@@ -402,6 +419,7 @@ export function buildTransactionColumns(options?: {
          header: "Conta",
          meta: {
             label: "Conta",
+            align: "center",
             cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
@@ -411,33 +429,66 @@ export function buildTransactionColumns(options?: {
             onCreateOption: options?.onCreateBankAccount,
             required: true,
          },
-         cell: ({ row }) => (
-            <InlineEditCombobox
-               ariaLabel="Conta"
-               onCreate={options?.onCreateBankAccount}
-               onSave={async (value) => {
-                  const label =
-                     bankOptions.find((o) => o.value === value)?.label ?? "";
-                  const importIdx = isImportRow(row);
-                  if (importIdx !== null) {
-                     options?.onUpdateImport?.(importIdx, {
-                        bankAccountId: value || null,
-                        bankAccountName: label,
-                     });
-                     return;
-                  }
-                  await options?.onUpdate?.(row.original.id, {
-                     bankAccountId: value || null,
-                  });
-               }}
-               options={bankOptions}
-               value={
-                  bankOptions.find(
-                     (o) => o.label === row.original.bankAccountName,
-                  )?.value ?? ""
-               }
-            />
-         ),
+         cell: ({ row }) => {
+            const importIdx = isImportRow(row);
+            if (importIdx !== null) {
+               return (
+                  <InlineEditCombobox
+                     ariaLabel="Conta"
+                     onCreate={options?.onCreateBankAccount}
+                     onSave={async (value) => {
+                        const label =
+                           bankOptions.find((o) => o.value === value)?.label ??
+                           "";
+                        options?.onUpdateImport?.(importIdx, {
+                           bankAccountId: value || null,
+                           bankAccountName: label,
+                        });
+                     }}
+                     options={bankOptions}
+                     value={
+                        bankOptions.find(
+                           (o) => o.label === row.original.bankAccountName,
+                        )?.value ?? ""
+                     }
+                  />
+               );
+            }
+
+            const accountId =
+               row.original.bankAccountId ??
+               bankOptions.find((o) => o.label === row.original.bankAccountName)
+                  ?.value;
+            const account = accountId
+               ? bankAccountsById.get(accountId)
+               : undefined;
+            const accountName = account?.name ?? row.original.bankAccountName;
+
+            if (!accountName) return "—";
+
+            return (
+               <TooltipProvider>
+                  <Tooltip>
+                     <TooltipTrigger asChild>
+                        <span
+                           aria-label={accountName}
+                           className="inline-flex items-center"
+                        >
+                           <BankLogoAvatar
+                              bankCode={account?.bankCode}
+                              bankName={account?.bankName}
+                              color={account?.color}
+                              logoDevToken={options?.logoDevToken}
+                              name={accountName}
+                              size="md"
+                           />
+                        </span>
+                     </TooltipTrigger>
+                     <TooltipContent>{accountName}</TooltipContent>
+                  </Tooltip>
+               </TooltipProvider>
+            );
+         },
       },
       {
          accessorKey: "creditCardName",

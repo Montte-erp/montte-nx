@@ -110,23 +110,13 @@ export function bankLogoUrl(
    return `https://img.logo.dev/${domain}?${params.toString()}`;
 }
 
-export function bankFaviconUrl(
-   bankCode: string | null | undefined,
-): string | undefined {
-   const domain = bankDomain(bankCode);
-   if (!domain) return undefined;
-   return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
-}
-
 export function bankLogoSources(
    bankCode: string | null | undefined,
    logoDevToken?: string,
 ): string[] {
    const logo = bankLogoUrl(bankCode, logoDevToken);
-   const favicon = bankFaviconUrl(bankCode);
    const sources: string[] = [];
    if (logo) sources.push(logo);
-   if (favicon && favicon !== logo) sources.push(favicon);
    return sources;
 }
 
