@@ -1,5 +1,7 @@
 import type {
    ColumnFiltersState,
+   ExpandedState,
+   GroupingState,
    OnChangeFn,
    PaginationState,
    RowSelectionState,
@@ -12,6 +14,7 @@ export interface TableUrlSearch {
    columnFilters: ColumnFiltersState;
    page: number;
    pageSize: number;
+   grouping?: GroupingState;
 }
 
 interface UseTableUrlStateOptions {
@@ -26,11 +29,15 @@ export interface UseTableUrlStateResult {
       columnFilters: ColumnFiltersState;
       pagination: PaginationState;
       rowSelection: RowSelectionState;
+      grouping: GroupingState;
+      expanded: ExpandedState;
    };
    onSortingChange: OnChangeFn<SortingState>;
    onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
    onPaginationChange: OnChangeFn<PaginationState>;
    onRowSelectionChange: OnChangeFn<RowSelectionState>;
+   onGroupingChange: OnChangeFn<GroupingState>;
+   onExpandedChange: OnChangeFn<ExpandedState>;
    pageCount: number;
 }
 
@@ -40,9 +47,11 @@ export function useTableUrlState({
    totalRows,
 }: UseTableUrlStateOptions): UseTableUrlStateResult {
    const { sorting, columnFilters, page, pageSize } = search;
+   const grouping = search.grouping ?? [];
    const pagination: PaginationState = { pageIndex: page - 1, pageSize };
 
    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+   const [expanded, setExpanded] = useState<ExpandedState>(true);
 
    const onSortingChange = useCallback<OnChangeFn<SortingState>>(
       (updater) => {
@@ -73,12 +82,30 @@ export function useTableUrlState({
       [onUpdate, pagination],
    );
 
+   const onGroupingChange = useCallback<OnChangeFn<GroupingState>>(
+      (updater) => {
+         const next =
+            typeof updater === "function" ? updater(grouping) : updater;
+         startTransition(() => onUpdate({ grouping: next, page: 1 }));
+      },
+      [onUpdate, grouping],
+   );
+
    return {
-      state: { sorting, columnFilters, pagination, rowSelection },
+      state: {
+         sorting,
+         columnFilters,
+         pagination,
+         rowSelection,
+         grouping,
+         expanded,
+      },
       onSortingChange,
       onColumnFiltersChange,
       onPaginationChange,
       onRowSelectionChange: setRowSelection,
+      onGroupingChange,
+      onExpandedChange: setExpanded,
       pageCount: Math.max(1, Math.ceil(totalRows / pageSize)),
    };
 }

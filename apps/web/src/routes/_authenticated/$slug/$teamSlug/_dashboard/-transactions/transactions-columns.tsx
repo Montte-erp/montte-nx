@@ -1,4 +1,5 @@
 import { format, of } from "@f-o-t/money";
+import dayjs from "dayjs";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
@@ -202,6 +203,12 @@ export function buildTransactionColumns(options?: {
             bulkEditIcon: CalendarDays,
             bulkEditAction: "Alterar data",
             required: true,
+            groupable: true,
+            formatGroupLabel: (value) => {
+               if (!value) return "Sem data";
+               const d = dayjs(String(value));
+               return d.isValid() ? d.format("DD/MM/YYYY") : String(value);
+            },
          },
          cell: ({ row }) => {
             const { status, date, dueDate } = row.original;
@@ -345,6 +352,9 @@ export function buildTransactionColumns(options?: {
             bulkEditAction: "Categorizar",
             editOptions: categoryOptionsList,
             onCreateOption: options?.onCreateCategory,
+            groupable: true,
+            formatGroupLabel: (value) =>
+               value ? String(value) : "Sem categoria",
          },
          cell: ({ row }) => {
             const hasSuggestion =

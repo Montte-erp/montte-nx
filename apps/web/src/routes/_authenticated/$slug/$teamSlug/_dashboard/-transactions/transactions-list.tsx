@@ -29,6 +29,8 @@ import {
 import { getRouteApi } from "@tanstack/react-router";
 import {
    getCoreRowModel,
+   getExpandedRowModel,
+   getGroupedRowModel,
    useReactTable,
    type ColumnDef,
 } from "@tanstack/react-table";
@@ -205,6 +207,7 @@ export function TransactionsList() {
       search,
       contactId,
       bankId,
+      groupBy,
    } = routeApi.useSearch();
 
    const { openAlertDialog } = useAlertDialog();
@@ -247,6 +250,17 @@ export function TransactionsList() {
       (checked: boolean) => {
          navigate({
             search: (prev) => ({ ...prev, overdueOnly: checked, page: 1 }),
+            replace: true,
+         });
+      },
+      [navigate],
+   );
+
+   const handleGroupByChange = useCallback(
+      (next: string) => {
+         if (next !== "none" && next !== "date" && next !== "category") return;
+         navigate({
+            search: (prev) => ({ ...prev, groupBy: next, page: 1 }),
             replace: true,
          });
       },
@@ -824,8 +838,14 @@ export function TransactionsList() {
       handleDelete,
    ]);
 
+   const grouping = useMemo(() => {
+      if (groupBy === "date") return ["date"];
+      if (groupBy === "category") return ["categoryName"];
+      return [];
+   }, [groupBy]);
+
    const urlState = useTableUrlState({
-      search: { sorting, columnFilters, page, pageSize },
+      search: { sorting, columnFilters, page, pageSize, grouping },
       onUpdate: (next) =>
          navigate({
             search: (prev) => ({ ...prev, ...next }),
@@ -853,7 +873,11 @@ export function TransactionsList() {
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
+      onGroupingChange: urlState.onGroupingChange,
+      onExpandedChange: urlState.onExpandedChange,
       getCoreRowModel: getCoreRowModel(),
+      getGroupedRowModel: getGroupedRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
    });
 
    const importApi = useDataImport({ table, config: importConfig });
@@ -935,6 +959,18 @@ export function TransactionsList() {
                            { value: "ignored", label: "Ignorados" },
                         ]}
                         value={view}
+                     />
+                     <PageFilterSelect
+                        group="Agrupamento"
+                        id="groupBy"
+                        label="Agrupar por"
+                        onChange={handleGroupByChange}
+                        options={[
+                           { value: "none", label: "Sem agrupamento" },
+                           { value: "date", label: "Data" },
+                           { value: "category", label: "Categoria" },
+                        ]}
+                        value={groupBy}
                      />
                      <PageFilter
                         active={overdueOnly}
