@@ -1,0 +1,360 @@
+name: Blog Post from Release
+
+on:
+   release:
+      types: [published]
+   workflow_dispatch:
+      inputs:
+         tag:
+            description: "Tag da release (ex: v2026.05.15)"
+            required: true
+            type: string
+         force:
+            description: "Sobrescrever post existente"
+            required: false
+            type: boolean
+            default: false
+
+permissions:
+   contents: write
+   pull-requests: write
+   id-token: write
+
+jobs:
+   generate:
+      runs-on: ubuntu-latest
+      steps:
+         - name: Checkout
+           uses: actions/checkout@v6
+           with:
+              fetch-depth: 0
+              persist-credentials: true
+              token: ${{ secrets.GITHUB_TOKEN }}
+
+         - name: Resolve release metadata
+           id: meta
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              INPUT_TAG: ${{ github.event.inputs.tag }}
+              EVENT_TAG: ${{ github.event.release.tag_name }}
+              REPO: ${{ github.repository }}
+           run: |
+              TAG="${INPUT_TAG:-$EVENT_TAG}"
+              if [ -z "$TAG" ]; then
+                echo "No tag resolved — provide one via workflow_dispatch or release event" >&2
+                exit 1
+              fi
+              if ! [[ "$TAG" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+                echo "Tag '$TAG' não bate com padrão vYYYY.MM.DD — pulando" >&2
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              VERSION="${TAG#v}"
+              SLUG="montte-${VERSION//./-}"
+              POST_PATH="apps/landing/src/content/blog/${SLUG}.md"
+              COVER_PATH="apps/landing/src/assets/blog/${SLUG}.svg"
+              RELEASE_URL="https://github.com/${REPO}/releases/tag/${TAG}"
+              PUBLISHED_AT=$(gh release view "$TAG" --json publishedAt --jq '.publishedAt' | cut -d'T' -f1)
+              if [ -z "$PUBLISHED_AT" ]; then
+                PUBLISHED_AT=$(date -u '+%Y-%m-%d')
+              fi
+              {
+                echo "skip=false"
+                echo "tag=$TAG"
+                echo "version=$VERSION"
+                echo "slug=$SLUG"
+                echo "post_path=$POST_PATH"
+                echo "cover_path=$COVER_PATH"
+                echo "release_url=$RELEASE_URL"
+                echo "published_at=$PUBLISHED_AT"
+                echo "branch=blog/post-${SLUG}"
+              } >> "$GITHUB_OUTPUT"
+
+         - name: Skip if post exists
+           id: check
+           if: steps.meta.outputs.skip != 'true'
+           env:
+              POST_PATH: ${{ steps.meta.outputs.post_path }}
+              FORCE: ${{ github.event.inputs.force }}
+           run: |
+              if [ -f "$POST_PATH" ] && [ "$FORCE" != "true" ]; then
+                echo "Post já existe em $POST_PATH (use force=true pra sobrescrever)" >&2
+                echo "skip=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "skip=false" >> "$GITHUB_OUTPUT"
+              fi
+
+         - name: Fetch release notes
+           if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              TAG: ${{ steps.meta.outputs.tag }}
+           run: |
+              gh release view "$TAG" --json body --jq .body > release-notes.md
+              if [ ! -s release-notes.md ]; then
+                echo "Release notes vazias pra $TAG" >&2
+                exit 1
+              fi
+              head -c 200 release-notes.md
+              echo
+
+         - name: Generate cover SVG (placeholder)
+           if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
+           env:
+              VERSION: ${{ steps.meta.outputs.version }}
+              COVER_PATH: ${{ steps.meta.outputs.cover_path }}
+           run: |
+              mkdir -p "$(dirname "$COVER_PATH")"
+              cat > "$COVER_PATH" <<EOF
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Montte ${VERSION}">
+                 <defs>
+                    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+                       <stop offset="0%" stop-color="#0c1a17" />
+                       <stop offset="50%" stop-color="#0a1411" />
+                       <stop offset="100%" stop-color="#06100d" />
+                    </linearGradient>
+                    <radialGradient id="glow" cx="0.85" cy="0.15" r="0.7">
+                       <stop offset="0%" stop-color="#0c5343" stop-opacity="0.55" />
+                       <stop offset="100%" stop-color="#0c5343" stop-opacity="0" />
+                    </radialGradient>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                       <path d="M40 0H0V40" fill="none" stroke="#1a2b26" stroke-width="0.5" />
+                    </pattern>
+                 </defs>
+                 <rect width="1200" height="630" fill="url(#bg)" />
+                 <rect width="1200" height="630" fill="url(#grid)" />
+                 <rect width="1200" height="630" fill="url(#glow)" />
+                 <g transform="translate(80,80)">
+                    <text x="0" y="0" fill="#7a8a85" font-family="ui-monospace, SFMono-Regular, monospace" font-size="20" letter-spacing="4">RELEASE NOTES</text>
+                 </g>
+                 <g transform="translate(80,320)">
+                    <text x="0" y="0" fill="#f5f5f4" font-family="ui-serif, Georgia, serif" font-weight="900" font-size="140" letter-spacing="-6">${VERSION}</text>
+                 </g>
+                 <g transform="translate(80,540)">
+                    <circle cx="14" cy="14" r="14" fill="#0c5343" />
+                    <text x="42" y="22" fill="#f5f5f4" font-family="ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="900" letter-spacing="-0.5">Montte</text>
+                 </g>
+              </svg>
+              EOF
+              echo "Capa placeholder gerada em $COVER_PATH (substitua por design final antes de mergear)"
+
+         - name: Generate blog post via opencode
+           if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
+           uses: anomalyco/opencode/github@latest
+           env:
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              RELEASE_NOTES_FILE: release-notes.md
+              SKILL_FILE: .agents/skills/montte-blog/SKILL.md
+              OUTPUT_FILE: ${{ steps.meta.outputs.post_path }}
+              RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+              RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+              RELEASE_SLUG: ${{ steps.meta.outputs.slug }}
+              RELEASE_URL: ${{ steps.meta.outputs.release_url }}
+              PUBLISHED_AT: ${{ steps.meta.outputs.published_at }}
+           with:
+              model: opencode-go/deepseek-v4-flash
+              prompt: |
+                 Você escreve um post de blog do **Montte** a partir das release notes de uma versão recém-publicada.
+
+                 ## Entrada
+                 - `$RELEASE_NOTES_FILE`: corpo bruto da release no GitHub (já curado, em pt-BR, com seções "Em destaque", "Novidades por área", "Correções", `<details>` Notas técnicas e Manutenção).
+                 - `$SKILL_FILE`: skill `montte-blog` com toda a regra de voz, frontmatter, anti-padrão e humanização. **Leia o skill inteiro antes de escrever.** Ele é a fonte de verdade.
+
+                 ## Saída
+                 Escreva em `$OUTPUT_FILE` um arquivo Markdown com frontmatter YAML válido + corpo. Path = `apps/landing/src/content/blog/$RELEASE_SLUG.md`. Sem H1 no corpo (renderer gera).
+
+                 ## Frontmatter obrigatório
+
+                 ```yaml
+                 ---
+                 title: "<até 60 chars, verbo presente, sem travessão, sem emoji>"
+                 description: "<40 a 60 palavras, 1ª frase = TL;DR direto. Sem travessão. Sem anglicismo evitável.>"
+                 publishedAt: $PUBLISHED_AT
+                 author: "Manoel Neto"
+                 tags: ["release", "<2 a 3 tags adicionais kebab-case relevantes da release>"]
+                 category: "Notas de release"
+                 coverImage: "../../assets/blog/$RELEASE_SLUG.svg"
+                 featured: true
+                 releaseUrl: "$RELEASE_URL"
+                 releaseVersion: "$RELEASE_TAG"
+                 readingMinutes: <inteiro estimado, 3 a 8>
+                 keyTakeaways:
+                    - "<3 a 5 bullets densos com nome de feature e benefício>"
+                 faq:
+                    - question: "<pergunta literal que usuário faz>"
+                      answer: "<resposta direta em 1 a 2 frases>"
+                 ---
+                 ```
+
+                 ## Corpo (template release notes do skill)
+
+                 ```
+                 <1 parágrafo lede, 2 a 3 frases. Sem "Estamos animados", sem "Hoje viemos", sem travessão. Diz o tema central da release em linguagem de produto, não de implementação.>
+
+                 ## <Feature mais impactante da release>
+                 <2 parágrafos. 1ª frase responde literal à pergunta implícita do H2 (AEO).>
+
+                 ## <Feature 2>
+                 ## <Feature 3>
+                 ## Ação necessária  (somente se a release tem breaking change com seção "Ação necessária")
+                 ## Outras melhorias
+                 - **<nome>:** <1 linha de benefício>
+                 - ...
+                 ## Correções
+                 <1 parágrafo corrido OU bullets curtos agrupando por tema>
+                 ## Bastidores  (opcional, somente se a release tem mudança técnica interessante em Notas técnicas)
+                 ## O que vem por aí
+                 <1 parágrafo + CTA em 1 linha (ex: "Manda DM se quiser testar antes.")>
+                 ```
+
+                 Total: 3 a 6 H2 + bastidores opcional. Última H2 é sempre "O que vem por aí" com CTA curto.
+
+                 ## Regras absolutas (do skill)
+
+                 - **Zero travessão longo (—) ou médio (–).** Substitua por vírgula, ponto, parênteses ou dois pontos.
+                 - **Anglicismos evitáveis traduzidos**: deployar→publicar, dashboard→painel, insight→descoberta, framework→estrutura (em copy geral), workflow→fluxo, performance→desempenho, ship→entregar, feedback ok, bug ok.
+                 - **Burstiness**: alterne frase curta (3 a 8 palavras) com média (10 a 20) e longa ocasional. Não 3 médias seguidas.
+                 - **Detalhe específico** em cada H2: tempo, número, nome próprio, marca.
+                 - **1 cicatriz**: cite ao menos 1 momento em que algo não funcionou de primeira (use linguagem como "levou duas tentativas", "refizemos depois que", "tentamos primeiro com X e voltamos pra Y").
+                 - **Pronome:** "nós" / "a gente" como time. Nunca "os usuários". "você" direto pro leitor.
+                 - **Marca:** "no Montte", "do Montte". Nunca "na Montte". "Montte AI" não "Rubi".
+                 - **Lançamento** = transação financeira (não release de software). Pra release de produto: "release" ou "atualização".
+
+                 ## AI-tells banidos em pt-BR
+
+                 Nunca abra frase com: "Estamos animados", "Hoje viemos", "No mundo acelerado", "Em um cenário", "É importante notar que", "Vale ressaltar", "Cabe destacar", "Ademais", "Outrossim", "Em suma", "Em síntese", "Por outro lado" (mais de 1x), "Não apenas X, mas também Y", "Vamos mergulhar fundo", "Desbravar", "Jornada" como metáfora, "Empoderar", "Sinergia", "Robusto" como adjetivo de produto.
+
+                 Nunca feche com: "Em conclusão", "Por fim", "Para finalizar", "Resumindo", "E é isso!", "Espero que tenha gostado", "Até a próxima".
+
+                 ## Adjetivo vago → fato concreto
+
+                 - "muito rápido" → "carrega em 200ms"
+                 - "vários clientes" → "12 clientes do lote beta"
+                 - "grande melhoria" → "30% menos cliques no fluxo X"
+
+                 Se a release notes não fornece o número, use o nome próprio da feature ou um efeito específico observável ("você reconhece a conta pela cor antes de ler o nome").
+
+                 ## Fonte de fato
+
+                 Tudo no post precisa vir da release notes. **Não invente PRs, números, prazos, nomes que não estejam no input.** Se a release notes diz "30% mais rápido", use 30%. Se não diz, não invente número.
+
+                 ## Validação antes de salvar
+
+                 - [ ] Título ≤ 60 chars, sem travessão, sem emoji
+                 - [ ] Description 40 a 60 palavras, sem travessão, 1ª frase = TL;DR
+                 - [ ] Frontmatter completo (todos os campos do bloco acima)
+                 - [ ] H1 não está no markdown (vem do frontmatter)
+                 - [ ] 3 a 6 H2 + Bastidores opcional + "O que vem por aí"
+                 - [ ] Zero travessão `—` ou `–` em todo o arquivo
+                 - [ ] Cada H2 tem 1 detalhe específico (número, nome, marca)
+                 - [ ] 1 cicatriz/imperfeição no corpo
+                 - [ ] Nenhuma frase da lista de AI-tells
+                 - [ ] "no Montte", nunca "na Montte"
+                 - [ ] Última frase é ação ou afirmação, nunca despedida formal
+
+         - name: Validate generated post
+           if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
+           env:
+              POST_PATH: ${{ steps.meta.outputs.post_path }}
+           run: |
+              if [ ! -s "$POST_PATH" ]; then
+                echo "Post não foi gerado em $POST_PATH" >&2
+                exit 1
+              fi
+              if grep -Pq '[\x{2014}\x{2013}]' "$POST_PATH"; then
+                echo "Post contém travessão (— ou –), substitua antes de mergear" >&2
+                grep -nP '[\x{2014}\x{2013}]' "$POST_PATH" || true
+                exit 1
+              fi
+              for field in 'title:' 'description:' 'publishedAt:' 'author:' 'category:' 'coverImage:' 'releaseUrl:' 'releaseVersion:'; do
+                if ! grep -q "^${field}" "$POST_PATH"; then
+                  echo "Frontmatter está sem campo obrigatório: $field" >&2
+                  exit 1
+                fi
+              done
+              if head -n 30 "$POST_PATH" | grep -Eq '^# '; then
+                echo "Post tem H1 no markdown (deve vir só do frontmatter)" >&2
+                exit 1
+              fi
+              echo "Validação passou ✓"
+
+         - name: Setup Bun
+           if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
+           uses: oven-sh/setup-bun@v2
+           with:
+              bun-version: latest
+
+         - name: Build landing to verify schema
+           if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
+           run: |
+              bun install --frozen-lockfile
+              bun run landing:build
+
+         - name: Open PR with new post
+           if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              TAG: ${{ steps.meta.outputs.tag }}
+              VERSION: ${{ steps.meta.outputs.version }}
+              SLUG: ${{ steps.meta.outputs.slug }}
+              POST_PATH: ${{ steps.meta.outputs.post_path }}
+              COVER_PATH: ${{ steps.meta.outputs.cover_path }}
+              RELEASE_URL: ${{ steps.meta.outputs.release_url }}
+              BRANCH: ${{ steps.meta.outputs.branch }}
+           run: |
+              git config user.name "montte-bot"
+              git config user.email "bot@users.noreply.github.com"
+              git checkout -B "$BRANCH"
+              git add "$POST_PATH" "$COVER_PATH"
+              git commit -m "blog: post para $TAG
+
+              Gerado automaticamente a partir das release notes de $TAG.
+              Cover image é um placeholder SVG — substitua por design final antes de mergear."
+              git push origin "$BRANCH" --force-with-lease
+
+              PR_BODY=$(cat <<MSG
+              ## Post auto-gerado a partir da release $TAG
+
+              **Fonte:** [Release $TAG]($RELEASE_URL)
+              **Arquivo:** \`$POST_PATH\`
+              **Slug:** \`/blog/$SLUG\`
+
+              ### Checklist antes de mergear
+
+              - [ ] Revisei o conteúdo, voz bate com o skill \`montte-blog\`
+              - [ ] Substitui o cover SVG placeholder por design final em \`$COVER_PATH\` (ou .jpg)
+              - [ ] Confiro que descrição tem 40 a 60 palavras e 1ª frase é TL;DR
+              - [ ] Confiro que keyTakeaways e faq estão preenchidos
+              - [ ] Rodei \`bun run landing:build\` local
+              - [ ] Verifiquei que não há travessão \`—\` ou anglicismo evitável
+
+              ### O que o workflow fez
+
+              1. Buscou release notes via \`gh release view $TAG\`
+              2. Rodou opencode com skill \`.agents/skills/montte-blog/SKILL.md\` como referência
+              3. Gerou cover SVG placeholder com a versão
+              4. Validou frontmatter + ausência de travessão
+              5. Buildou \`apps/landing\` pra garantir schema válido
+
+              ---
+              🤖 Automatizado pelo workflow \`blog-post-from-release.yml\`
+              MSG
+              )
+
+              gh pr create \
+                --title "blog: post para $TAG" \
+                --body "$PR_BODY" \
+                --base master \
+                --head "$BRANCH" \
+                --label "blog,automated" || \
+              gh pr edit "$BRANCH" --body "$PR_BODY"
+
+         - name: Upload artifacts
+           if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
+           uses: actions/upload-artifact@v4
+           with:
+              name: blog-post-${{ steps.meta.outputs.version }}
+              path: |
+                 release-notes.md
+                 ${{ steps.meta.outputs.post_path }}
+                 ${{ steps.meta.outputs.cover_path }}
