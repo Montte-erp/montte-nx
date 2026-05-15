@@ -15,21 +15,23 @@ import { PUBLIC_POSTHOG_HOST } from "astro:env/client";
 
    posthog.init(PUBLIC_POSTHOG_KEY, {
       api_host: PUBLIC_POSTHOG_HOST,
+      ui_host: "https://us.posthog.com",
       defaults: "2026-01-30",
       opt_out_capturing_by_default: consent === '"rejected"',
       person_profiles: "always",
       capture_pageview: true,
       capture_pageleave: true,
       capture_exceptions: true,
-      capture_dead_clicks: false,
+      capture_dead_clicks: true,
       autocapture: true,
       capture_performance: { web_vitals: true },
-      disable_session_recording: true,
-      disable_surveys: true,
-      disable_external_dependency_loading: true,
-      enable_heatmaps: false,
-      rageclick: false,
-      opt_in_site_apps: false,
+      session_recording: {
+         maskAllInputs: false,
+         maskInputOptions: { password: true, email: true },
+      },
+      enable_heatmaps: true,
+      rageclick: true,
+      opt_in_site_apps: true,
    });
 
    window.posthog = posthog;
