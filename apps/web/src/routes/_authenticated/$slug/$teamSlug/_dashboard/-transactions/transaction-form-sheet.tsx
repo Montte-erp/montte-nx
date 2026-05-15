@@ -52,6 +52,7 @@ import {
    ChevronDown,
    ChevronRight,
    ChevronsUpDownIcon,
+   CornerDownRight,
    FileText,
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
@@ -61,6 +62,7 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
+import { CATEGORY_ICON_MAP } from "../-categories/category-icons";
 
 type CategoryNode = Outputs["categories"]["getAll"][number];
 
@@ -236,6 +238,105 @@ interface CategoryPickerProps {
    id?: string;
 }
 
+function getCategoryParentChain(
+   category: CategoryNode,
+   categoriesById: Map<string, CategoryNode>,
+) {
+   const chain: CategoryNode[] = [];
+   const visited = new Set<string>();
+   let current = category;
+
+   while (current.parentId && !visited.has(current.parentId)) {
+      visited.add(current.parentId);
+      const parent = categoriesById.get(current.parentId);
+      if (!parent) return chain;
+      chain.push(parent);
+      current = parent;
+   }
+
+   return chain;
+}
+
+function getCategoryVisual(
+   category: CategoryNode,
+   categoriesById: Map<string, CategoryNode>,
+) {
+   if (!category.parentId) {
+      return { color: category.color, icon: category.icon };
+   }
+
+   const chain = getCategoryParentChain(category, categoriesById);
+   const root = chain[chain.length - 1];
+   return {
+      color: root && !root.parentId ? root.color : null,
+      icon: root && !root.parentId ? root.icon : null,
+   };
+}
+
+function CategoryIcon({
+   color,
+   icon,
+}: {
+   color: string | null;
+   icon: string | null;
+}) {
+   const IconComponent = icon
+      ? (CATEGORY_ICON_MAP[icon] ?? CATEGORY_ICON_MAP.briefcase)
+      : CATEGORY_ICON_MAP.briefcase;
+   const tint = color ?? "#71717a";
+
+   return (
+      <span
+         className="flex size-6 shrink-0 items-center justify-center rounded-full"
+         style={{ backgroundColor: `${tint}1f`, color: tint }}
+      >
+         <IconComponent className="size-3" />
+      </span>
+   );
+}
+
+function CategoryPickerRow({
+   category,
+   categoriesById,
+   checked,
+   isChild,
+}: {
+   category: CategoryNode;
+   categoriesById: Map<string, CategoryNode>;
+   checked: boolean;
+   isChild: boolean;
+}) {
+   const visual = getCategoryVisual(category, categoriesById);
+
+   return (
+      <>
+         <span className="flex size-4 shrink-0 items-center justify-center">
+            {isChild ? (
+               <CornerDownRight
+                  aria-hidden="true"
+                  className="size-4 text-muted-foreground/60"
+               />
+            ) : null}
+         </span>
+         <CategoryIcon color={visual.color} icon={visual.icon} />
+         <span
+            className={cn(
+               "min-w-0 flex-1 truncate",
+               isChild ? "text-muted-foreground" : "font-medium",
+            )}
+         >
+            {category.name}
+         </span>
+         <CheckIcon
+            className={cn(
+               "size-4 shrink-0",
+               checked ? "opacity-100" : "opacity-0",
+            )}
+         />
+      </>
+   );
+}
+
 function CategoryPicker({
    categories,
    value,
@@ -270,6 +371,7 @@ function CategoryPicker({
          ? `${byId.get(selected.parentId)?.name ?? ""} / ${selected.name}`
          : selected.name
       : null;
+   const selectedVisual = selected ? getCategoryVisual(selected, byId) : null;
 
    const term = search.trim().toLowerCase();
 
@@ -317,8 +419,20 @@ function CategoryPicker({
                role="combobox"
                variant="outline"
             >
-               {selectedLabel ?? "Selecionar categoria..."}
-               <ChevronsUpDownIcon className="size-4" />
+               {selected ? (
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                     <CategoryIcon
+                        color={selectedVisual?.color ?? null}
+                        icon={selectedVisual?.icon ?? null}
+                     />
+                     <span className="truncate text-left">{selectedLabel}</span>
+                  </span>
+               ) : (
+                  <span className="min-w-0 flex-1 truncate text-left">
+                     Selecionar categoria...
+                  </span>
+               )}
+               <ChevronsUpDownIcon className="size-4 shrink-0" />
             </Button>
          </PopoverTrigger>
          <PopoverContent className="p-0">
@@ -372,15 +486,12 @@ function CategoryPicker({
                                  ) : (
                                     <span className="size-4" />
                                  )}
-                                 <CheckIcon
-                                    className={cn(
-                                       "size-4",
-                                       value === root.id
-                                          ? "opacity-100"
-                                          : "opacity-0",
-                                    )}
+                                 <CategoryPickerRow
+                                    category={root}
+                                    categoriesById={byId}
+                                    checked={value === root.id}
+                                    isChild={false}
                                  />
-                                 <span className="truncate">{root.name}</span>
                               </CommandItem>
                               {expandedNow
                                  ? visibleKids.map((child) => (
@@ -388,19 +499,15 @@ function CategoryPicker({
                                          key={child.id}
                                          value={child.id}
                                          onSelect={() => handleSelect(child.id)}
-                                         className="gap-2 pl-8"
+                                         className="gap-2"
                                       >
-                                         <CheckIcon
-                                            className={cn(
-                                               "size-4",
-                                               value === child.id
-                                                  ? "opacity-100"
-                                                  : "opacity-0",
-                                            )}
+                                         <span className="size-4 shrink-0" />
+                                         <CategoryPickerRow
+                                            category={child}
+                                            categoriesById={byId}
+                                            checked={value === child.id}
+                                            isChild
                                          />
-                                         <span className="truncate">
-                                            {child.name}
-                                         </span>
                                       </CommandItem>
                                    ))
                                  : null}
