@@ -3,7 +3,7 @@ import { z } from "zod";
 const publicEnvSchema = z.object({
    POSTHOG_HOST: z.string().url(),
    POSTHOG_KEY: z.string().min(1),
-   LOGO_DEV_TOKEN: z.string().min(1).optional(),
+   LOGO_DEV_TOKEN: z.string().min(1),
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;

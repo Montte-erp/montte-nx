@@ -26,6 +26,8 @@ declare module "@tanstack/react-table" {
       exportIgnore?: boolean;
       exportValue?: (row: TData, value: TValue) => string;
       filterVariant?: "date" | "range" | "select" | "text";
+      formatGroupLabel?: (value: unknown) => string;
+      groupable?: boolean;
       importIgnore?: boolean;
       isEditable?: boolean;
       isEditableForRow?: (row: TData) => boolean;

@@ -105,7 +105,7 @@ function CreditCardBrandOption({ brand }: CreditCardBrandOptionProps) {
    const logo = brandLogoUrl(brand);
 
    return (
-      <span className="flex min-w-0 items-center gap-2">
+      <span className="flex min-w-0 w-full items-center gap-2">
          <Avatar className="size-4 shrink-0 rounded-lg bg-white ring-1 ring-border">
             {logo ? (
                <AvatarImage
@@ -118,7 +118,7 @@ function CreditCardBrandOption({ brand }: CreditCardBrandOptionProps) {
                {BRAND_LABEL[brand][0]}
             </AvatarFallback>
          </Avatar>
-         <span className="truncate">{BRAND_LABEL[brand]}</span>
+         <span className="min-w-0 flex-1 truncate">{BRAND_LABEL[brand]}</span>
       </span>
    );
 }

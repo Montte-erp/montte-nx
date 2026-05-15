@@ -100,7 +100,6 @@ export function bankLogoUrl(
    const domain = bankDomain(bankCode);
    if (!domain) return undefined;
    const token = logoDevToken?.trim();
-   if (!token) return bankFaviconUrl(bankCode);
    const params = new URLSearchParams({
       fallback: "monogram",
       format: "webp",

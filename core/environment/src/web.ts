@@ -13,6 +13,7 @@ export const env = createEnv({
       POSTHOG_HOST: z.url(),
       POSTHOG_KEY: z.string().min(1),
       POSTHOG_PERSONAL_API_KEY: z.string().min(1),
+      LOGO_DEV_TOKEN: z.string().min(1),
 
       RESEND_API_KEY: z.string(),
 

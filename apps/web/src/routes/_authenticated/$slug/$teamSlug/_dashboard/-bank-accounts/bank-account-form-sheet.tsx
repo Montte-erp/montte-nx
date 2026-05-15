@@ -178,15 +178,15 @@ function BankAccountFormSheetContent() {
 
    const renderBankOption = (option: { value: string; label: string }) => {
       return (
-         <div className="flex min-w-0 items-center gap-2">
+         <div className="flex min-w-0 w-full items-center gap-2">
             <BankLogoAvatar
                bankCode={option.value}
                bankName={option.label}
                logoDevToken={logoDevToken}
                name={option.label}
             />
-            <span className="truncate">{option.label}</span>
-            <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+            <span className="min-w-0 flex-1 truncate">{option.label}</span>
+            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                {option.value}
             </span>
          </div>

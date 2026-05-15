@@ -29,6 +29,8 @@ import {
 import { getRouteApi } from "@tanstack/react-router";
 import {
    getCoreRowModel,
+   getExpandedRowModel,
+   getGroupedRowModel,
    useReactTable,
    type ColumnDef,
 } from "@tanstack/react-table";
@@ -84,6 +86,23 @@ const routeApi = getRouteApi(
 );
 
 type ImportLookupItem = { id: string; name: string };
+type TransactionGroupBy = "none" | "date" | "category";
+
+function getGroupingSelectValue(
+   grouping: readonly string[],
+): TransactionGroupBy {
+   const first = grouping[0];
+   if (first === "date") return "date";
+   if (first === "categoryName") return "category";
+   return "none";
+}
+
+function getGroupingForSelectValue(value: string): string[] | null {
+   if (value === "none") return [];
+   if (value === "date") return ["date"];
+   if (value === "category") return ["categoryName"];
+   return null;
+}
 
 function normalizeImportLookup(value: unknown): string {
    return String(value ?? "")
@@ -205,6 +224,7 @@ export function TransactionsList() {
       search,
       contactId,
       bankId,
+      grouping,
    } = routeApi.useSearch();
 
    const { openAlertDialog } = useAlertDialog();
@@ -247,6 +267,18 @@ export function TransactionsList() {
       (checked: boolean) => {
          navigate({
             search: (prev) => ({ ...prev, overdueOnly: checked, page: 1 }),
+            replace: true,
+         });
+      },
+      [navigate],
+   );
+
+   const handleGroupByChange = useCallback(
+      (next: string) => {
+         const nextGrouping = getGroupingForSelectValue(next);
+         if (!nextGrouping) return;
+         navigate({
+            search: (prev) => ({ ...prev, grouping: nextGrouping, page: 1 }),
             replace: true,
          });
       },
@@ -825,7 +857,7 @@ export function TransactionsList() {
    ]);
 
    const urlState = useTableUrlState({
-      search: { sorting, columnFilters, page, pageSize },
+      search: { sorting, columnFilters, page, pageSize, grouping },
       onUpdate: (next) =>
          navigate({
             search: (prev) => ({ ...prev, ...next }),
@@ -853,7 +885,11 @@ export function TransactionsList() {
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
+      onGroupingChange: urlState.onGroupingChange,
+      onExpandedChange: urlState.onExpandedChange,
       getCoreRowModel: getCoreRowModel(),
+      getGroupedRowModel: getGroupedRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
    });
 
    const importApi = useDataImport({ table, config: importConfig });
@@ -935,6 +971,18 @@ export function TransactionsList() {
                            { value: "ignored", label: "Ignorados" },
                         ]}
                         value={view}
+                     />
+                     <PageFilterSelect
+                        group="Agrupamento"
+                        id="groupBy"
+                        label="Agrupar por"
+                        onChange={handleGroupByChange}
+                        options={[
+                           { value: "none", label: "Sem agrupamento" },
+                           { value: "date", label: "Data" },
+                           { value: "category", label: "Categoria" },
+                        ]}
+                        value={getGroupingSelectValue(grouping)}
                      />
                      <PageFilter
                         active={overdueOnly}
