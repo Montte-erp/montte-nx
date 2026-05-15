@@ -86,6 +86,23 @@ const routeApi = getRouteApi(
 );
 
 type ImportLookupItem = { id: string; name: string };
+type TransactionGroupBy = "none" | "date" | "category";
+
+function getGroupingSelectValue(
+   grouping: readonly string[],
+): TransactionGroupBy {
+   const first = grouping[0];
+   if (first === "date") return "date";
+   if (first === "categoryName") return "category";
+   return "none";
+}
+
+function getGroupingForSelectValue(value: string): string[] | null {
+   if (value === "none") return [];
+   if (value === "date") return ["date"];
+   if (value === "category") return ["categoryName"];
+   return null;
+}
 
 function normalizeImportLookup(value: unknown): string {
    return String(value ?? "")
@@ -207,7 +224,7 @@ export function TransactionsList() {
       search,
       contactId,
       bankId,
-      groupBy,
+      grouping,
    } = routeApi.useSearch();
 
    const { openAlertDialog } = useAlertDialog();
@@ -258,9 +275,10 @@ export function TransactionsList() {
 
    const handleGroupByChange = useCallback(
       (next: string) => {
-         if (next !== "none" && next !== "date" && next !== "category") return;
+         const nextGrouping = getGroupingForSelectValue(next);
+         if (!nextGrouping) return;
          navigate({
-            search: (prev) => ({ ...prev, groupBy: next, page: 1 }),
+            search: (prev) => ({ ...prev, grouping: nextGrouping, page: 1 }),
             replace: true,
          });
       },
@@ -838,12 +856,6 @@ export function TransactionsList() {
       handleDelete,
    ]);
 
-   const grouping = useMemo(() => {
-      if (groupBy === "date") return ["date"];
-      if (groupBy === "category") return ["categoryName"];
-      return [];
-   }, [groupBy]);
-
    const urlState = useTableUrlState({
       search: { sorting, columnFilters, page, pageSize, grouping },
       onUpdate: (next) =>
@@ -970,7 +982,7 @@ export function TransactionsList() {
                            { value: "date", label: "Data" },
                            { value: "category", label: "Categoria" },
                         ]}
-                        value={groupBy}
+                        value={getGroupingSelectValue(grouping)}
                      />
                      <PageFilter
                         active={overdueOnly}

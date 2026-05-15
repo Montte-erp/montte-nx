@@ -33,7 +33,7 @@ const transactionsSearchSchema = z.object({
       .default([]),
    contactId: z.string().catch("").default(""),
    bankId: z.string().catch("").default(""),
-   groupBy: z.enum(["none", "date", "category"]).catch("none").default("none"),
+   grouping: z.array(z.string()).catch([]).default([]),
 });
 
 export const Route = createFileRoute(
