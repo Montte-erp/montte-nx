@@ -12,8 +12,10 @@
    },
    "dependencies": {
       "@astrojs/check": "catalog:astro",
+      "@astrojs/mdx": "catalog:astro",
       "@astrojs/node": "catalog:astro",
       "@astrojs/react": "catalog:astro",
+      "@astrojs/rss": "catalog:astro",
       "@astrojs/sitemap": "catalog:astro",
       "@lucide/astro": "catalog:astro",
       "@packages/ui": "workspace:*",
@@ -23,6 +25,7 @@
       "@types/react": "catalog:react",
       "@types/react-dom": "catalog:react",
       "astro": "catalog:astro",
+      "astro-og-canvas": "catalog:astro",
       "dayjs": "catalog:ui",
       "foxact": "catalog:ui",
       "motion": "catalog:ui",
@@ -30,6 +33,7 @@
       "posthog-js": "catalog:analytics-client",
       "react": "catalog:react",
       "react-dom": "catalog:react",
+      "reading-time-estimator": "catalog:astro",
       "tailwindcss": "catalog:ui",
       "typescript": "catalog:development",
       "zod": "catalog:validation"

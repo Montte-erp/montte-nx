@@ -23,7 +23,9 @@
             "@astrojs/starlight-tailwind": "5.0.0",
             "@astrojs/ts-plugin": "^1.10.7",
             "@lucide/astro": "^1.14.0",
-            "astro": "6.3.1"
+            "astro": "6.3.1",
+            "astro-og-canvas": "^0.7.0",
+            "reading-time-estimator": "^2.6.0"
          },
          "auth": {
             "better-auth": "1.6.5",
