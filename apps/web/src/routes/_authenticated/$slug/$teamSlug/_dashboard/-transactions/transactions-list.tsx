@@ -1,6 +1,7 @@
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { SearchInput } from "@packages/ui/components/search-input";
 import { Table } from "@packages/ui/components/table";
+import { TooltipProvider } from "@packages/ui/components/tooltip";
 import { Button } from "@packages/ui/components/button";
 import { Calendar } from "@packages/ui/components/calendar";
 import { Checkbox } from "@packages/ui/components/checkbox";
@@ -1022,32 +1023,34 @@ export function TransactionsList() {
                   </Button>
                </div>
             </div>
-            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
-               <Table>
-                  <DataTableHeader table={table} />
-                  <DataTableBody<TransactionRow> table={table} />
-                  <DataImportSection
-                     api={importApi}
-                     config={importConfig}
-                     table={table}
-                  />
-               </Table>
-               {table.getRowCount() === 0 && (
-                  <Empty>
-                     <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                           <ArrowLeftRight className="size-6" />
-                        </EmptyMedia>
-                        <EmptyTitle>Nenhum lançamento</EmptyTitle>
-                        <EmptyDescription>
-                           {search || bankId
-                              ? "Nenhum lançamento encontrado para os filtros aplicados."
-                              : "Registre um novo lançamento para começar a controlar suas finanças."}
-                        </EmptyDescription>
-                     </EmptyHeader>
-                  </Empty>
-               )}
-            </ScrollArea>
+            <TooltipProvider>
+               <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
+                  <Table>
+                     <DataTableHeader table={table} />
+                     <DataTableBody<TransactionRow> table={table} />
+                     <DataImportSection
+                        api={importApi}
+                        config={importConfig}
+                        table={table}
+                     />
+                  </Table>
+                  {table.getRowCount() === 0 && (
+                     <Empty>
+                        <EmptyHeader>
+                           <EmptyMedia variant="icon">
+                              <ArrowLeftRight className="size-6" />
+                           </EmptyMedia>
+                           <EmptyTitle>Nenhum lançamento</EmptyTitle>
+                           <EmptyDescription>
+                              {search || bankId
+                                 ? "Nenhum lançamento encontrado para os filtros aplicados."
+                                 : "Registre um novo lançamento para começar a controlar suas finanças."}
+                           </EmptyDescription>
+                        </EmptyHeader>
+                     </Empty>
+                  )}
+               </ScrollArea>
+            </TooltipProvider>
             <DataTablePagination table={table} />
          </div>
       </div>

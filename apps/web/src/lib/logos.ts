@@ -77,6 +77,7 @@ const BANK_NAME_DOMAIN: Record<string, string> = {
    bancopan: "bancopan.com.br",
    bancooriginal: "original.com.br",
    bancovotorantim: "bv.com.br",
+   bcobrasil: "bb.com.br",
    bradesco: "bradesco.com.br",
    brb: "brb.com.br",
    btgpactual: "btgpactual.com",
@@ -138,7 +139,7 @@ function normalizeLogoLookup(value: string): string {
       .toLowerCase()
       .replace(/&/g, " e ")
       .replace(
-         /\b(s\.?a\.?|s\/a|sa|banco|bco|brasil|do|da|de|das|dos|dtv\.?m\.?|cfi|cc|scc|ltda|me|epp|ip|instituicao|pagamento|multiplo|comercial|federal)\b/g,
+         /\b(s\.?a\.?|s\/a|sa|do|da|de|das|dos|dtv\.?m\.?|cfi|cc|scc|ltda|me|epp|ip|instituicao|pagamento|multiplo|comercial|federal)\b/g,
          " ",
       )
       .replace(/[^a-z0-9]/g, "");

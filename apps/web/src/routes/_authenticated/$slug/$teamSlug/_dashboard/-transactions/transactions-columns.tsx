@@ -10,7 +10,6 @@ import {
 import {
    Tooltip,
    TooltipContent,
-   TooltipProvider,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import { useMutation } from "@tanstack/react-query";
@@ -464,29 +463,40 @@ export function buildTransactionColumns(options?: {
                : undefined;
             const accountName = account?.name ?? row.original.bankAccountName;
 
-            if (!accountName) return "—";
-
             return (
-               <TooltipProvider>
-                  <Tooltip>
-                     <TooltipTrigger asChild>
-                        <span
-                           aria-label={accountName}
-                           className="inline-flex items-center"
-                        >
-                           <BankLogoAvatar
-                              bankCode={account?.bankCode}
-                              bankName={account?.bankName}
-                              color={account?.color}
-                              logoDevToken={options?.logoDevToken}
-                              name={accountName}
-                              size="md"
-                           />
-                        </span>
-                     </TooltipTrigger>
-                     <TooltipContent>{accountName}</TooltipContent>
-                  </Tooltip>
-               </TooltipProvider>
+               <InlineEditCombobox
+                  ariaLabel="Conta"
+                  onCreate={options?.onCreateBankAccount}
+                  onSave={async (value) => {
+                     await options?.onUpdate?.(row.original.id, {
+                        bankAccountId: value || null,
+                     });
+                  }}
+                  options={bankOptions}
+                  startContent={
+                     accountName ? (
+                        <Tooltip>
+                           <TooltipTrigger asChild>
+                              <span
+                                 aria-label={accountName}
+                                 className="inline-flex items-center"
+                              >
+                                 <BankLogoAvatar
+                                    bankCode={account?.bankCode}
+                                    bankName={account?.bankName}
+                                    color={account?.color}
+                                    logoDevToken={options?.logoDevToken}
+                                    name={accountName}
+                                    size="md"
+                                 />
+                              </span>
+                           </TooltipTrigger>
+                           <TooltipContent>{accountName}</TooltipContent>
+                        </Tooltip>
+                     ) : undefined
+                  }
+                  value={accountId ?? ""}
+               />
             );
          },
       },

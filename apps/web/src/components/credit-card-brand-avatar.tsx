@@ -35,8 +35,8 @@ export function CreditCardBrandAvatar({
    const color = brand
       ? (BRAND_COLOR[brand] ?? BRAND_COLOR.other ?? "#6366f1")
       : "#6366f1";
-   const sizeClassName = size === "md" ? "size-6" : "size-4";
-   const iconSizeClassName = size === "md" ? "size-3" : "size-2";
+   const sizeClassName = size === "md" ? "size-4 ring-2" : "size-4";
+   const iconSizeClassName = "size-2";
    const label = brand ? (BRAND_LABEL[brand] ?? brand) : "Bandeira";
 
    return (
