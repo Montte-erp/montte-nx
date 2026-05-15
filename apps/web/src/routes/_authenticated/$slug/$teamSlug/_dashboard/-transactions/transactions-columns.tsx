@@ -462,10 +462,31 @@ export function buildTransactionColumns(options?: {
                ? bankAccountsById.get(accountId)
                : undefined;
             const accountName = account?.name ?? row.original.bankAccountName;
+            const accountLogo = accountName ? (
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <span
+                        aria-label={accountName}
+                        className="inline-flex items-center"
+                     >
+                        <BankLogoAvatar
+                           bankCode={account?.bankCode}
+                           bankName={account?.bankName}
+                           color={account?.color}
+                           logoDevToken={options?.logoDevToken}
+                           name={accountName}
+                           size="md"
+                        />
+                     </span>
+                  </TooltipTrigger>
+                  <TooltipContent>{accountName}</TooltipContent>
+               </Tooltip>
+            ) : null;
 
             return (
                <InlineEditCombobox
                   ariaLabel="Conta"
+                  className="w-auto justify-center border-0 bg-transparent p-0 shadow-none hover:bg-transparent [&>svg]:hidden [&>span]:flex-none"
                   onCreate={options?.onCreateBankAccount}
                   onSave={async (value) => {
                      await options?.onUpdate?.(row.original.id, {
@@ -473,27 +494,10 @@ export function buildTransactionColumns(options?: {
                      });
                   }}
                   options={bankOptions}
-                  startContent={
-                     accountName ? (
-                        <Tooltip>
-                           <TooltipTrigger asChild>
-                              <span
-                                 aria-label={accountName}
-                                 className="inline-flex items-center"
-                              >
-                                 <BankLogoAvatar
-                                    bankCode={account?.bankCode}
-                                    bankName={account?.bankName}
-                                    color={account?.color}
-                                    logoDevToken={options?.logoDevToken}
-                                    name={accountName}
-                                    size="md"
-                                 />
-                              </span>
-                           </TooltipTrigger>
-                           <TooltipContent>{accountName}</TooltipContent>
-                        </Tooltip>
-                     ) : undefined
+                  renderSelected={() =>
+                     accountLogo ?? (
+                        <span className="text-muted-foreground">—</span>
+                     )
                   }
                   value={accountId ?? ""}
                />
