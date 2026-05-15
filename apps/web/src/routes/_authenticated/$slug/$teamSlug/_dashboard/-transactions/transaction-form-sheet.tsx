@@ -44,6 +44,7 @@ import { UploadProgress } from "@packages/ui/components/upload-progress";
 import { cn } from "@packages/ui/lib/utils";
 import { useUploadFiles } from "@better-upload/client";
 import imageCompression from "browser-image-compression";
+import { format, of } from "@f-o-t/money";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -62,6 +63,7 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
+import { buildInstallmentPreview } from "@/utils/finance/installments";
 import { CATEGORY_ICON_MAP } from "../-categories/category-icons";
 
 type CategoryNode = Outputs["categories"]["getAll"][number];
@@ -115,6 +117,10 @@ const formSchema = z
       date: z.string().min(1, "Data é obrigatória."),
       status: z.enum(["pending", "paid"]),
       ignored: z.boolean(),
+      isInstallment: z.boolean(),
+      installmentCount: z
+         .number({ message: "Número de parcelas é obrigatório." })
+         .optional(),
       dueDate: z.string(),
       bankAccountId: z.string(),
       destinationBankAccountId: z.string(),
@@ -190,6 +196,73 @@ const formSchema = z
             message: "Categoria é obrigatória.",
          });
       }
+      if (v.type === "transfer" && v.isInstallment) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["isInstallment"],
+            message: "Transferências não podem ser parceladas.",
+         });
+      }
+      if (v.isInstallment && !v.installmentCount) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["installmentCount"],
+            message: "Número de parcelas é obrigatório.",
+         });
+      }
+      if (
+         v.isInstallment &&
+         v.installmentCount !== undefined &&
+         !Number.isInteger(v.installmentCount)
+      ) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["installmentCount"],
+            message: "Número de parcelas deve ser inteiro.",
+         });
+      }
+      if (
+         v.isInstallment &&
+         v.installmentCount !== undefined &&
+         v.installmentCount < 2
+      ) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["installmentCount"],
+            message: "Número de parcelas deve ser maior que 1.",
+         });
+      }
+      if (
+         v.isInstallment &&
+         v.installmentCount !== undefined &&
+         v.installmentCount > 120
+      ) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["installmentCount"],
+            message: "Número de parcelas deve ser menor ou igual a 120.",
+         });
+      }
+      if (
+         v.isInstallment &&
+         v.amount > 0 &&
+         v.installmentCount !== undefined &&
+         v.installmentCount >= 2
+      ) {
+         const preview = buildInstallmentPreview({
+            amount: String(v.amount),
+            count: v.installmentCount,
+            date: v.date,
+            dueDate: v.dueDate || null,
+         });
+         if (preview.isErr()) {
+            ctx.addIssue({
+               code: z.ZodIssueCode.custom,
+               path: ["installmentCount"],
+               message: preview.error,
+            });
+         }
+      }
    });
 
 type FormValues = z.input<typeof formSchema>;
@@ -201,6 +274,8 @@ const DEFAULT_VALUES: FormValues = {
    date: dayjs().format("YYYY-MM-DD"),
    status: "paid",
    ignored: false,
+   isInstallment: false,
+   installmentCount: 2,
    dueDate: "",
    bankAccountId: "",
    destinationBankAccountId: "",
@@ -214,6 +289,10 @@ function isFieldInvalid(field: {
    state: { meta: { isTouched: boolean; errors: unknown[] } };
 }) {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
+}
+
+function formatMoney(value: string) {
+   return format(of(value, "BRL"), "pt-BR");
 }
 
 async function compressIfImage(files: File[]) {
@@ -581,6 +660,12 @@ function TransactionFormSheetContent() {
                date: value.date,
                status: value.status,
                ignored: value.ignored,
+               isInstallment:
+                  value.type !== "transfer" ? value.isInstallment : false,
+               installmentCount:
+                  value.type !== "transfer" && value.isInstallment
+                     ? value.installmentCount
+                     : undefined,
                dueDate: value.dueDate || null,
                bankAccountId: value.bankAccountId || null,
                destinationBankAccountId:
@@ -672,6 +757,9 @@ function TransactionFormSheetContent() {
                            if (!parsed) return;
                            field.handleChange(parsed);
                            form.setFieldValue("categoryId", "");
+                           if (parsed === "transfer") {
+                              form.setFieldValue("isInstallment", false);
+                           }
                         }}
                      >
                         <SelectTrigger id={field.name} name={field.name}>
@@ -874,6 +962,141 @@ function TransactionFormSheetContent() {
                   </Field>
                )}
             </form.Field>
+
+            <form.Subscribe
+               selector={(s) => ({
+                  amount: s.values.amount,
+                  date: s.values.date,
+                  dueDate: s.values.dueDate,
+                  installmentCount: s.values.installmentCount,
+                  isInstallment: s.values.isInstallment,
+                  type: s.values.type,
+               })}
+            >
+               {({
+                  amount,
+                  date,
+                  dueDate,
+                  installmentCount,
+                  isInstallment,
+                  type,
+               }) => {
+                  if (type === "transfer") return null;
+                  const canPreview =
+                     isInstallment &&
+                     amount > 0 &&
+                     installmentCount !== undefined &&
+                     installmentCount >= 2;
+                  const preview = canPreview
+                     ? buildInstallmentPreview({
+                          amount: String(amount),
+                          count: installmentCount,
+                          date,
+                          dueDate: dueDate || null,
+                       })
+                     : null;
+
+                  return (
+                     <div className="flex flex-col gap-4 rounded-md border p-4">
+                        <form.Field name="isInstallment">
+                           {(field) => (
+                              <Field
+                                 data-invalid={
+                                    isFieldInvalid(field) || undefined
+                                 }
+                                 orientation="horizontal"
+                              >
+                                 <Checkbox
+                                    aria-invalid={isFieldInvalid(field)}
+                                    checked={field.state.value}
+                                    id={field.name}
+                                    name={field.name}
+                                    onBlur={field.handleBlur}
+                                    onCheckedChange={(checked) =>
+                                       field.handleChange(checked === true)
+                                    }
+                                 />
+                                 <FieldLabel htmlFor={field.name}>
+                                    Parcelar lançamento
+                                 </FieldLabel>
+                                 {isFieldInvalid(field) ? (
+                                    <FieldError>
+                                       {field.state.meta.errors[0]?.message}
+                                    </FieldError>
+                                 ) : null}
+                              </Field>
+                           )}
+                        </form.Field>
+
+                        {isInstallment ? (
+                           <>
+                              <form.Field name="installmentCount">
+                                 {(field) => (
+                                    <Field
+                                       data-invalid={
+                                          isFieldInvalid(field) || undefined
+                                       }
+                                    >
+                                       <FieldLabel
+                                          htmlFor={field.name}
+                                          required
+                                       >
+                                          Número de parcelas
+                                       </FieldLabel>
+                                       <Input
+                                          aria-invalid={isFieldInvalid(field)}
+                                          id={field.name}
+                                          min={2}
+                                          name={field.name}
+                                          type="number"
+                                          value={field.state.value}
+                                          onBlur={field.handleBlur}
+                                          onChange={(e) =>
+                                             field.handleChange(
+                                                Number(e.target.value),
+                                             )
+                                          }
+                                       />
+                                       {isFieldInvalid(field) ? (
+                                          <FieldError>
+                                             {
+                                                field.state.meta.errors[0]
+                                                   ?.message
+                                             }
+                                          </FieldError>
+                                       ) : null}
+                                    </Field>
+                                 )}
+                              </form.Field>
+
+                              {preview?.isOk() ? (
+                                 <div className="flex flex-col gap-2 rounded-md bg-muted p-4 text-sm">
+                                    {preview.value.map((installment) => (
+                                       <div
+                                          className="flex items-center justify-between gap-4"
+                                          key={`installment-${installment.number}`}
+                                       >
+                                          <span>
+                                             {installment.number}/
+                                             {installment.count} -{" "}
+                                             {dayjs(
+                                                installment.dueDate ??
+                                                   installment.date,
+                                             ).format("DD/MM/YYYY")}
+                                          </span>
+                                          <strong>
+                                             {formatMoney(installment.amount)}
+                                          </strong>
+                                       </div>
+                                    ))}
+                                 </div>
+                              ) : null}
+                           </>
+                        ) : null}
+                     </div>
+                  );
+               }}
+            </form.Subscribe>
 
             <form.Field name="name">
                {(field) => (

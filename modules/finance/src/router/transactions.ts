@@ -15,6 +15,7 @@ import {
    requireTransaction,
    requireValidFinancialReferences,
 } from "@modules/finance/router/middlewares";
+import { buildInstallmentPreview } from "@modules/finance/services/installments";
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -33,41 +34,122 @@ const tagAndItemsSchema = z.object({
       .default([]),
 });
 
+const installmentSchema = z
+   .object({
+      isInstallment: z.boolean().optional().default(false),
+      installmentCount: z
+         .number({ message: "Número de parcelas é obrigatório." })
+         .int("Número de parcelas deve ser inteiro.")
+         .min(2, "Número de parcelas deve ser maior que 1.")
+         .max(120, "Número de parcelas deve ser menor ou igual a 120.")
+         .optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (data.isInstallment && !data.installmentCount) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Número de parcelas é obrigatório.",
+            path: ["installmentCount"],
+         });
+      }
+   });
+
 export const create = protectedProcedure
    .input(
       createTransactionSchema
          .merge(tagAndItemsSchema)
+         .merge(installmentSchema)
          .merge(z.object({ autoCategorize: z.boolean().default(false) })),
    )
    .use(enforceCostCenterPolicy, (input) => input.tagId)
    .handler(async ({ context, input }) => {
-      const { tagId, items, autoCategorize, ...data } = input;
-      await requireValidFinancialReferences(context.db, context.teamId, {
-         bankAccountId: data.bankAccountId,
-         destinationBankAccountId: data.destinationBankAccountId,
-         categoryId: data.type === "transfer" ? null : data.categoryId,
+      const {
          tagId,
-         contactId: data.contactId,
-         date: data.date,
+         items,
+         autoCategorize,
+         isInstallment,
+         installmentCount: rawInstallmentCount,
+         ...transactionData
+      } = input;
+      const installmentCount = rawInstallmentCount ?? 1;
+      const installmentPreview =
+         isInstallment && installmentCount > 1
+            ? buildInstallmentPreview({
+                 amount: transactionData.amount,
+                 count: installmentCount,
+                 date: transactionData.date,
+                 dueDate: transactionData.dueDate,
+              })
+            : null;
+
+      if (isInstallment && transactionData.type === "transfer") {
+         throw WebAppError.badRequest(
+            "Transferências não podem ser parceladas.",
+         );
+      }
+      if (installmentPreview?.isErr()) {
+         throw WebAppError.badRequest(installmentPreview.error);
+      }
+
+      await requireValidFinancialReferences(context.db, context.teamId, {
+         bankAccountId: transactionData.bankAccountId,
+         destinationBankAccountId: transactionData.destinationBankAccountId,
+         categoryId:
+            transactionData.type === "transfer"
+               ? null
+               : transactionData.categoryId,
+         tagId,
+         contactId: transactionData.contactId,
+         date: transactionData.date,
       });
 
       const txData =
-         data.type === "transfer" ? { ...data, categoryId: null } : data;
+         transactionData.type === "transfer"
+            ? { ...transactionData, categoryId: null }
+            : transactionData;
       const ignored = txData.ignored ?? false;
       const status = txData.status;
+      const installments = installmentPreview?.isOk()
+         ? installmentPreview.value
+         : [
+              {
+                 number: 1,
+                 count: 1,
+                 amount: txData.amount,
+                 date: txData.date,
+                 dueDate: txData.dueDate ?? null,
+              },
+           ];
+      const installmentGroupId =
+         installments.length > 1 ? crypto.randomUUID() : null;
 
       const created = await fromPromise(
          context.db.transaction(async (tx) => {
-            const [row] = await tx
+            const rows = await tx
                .insert(transactions)
-               .values({
-                  ...txData,
-                  status,
-                  ignored,
-                  teamId: context.teamId,
-                  tagId: tagId ?? null,
-               })
+               .values(
+                  installments.map((installment) => ({
+                     ...txData,
+                     amount: installment.amount,
+                     date: installment.date,
+                     dueDate: installment.dueDate,
+                     name:
+                        installment.count > 1 && txData.name
+                           ? `${txData.name} (${installment.number}/${installment.count})`
+                           : txData.name,
+                     status,
+                     ignored,
+                     teamId: context.teamId,
+                     tagId: tagId ?? null,
+                     installmentGroupId,
+                     installmentNumber:
+                        installment.count > 1 ? installment.number : null,
+                     installmentCount:
+                        installment.count > 1 ? installment.count : null,
+                  })),
+               )
                .returning();
+            const [row] = rows;
             if (!row) throw WebAppError.internal("Falha ao criar lançamento.");
             if (items.length > 0) {
                await tx.insert(transactionItems).values(
@@ -96,12 +178,24 @@ export const create = protectedProcedure
          !ignored &&
          (input.type === "income" || input.type === "expense")
       ) {
+         const transactionIds = created.value.installmentGroupId
+            ? await context.db
+                 .select({ id: transactions.id })
+                 .from(transactions)
+                 .where(
+                    eq(
+                       transactions.installmentGroupId,
+                       created.value.installmentGroupId,
+                    ),
+                 )
+                 .then((rows) => rows.map((row) => row.id))
+            : [created.value.id];
          await enqueueClassifyTransactionsBatchWorkflow(
             context.workflowClient,
             {
                organizationId: context.organizationId,
                teamId: context.teamId,
-               transactionIds: [created.value.id],
+               transactionIds,
             },
          );
       }

@@ -4,6 +4,7 @@ import {
    boolean,
    date,
    index,
+   integer,
    jsonb,
    numeric,
    text,
@@ -86,6 +87,9 @@ export const transactions = financeSchema.table(
       status: transactionStatusEnum("status").notNull().default("paid"),
       ignored: boolean("ignored").notNull().default(false),
       dueDate: date("due_date"),
+      installmentGroupId: uuid("installment_group_id"),
+      installmentNumber: integer("installment_number"),
+      installmentCount: integer("installment_count"),
       paidAt: timestamp("paid_at", { withTimezone: true }),
       statementPeriod: text("statement_period"),
       contactId: uuid("contact_id").references(() => contacts.id, {
@@ -124,6 +128,9 @@ export const transactions = financeSchema.table(
       index("transactions_status_idx").on(table.status),
       index("transactions_ignored_idx").on(table.ignored),
       index("transactions_due_date_idx").on(table.dueDate),
+      index("transactions_installment_group_id_idx").on(
+         table.installmentGroupId,
+      ),
       index("transactions_status_type_idx").on(table.status, table.type),
    ],
 );
