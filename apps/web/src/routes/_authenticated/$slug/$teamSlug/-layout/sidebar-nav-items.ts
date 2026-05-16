@@ -6,7 +6,6 @@ import {
    Inbox,
    Tag,
    Tags,
-   Users,
 } from "lucide-react";
 export type NavItemDef = {
    id: string;
@@ -86,21 +85,6 @@ export const navGroups: NavGroupDef[] = [
             iconColor: "text-teal-500",
             route: "/$slug/$teamSlug/tags",
             configurable: true,
-         },
-      ],
-   },
-   {
-      id: "erp",
-      label: "Negócio",
-      items: [
-         {
-            id: "contacts",
-            label: "Contatos",
-            icon: Users,
-            iconColor: "text-cyan-500",
-            route: "/$slug/$teamSlug/contacts",
-            configurable: true,
-            earlyAccessFlag: "contatos",
          },
       ],
    },

@@ -25,7 +25,7 @@ const test = base.extend<{ user: TestUser }>({
    },
 });
 
-const onboardingProductsSchema = z.array(z.enum(["finance", "contacts"]));
+const onboardingProductsSchema = z.array(z.enum(["finance"]));
 
 async function toggleFeature(page: Page, label: RegExp) {
    const card = page.getByRole("button", { name: label });
@@ -102,9 +102,9 @@ test("happy path finance: validações dos botões + seed correto", async ({
    expect(team?.onboardingProducts).toEqual(["finance"]);
 });
 
-test("contacts + multi-org via ?new=true", async ({ page, user }) => {
+test("finance + multi-org via ?new=true", async ({ page, user }) => {
    await signUpViaApi(page.request, user);
-   await completeFirstOnboarding(page, user, [/Negócios/]);
+   await completeFirstOnboarding(page, user, [/Finanças/]);
 
    const firstOrg = await findFirstOrgByUserEmail(user.email);
    if (!firstOrg?.slug) throw new Error("Primeira org não foi criada.");
@@ -114,7 +114,7 @@ test("contacts + multi-org via ?new=true", async ({ page, user }) => {
    const onboardingProducts = onboardingProductsSchema.parse(
       firstTeam.onboardingProducts,
    );
-   expect([...onboardingProducts].sort()).toEqual(["contacts"]);
+   expect([...onboardingProducts]).toEqual(["finance"]);
 
    await page.goto("/onboarding?new=true");
    await toggleFeature(page, /Finanças/);
@@ -127,31 +127,16 @@ test("contacts + multi-org via ?new=true", async ({ page, user }) => {
 test("Voltar preserva as features selecionadas", async ({ page, user }) => {
    await signUpViaApi(page.request, user);
    await page.goto("/");
-   await toggleFeature(page, /Negócios/);
+   await toggleFeature(page, /Finanças/);
    await continueToCompany(page);
    await expect(page).toHaveURL(/step=company/);
 
    await page.getByRole("button", { name: "Voltar" }).click();
    await expect(page).toHaveURL(/step=features/);
-   await expect(page.getByRole("button", { name: /Negócios/ })).toHaveAttribute(
+   await expect(page.getByRole("button", { name: /Finanças/ })).toHaveAttribute(
       "aria-pressed",
       "true",
    );
-});
-
-test("nenhuma feature selecionada → onboardingProducts vazio", async ({
-   page,
-   user,
-}) => {
-   await signUpViaApi(page.request, user);
-   await page.goto("/");
-   await continueToCompany(page);
-   await fillCompanyAndSubmit(page, user.workspace);
-
-   const org = await findFirstOrgByUserEmail(user.email);
-   if (!org?.slug) throw new Error("Org não foi criada.");
-   const team = await findTeamByOrgAndSlug(org.slug, "principal");
-   expect(team?.onboardingProducts).toEqual([]);
 });
 
 test("guards de search params redirecionam para o step correto", async ({

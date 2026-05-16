@@ -5,7 +5,6 @@ export const transactionSortIdSchema = z.enum([
    "amount",
    "bankAccountName",
    "categoryName",
-   "contactName",
    "creditCardName",
    "date",
    "dueDate",

@@ -145,7 +145,6 @@ const formSchema = z
       bankAccountId: z.string(),
       destinationBankAccountId: z.string(),
       categoryId: z.string(),
-      contactId: z.string(),
       description: z
          .string()
          .max(500, "Observações deve ter no máximo 500 caracteres."),
@@ -309,7 +308,6 @@ const DEFAULT_VALUES: FormValues = {
    bankAccountId: "",
    destinationBankAccountId: "",
    categoryId: "",
-   contactId: "",
    description: "",
    attachments: [],
 };
@@ -657,15 +655,11 @@ function TransactionFormSheetContent() {
    const { data: categoriesResult } = useSuspenseQuery(
       orpc.categories.getAll.queryOptions({}),
    );
-   const { data: contacts } = useSuspenseQuery(
-      orpc.contacts.getAll.queryOptions({}),
-   );
 
    const bankOptions = bankAccounts.map((b) => ({
       value: b.id,
       label: b.name,
    }));
-   const contactOptions = contacts.map((c) => ({ value: c.id, label: c.name }));
 
    const createMutation = useMutation(
       orpc.transactions.create.mutationOptions({
@@ -711,7 +705,6 @@ function TransactionFormSheetContent() {
                      : null,
                categoryId:
                   value.type === "transfer" ? null : value.categoryId || null,
-               contactId: value.contactId || null,
                attachments,
                description: value.description.trim() || null,
                paymentMethod: null,
@@ -1265,24 +1258,6 @@ function TransactionFormSheetContent() {
                   </Button>
                </CollapsibleTrigger>
                <CollapsibleContent className="flex flex-col gap-4 pt-4">
-                  <form.Field name="contactId">
-                     {(field) => (
-                        <Field>
-                           <FieldLabel htmlFor={field.name}>Contato</FieldLabel>
-                           <Combobox
-                              emptyMessage="Nenhum contato."
-                              id={field.name}
-                              options={contactOptions}
-                              placeholder="Selecionar contato..."
-                              searchPlaceholder="Buscar contato..."
-                              value={field.state.value}
-                              onBlur={field.handleBlur}
-                              onValueChange={(v) => field.handleChange(v)}
-                           />
-                        </Field>
-                     )}
-                  </form.Field>
-
                   <form.Field name="status">
                      {(field) => (
                         <Field>

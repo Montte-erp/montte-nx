@@ -1,4 +1,4 @@
-export const FEATURE_FLAG_KEYS: readonly ["contatos"] = ["contatos"];
+export const FEATURE_FLAG_KEYS: readonly [] = [];
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
 
@@ -19,10 +19,6 @@ export const POSTHOG_SURVEYS = {
    featureFeedback: {
       id: "019d3b2e-970f-0000-0200-2dd39ff7eac2",
       flagKey: null,
-   },
-   feedbackContatos: {
-      id: "019d3b2f-a58f-0000-bc30-ac03e413d7fc",
-      flagKey: "contatos",
    },
    suggestIntegration: {
       id: "019d3b8e-c77a-0000-fb14-82f93cfb23bd",

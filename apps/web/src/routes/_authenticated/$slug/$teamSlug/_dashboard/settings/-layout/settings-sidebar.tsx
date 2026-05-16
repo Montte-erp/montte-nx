@@ -3,7 +3,6 @@ import {
    CollapsibleContent,
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
-import { FeatureStageBadge } from "@/components/blocks/feature-stage-badge";
 import {
    SidebarGroup,
    SidebarGroupContent,
@@ -18,7 +17,6 @@ import { cn } from "@packages/ui/lib/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { useEarlyAccess } from "@/hooks/use-early-access";
 import {
    setSectionOpen,
    useIsSectionOpen,
@@ -57,14 +55,11 @@ function useIsHrefActive() {
 
 function NavItemWithChildren({ item }: { item: SettingsNavItemDef }) {
    const { slug, teamSlug } = useDashboardSlugs();
-   const { isEnrolled, getFeatureStage } = useEarlyAccess();
    const isActive = useIsHrefActive();
    const sectionId = `settings:item:${item.id}`;
    const isUserOpen = useIsSectionOpen(sectionId, false);
 
-   const visibleChildren = item.children?.filter(
-      (child) => !child.earlyAccessFlag || isEnrolled(child.earlyAccessFlag),
-   );
+   const visibleChildren = item.children;
    if (!visibleChildren || visibleChildren.length === 0) return null;
 
    const isChildActive = visibleChildren.some((child) => isActive(child.href));
@@ -92,35 +87,21 @@ function NavItemWithChildren({ item }: { item: SettingsNavItemDef }) {
             </CollapsibleTrigger>
             <CollapsibleContent>
                <SidebarMenuSub>
-                  {visibleChildren.map((child) => {
-                     const earlyStage = child.earlyAccessFlag
-                        ? getFeatureStage(child.earlyAccessFlag)
-                        : null;
-                     return (
-                        <SidebarMenuSubItem key={child.id}>
-                           <SidebarMenuSubButton
-                              asChild
-                              className={cn(
-                                 isActive(child.href) &&
-                                    "bg-primary/10 text-primary",
-                              )}
-                           >
-                              <Link params={{ slug, teamSlug }} to={child.href}>
-                                 <span>{child.title}</span>
-                                 {earlyStage &&
-                                    earlyStage !== "general-availability" && (
-                                       <FeatureStageBadge
-                                          aria-hidden="true"
-                                          className="ml-auto"
-                                          showIcon={false}
-                                          stage={earlyStage}
-                                       />
-                                    )}
-                              </Link>
-                           </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                     );
-                  })}
+                  {visibleChildren.map((child) => (
+                     <SidebarMenuSubItem key={child.id}>
+                        <SidebarMenuSubButton
+                           asChild
+                           className={cn(
+                              isActive(child.href) &&
+                                 "bg-primary/10 text-primary",
+                           )}
+                        >
+                           <Link params={{ slug, teamSlug }} to={child.href}>
+                              <span>{child.title}</span>
+                           </Link>
+                        </SidebarMenuSubButton>
+                     </SidebarMenuSubItem>
+                  ))}
                </SidebarMenuSub>
             </CollapsibleContent>
          </SidebarMenuItem>
