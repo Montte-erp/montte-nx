@@ -13,6 +13,7 @@ export * from "@core/database/schemas/credit-card-statement-totals";
 export * from "@core/database/schemas/inbox";
 export * from "@core/database/schemas/invoices";
 export * from "@core/database/schemas/meters";
+export * from "@core/database/schemas/reports";
 export * from "@core/database/schemas/services";
 export * from "@core/database/schemas/settings-financial";
 export * from "@core/database/schemas/subscription-items";

@@ -11,6 +11,7 @@ import * as contactsRouter from "@modules/account/router/contacts";
 import * as creditCardsRouter from "@modules/finance/router/credit-cards";
 import * as financialSettingsRouter from "@modules/account/router/financial-settings";
 import * as inboxRouter from "@modules/inbox/router/inbox";
+import * as reportsRouter from "@modules/insights/router/reports";
 import * as onboardingRouter from "@modules/account/router/onboarding";
 import * as organizationRouter from "@modules/account/router/organization";
 import * as sessionRouter from "@modules/account/router/session";
@@ -43,6 +44,7 @@ export default {
    contacts: contactsRouter,
    financialSettings: financialSettingsRouter,
    inbox: inboxRouter,
+   reports: reportsRouter,
    onboarding: onboardingRouter,
    session: sessionRouter,
    tags: tagsRouter,

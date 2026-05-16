@@ -1,0 +1,25 @@
+{
+   "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "composite": false,
+      "declaration": false,
+      "declarationMap": false,
+      "noEmit": true,
+      "paths": {
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+         "@core/logging": ["../../core/logging/src/logger.ts"],
+         "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/orpc/*": ["../../core/orpc/src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/database"
+      },
+      {
+         "path": "../../core/logging"
+      }
+   ]
+}

@@ -36,6 +36,7 @@ import { Route as AuthenticatedSlugTeamSlugDashboardRouteImport } from './routes
 import { Route as AuthenticatedSlugTeamSlugDashboardTransactionsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/transactions'
 import { Route as AuthenticatedSlugTeamSlugDashboardTagsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/tags'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings'
+import { Route as AuthenticatedSlugTeamSlugDashboardRelatoriosRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/relatorios'
 import { Route as AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards'
 import { Route as AuthenticatedSlugTeamSlugDashboardContactsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/contacts'
 import { Route as AuthenticatedSlugTeamSlugDashboardChatRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat'
@@ -202,6 +203,12 @@ const AuthenticatedSlugTeamSlugDashboardSettingsRoute =
   AuthenticatedSlugTeamSlugDashboardSettingsRouteImport.update({
     id: '/settings',
     path: '/settings',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardRelatoriosRoute =
+  AuthenticatedSlugTeamSlugDashboardRelatoriosRouteImport.update({
+    id: '/relatorios',
+    path: '/relatorios',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
   } as any)
 const AuthenticatedSlugTeamSlugDashboardCreditCardsRoute =
@@ -419,6 +426,7 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
   '/$slug/$teamSlug/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
   '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
+  '/$slug/$teamSlug/relatorios': typeof AuthenticatedSlugTeamSlugDashboardRelatoriosRoute
   '/$slug/$teamSlug/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
   '/$slug/$teamSlug/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
   '/$slug/$teamSlug/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
@@ -471,6 +479,7 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug/bank-accounts': typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRoute
   '/$slug/$teamSlug/categories': typeof AuthenticatedSlugTeamSlugDashboardCategoriesRoute
   '/$slug/$teamSlug/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
+  '/$slug/$teamSlug/relatorios': typeof AuthenticatedSlugTeamSlugDashboardRelatoriosRoute
   '/$slug/$teamSlug/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
   '/$slug/$teamSlug/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
   '/$slug/$teamSlug/chat/$threadId': typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute
@@ -528,6 +537,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard/chat': typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
   '/_authenticated/$slug/$teamSlug/_dashboard/contacts': typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
   '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards': typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/relatorios': typeof AuthenticatedSlugTeamSlugDashboardRelatoriosRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
   '/_authenticated/$slug/$teamSlug/_dashboard/tags': typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/transactions': typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/chat'
     | '/$slug/$teamSlug/contacts'
     | '/$slug/$teamSlug/credit-cards'
+    | '/$slug/$teamSlug/relatorios'
     | '/$slug/$teamSlug/settings'
     | '/$slug/$teamSlug/tags'
     | '/$slug/$teamSlug/transactions'
@@ -637,6 +648,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/bank-accounts'
     | '/$slug/$teamSlug/categories'
     | '/$slug/$teamSlug/credit-cards'
+    | '/$slug/$teamSlug/relatorios'
     | '/$slug/$teamSlug/tags'
     | '/$slug/$teamSlug/transactions'
     | '/$slug/$teamSlug/chat/$threadId'
@@ -693,6 +705,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/chat'
     | '/_authenticated/$slug/$teamSlug/_dashboard/contacts'
     | '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/relatorios'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings'
     | '/_authenticated/$slug/$teamSlug/_dashboard/tags'
     | '/_authenticated/$slug/$teamSlug/_dashboard/transactions'
@@ -925,6 +938,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/$slug/$teamSlug/settings'
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/relatorios': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/relatorios'
+      path: '/relatorios'
+      fullPath: '/$slug/$teamSlug/relatorios'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardRelatoriosRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
     '/_authenticated/$slug/$teamSlug/_dashboard/credit-cards': {
@@ -1231,6 +1251,7 @@ interface AuthenticatedSlugTeamSlugDashboardRouteChildren {
   AuthenticatedSlugTeamSlugDashboardChatRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRouteWithChildren
   AuthenticatedSlugTeamSlugDashboardContactsRoute: typeof AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren
   AuthenticatedSlugTeamSlugDashboardCreditCardsRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute
+  AuthenticatedSlugTeamSlugDashboardRelatoriosRoute: typeof AuthenticatedSlugTeamSlugDashboardRelatoriosRoute
   AuthenticatedSlugTeamSlugDashboardSettingsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren
   AuthenticatedSlugTeamSlugDashboardTagsRoute: typeof AuthenticatedSlugTeamSlugDashboardTagsRoute
   AuthenticatedSlugTeamSlugDashboardTransactionsRoute: typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute
@@ -1250,6 +1271,8 @@ const AuthenticatedSlugTeamSlugDashboardRouteChildren: AuthenticatedSlugTeamSlug
       AuthenticatedSlugTeamSlugDashboardContactsRouteWithChildren,
     AuthenticatedSlugTeamSlugDashboardCreditCardsRoute:
       AuthenticatedSlugTeamSlugDashboardCreditCardsRoute,
+    AuthenticatedSlugTeamSlugDashboardRelatoriosRoute:
+      AuthenticatedSlugTeamSlugDashboardRelatoriosRoute,
     AuthenticatedSlugTeamSlugDashboardSettingsRoute:
       AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren,
     AuthenticatedSlugTeamSlugDashboardTagsRoute:
