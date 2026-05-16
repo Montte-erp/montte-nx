@@ -18,6 +18,7 @@ import { DatePicker } from "@packages/ui/components/date-picker";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { MoneyInput } from "@packages/ui/components/money-input";
+import { NumberInput } from "@packages/ui/components/number-input";
 import {
    Popover,
    PopoverContent,
@@ -1089,18 +1090,16 @@ function TransactionFormSheetContent() {
                                        >
                                           Número de parcelas
                                        </FieldLabel>
-                                       <Input
+                                       <NumberInput
                                           aria-invalid={isFieldInvalid(field)}
                                           id={field.name}
+                                          max={120}
                                           min={2}
                                           name={field.name}
-                                          type="number"
                                           value={field.state.value}
                                           onBlur={field.handleBlur}
-                                          onChange={(e) =>
-                                             field.handleChange(
-                                                Number(e.target.value),
-                                             )
+                                          onChange={(value) =>
+                                             field.handleChange(value)
                                           }
                                        />
                                        {isFieldInvalid(field) ? (

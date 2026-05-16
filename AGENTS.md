@@ -42,7 +42,7 @@ Skills live in `.agents/skills/<name>/SKILL.md`. Open the SKILL.md before writin
 
 Domain → skill map (open before coding):
 
-- oRPC handlers/errors → `neverthrow`. Schema/queries → `postgres-drizzle`. Search/BM25 → `paradedb-skill`. Redis → `redis-best-practices`.
+- New Payments/Vault/domain errors → `better-result`. Legacy oRPC handlers/errors still using `neverthrow` → `neverthrow`. Schema/queries → `postgres-drizzle`. Search/BM25 → `paradedb-skill`. Redis → `redis-best-practices`.
 - Client data → `tanstack-query`. Forms → `tanstack-form`. Tables → `tanstack-table` (+ `tanstack-virtual` for long lists). Routes → `tanstack-router`. Stores → `tanstack-store` (+ `tanstack-db`). SSR/server fns → `tanstack-start` (+ `tanstack-devtools`).
 - AI agents → `tanstack-ai`. Durable workflows → `dbos-typescript`.
 - Auth → `better-auth-best-practices` (sub-skills exist for email/2FA/orgs/scaffolding).
@@ -250,7 +250,7 @@ Routers tag cost-incurring procedures with `billableProcedure` + `.meta({ billab
 ## Code Style
 
 - TypeScript: **never `as`** in any form (including `[] as string[]`) — fix the source type. No redundant return types Claude can infer. No unused params (delete; no `_foo`). No JSDoc / section comments / inline rationale. No barrel files. No relative imports in `core/` — `@core/<pkg>/*`. No dynamic imports.
-- Errors: **no `try/catch`** — use `neverthrow` (`fromPromise`, `fromThrowable`, `ok`, `err`, `Result`, `ResultAsync`, `safeTry`). Patterns: early return on `isErr`, `andThen` chains, no `match(v=>v, e=>throw)`, no `Promise.reject` inside `match`, fire-and-forget uses `.catch(log)`. Exception: tests and scripts.
+- Errors: **no `try/catch`** — for new Payments/Vault/domain code use `better-result` with tagged expected errors, Zod at contract edges, no `unknown` leakage, and serialization across workflow/API boundaries when needed. Legacy modules still on `neverthrow` may keep `fromPromise`, `fromThrowable`, `ok`, `err`, `Result`, `ResultAsync`, `safeTry`; do not mix both libraries inside one module. Exception: tests and scripts.
 - Control flow: early returns, never `else` after `return`. Minimize `useEffect` — derive state or use event handlers; `useEffect` only for external sync. Use `useCallback`, never `useStableHandler`.
 - Dates: always `dayjs`. Never `new Date()` (exceptions: Drizzle `.$onUpdate()`, test fixtures). `.toDate()` for Drizzle, `.toISOString()` for ISO, `.format("YYYY-MM-DD")` for date strings.
 - Naming: files kebab-case. Components PascalCase `[Feature][Action][Type]`. Hooks `use[Feature][Action]`.
