@@ -61,7 +61,7 @@ function ReportDetailError() {
 function ReportDetailPage() {
    return (
       <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
-         <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-4">
+         <div className="flex min-h-0 flex-1 flex-col gap-4">
             <QueryBoundary
                fallback={<ReportDetailSkeleton />}
                errorTitle="Erro ao carregar relatório"
