@@ -114,7 +114,7 @@ test("finance + multi-org via ?new=true", async ({ page, user }) => {
    const onboardingProducts = onboardingProductsSchema.parse(
       firstTeam.onboardingProducts,
    );
-   expect([...onboardingProducts].sort()).toEqual(["finance"]);
+   expect([...onboardingProducts]).toEqual(["finance"]);
 
    await page.goto("/onboarding?new=true");
    await toggleFeature(page, /Finanças/);
@@ -137,21 +137,6 @@ test("Voltar preserva as features selecionadas", async ({ page, user }) => {
       "aria-pressed",
       "true",
    );
-});
-
-test("nenhuma feature selecionada → onboardingProducts vazio", async ({
-   page,
-   user,
-}) => {
-   await signUpViaApi(page.request, user);
-   await page.goto("/");
-   await continueToCompany(page);
-   await fillCompanyAndSubmit(page, user.workspace);
-
-   const org = await findFirstOrgByUserEmail(user.email);
-   if (!org?.slug) throw new Error("Org não foi criada.");
-   const team = await findTeamByOrgAndSlug(org.slug, "principal");
-   expect(team?.onboardingProducts).toEqual([]);
 });
 
 test("guards de search params redirecionam para o step correto", async ({

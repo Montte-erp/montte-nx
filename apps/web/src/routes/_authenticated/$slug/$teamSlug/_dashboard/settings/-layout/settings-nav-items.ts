@@ -21,7 +21,6 @@ export type SettingsNavItemDef = {
    icon?: LucideIcon;
    external?: boolean;
    danger?: boolean;
-   earlyAccessFlag?: string;
    children?: SettingsNavItemDef[];
 };
 

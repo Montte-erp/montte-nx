@@ -2,7 +2,6 @@ import { SearchInput } from "@packages/ui/components/search-input";
 import { useNavigate } from "@tanstack/react-router";
 import { QuickAccessCard } from "@/components/blocks/quick-access-card";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { useEarlyAccess } from "@/hooks/use-early-access";
 import { Route } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/settings";
 import {
    type SettingsNavItemDef,
@@ -15,7 +14,6 @@ function flattenItems(items: SettingsNavItemDef[]): SettingsNavItemDef[] {
 
 export function SettingsMobileNav() {
    const { slug, teamSlug } = useDashboardSlugs();
-   const { isEnrolled } = useEarlyAccess();
    const navigate = useNavigate();
    const { q } = Route.useSearch();
    const setQ = Route.useNavigate();
@@ -38,16 +36,9 @@ export function SettingsMobileNav() {
          {settingsNavSections
             .filter((section) => section.id !== "organization")
             .map((section) => {
-               const filtered = flattenItems(section.items)
-                  .filter(
-                     (item) =>
-                        !query || item.title.toLowerCase().includes(query),
-                  )
-                  .filter(
-                     (item) =>
-                        !item.earlyAccessFlag ||
-                        isEnrolled(item.earlyAccessFlag),
-                  );
+               const filtered = flattenItems(section.items).filter(
+                  (item) => !query || item.title.toLowerCase().includes(query),
+               );
 
                if (filtered.length === 0) return null;
 

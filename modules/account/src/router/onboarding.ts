@@ -24,7 +24,9 @@ export const createWorkspace = authenticatedProcedure
          workspaceName: z
             .string()
             .min(2, "O nome deve ter no mínimo 2 caracteres."),
-         features: z.array(onboardingFeatureSchema).default([]),
+         features: z
+            .array(onboardingFeatureSchema)
+            .min(1, "Selecione pelo menos um produto."),
          isMultiOrgCreation: z.boolean().default(false),
       }),
    )
@@ -229,7 +231,9 @@ export const skipTask = protectedProcedure
 export const completeOnboarding = protectedProcedure
    .input(
       z.object({
-         products: z.array(z.enum(["finance"])),
+         products: z
+            .array(onboardingFeatureSchema)
+            .min(1, "Selecione pelo menos um produto."),
       }),
    )
    .handler(async ({ context, input }) => {
