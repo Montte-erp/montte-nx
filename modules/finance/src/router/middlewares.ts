@@ -4,10 +4,7 @@ import { err, fromPromise, ok } from "neverthrow";
 import { os } from "@orpc/server";
 import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
-import {
-   transactionRecurrences,
-   transactions,
-} from "@core/database/schemas/transactions";
+import { transactions } from "@core/database/schemas/transactions";
 const base = os.$context<ORPCContextWithOrganization>();
 
 export const requireBankAccount = base.middleware(
