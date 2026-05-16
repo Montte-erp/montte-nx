@@ -4,7 +4,10 @@ import { err, fromPromise, ok } from "neverthrow";
 import { os } from "@orpc/server";
 import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
-import { transactions } from "@core/database/schemas/transactions";
+import {
+   transactionRecurrences,
+   transactions,
+} from "@core/database/schemas/transactions";
 const base = os.$context<ORPCContextWithOrganization>();
 
 export const requireBankAccount = base.middleware(
@@ -55,6 +58,23 @@ export const requireTransaction = base.middleware(
       );
       if (result.isErr()) throw result.error;
       return next({ context: { transaction: result.value } });
+   },
+);
+
+export const requireTransactionRecurrence = base.middleware(
+   async ({ context, next }, id: string) => {
+      const result = await fromPromise(
+         context.db.query.transactionRecurrences.findFirst({
+            where: (f, { eq }) => eq(f.id, id),
+         }),
+         () => WebAppError.internal("Falha ao verificar recorrência."),
+      ).andThen((recurrence) =>
+         !recurrence || recurrence.teamId !== context.teamId
+            ? err(WebAppError.notFound("Recorrência não encontrada."))
+            : ok(recurrence),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { recurrence: result.value } });
    },
 );
 

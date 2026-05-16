@@ -15,6 +15,7 @@ import { protectedProcedure } from "@core/orpc/server";
 import { enqueueClassifyTransactionsBatchWorkflow } from "@modules/classification/workflows/classification-workflow";
 import {
    enforceCostCenterPolicy,
+   requireTransactionRecurrence,
    requireTransaction,
    requireValidFinancialReferences,
 } from "@modules/finance/router/middlewares";
@@ -258,18 +259,39 @@ export const create = protectedProcedure
          !ignored &&
          (input.type === "income" || input.type === "expense")
       ) {
-         const transactionIds = created.value.installmentGroupId
-            ? await context.db
-                 .select({ id: transactions.id })
-                 .from(transactions)
-                 .where(
-                    eq(
-                       transactions.installmentGroupId,
-                       created.value.installmentGroupId,
-                    ),
-                 )
-                 .then((rows) => rows.map((row) => row.id))
-            : [created.value.id];
+         const transactionIds = await (async () => {
+            if (created.value.installmentGroupId) {
+               return context.db
+                  .select({ id: transactions.id })
+                  .from(transactions)
+                  .where(
+                     and(
+                        eq(
+                           transactions.installmentGroupId,
+                           created.value.installmentGroupId,
+                        ),
+                        eq(transactions.teamId, context.teamId),
+                     ),
+                  )
+                  .then((rows) => rows.map((row) => row.id));
+            }
+            if (created.value.recurrenceId) {
+               return context.db
+                  .select({ id: transactions.id })
+                  .from(transactions)
+                  .where(
+                     and(
+                        eq(
+                           transactions.recurrenceId,
+                           created.value.recurrenceId,
+                        ),
+                        eq(transactions.teamId, context.teamId),
+                     ),
+                  )
+                  .then((rows) => rows.map((row) => row.id));
+            }
+            return [created.value.id];
+         })();
          await enqueueClassifyTransactionsBatchWorkflow(
             context.workflowClient,
             {
@@ -287,21 +309,19 @@ const recurrenceIdSchema = z.object({ id: z.string().uuid() });
 
 export const stopRecurrence = protectedProcedure
    .input(recurrenceIdSchema)
-   .handler(async ({ context, input }) => {
+   .use(requireTransactionRecurrence, (input) => input.id)
+   .handler(async ({ context }) => {
       const stopped = await fromPromise(
-         context.db
-            .update(transactionRecurrences)
-            .set({
-               status: "stopped",
-               stoppedAt: dayjs().toDate(),
-            })
-            .where(
-               and(
-                  eq(transactionRecurrences.id, input.id),
-                  eq(transactionRecurrences.teamId, context.teamId),
-               ),
-            )
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactionRecurrences)
+               .set({
+                  status: "stopped",
+                  stoppedAt: dayjs().toDate(),
+               })
+               .where(eq(transactionRecurrences.id, context.recurrence.id))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao interromper recorrência."),
       );
       if (stopped.isErr()) throw stopped.error;
@@ -323,41 +343,55 @@ export const updateRecurrence = protectedProcedure
          }),
       ),
    )
+   .use(requireTransactionRecurrence, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const existing = await fromPromise(
-         context.db.query.transactionRecurrences.findFirst({
-            where: (f, { eq }) => eq(f.id, input.id),
-         }),
-         () => WebAppError.internal("Falha ao verificar recorrência."),
-      );
-      if (existing.isErr()) throw existing.error;
-      if (!existing.value || existing.value.teamId !== context.teamId) {
-         throw WebAppError.notFound("Recorrência não encontrada.");
+      const existing = context.recurrence;
+      const nextStatus = input.status ?? existing.status;
+      const nextFrequency = input.frequency ?? existing.frequency;
+      let nextOccurrenceDate = existing.nextOccurrenceDate;
+      if (input.frequency && input.frequency !== existing.frequency) {
+         const latestOccurrence = await fromPromise(
+            context.db.query.transactions.findFirst({
+               where: (f, { and, eq }) =>
+                  and(
+                     eq(f.recurrenceId, existing.id),
+                     eq(f.teamId, context.teamId),
+                  ),
+               orderBy: (f, { desc }) => [
+                  desc(f.recurrenceOccurrenceNumber),
+                  desc(f.date),
+               ],
+            }),
+            () =>
+               WebAppError.internal("Falha ao verificar lançamentos gerados."),
+         );
+         if (latestOccurrence.isErr()) throw latestOccurrence.error;
+         if (!latestOccurrence.value) {
+            throw WebAppError.internal(
+               "Falha ao verificar lançamentos gerados.",
+            );
+         }
+         nextOccurrenceDate = addRecurrencePeriod(
+            latestOccurrence.value.date,
+            input.frequency,
+         );
       }
-
-      const nextStatus = input.status ?? existing.value.status;
-      const nextFrequency = input.frequency ?? existing.value.frequency;
       const updated = await fromPromise(
-         context.db
-            .update(transactionRecurrences)
-            .set({
-               frequency: nextFrequency,
-               status: nextStatus,
-               stoppedAt:
-                  nextStatus === "stopped"
-                     ? (existing.value.stoppedAt ?? dayjs().toDate())
-                     : null,
-               nextOccurrenceDate:
-                  input.frequency &&
-                  input.frequency !== existing.value.frequency
-                     ? addRecurrencePeriod(
-                          existing.value.nextOccurrenceDate,
-                          input.frequency,
-                       )
-                     : existing.value.nextOccurrenceDate,
-            })
-            .where(eq(transactionRecurrences.id, input.id))
-            .returning(),
+         context.db.transaction(async (tx) =>
+            tx
+               .update(transactionRecurrences)
+               .set({
+                  frequency: nextFrequency,
+                  status: nextStatus,
+                  stoppedAt:
+                     nextStatus === "stopped"
+                        ? (existing.stoppedAt ?? dayjs().toDate())
+                        : null,
+                  nextOccurrenceDate,
+               })
+               .where(eq(transactionRecurrences.id, existing.id))
+               .returning(),
+         ),
          () => WebAppError.internal("Falha ao atualizar recorrência."),
       );
       if (updated.isErr()) throw updated.error;

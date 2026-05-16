@@ -15,6 +15,8 @@ import {
    insertCategory,
 } from "../helpers/db";
 
+test.describe.configure({ mode: "serial" });
+
 const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 const createdTxIds: string[] = [];
 const createdAccountIds: string[] = [];
@@ -220,7 +222,9 @@ test("cria despesa parcelada", async ({ page, e2eSession }) => {
       team.id,
       `${txName} (1/3)`,
    );
-   if (!firstInstallment?.installmentGroupId) return;
+   if (!firstInstallment?.installmentGroupId) {
+      throw new Error("Parcelamento não criou grupo de parcelas.");
+   }
    const rows = await findTransactionsByInstallmentGroupId(
       team.id,
       firstInstallment.installmentGroupId,

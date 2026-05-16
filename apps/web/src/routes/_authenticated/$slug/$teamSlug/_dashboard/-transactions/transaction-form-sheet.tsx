@@ -1199,6 +1199,7 @@ function TransactionFormSheetContent() {
                                     }}
                                  >
                                     <SelectTrigger
+                                       aria-invalid={isFieldInvalid(field)}
                                        id={field.name}
                                        name={field.name}
                                     >

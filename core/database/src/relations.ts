@@ -316,6 +316,7 @@ export const transactionsRelations = relations(
       recurrence: one(transactionRecurrences, {
          fields: [transactions.recurrenceId],
          references: [transactionRecurrences.id],
+         relationName: "transaction_recurrence",
       }),
       items: many(transactionItems),
    }),
@@ -327,6 +328,7 @@ export const transactionRecurrencesRelations = relations(
       sourceTransaction: one(transactions, {
          fields: [transactionRecurrences.sourceTransactionId],
          references: [transactions.id],
+         relationName: "source_transaction_recurrence",
       }),
       transactions: many(transactions),
    }),

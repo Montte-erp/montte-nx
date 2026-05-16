@@ -227,7 +227,7 @@ describe("transactions router", () => {
       ).toBe(true);
    });
 
-   it("permite interromper e editar recorrência sem alterar lançamentos gerados", async () => {
+   it("permite interromper e editar recorrência recalculando próxima ocorrência sem alterar lançamentos gerados", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ctx = createTestContext(testDb.db, { teamId, organizationId });
       const [account] = await testDb.db
@@ -288,6 +288,7 @@ describe("transactions router", () => {
       expect(updatedRecurrence?.frequency).toBe("biweekly");
       expect(updatedRecurrence?.status).toBe("stopped");
       expect(updatedRecurrence?.stoppedAt).not.toBeNull();
+      expect(updatedRecurrence?.nextOccurrenceDate).toBe("2026-06-05");
       expect(rows.map((row) => row.date)).toEqual(["2026-05-15", "2026-05-22"]);
    });
 
