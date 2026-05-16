@@ -28,6 +28,7 @@ import { subscriptionItems } from "@core/database/schemas/subscription-items";
 import { contactSubscriptions } from "@core/database/schemas/subscriptions";
 import { tags } from "@core/database/schemas/tags";
 import {
+   transactionRecurrences,
    transactionItems,
    transactions,
 } from "@core/database/schemas/transactions";
@@ -312,7 +313,22 @@ export const transactionsRelations = relations(
          fields: [transactions.tagId],
          references: [tags.id],
       }),
+      recurrence: one(transactionRecurrences, {
+         fields: [transactions.recurrenceId],
+         references: [transactionRecurrences.id],
+      }),
       items: many(transactionItems),
+   }),
+);
+
+export const transactionRecurrencesRelations = relations(
+   transactionRecurrences,
+   ({ one, many }) => ({
+      sourceTransaction: one(transactions, {
+         fields: [transactionRecurrences.sourceTransactionId],
+         references: [transactions.id],
+      }),
+      transactions: many(transactions),
    }),
 );
 

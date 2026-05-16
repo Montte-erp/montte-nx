@@ -83,16 +83,33 @@ const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
 
 type TransactionStatus = "paid" | "pending";
 type StatusOption = { value: TransactionStatus; label: string };
+type RecurrenceFrequency = "daily" | "weekly" | "biweekly" | "monthly";
 
 const STATUS_OPTIONS: StatusOption[] = [
    { value: "paid", label: "Efetivado" },
    { value: "pending", label: "Pendente" },
 ];
 
+const RECURRENCE_OPTIONS: {
+   value: RecurrenceFrequency;
+   label: string;
+}[] = [
+   { value: "daily", label: "Diário" },
+   { value: "weekly", label: "Semanal" },
+   { value: "biweekly", label: "Quinzenal" },
+   { value: "monthly", label: "Mensal" },
+];
+
 const ATTACHMENT_MAX_FILES = 5;
 
 function parseStatus(value: string): TransactionStatus | undefined {
    return STATUS_OPTIONS.find((s) => s.value === value)?.value;
+}
+
+function parseRecurrenceFrequency(
+   value: string,
+): RecurrenceFrequency | undefined {
+   return RECURRENCE_OPTIONS.find((o) => o.value === value)?.value;
 }
 
 function extractPublicUrls(metadata: unknown): Record<string, string> {
@@ -121,6 +138,8 @@ const formSchema = z
       installmentCount: z
          .number({ message: "Número de parcelas é obrigatório." })
          .optional(),
+      isRecurring: z.boolean(),
+      recurrenceFrequency: z.enum(["daily", "weekly", "biweekly", "monthly"]),
       dueDate: z.string(),
       bankAccountId: z.string(),
       destinationBankAccountId: z.string(),
@@ -203,6 +222,13 @@ const formSchema = z
             message: "Transferências não podem ser parceladas.",
          });
       }
+      if (v.isRecurring && v.isInstallment) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["isRecurring"],
+            message: "Lançamento recorrente não pode ser parcelado.",
+         });
+      }
       if (v.isInstallment && !v.installmentCount) {
          ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -276,6 +302,8 @@ const DEFAULT_VALUES: FormValues = {
    ignored: false,
    isInstallment: false,
    installmentCount: 2,
+   isRecurring: false,
+   recurrenceFrequency: "monthly",
    dueDate: "",
    bankAccountId: "",
    destinationBankAccountId: "",
@@ -661,11 +689,19 @@ function TransactionFormSheetContent() {
                status: value.status,
                ignored: value.ignored,
                isInstallment:
-                  value.type !== "transfer" ? value.isInstallment : false,
+                  value.type !== "transfer" && !value.isRecurring
+                     ? value.isInstallment
+                     : false,
                installmentCount:
-                  value.type !== "transfer" && value.isInstallment
+                  value.type !== "transfer" &&
+                  !value.isRecurring &&
+                  value.isInstallment
                      ? value.installmentCount
                      : undefined,
+               isRecurring: value.isRecurring,
+               recurrenceFrequency: value.isRecurring
+                  ? value.recurrenceFrequency
+                  : undefined,
                dueDate: value.dueDate || null,
                bankAccountId: value.bankAccountId || null,
                destinationBankAccountId:
@@ -970,6 +1006,7 @@ function TransactionFormSheetContent() {
                   dueDate: s.values.dueDate,
                   installmentCount: s.values.installmentCount,
                   isInstallment: s.values.isInstallment,
+                  isRecurring: s.values.isRecurring,
                   type: s.values.type,
                })}
             >
@@ -979,11 +1016,13 @@ function TransactionFormSheetContent() {
                   dueDate,
                   installmentCount,
                   isInstallment,
+                  isRecurring,
                   type,
                }) => {
                   if (type === "transfer") return null;
                   const canPreview =
                      isInstallment &&
+                     !isRecurring &&
                      amount > 0 &&
                      installmentCount !== undefined &&
                      installmentCount >= 2;
@@ -1012,9 +1051,16 @@ function TransactionFormSheetContent() {
                                     id={field.name}
                                     name={field.name}
                                     onBlur={field.handleBlur}
-                                    onCheckedChange={(checked) =>
-                                       field.handleChange(checked === true)
-                                    }
+                                    onCheckedChange={(checked) => {
+                                       const next = checked === true;
+                                       field.handleChange(next);
+                                       if (next) {
+                                          form.setFieldValue(
+                                             "isRecurring",
+                                             false,
+                                          );
+                                       }
+                                    }}
                                  />
                                  <FieldLabel htmlFor={field.name}>
                                     Parcelar lançamento
@@ -1097,6 +1143,91 @@ function TransactionFormSheetContent() {
                   );
                }}
             </form.Subscribe>
+
+            <div className="flex flex-col gap-4 rounded-md border p-4">
+               <form.Field name="isRecurring">
+                  {(field) => (
+                     <Field
+                        data-invalid={isFieldInvalid(field) || undefined}
+                        orientation="horizontal"
+                     >
+                        <Checkbox
+                           aria-invalid={isFieldInvalid(field)}
+                           checked={field.state.value}
+                           id={field.name}
+                           name={field.name}
+                           onBlur={field.handleBlur}
+                           onCheckedChange={(checked) => {
+                              const next = checked === true;
+                              field.handleChange(next);
+                              if (next) {
+                                 form.setFieldValue("isInstallment", false);
+                              }
+                           }}
+                        />
+                        <FieldLabel htmlFor={field.name}>
+                           Lançamento recorrente
+                        </FieldLabel>
+                        {isFieldInvalid(field) ? (
+                           <FieldError>
+                              {field.state.meta.errors[0]?.message}
+                           </FieldError>
+                        ) : null}
+                     </Field>
+                  )}
+               </form.Field>
+
+               <form.Subscribe selector={(s) => s.values.isRecurring}>
+                  {(isRecurring) =>
+                     isRecurring ? (
+                        <form.Field name="recurrenceFrequency">
+                           {(field) => (
+                              <Field
+                                 data-invalid={
+                                    isFieldInvalid(field) || undefined
+                                 }
+                              >
+                                 <FieldLabel htmlFor={field.name} required>
+                                    Periodicidade
+                                 </FieldLabel>
+                                 <Select
+                                    value={field.state.value}
+                                    onValueChange={(value) => {
+                                       const parsed =
+                                          parseRecurrenceFrequency(value);
+                                       if (!parsed) return;
+                                       field.handleChange(parsed);
+                                    }}
+                                 >
+                                    <SelectTrigger
+                                       id={field.name}
+                                       name={field.name}
+                                    >
+                                       <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                       {RECURRENCE_OPTIONS.map((option) => (
+                                          <SelectItem
+                                             key={option.value}
+                                             value={option.value}
+                                          >
+                                             {option.label}
+                                          </SelectItem>
+                                       ))}
+                                    </SelectContent>
+                                 </Select>
+                                 {isFieldInvalid(field) ? (
+                                    <FieldError>
+                                       {field.state.meta.errors[0]?.message}
+                                    </FieldError>
+                                 ) : null}
+                              </Field>
+                           )}
+                        </form.Field>
+                     ) : null
+                  }
+               </form.Subscribe>
+            </div>
 
             <form.Field name="name">
                {(field) => (

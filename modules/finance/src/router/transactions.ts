@@ -1,8 +1,11 @@
-import { eq } from "drizzle-orm";
+import dayjs from "dayjs";
+import { and, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import {
    createTransactionSchema,
+   transactionRecurrenceFrequencyEnum,
+   transactionRecurrences,
    transactionItems,
    transactions,
    updateTransactionSchema,
@@ -16,6 +19,10 @@ import {
    requireValidFinancialReferences,
 } from "@modules/finance/router/middlewares";
 import { buildInstallmentPreview } from "@modules/finance/services/installments";
+import {
+   addRecurrencePeriod,
+   buildRecurrenceOccurrences,
+} from "@modules/finance/services/recurrences";
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -54,11 +61,31 @@ const installmentSchema = z
       }
    });
 
+const recurrenceSchema = z
+   .object({
+      isRecurring: z.boolean().optional().default(false),
+      recurrenceFrequency: z
+         .enum(transactionRecurrenceFrequencyEnum.enumValues, {
+            message: "Periodicidade da recorrência é obrigatória.",
+         })
+         .optional(),
+   })
+   .superRefine((data, ctx) => {
+      if (data.isRecurring && !data.recurrenceFrequency) {
+         ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Periodicidade da recorrência é obrigatória.",
+            path: ["recurrenceFrequency"],
+         });
+      }
+   });
+
 export const create = protectedProcedure
    .input(
       createTransactionSchema
          .merge(tagAndItemsSchema)
          .merge(installmentSchema)
+         .merge(recurrenceSchema)
          .merge(z.object({ autoCategorize: z.boolean().default(false) })),
    )
    .use(enforceCostCenterPolicy, (input) => input.tagId)
@@ -69,6 +96,8 @@ export const create = protectedProcedure
          autoCategorize,
          isInstallment,
          installmentCount: rawInstallmentCount,
+         isRecurring,
+         recurrenceFrequency,
          ...transactionData
       } = input;
       const installmentCount = rawInstallmentCount ?? 1;
@@ -81,14 +110,30 @@ export const create = protectedProcedure
                  dueDate: transactionData.dueDate,
               })
             : null;
+      const recurrencePreview =
+         isRecurring && recurrenceFrequency
+            ? buildRecurrenceOccurrences({
+                 date: transactionData.date,
+                 dueDate: transactionData.dueDate,
+                 frequency: recurrenceFrequency,
+              })
+            : null;
 
       if (isInstallment && transactionData.type === "transfer") {
          throw WebAppError.badRequest(
             "Transferências não podem ser parceladas.",
          );
       }
+      if (isRecurring && isInstallment) {
+         throw WebAppError.badRequest(
+            "Lançamento recorrente não pode ser parcelado.",
+         );
+      }
       if (installmentPreview?.isErr()) {
          throw WebAppError.badRequest(installmentPreview.error);
+      }
+      if (recurrencePreview?.isErr()) {
+         throw WebAppError.badRequest(recurrencePreview.error);
       }
 
       await requireValidFinancialReferences(context.db, context.teamId, {
@@ -122,35 +167,70 @@ export const create = protectedProcedure
            ];
       const installmentGroupId =
          installments.length > 1 ? crypto.randomUUID() : null;
+      const recurrenceOccurrences = recurrencePreview?.isOk()
+         ? recurrencePreview.value
+         : null;
+      const recurrenceId = recurrenceOccurrences ? crypto.randomUUID() : null;
+      const transactionRows = recurrenceOccurrences
+         ? recurrenceOccurrences.map((occurrence) => ({
+              ...txData,
+              amount: txData.amount,
+              date: occurrence.date,
+              dueDate: occurrence.dueDate,
+              name: txData.name,
+              status,
+              ignored,
+              teamId: context.teamId,
+              tagId: tagId ?? null,
+              recurrenceId,
+              recurrenceOccurrenceNumber: occurrence.number,
+           }))
+         : installments.map((installment) => ({
+              ...txData,
+              amount: installment.amount,
+              date: installment.date,
+              dueDate: installment.dueDate,
+              name:
+                 installment.count > 1 && txData.name
+                    ? `${txData.name} (${installment.number}/${installment.count})`
+                    : txData.name,
+              status,
+              ignored,
+              teamId: context.teamId,
+              tagId: tagId ?? null,
+              installmentGroupId,
+              installmentNumber:
+                 installment.count > 1 ? installment.number : null,
+              installmentCount:
+                 installment.count > 1 ? installment.count : null,
+           }));
 
       const created = await fromPromise(
          context.db.transaction(async (tx) => {
             const rows = await tx
                .insert(transactions)
-               .values(
-                  installments.map((installment) => ({
-                     ...txData,
-                     amount: installment.amount,
-                     date: installment.date,
-                     dueDate: installment.dueDate,
-                     name:
-                        installment.count > 1 && txData.name
-                           ? `${txData.name} (${installment.number}/${installment.count})`
-                           : txData.name,
-                     status,
-                     ignored,
-                     teamId: context.teamId,
-                     tagId: tagId ?? null,
-                     installmentGroupId,
-                     installmentNumber:
-                        installment.count > 1 ? installment.number : null,
-                     installmentCount:
-                        installment.count > 1 ? installment.count : null,
-                  })),
-               )
+               .values(transactionRows)
                .returning();
             const [row] = rows;
             if (!row) throw WebAppError.internal("Falha ao criar lançamento.");
+            if (recurrenceId && recurrenceFrequency && recurrenceOccurrences) {
+               const lastOccurrence =
+                  recurrenceOccurrences[recurrenceOccurrences.length - 1];
+               if (!lastOccurrence) {
+                  throw WebAppError.internal("Falha ao criar recorrência.");
+               }
+               await tx.insert(transactionRecurrences).values({
+                  id: recurrenceId,
+                  teamId: context.teamId,
+                  sourceTransactionId: row.id,
+                  frequency: recurrenceFrequency,
+                  startedAt: row.date,
+                  nextOccurrenceDate: addRecurrencePeriod(
+                     lastOccurrence.date,
+                     recurrenceFrequency,
+                  ),
+               });
+            }
             if (items.length > 0) {
                await tx.insert(transactionItems).values(
                   items.map((item) => ({
@@ -201,6 +281,89 @@ export const create = protectedProcedure
       }
 
       return created.value;
+   });
+
+const recurrenceIdSchema = z.object({ id: z.string().uuid() });
+
+export const stopRecurrence = protectedProcedure
+   .input(recurrenceIdSchema)
+   .handler(async ({ context, input }) => {
+      const stopped = await fromPromise(
+         context.db
+            .update(transactionRecurrences)
+            .set({
+               status: "stopped",
+               stoppedAt: dayjs().toDate(),
+            })
+            .where(
+               and(
+                  eq(transactionRecurrences.id, input.id),
+                  eq(transactionRecurrences.teamId, context.teamId),
+               ),
+            )
+            .returning(),
+         () => WebAppError.internal("Falha ao interromper recorrência."),
+      );
+      if (stopped.isErr()) throw stopped.error;
+      const [row] = stopped.value;
+      if (!row) throw WebAppError.notFound("Recorrência não encontrada.");
+      return row;
+   });
+
+export const updateRecurrence = protectedProcedure
+   .input(
+      recurrenceIdSchema.merge(
+         z.object({
+            frequency: z
+               .enum(transactionRecurrenceFrequencyEnum.enumValues, {
+                  message: "Periodicidade da recorrência é obrigatória.",
+               })
+               .optional(),
+            status: z.enum(["active", "stopped"]).optional(),
+         }),
+      ),
+   )
+   .handler(async ({ context, input }) => {
+      const existing = await fromPromise(
+         context.db.query.transactionRecurrences.findFirst({
+            where: (f, { eq }) => eq(f.id, input.id),
+         }),
+         () => WebAppError.internal("Falha ao verificar recorrência."),
+      );
+      if (existing.isErr()) throw existing.error;
+      if (!existing.value || existing.value.teamId !== context.teamId) {
+         throw WebAppError.notFound("Recorrência não encontrada.");
+      }
+
+      const nextStatus = input.status ?? existing.value.status;
+      const nextFrequency = input.frequency ?? existing.value.frequency;
+      const updated = await fromPromise(
+         context.db
+            .update(transactionRecurrences)
+            .set({
+               frequency: nextFrequency,
+               status: nextStatus,
+               stoppedAt:
+                  nextStatus === "stopped"
+                     ? (existing.value.stoppedAt ?? dayjs().toDate())
+                     : null,
+               nextOccurrenceDate:
+                  input.frequency &&
+                  input.frequency !== existing.value.frequency
+                     ? addRecurrencePeriod(
+                          existing.value.nextOccurrenceDate,
+                          input.frequency,
+                       )
+                     : existing.value.nextOccurrenceDate,
+            })
+            .where(eq(transactionRecurrences.id, input.id))
+            .returning(),
+         () => WebAppError.internal("Falha ao atualizar recorrência."),
+      );
+      if (updated.isErr()) throw updated.error;
+      const [row] = updated.value;
+      if (!row) throw WebAppError.notFound("Recorrência não encontrada.");
+      return row;
    });
 
 export const getById = protectedProcedure
