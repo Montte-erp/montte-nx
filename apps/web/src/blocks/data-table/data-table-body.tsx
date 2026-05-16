@@ -25,6 +25,7 @@ function getPinStyles<TData>(column: Column<TData>): React.CSSProperties {
 
 interface DataTableBodyProps<TData> {
    table: Table<TData>;
+   getRowClassName?: (props: { row: Row<TData> }) => string | undefined;
    renderRow?: (props: { row: Row<TData> }) => React.ReactNode;
    renderExpandedRow?: (props: { row: Row<TData> }) => React.ReactNode;
    renderGroupLabel?: (props: { row: Row<TData> }) => React.ReactNode;
@@ -61,6 +62,7 @@ function defaultGroupLabel<TData>(row: Row<TData>): React.ReactNode {
 
 export function DataTableBody<TData>({
    table,
+   getRowClassName,
    renderRow,
    renderExpandedRow,
    renderGroupLabel,
@@ -106,6 +108,7 @@ export function DataTableBody<TData>({
                renderRow({ row })
             ) : (
                <TableRow
+                  className={getRowClassName?.({ row })}
                   data-selected={row.getIsSelected()}
                   data-state={row.getIsSelected() ? "selected" : undefined}
                   key={row.id}

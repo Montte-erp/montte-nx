@@ -179,13 +179,6 @@ export function buildTransactionColumns(options?: {
             editOptions: statusOptions,
          },
          cell: ({ row }) => {
-            if (row.original.ignored) {
-               return (
-                  <Badge className="text-xs" variant="secondary">
-                     Ignorado
-                  </Badge>
-               );
-            }
             const status =
                row.original.status === "cancelled"
                   ? "pending"
