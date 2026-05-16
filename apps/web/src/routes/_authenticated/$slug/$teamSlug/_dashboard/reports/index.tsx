@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyDescription,
@@ -20,7 +21,7 @@ import {
    useReactTable,
    type ColumnDef,
 } from "@tanstack/react-table";
-import { Plus, ReceiptText } from "lucide-react";
+import { Plus, ReceiptText, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -34,6 +35,10 @@ import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 import { ReportFormSheet } from "../-reports/report-form-sheet";
@@ -150,10 +155,41 @@ function ReportsList() {
       );
    }, [reports, search]);
 
-   const columns = useMemo<ColumnDef<SavedReport>[]>(
-      () => buildReportsColumns({ onRemove: handleDelete }),
-      [handleDelete],
-   );
+   const columns = useMemo<ColumnDef<SavedReport>[]>(() => {
+      const selectColumn: ColumnDef<SavedReport> = {
+         id: "__select",
+         size: 48,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true },
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(value) =>
+                  table.toggleAllPageRowsSelected(Boolean(value))
+               }
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onClick={(event) => event.stopPropagation()}
+               onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+            />
+         ),
+      };
+
+      return [selectColumn, ...buildReportsColumns({ onRemove: handleDelete })];
+   }, [handleDelete]);
 
    const urlState = useTableUrlState({
       search: { sorting, columnFilters, page, pageSize },
@@ -183,6 +219,40 @@ function ReportsList() {
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
+   });
+
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((row) => row.original.id);
+
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <SelectionActionButton
+            icon={<Trash2 className="size-4" />}
+            onClick={() => {
+               openAlertDialog({
+                  title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "relatório" : "relatórios"}`,
+                  description:
+                     "Tem certeza que deseja excluir os relatórios selecionados? Esta ação não pode ser desfeita.",
+                  actionLabel: "Excluir",
+                  cancelLabel: "Cancelar",
+                  variant: "destructive",
+                  onAction: async () => {
+                     await Promise.allSettled(
+                        selectedIds.map((id) =>
+                           removeMutation.mutateAsync({ id }),
+                        ),
+                     );
+                     table.resetRowSelection();
+                  },
+               });
+            }}
+            variant="destructive"
+         >
+            Excluir
+         </SelectionActionButton>
+      ),
    });
 
    const goToReport = useCallback(
