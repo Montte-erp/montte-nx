@@ -6,7 +6,6 @@ import type { DatabaseInstance } from "@core/database/client";
 import { organization, team } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
-import { contacts } from "@core/database/schemas/contacts";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { authenticatedProcedure, protectedProcedure } from "@core/orpc/server";
@@ -17,7 +16,7 @@ import {
    type OnboardingProduct,
 } from "@modules/account/onboarding-seed";
 
-const onboardingFeatureSchema = z.enum(["finance", "contacts"]);
+const onboardingFeatureSchema = z.enum(["finance"]);
 
 export const createWorkspace = authenticatedProcedure
    .input(
@@ -25,7 +24,9 @@ export const createWorkspace = authenticatedProcedure
          workspaceName: z
             .string()
             .min(2, "O nome deve ter no mínimo 2 caracteres."),
-         features: z.array(onboardingFeatureSchema).default([]),
+         features: z
+            .array(onboardingFeatureSchema)
+            .min(1, "Selecione pelo menos um produto."),
          isMultiOrgCreation: z.boolean().default(false),
       }),
    )
@@ -114,12 +115,11 @@ export const getOnboardingStatus = protectedProcedure.handler(
       });
       if (!currentTeam) throw WebAppError.notFound("Projeto não encontrado.");
 
-      const [categoryCount, transactionCount, bankAccountCount, contactCount] =
+      const [categoryCount, transactionCount, bankAccountCount] =
          await Promise.all([
             db.$count(categories, eq(categories.teamId, teamId)),
             db.$count(transactions, eq(transactions.teamId, teamId)),
             db.$count(bankAccounts, eq(bankAccounts.teamId, teamId)),
-            db.$count(contacts, eq(contacts.teamId, teamId)),
          ]);
 
       const stored = currentTeam.onboardingTasks ?? {};
@@ -127,7 +127,6 @@ export const getOnboardingStatus = protectedProcedure.handler(
       if (bankAccountCount > 0) auto.connect_bank_account = true;
       if (categoryCount > 0) auto.create_category = true;
       if (transactionCount > 0) auto.add_transaction = true;
-      if (contactCount > 0) auto.create_contact = true;
       const tasks = { ...stored, ...auto };
 
       return {
@@ -232,7 +231,9 @@ export const skipTask = protectedProcedure
 export const completeOnboarding = protectedProcedure
    .input(
       z.object({
-         products: z.array(z.enum(["finance", "contacts"])),
+         products: z
+            .array(onboardingFeatureSchema)
+            .min(1, "Selecione pelo menos um produto."),
       }),
    )
    .handler(async ({ context, input }) => {

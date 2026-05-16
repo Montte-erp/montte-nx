@@ -4,7 +4,6 @@ export * from "@core/database/schemas/bank-accounts";
 export * from "@core/database/schemas/benefit-grants";
 export * from "@core/database/schemas/benefits";
 export * from "@core/database/schemas/categories";
-export * from "@core/database/schemas/contact-settings";
 export * from "@core/database/schemas/contacts";
 export * from "@core/database/schemas/coupons";
 export * from "@core/database/schemas/credit-cards";

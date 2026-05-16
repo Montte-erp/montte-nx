@@ -6,11 +6,11 @@ import { ArrowLeft, FileDown } from "lucide-react";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
-import { ReportData } from "../-relatorios/report-panels";
-import { REPORT_LABELS } from "../-relatorios/report-labels";
+import { REPORT_LABELS } from "../-reports/report-labels";
+import { ReportData } from "../-reports/report-panels";
 
 export const Route = createFileRoute(
-   "/_authenticated/$slug/$teamSlug/_dashboard/relatorios/$reportId",
+   "/_authenticated/$slug/$teamSlug/_dashboard/reports/$reportId",
 )({
    loader: ({ context, params }) => {
       context.queryClient.prefetchQuery(
@@ -45,10 +45,7 @@ function ReportDetailError() {
                O relatório pode ter sido removido ou você não tem acesso.
             </p>
             <Button asChild size="sm" variant="outline">
-               <Link
-                  params={{ slug, teamSlug }}
-                  to="/$slug/$teamSlug/relatorios"
-               >
+               <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/reports">
                   <ArrowLeft />
                   Voltar para relatórios
                </Link>
@@ -85,10 +82,7 @@ function ReportDetailContent() {
       <div className="flex flex-1 min-h-0 flex-col gap-4">
          <div className="flex flex-wrap items-center justify-between gap-2">
             <Button asChild size="sm" variant="ghost">
-               <Link
-                  params={{ slug, teamSlug }}
-                  to="/$slug/$teamSlug/relatorios"
-               >
+               <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/reports">
                   <ArrowLeft />
                   Relatórios
                </Link>

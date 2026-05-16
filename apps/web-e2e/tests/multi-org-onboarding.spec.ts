@@ -17,5 +17,5 @@ test("cria nova organização pelo onboarding sem exigir CNPJ", async ({
 
    const team = await findTeamByOrgAndSlug(second.orgSlug, second.teamSlug);
    expect(team?.onboardingCompleted).toBeTruthy();
-   expect(team?.onboardingProducts).toEqual(["contacts"]);
+   expect(team?.onboardingProducts).toEqual(["finance"]);
 });

@@ -22,7 +22,6 @@ import {
    CreditCard,
    Landmark,
    Tag,
-   User,
 } from "lucide-react";
 import { InlineEditCombobox } from "@/blocks/data-table/inline-edit/inline-edit-combobox";
 import { InlineEditDate } from "@/blocks/data-table/inline-edit/inline-edit-date";
@@ -42,7 +41,6 @@ export type BankAccountOption = {
    bankName?: string | null;
    color?: string | null;
 };
-export type ContactOption = { id: string; name: string };
 export type CategoryOption = { id: string; name: string };
 export type CreditCardOption = { id: string; name: string };
 
@@ -112,13 +110,11 @@ function SuggestedCategoryCell({
 
 export function buildTransactionColumns(options?: {
    bankAccounts?: BankAccountOption[];
-   contacts?: ContactOption[];
    categories?: CategoryOption[];
    creditCards?: CreditCardOption[];
    onUpdate?: (id: string, patch: Record<string, unknown>) => Promise<void>;
    onUpdateImport?: (index: number, patch: Record<string, unknown>) => void;
    onCreateBankAccount?: (name: string) => Promise<string>;
-   onCreateContact?: (name: string) => Promise<string>;
    onCreateCategory?: (name: string) => Promise<string>;
    getRowStatus?: (id: string) => string | undefined;
    logoDevToken?: string;
@@ -145,10 +141,6 @@ export function buildTransactionColumns(options?: {
       await options?.onUpdate?.(row.original.id, patch);
    }
 
-   const contactOptions = (options?.contacts ?? []).map((c) => ({
-      value: c.id,
-      label: c.name,
-   }));
    const categoryOptionsList = (options?.categories ?? []).map((c) => ({
       value: c.id,
       label: c.name,
@@ -305,47 +297,6 @@ export function buildTransactionColumns(options?: {
                onSave={async (value) => dispatchPatch(row, { type: value })}
                options={typeOptions}
                value={row.original.type}
-            />
-         ),
-      },
-      {
-         accessorKey: "contactName",
-         header: "Fornecedor/Cliente",
-         meta: {
-            label: "Fornecedor/Cliente",
-            cellComponent: "combobox",
-            isEditable: true,
-            editMode: "inline",
-            bulkEditIcon: User,
-            bulkEditAction: "Atribuir contato",
-            editOptions: contactOptions,
-            onCreateOption: options?.onCreateContact,
-         },
-         cell: ({ row }) => (
-            <InlineEditCombobox
-               ariaLabel="Fornecedor/Cliente"
-               onCreate={options?.onCreateContact}
-               onSave={async (value) => {
-                  const label =
-                     contactOptions.find((o) => o.value === value)?.label ?? "";
-                  const importIdx = isImportRow(row);
-                  if (importIdx !== null) {
-                     options?.onUpdateImport?.(importIdx, {
-                        contactId: value || null,
-                        contactName: label,
-                     });
-                     return;
-                  }
-                  await options?.onUpdate?.(row.original.id, {
-                     contactId: value || null,
-                  });
-               }}
-               options={contactOptions}
-               value={
-                  contactOptions.find(
-                     (o) => o.label === row.original.contactName,
-                  )?.value ?? ""
-               }
             />
          ),
       },

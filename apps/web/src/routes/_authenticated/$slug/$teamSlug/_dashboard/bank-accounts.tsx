@@ -414,7 +414,6 @@ function BankAccountsList() {
                      params={{ slug, teamSlug }}
                      search={{
                         bankId: row.original.id,
-                        contactId: "",
                         overdueOnly: false,
                         page: 1,
                         pageSize: 20,

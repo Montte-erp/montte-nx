@@ -7,7 +7,6 @@ import {
    ChartNoAxesCombined,
    Tag,
    Tags,
-   Users,
 } from "lucide-react";
 export type NavItemDef = {
    id: string;
@@ -77,7 +76,7 @@ export const navGroups: NavGroupDef[] = [
             label: "Relatórios",
             icon: ChartNoAxesCombined,
             iconColor: "text-emerald-500",
-            route: "/$slug/$teamSlug/relatorios",
+            route: "/$slug/$teamSlug/reports",
             configurable: true,
          },
          {
@@ -95,21 +94,6 @@ export const navGroups: NavGroupDef[] = [
             iconColor: "text-teal-500",
             route: "/$slug/$teamSlug/tags",
             configurable: true,
-         },
-      ],
-   },
-   {
-      id: "erp",
-      label: "Negócio",
-      items: [
-         {
-            id: "contacts",
-            label: "Contatos",
-            icon: Users,
-            iconColor: "text-cyan-500",
-            route: "/$slug/$teamSlug/contacts",
-            configurable: true,
-            earlyAccessFlag: "contatos",
          },
       ],
    },

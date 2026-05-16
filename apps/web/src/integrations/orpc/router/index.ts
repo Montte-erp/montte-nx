@@ -6,8 +6,6 @@ import * as bankAccountsRouter from "@modules/finance/router/bank-accounts";
 import * as categoriesRouter from "@modules/classification/router/categories";
 import * as categoriesBulkRouter from "@modules/classification/router/categories-bulk";
 import * as cnpjRouter from "@modules/account/router/cnpj";
-import * as contactSettingsRouter from "@modules/account/router/contact-settings";
-import * as contactsRouter from "@modules/account/router/contacts";
 import * as creditCardsRouter from "@modules/finance/router/credit-cards";
 import * as financialSettingsRouter from "@modules/account/router/financial-settings";
 import * as inboxRouter from "@modules/inbox/router/inbox";
@@ -40,8 +38,6 @@ export default {
    categories: categoriesRouter,
    categoriesBulk: categoriesBulkRouter,
    cnpj: cnpjRouter,
-   contactSettings: contactSettingsRouter,
-   contacts: contactsRouter,
    financialSettings: financialSettingsRouter,
    inbox: inboxRouter,
    reports: reportsRouter,

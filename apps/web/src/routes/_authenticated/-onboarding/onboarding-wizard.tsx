@@ -14,7 +14,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { fromPromise } from "neverthrow";
 import posthog from "posthog-js";
-import { Banknote, Briefcase, Check } from "lucide-react";
+import { Banknote, Check } from "lucide-react";
 import { type FormEvent, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -28,7 +28,7 @@ import { orpc } from "@/integrations/orpc/client";
 const ONBOARDING_VERSION = "2026-05";
 
 type OnboardingStep = "profile" | "features" | "company";
-type OnboardingFeature = "finance" | "contacts";
+type OnboardingFeature = "finance";
 
 type Organization = {
    id: string;
@@ -68,12 +68,6 @@ const FEATURE_OPTIONS: {
       title: "Finanças",
       description: "Contas, cartões, categorias e lançamentos.",
       Icon: Banknote,
-   },
-   {
-      id: "contacts",
-      title: "Negócios",
-      description: "Contatos, clientes e relacionamentos.",
-      Icon: Briefcase,
    },
 ];
 

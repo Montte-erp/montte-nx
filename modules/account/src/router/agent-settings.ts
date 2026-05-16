@@ -12,12 +12,12 @@ const settingsOutput = z.object({
    language: z.string().default("pt-BR"),
    tone: z.string().default("formal"),
    dataSourceTransactions: z.boolean().default(true),
-   dataSourceContacts: z.boolean().default(true),
 });
 
 const upsertInput = createInsertSchema(agentSettings)
    .omit({
       teamId: true,
+      dataSourceContacts: true,
       dataSourceServices: true,
       createdAt: true,
       updatedAt: true,

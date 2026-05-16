@@ -93,7 +93,7 @@ export function ReportFormSheet() {
             closeTopSheet();
             if (!slug || !teamSlug) return;
             navigate({
-               to: "/$slug/$teamSlug/relatorios/$reportId",
+               to: "/$slug/$teamSlug/reports/$reportId",
                params: { slug, teamSlug, reportId: report.id },
             });
          },

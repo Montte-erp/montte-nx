@@ -1,9 +1,8 @@
 export type TaskType = "setup" | "onboarding" | "explore";
-export type ProductId = "finance" | "contacts";
+export type ProductId = "finance";
 export type TaskRoute =
    | "/$slug/$teamSlug/bank-accounts"
    | "/$slug/$teamSlug/categories"
-   | "/$slug/$teamSlug/contacts"
    | "/$slug/$teamSlug/transactions";
 
 export interface TaskDefinition {
@@ -49,15 +48,6 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
       autoDetect: true,
       route: "/$slug/$teamSlug/transactions",
    },
-   {
-      id: "create_contact",
-      title: "Cadastre um contato",
-      description: "Adicione seu primeiro cliente ou fornecedor.",
-      type: "setup",
-      product: "contacts",
-      autoDetect: true,
-      route: "/$slug/$teamSlug/contacts",
-   },
 ];
 
 const VALID_PRODUCT_IDS: ReadonlySet<string> = new Set(
@@ -83,8 +73,6 @@ export function getProductLabel(product: ProductId): string {
    switch (product) {
       case "finance":
          return "Financeiro";
-      case "contacts":
-         return "Contatos";
    }
 }
 

@@ -36,9 +36,9 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
-import { buildReportsColumns } from "../-relatorios/reports-columns";
-import { ReportFormSheet } from "../-relatorios/report-form-sheet";
-import { type SavedReport } from "../-relatorios/report-labels";
+import { ReportFormSheet } from "../-reports/report-form-sheet";
+import { type SavedReport } from "../-reports/report-labels";
+import { buildReportsColumns } from "../-reports/reports-columns";
 import { DefaultHeader } from "../../-layout/default-header";
 
 const searchSchema = z.object({
@@ -58,7 +58,7 @@ const searchSchema = z.object({
 const skeletonColumns = buildReportsColumns();
 
 export const Route = createFileRoute(
-   "/_authenticated/$slug/$teamSlug/_dashboard/relatorios/",
+   "/_authenticated/$slug/$teamSlug/_dashboard/reports/",
 )({
    validateSearch: searchSchema,
    loader: ({ context }) => {
@@ -188,7 +188,7 @@ function ReportsList() {
    const goToReport = useCallback(
       (id: string) =>
          navigate({
-            to: "/$slug/$teamSlug/relatorios/$reportId",
+            to: "/$slug/$teamSlug/reports/$reportId",
             params: { slug, teamSlug, reportId: id },
          }),
       [navigate, slug, teamSlug],
