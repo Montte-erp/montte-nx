@@ -58,6 +58,23 @@ export const requireTransaction = base.middleware(
    },
 );
 
+export const requireTransactionRecurrence = base.middleware(
+   async ({ context, next }, id: string) => {
+      const result = await fromPromise(
+         context.db.query.transactionRecurrences.findFirst({
+            where: (f, { eq }) => eq(f.id, id),
+         }),
+         () => WebAppError.internal("Falha ao verificar recorrência."),
+      ).andThen((recurrence) =>
+         !recurrence || recurrence.teamId !== context.teamId
+            ? err(WebAppError.notFound("Recorrência não encontrada."))
+            : ok(recurrence),
+      );
+      if (result.isErr()) throw result.error;
+      return next({ context: { recurrence: result.value } });
+   },
+);
+
 export const requireOwnedTransactionIds = base.middleware(
    async ({ context, next }, ids: string[]) => {
       const result = await fromPromise(

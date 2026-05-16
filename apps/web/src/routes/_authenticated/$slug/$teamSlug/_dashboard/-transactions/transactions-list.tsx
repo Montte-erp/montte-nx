@@ -62,6 +62,7 @@ import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { ExportButton } from "@/components/export-button/export-button";
+import { cn } from "@packages/ui/lib/utils";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { PageFilters } from "@/components/page-filters/page-filters";
@@ -1027,7 +1028,15 @@ export function TransactionsList() {
                <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                   <Table>
                      <DataTableHeader table={table} />
-                     <DataTableBody<TransactionRow> table={table} />
+                     <DataTableBody<TransactionRow>
+                        getRowClassName={({ row }) =>
+                           cn(
+                              row.original.ignored &&
+                                 "bg-muted/20 text-muted-foreground opacity-60",
+                           )
+                        }
+                        table={table}
+                     />
                      <DataImportSection
                         api={importApi}
                         config={importConfig}

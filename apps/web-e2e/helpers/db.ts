@@ -18,7 +18,10 @@ import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
-import { transactions } from "@core/database/schemas/transactions";
+import {
+   transactionRecurrences,
+   transactions,
+} from "@core/database/schemas/transactions";
 
 loadEnv({
    path: path.join(import.meta.dirname, "..", "..", "web", ".env.local"),
@@ -260,6 +263,54 @@ export async function findTransactionByName(teamId: string, name: string) {
    return db().query.transactions.findFirst({
       where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
    });
+}
+
+export async function findTransactionsByName(teamId: string, name: string) {
+   return db().query.transactions.findMany({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
+      orderBy: (f, { asc }) => [
+         asc(f.recurrenceOccurrenceNumber),
+         asc(f.installmentNumber),
+         asc(f.createdAt),
+      ],
+   });
+}
+
+export async function findTransactionsByInstallmentGroupId(
+   teamId: string,
+   installmentGroupId: string,
+) {
+   return db().query.transactions.findMany({
+      where: (f, { and, eq }) =>
+         and(
+            eq(f.teamId, teamId),
+            eq(f.installmentGroupId, installmentGroupId),
+         ),
+      orderBy: (f, { asc }) => [asc(f.installmentNumber)],
+   });
+}
+
+export async function findTransactionRecurrenceById(
+   teamId: string,
+   id: string,
+) {
+   return db().query.transactionRecurrences.findFirst({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.id, id)),
+   });
+}
+
+export async function deleteTransactionRecurrenceById(
+   teamId: string,
+   id: string,
+) {
+   await db()
+      .delete(transactionRecurrences)
+      .where(
+         and(
+            eq(transactionRecurrences.teamId, teamId),
+            eq(transactionRecurrences.id, id),
+         ),
+      );
 }
 
 export async function insertExpenseTransaction(

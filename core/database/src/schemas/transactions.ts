@@ -53,6 +53,16 @@ export const transactionStatusEnum = financeSchema.enum("transaction_status", [
    "cancelled",
 ]);
 
+export const transactionRecurrenceFrequencyEnum = financeSchema.enum(
+   "transaction_recurrence_frequency",
+   ["daily", "weekly", "biweekly", "monthly"],
+);
+
+export const transactionRecurrenceStatusEnum = financeSchema.enum(
+   "transaction_recurrence_status",
+   ["active", "stopped"],
+);
+
 export const transactions = financeSchema.table(
    "transactions",
    {
@@ -90,6 +100,8 @@ export const transactions = financeSchema.table(
       installmentGroupId: uuid("installment_group_id"),
       installmentNumber: integer("installment_number"),
       installmentCount: integer("installment_count"),
+      recurrenceId: uuid("recurrence_id"),
+      recurrenceOccurrenceNumber: integer("recurrence_occurrence_number"),
       paidAt: timestamp("paid_at", { withTimezone: true }),
       statementPeriod: text("statement_period"),
       contactId: uuid("contact_id").references(() => contacts.id, {
@@ -131,7 +143,45 @@ export const transactions = financeSchema.table(
       index("transactions_installment_group_id_idx").on(
          table.installmentGroupId,
       ),
+      index("transactions_recurrence_id_idx").on(table.recurrenceId),
       index("transactions_status_type_idx").on(table.status, table.type),
+   ],
+);
+
+export const transactionRecurrences = financeSchema.table(
+   "transaction_recurrences",
+   {
+      id: uuid("id")
+         .default(sql`pg_catalog.gen_random_uuid()`)
+         .primaryKey(),
+      teamId: uuid("team_id").notNull(),
+      sourceTransactionId: uuid("source_transaction_id")
+         .notNull()
+         .references(() => transactions.id, { onDelete: "restrict" }),
+      frequency: transactionRecurrenceFrequencyEnum("frequency").notNull(),
+      status: transactionRecurrenceStatusEnum("status")
+         .notNull()
+         .default("active"),
+      startedAt: date("started_at").notNull(),
+      nextOccurrenceDate: date("next_occurrence_date").notNull(),
+      stoppedAt: timestamp("stopped_at", { withTimezone: true }),
+      createdAt: timestamp("created_at", { withTimezone: true })
+         .notNull()
+         .defaultNow(),
+      updatedAt: timestamp("updated_at", { withTimezone: true })
+         .notNull()
+         .defaultNow()
+         .$onUpdate(() => new Date()),
+   },
+   (table) => [
+      index("transaction_recurrences_team_id_idx").on(table.teamId),
+      index("transaction_recurrences_source_transaction_id_idx").on(
+         table.sourceTransactionId,
+      ),
+      index("transaction_recurrences_status_idx").on(table.status),
+      index("transaction_recurrences_next_occurrence_date_idx").on(
+         table.nextOccurrenceDate,
+      ),
    ],
 );
 
@@ -159,12 +209,20 @@ export const transactionItems = financeSchema.table("transaction_items", {
 });
 
 export const transactionSchema = createSelectSchema(transactions);
+export const transactionRecurrenceSchema = createSelectSchema(
+   transactionRecurrences,
+);
 export const transactionItemSchema = createSelectSchema(transactionItems);
 export type Transaction = z.infer<typeof transactionSchema>;
+export type TransactionRecurrence = z.infer<typeof transactionRecurrenceSchema>;
 export type TransactionItem = z.infer<typeof transactionItemSchema>;
 export type TransactionType = (typeof transactionTypeEnum.enumValues)[number];
 export type TransactionStatus =
    (typeof transactionStatusEnum.enumValues)[number];
+export type TransactionRecurrenceFrequency =
+   (typeof transactionRecurrenceFrequencyEnum.enumValues)[number];
+export type TransactionRecurrenceStatus =
+   (typeof transactionRecurrenceStatusEnum.enumValues)[number];
 
 const numericPositive = (msg: string) =>
    z.string().refine((v) => !Number.isNaN(Number(v)) && Number(v) > 0, {
