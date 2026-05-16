@@ -46,6 +46,22 @@ const idSchema = z.object({ id: z.string().uuid() });
 
 type BaseFilters = z.infer<typeof baseFilters>;
 
+export const get = protectedProcedure
+   .input(idSchema)
+   .handler(async ({ context, input }) => {
+      const result = await fromPromise(
+         context.db.query.reports.findFirst({
+            where: (f, { and, eq }) =>
+               and(eq(f.id, input.id), eq(f.teamId, context.teamId)),
+         }),
+         () => WebAppError.internal("Falha ao carregar relatório."),
+      );
+      if (result.isErr()) throw result.error;
+      if (!result.value)
+         throw WebAppError.notFound("Relatório não encontrado.");
+      return result.value;
+   });
+
 export const list = protectedProcedure.handler(async ({ context }) => {
    const result = await fromPromise(
       context.db.query.reports.findMany({
