@@ -477,23 +477,25 @@ export function buildTransactionColumns(options?: {
             ) : null;
 
             return (
-               <InlineEditCombobox
-                  ariaLabel="Conta"
-                  className="w-auto justify-center border-0 bg-transparent p-0 shadow-none hover:bg-transparent [&>svg]:hidden [&>span]:flex-none"
-                  onCreate={options?.onCreateBankAccount}
-                  onSave={async (value) => {
-                     await options?.onUpdate?.(row.original.id, {
-                        bankAccountId: value || null,
-                     });
-                  }}
-                  options={bankOptions}
-                  renderSelected={() =>
-                     accountLogo ?? (
-                        <span className="text-muted-foreground">—</span>
-                     )
-                  }
-                  value={accountId ?? ""}
-               />
+               <div className="flex justify-center">
+                  <InlineEditCombobox
+                     ariaLabel="Conta"
+                     className="w-auto justify-center border-0 bg-transparent p-0 shadow-none hover:bg-transparent [&>svg]:hidden [&>span]:flex-none"
+                     onCreate={options?.onCreateBankAccount}
+                     onSave={async (value) => {
+                        await options?.onUpdate?.(row.original.id, {
+                           bankAccountId: value || null,
+                        });
+                     }}
+                     options={bankOptions}
+                     renderSelected={() =>
+                        accountLogo ?? (
+                           <span className="text-muted-foreground">—</span>
+                        )
+                     }
+                     value={accountId ?? ""}
+                  />
+               </div>
             );
          },
       },
