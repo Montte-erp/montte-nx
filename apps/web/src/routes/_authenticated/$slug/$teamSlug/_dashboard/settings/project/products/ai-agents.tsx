@@ -71,7 +71,6 @@ function AiAgentsSettingsForm() {
          tone: (settings?.tone ??
             "formal") as Inputs["agentSettings"]["upsertSettings"]["tone"],
          dataSourceTransactions: settings?.dataSourceTransactions ?? true,
-         dataSourceContacts: settings?.dataSourceContacts ?? true,
       },
       onSubmit: ({ value }) => {
          mutation.mutate(value);
@@ -189,20 +188,6 @@ function AiAgentsSettingsForm() {
                children={(field) => (
                   <div className="flex items-center justify-between">
                      <Label htmlFor={field.name}>Transações financeiras</Label>
-                     <Switch
-                        id={field.name}
-                        checked={field.state.value}
-                        onCheckedChange={(v) => field.handleChange(v)}
-                     />
-                  </div>
-               )}
-            />
-
-            <form.Field
-               name="dataSourceContacts"
-               children={(field) => (
-                  <div className="flex items-center justify-between">
-                     <Label htmlFor={field.name}>Contatos</Label>
                      <Switch
                         id={field.name}
                         checked={field.state.value}

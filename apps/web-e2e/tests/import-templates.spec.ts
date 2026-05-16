@@ -31,7 +31,6 @@ const cases: TemplateCase[] = [
          "Conta",
          "Cartão",
          "Categoria",
-         "Fornecedor/Cliente",
       ],
    },
    {

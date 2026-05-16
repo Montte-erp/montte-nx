@@ -31,7 +31,6 @@ const transactionsSearchSchema = z.object({
       .array(z.enum(["pending", "paid"]))
       .catch([])
       .default([]),
-   contactId: z.string().catch("").default(""),
    bankId: z.string().catch("").default(""),
    grouping: z.array(z.string()).catch([]).default([]),
 });
@@ -49,7 +48,6 @@ export const Route = createFileRoute(
          overdueOnly,
          status,
          search,
-         contactId,
          bankId,
       },
    }) => ({
@@ -60,7 +58,6 @@ export const Route = createFileRoute(
       overdueOnly,
       status,
       search,
-      contactId,
       bankId,
    }),
    loader: ({ context, deps }) => {
@@ -86,7 +83,6 @@ export const Route = createFileRoute(
                overdueOnly: deps.overdueOnly,
                status: deps.status.length > 0 ? deps.status : undefined,
                search: deps.search || undefined,
-               contactId: deps.contactId || undefined,
                bankAccountId: deps.bankId || undefined,
             },
          }),

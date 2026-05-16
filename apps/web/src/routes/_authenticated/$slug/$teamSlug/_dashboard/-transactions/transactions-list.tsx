@@ -232,7 +232,6 @@ export function TransactionsList() {
       overdueOnly,
       status,
       search,
-      contactId,
       bankId,
       grouping,
    } = routeApi.useSearch();
@@ -316,7 +315,6 @@ export function TransactionsList() {
             page,
             pageSize,
             sorting: normalizeTransactionSorting(sorting),
-            contactId: contactId || undefined,
             bankAccountId: bankId || undefined,
          },
       }),
@@ -329,10 +327,6 @@ export function TransactionsList() {
    const selectedBankAccount = useMemo(
       () => bankAccounts.find((account) => account.id === bankId),
       [bankAccounts, bankId],
-   );
-
-   const { data: contacts } = useSuspenseQuery(
-      orpc.contacts.getAll.queryOptions({}),
    );
 
    const { data: categoriesResult } = useSuspenseQuery(
@@ -406,13 +400,6 @@ export function TransactionsList() {
       }),
    );
 
-   const createContactMutation = useMutation(
-      orpc.contacts.create.mutationOptions({
-         onError: (error) =>
-            toast.error(error.message || "Erro ao criar contato."),
-      }),
-   );
-
    const createCategoryMutation = useMutation(
       orpc.categories.create.mutationOptions({
          onError: (error) =>
@@ -436,17 +423,6 @@ export function TransactionsList() {
          return created.id;
       },
       [createBankAccountMutation],
-   );
-
-   const handleCreateContact = useCallback(
-      async (name: string): Promise<string> => {
-         const created = await createContactMutation.mutateAsync({
-            name,
-            type: "ambos",
-         });
-         return created.id;
-      },
-      [createContactMutation],
    );
 
    const handleCreateCategory = useCallback(
@@ -556,8 +532,6 @@ export function TransactionsList() {
                   bankAccounts,
                   row.bankAccountName,
                ),
-               contactName: String(row.contactName ?? "").trim(),
-               contactId: resolveImportId(contacts, row.contactName),
                categoryName: String(row.categoryName ?? "").trim(),
                categoryId: resolveImportId(categoriesResult, row.categoryName),
                creditCardName: String(row.creditCardName ?? "").trim(),
@@ -590,7 +564,6 @@ export function TransactionsList() {
                               Conta: bankAccounts[0]?.name ?? "",
                               Cartão: "",
                               Categoria: categoriesResult[0]?.name ?? "",
-                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
                            },
                         ],
                         [
@@ -603,7 +576,6 @@ export function TransactionsList() {
                            "Conta",
                            "Cartão",
                            "Categoria",
-                           "Fornecedor/Cliente",
                         ],
                      ),
                },
@@ -623,7 +595,6 @@ export function TransactionsList() {
                               Conta: bankAccounts[0]?.name ?? "",
                               Cartão: "",
                               Categoria: categoriesResult[0]?.name ?? "",
-                              "Fornecedor/Cliente": contacts[0]?.name ?? "",
                            },
                         ],
                         [
@@ -636,7 +607,6 @@ export function TransactionsList() {
                            "Conta",
                            "Cartão",
                            "Categoria",
-                           "Fornecedor/Cliente",
                         ],
                      ),
                },
@@ -693,9 +663,6 @@ export function TransactionsList() {
                         resolveImportId(categoriesResult, r.categoryName),
                      attachments: [],
                      description: null,
-                     contactId:
-                        resolveImportId(contacts, r.contactId) ??
-                        resolveImportId(contacts, r.contactName),
                      creditCardId,
                      paymentMethod: null,
                      status: parseImportStatus(r.status).status,
@@ -728,7 +695,6 @@ export function TransactionsList() {
          generateXlsx,
          bankAccounts,
          categoriesResult,
-         contacts,
          creditCardsResult.data,
          importMutation,
          queryClient,
@@ -742,13 +708,11 @@ export function TransactionsList() {
    const columns = useMemo<ColumnDef<TransactionRow>[]>(() => {
       const base = buildTransactionColumns({
          bankAccounts,
-         contacts,
          categories: categoriesResult,
          creditCards: creditCardsResult.data,
          onUpdate: handleUpdate,
          onUpdateImport: (idx, patch) => importUpdateRef.current?.(idx, patch),
          onCreateBankAccount: handleCreateBankAccount,
-         onCreateContact: handleCreateContact,
          onCreateCategory: handleCreateCategory,
          getRowStatus: (id) => transactionData.find((t) => t.id === id)?.status,
          logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
@@ -852,14 +816,12 @@ export function TransactionsList() {
       return [selectColumn, ...base, actionsColumn];
    }, [
       bankAccounts,
-      contacts,
       categoriesResult,
       creditCardsResult,
       transactionData,
       publicEnv?.LOGO_DEV_TOKEN,
       handleUpdate,
       handleCreateBankAccount,
-      handleCreateContact,
       handleCreateCategory,
       handleMarkPaid,
       handleMarkUnpaid,

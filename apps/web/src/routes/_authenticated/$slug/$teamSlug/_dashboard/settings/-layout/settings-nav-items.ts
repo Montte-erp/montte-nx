@@ -2,7 +2,6 @@ import type { LucideIcon } from "lucide-react";
 import {
    AlertTriangle,
    Box,
-   Contact2,
    DollarSign,
    FlaskConical,
    KeyRound,
@@ -14,7 +13,6 @@ import {
    User,
    Users,
 } from "lucide-react";
-import type { FeatureFlagKey } from "@core/posthog/config";
 
 export type SettingsNavItemDef = {
    id: string;
@@ -23,7 +21,7 @@ export type SettingsNavItemDef = {
    icon?: LucideIcon;
    external?: boolean;
    danger?: boolean;
-   earlyAccessFlag?: FeatureFlagKey;
+   earlyAccessFlag?: string;
    children?: SettingsNavItemDef[];
 };
 
@@ -57,13 +55,6 @@ export const settingsNavSections: SettingsNavSection[] = [
                   title: "Financeiro",
                   href: "/$slug/$teamSlug/settings/project/products/financeiro",
                   icon: DollarSign,
-               },
-               {
-                  id: "module-contatos",
-                  title: "Contatos",
-                  href: "/$slug/$teamSlug/settings/project/products/contatos",
-                  icon: Contact2,
-                  earlyAccessFlag: "contatos",
                },
                {
                   id: "module-assistente-ia",

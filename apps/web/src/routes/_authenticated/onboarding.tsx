@@ -13,7 +13,7 @@ const onboardingStepSchema = z
    .catch("features")
    .default("features");
 
-const onboardingFeatureSchema = z.enum(["finance", "contacts"]);
+const onboardingFeatureSchema = z.enum(["finance"]);
 
 const onboardingFeaturesSchema = z
    .array(onboardingFeatureSchema)

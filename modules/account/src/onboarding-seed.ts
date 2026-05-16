@@ -6,10 +6,10 @@ import { organization, team, teamMember } from "@core/database/schemas/auth";
 import { AppError } from "@core/logging/errors";
 import { seedClassificationDefaults } from "@modules/classification/seeds";
 
-const EARLY_ACCESS_FLAGS = ["contacts"];
-const ONBOARDING_PRODUCTS = new Set<string>(["finance", "contacts"]);
+const EARLY_ACCESS_FLAGS: string[] = [];
+const ONBOARDING_PRODUCTS = new Set<string>(["finance"]);
 
-export type OnboardingProduct = "finance" | "contacts";
+export type OnboardingProduct = "finance";
 
 export function enrollInAllFeatures(
    posthog: PostHog,
