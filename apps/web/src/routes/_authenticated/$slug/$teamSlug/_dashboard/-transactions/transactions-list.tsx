@@ -5,7 +5,14 @@ import { TooltipProvider } from "@packages/ui/components/tooltip";
 import { Button } from "@packages/ui/components/button";
 import { Calendar } from "@packages/ui/components/calendar";
 import { Checkbox } from "@packages/ui/components/checkbox";
-import { Combobox } from "@packages/ui/components/combobox";
+import {
+   Command,
+   CommandEmpty,
+   CommandGroup,
+   CommandInput,
+   CommandItem,
+   CommandList,
+} from "@packages/ui/components/command";
 import {
    Empty,
    EmptyDescription,
@@ -1226,16 +1233,17 @@ function BulkCategoryButton({
                Categoria
             </SelectionActionButton>
          </PopoverTrigger>
-         <PopoverContent align="start" className="w-64 p-2">
-            <Combobox
+         <PopoverContent align="start" className="w-64 p-0">
+            <BulkLookupCommand
+               disabled={mutation.isPending}
                emptyMessage="Nenhuma categoria."
-               options={categories.map((c) => ({ value: c.id, label: c.name }))}
-               placeholder="Selecionar categoria..."
+               options={categories}
                searchPlaceholder="Buscar..."
-               value=""
-               onValueChange={async (categoryId) => {
+               onSelect={async (category) => {
                   await Promise.allSettled(
-                     ids.map((id) => mutation.mutateAsync({ id, categoryId })),
+                     ids.map((id) =>
+                        mutation.mutateAsync({ id, categoryId: category.id }),
+                     ),
                   );
                   setOpen(false);
                   onSuccess();
@@ -1269,20 +1277,19 @@ function BulkAccountButton({
                Conta
             </SelectionActionButton>
          </PopoverTrigger>
-         <PopoverContent align="start" className="w-64 p-2">
-            <Combobox
+         <PopoverContent align="start" className="w-64 p-0">
+            <BulkLookupCommand
+               disabled={mutation.isPending}
                emptyMessage="Nenhuma conta."
-               options={bankAccounts.map((a) => ({
-                  value: a.id,
-                  label: a.name,
-               }))}
-               placeholder="Selecionar conta..."
+               options={bankAccounts}
                searchPlaceholder="Buscar..."
-               value=""
-               onValueChange={async (bankAccountId) => {
+               onSelect={async (bankAccount) => {
                   await Promise.allSettled(
                      ids.map((id) =>
-                        mutation.mutateAsync({ id, bankAccountId }),
+                        mutation.mutateAsync({
+                           id,
+                           bankAccountId: bankAccount.id,
+                        }),
                      ),
                   );
                   setOpen(false);
@@ -1303,6 +1310,46 @@ type ImportBulkProps = {
    ) => void;
    clear: () => void;
 };
+
+type BulkLookupOption = {
+   id: string;
+   name: string;
+};
+
+function BulkLookupCommand({
+   options,
+   searchPlaceholder,
+   emptyMessage,
+   disabled,
+   onSelect,
+}: {
+   options: BulkLookupOption[];
+   searchPlaceholder: string;
+   emptyMessage: string;
+   disabled?: boolean;
+   onSelect: (option: BulkLookupOption) => void;
+}) {
+   return (
+      <Command>
+         <CommandInput placeholder={searchPlaceholder} />
+         <CommandList>
+            <CommandEmpty>{emptyMessage}</CommandEmpty>
+            <CommandGroup>
+               {options.map((option) => (
+                  <CommandItem
+                     key={option.id}
+                     disabled={disabled}
+                     onSelect={() => onSelect(option)}
+                     value={option.name}
+                  >
+                     {option.name}
+                  </CommandItem>
+               ))}
+            </CommandGroup>
+         </CommandList>
+      </Command>
+   );
+}
 
 function ImportBulkStatusButton({
    selectedIndices,
@@ -1389,19 +1436,15 @@ function ImportBulkCategoryButton({
                Categoria
             </SelectionActionButton>
          </PopoverTrigger>
-         <PopoverContent align="start" className="w-64 p-2">
-            <Combobox
+         <PopoverContent align="start" className="w-64 p-0">
+            <BulkLookupCommand
                emptyMessage="Nenhuma categoria."
-               options={categories.map((c) => ({ value: c.id, label: c.name }))}
-               placeholder="Selecionar categoria..."
+               options={categories}
                searchPlaceholder="Buscar..."
-               value=""
-               onValueChange={(categoryId) => {
-                  const label =
-                     categories.find((c) => c.id === categoryId)?.name ?? "";
+               onSelect={(category) => {
                   bulkUpdate(selectedIndices, {
-                     categoryId,
-                     categoryName: label,
+                     categoryId: category.id,
+                     categoryName: category.name,
                   });
                   setOpen(false);
                   clear();
@@ -1426,23 +1469,15 @@ function ImportBulkAccountButton({
                Conta
             </SelectionActionButton>
          </PopoverTrigger>
-         <PopoverContent align="start" className="w-64 p-2">
-            <Combobox
+         <PopoverContent align="start" className="w-64 p-0">
+            <BulkLookupCommand
                emptyMessage="Nenhuma conta."
-               options={bankAccounts.map((a) => ({
-                  value: a.id,
-                  label: a.name,
-               }))}
-               placeholder="Selecionar conta..."
+               options={bankAccounts}
                searchPlaceholder="Buscar..."
-               value=""
-               onValueChange={(bankAccountId) => {
-                  const label =
-                     bankAccounts.find((a) => a.id === bankAccountId)?.name ??
-                     "";
+               onSelect={(bankAccount) => {
                   bulkUpdate(selectedIndices, {
-                     bankAccountId,
-                     bankAccountName: label,
+                     bankAccountId: bankAccount.id,
+                     bankAccountName: bankAccount.name,
                   });
                   setOpen(false);
                   clear();
