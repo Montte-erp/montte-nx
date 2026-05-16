@@ -3,7 +3,6 @@ import { FeatureStageBadge } from "@/components/blocks/feature-stage-badge";
 import {
    ContextPanel,
    ContextPanelContent,
-   ContextPanelFooter,
    ContextPanelHeader,
    ContextPanelHeaderActions,
    ContextPanelTitle,
@@ -11,7 +10,6 @@ import {
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Link } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { Maximize2, Minus, X } from "lucide-react";
 import { useEffect } from "react";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -28,7 +26,6 @@ import {
    useMontteIsRunning,
    useMontteMessageCount,
    useMonttePendingApprovals,
-   useRecentThreads,
 } from "./chat-store";
 import { Composer } from "./composer";
 import { EmptyState } from "./empty-state";
@@ -70,13 +67,11 @@ function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
    const activeThreadId = useActiveThreadId();
    const { slug, teamSlug } = useDashboardSlugs();
    const messageCount = useMontteMessageCount();
-   const recents = useRecentThreads();
 
    useApprovalSelectionBar();
    useStreamShortcuts();
 
    const hasConversation = messageCount > 0;
-   const showRecents = !activeThreadId && recents.length > 0;
 
    return (
       <ContextPanel className="overflow-hidden">
@@ -161,40 +156,6 @@ function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
                </>
             )}
          </ContextPanelContent>
-
-         {showRecents ? (
-            <ContextPanelFooter>
-               <div className="flex items-center justify-between pb-2">
-                  <span className="text-xs text-muted-foreground">
-                     Conversas recentes
-                  </span>
-               </div>
-               <ul className="flex flex-col gap-2">
-                  {recents.map((thread) => {
-                     const days = thread.lastMessageAt
-                        ? dayjs().diff(dayjs(thread.lastMessageAt), "day")
-                        : dayjs().diff(dayjs(thread.createdAt), "day");
-                     return (
-                        <li
-                           className="flex items-center justify-between gap-2 text-xs"
-                           key={thread.id}
-                        >
-                           <button
-                              className="flex-1 truncate text-left text-foreground hover:underline"
-                              onClick={() => setActiveThread(thread.id)}
-                              type="button"
-                           >
-                              {thread.title ?? "Conversa sem título"}
-                           </button>
-                           <span className="shrink-0 text-muted-foreground">
-                              {days}d
-                           </span>
-                        </li>
-                     );
-                  })}
-               </ul>
-            </ContextPanelFooter>
-         ) : null}
       </ContextPanel>
    );
 }
