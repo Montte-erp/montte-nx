@@ -18,7 +18,8 @@
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@modules/agents": "workspace:*",
       "@modules/classification": "workspace:*",
-      "better-result": "catalog:validation"
+      "better-result": "catalog:validation",
+      "winston-transport": "^4.9.0"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
