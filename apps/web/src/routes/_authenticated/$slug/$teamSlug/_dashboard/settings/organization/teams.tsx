@@ -40,7 +40,7 @@ import {
 import dayjs from "dayjs";
 import { Box, UserMinus, UserPlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { authClient } from "@/integrations/better-auth/auth-client";

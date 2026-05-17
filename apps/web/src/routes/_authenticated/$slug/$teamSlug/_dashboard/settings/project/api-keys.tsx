@@ -2,7 +2,7 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { KeyRound, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import {
    getCoreRowModel,

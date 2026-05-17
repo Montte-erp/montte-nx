@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { orpc } from "@/integrations/orpc/client";
 

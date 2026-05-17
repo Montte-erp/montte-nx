@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import dayjs from "dayjs";
 import { fromPromise } from "neverthrow";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { createPersistedStore } from "@/lib/store";
 import { client } from "@/integrations/orpc/client";
 import {

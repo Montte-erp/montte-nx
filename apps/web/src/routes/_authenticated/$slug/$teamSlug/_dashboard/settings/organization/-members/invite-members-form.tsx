@@ -17,7 +17,7 @@ import { Textarea } from "@packages/ui/components/textarea";
 import { getInitials } from "@core/utils/text";
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";

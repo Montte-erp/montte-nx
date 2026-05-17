@@ -15,7 +15,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { Suspense, useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import type { Inputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
 

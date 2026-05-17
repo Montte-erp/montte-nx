@@ -35,7 +35,7 @@ import dayjs from "dayjs";
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
