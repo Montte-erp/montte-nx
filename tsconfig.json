@@ -4,7 +4,7 @@
    "exclude": [".worktrees", "node_modules", "dist"],
    "references": [
     {
-      "path": "./core/transactional"
+      "path": "./core/notifications"
     },
     {
       "path": "./core/environment"

@@ -1,7 +1,17 @@
+import { createRequire } from "node:module";
 import { PGlite } from "@electric-sql/pglite";
 import { uuid_ossp } from "@electric-sql/pglite/contrib/uuid_ossp";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import { DBOS, type DBOSConfig } from "@dbos-inc/dbos-sdk";
+import { Client } from "pg";
+
+const require = createRequire(import.meta.url);
+const {
+   runSysMigrationsPg,
+} = require("../../../../node_modules/@dbos-inc/dbos-sdk/dist/src/sysdb_migrations/migration_runner.js");
+const {
+   allMigrations,
+} = require("../../../../node_modules/@dbos-inc/dbos-sdk/dist/src/sysdb_migrations/internal/migrations.js");
 
 export type PgliteDbosRuntime = {
    databaseUrl: string;
@@ -17,6 +27,19 @@ export async function launchPgliteDBOS(): Promise<PgliteDbosRuntime> {
    await server.start();
 
    const databaseUrl = `postgresql://postgres:postgres@127.0.0.1:${port}/postgres`;
+
+   const client = new Client({ connectionString: databaseUrl });
+   await client.connect();
+   const pgliteMigrations = allMigrations("dbos", {
+      useListenNotify: false,
+   }).map((migration: { pg?: string[] }) => ({
+      ...migration,
+      pg: migration.pg?.map((statement) =>
+         statement.replaceAll(" CONCURRENTLY", ""),
+      ),
+   }));
+   await runSysMigrationsPg(client, pgliteMigrations, "dbos");
+   await client.end();
 
    await DBOS.shutdown();
    const config: DBOSConfig = {

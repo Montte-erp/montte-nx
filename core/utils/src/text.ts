@@ -98,9 +98,11 @@ export function createSlug(name: string): string {
 }
 
 export function generateRandomSuffix(length = 6): string {
-   return Math.random()
-      .toString(36)
-      .slice(2, 2 + length);
+   let suffix = "";
+   while (suffix.length < length) {
+      suffix += Math.random().toString(36).slice(2);
+   }
+   return suffix.slice(0, length);
 }
 
 export function countWords(text: string) {

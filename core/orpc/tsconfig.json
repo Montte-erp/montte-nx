@@ -14,21 +14,21 @@
          "@core/files/*": ["../../core/files/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/notifications/*": ["../../core/notifications/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"]
       }
    },
    "references": [
       {
+         "path": "../notifications"
+      },
+      {
          "path": "../files"
       },
       {
          "path": "../utils"
-      },
-      {
-         "path": "../transactional"
       },
       {
          "path": "../redis"

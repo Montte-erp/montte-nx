@@ -13,16 +13,16 @@
          "@core/files/*": ["../../core/files/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
+         "@core/notifications/*": ["../../core/notifications/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"]
       }
    },
    "include": ["src"],
    "references": [
       {
-         "path": "../transactional"
+         "path": "../notifications"
       },
       {
          "path": "../redis"

@@ -54,7 +54,7 @@ Domain → skill map (open before coding):
 
 ```
 core/         # ai, authentication, database, dbos, environment, files, logging,
-              # orpc, posthog, redis, sse, transactional, utils
+              # notifications, orpc, posthog, redis, sse, utils
 modules/      # account, agents, billing, classification, finance, insights
               # — domain modules (router, services, workflows per module; not every module has all three)
 apps/         # web (TanStack Start + oRPC), worker (DBOS), landing (Astro)
@@ -64,7 +64,7 @@ tooling/      # boundary, css (Tailwind), oxc, typescript
 
 `apps/landing` is the public Astro landing page. It imports `@tooling/css/globals.css`, can server-render static shadcn components from `@packages/ui`, uses `public/favicon.svg`, and runs on port `3001` in development.
 
-Catalogs (root `package.json`): `analytics-client`, `assistant-ui`, `astro`, `auth`, `database`, `development`, `dnd`, `environment`, `files`, `fot`, `logging`, `mastra`, `orpc`, `payments`, `react`, `search-providers`, `server`, `tanstack`, `tanstack-ai`, `telemetry`, `testing`, `transactional`, `ui`, `validation`, `vite`, `workers`. Internal: `"@core/database": "workspace:*"`.
+Catalogs (root `package.json`): `analytics-client`, `assistant-ui`, `astro`, `auth`, `database`, `development`, `dnd`, `environment`, `files`, `fot`, `logging`, `mastra`, `notifications`, `orpc`, `payments`, `react`, `search-providers`, `server`, `tanstack`, `tanstack-ai`, `telemetry`, `testing`, `ui`, `validation`, `vite`, `workers`. Internal: `"@core/database": "workspace:*"`.
 
 Add a new dep → declare in the consuming package's `package.json` with the right catalog key.
 
@@ -297,7 +297,7 @@ import { db } from "@core/database/client";
 import { auth } from "@core/authentication/server";
 import { redis } from "@core/redis/connection";
 import { posthog } from "@core/posthog/server";
-import { resendClient } from "@core/transactional/utils";
+import { notificationsClient } from "@core/notifications/client";
 import { minioClient } from "@core/files/client";
 import { env } from "@core/environment/server";
 ```
@@ -436,4 +436,4 @@ skills:
   use: "@tanstack/devtools#devtools-app-setup"
 - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
   use: "dotenv#dotenv"
-    <!-- intent-skills:end -->
+<!-- intent-skills:end -->

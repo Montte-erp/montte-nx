@@ -19,7 +19,11 @@ function AuthLayout() {
       <main className="flex min-h-svh items-center justify-center bg-background px-6">
          <section className="flex w-full max-w-sm flex-col items-center gap-8">
             <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-               <img alt="Montte" className="size-8" src="/favicon.svg" />
+               <img
+                  alt="Montte"
+                  className="size-4 object-contain"
+                  src="/logo.png"
+               />
             </div>
             <RouteTransition>
                <div className="flex w-full flex-col gap-6">

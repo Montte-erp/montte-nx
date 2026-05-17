@@ -1,10 +1,11 @@
 import { Section, Text } from "@react-email/components";
+import { MontteEmailLayout } from "@core/notifications/emails/layout";
+import {
+   MontteEmailFooter,
+   MontteEmailHeading,
+} from "@core/notifications/emails/partials";
 
-import { DefaultFooter } from "@core/transactional/emails/default-footer";
-import { DefaultHeading } from "@core/transactional/emails/default-heading";
-import { DefaultEmailLayout } from "@core/transactional/emails/default-layout";
-
-interface OTPEmailProps {
+export interface OtpEmailProps {
    otp: string;
    type: "sign-in" | "email-verification" | "forget-password" | "change-email";
 }
@@ -38,13 +39,13 @@ const content = {
    },
 };
 
-export default function OTPEmail({ otp, type }: OTPEmailProps) {
+export function OtpEmail({ otp, type }: OtpEmailProps) {
    const { title, description, footer, preview } = content[type];
-   const formattedOtp = otp.toString().replace(/(\d{3})(?=\d)/g, "$1 ");
+   const formattedOtp = otp.replace(/(\d{3})(?=\d)/g, "$1 ");
 
    return (
-      <DefaultEmailLayout preview={preview}>
-         <DefaultHeading />
+      <MontteEmailLayout preview={preview}>
+         <MontteEmailHeading />
          <Section style={{ padding: "32px 24px", textAlign: "center" }}>
             <Text
                style={{
@@ -99,12 +100,7 @@ export default function OTPEmail({ otp, type }: OTPEmailProps) {
                {footer}
             </Text>
          </Section>
-         <DefaultFooter />
-      </DefaultEmailLayout>
+         <MontteEmailFooter />
+      </MontteEmailLayout>
    );
 }
-
-OTPEmail.PreviewProps = {
-   otp: "123456",
-   type: "email-verification",
-} satisfies OTPEmailProps;

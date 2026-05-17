@@ -17,10 +17,10 @@
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@core/notifications/*": ["../../core/notifications/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/sse": ["../../core/sse/src/sse.ts"],
-         "@core/transactional/*": ["../../core/transactional/src/*"],
          "@core/utils/*": ["../../core/utils/src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"],
          "@modules/account/*": ["../../modules/account/src/*"],
@@ -33,7 +33,7 @@
    "include": ["src", "__tests__"],
    "references": [
       {
-         "path": "../../core/transactional"
+         "path": "../../core/notifications"
       },
       {
          "path": "../../packages/ui"

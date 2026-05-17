@@ -1,0 +1,15 @@
+{
+   "extends": "@tooling/typescript/tsconfig.package.json",
+   "compilerOptions": {
+      "jsx": "react-jsx",
+      "paths": {
+         "@core/notifications/*": ["./src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../logging"
+      }
+   ]
+}

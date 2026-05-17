@@ -3,7 +3,7 @@ import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
 import { createS3Client } from "@core/files/client";
-import { createResendClient } from "@core/transactional/utils";
+import { createNotificationsClient } from "@core/notifications/client";
 import { createAuth } from "@core/authentication/server";
 import { DBOSClient } from "@dbos-inc/dbos-sdk";
 
@@ -25,11 +25,13 @@ export const s3Client = createS3Client({
    secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
    region: env.AWS_DEFAULT_REGION,
 });
-export const resendClient = createResendClient(env.RESEND_API_KEY);
+export const notificationsClient = createNotificationsClient({
+   resendApiKey: env.RESEND_API_KEY,
+});
 export const auth = createAuth({
    db,
    redis,
    posthog,
-   resendClient,
+   notificationsClient,
    env,
 });

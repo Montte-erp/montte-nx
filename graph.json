@@ -286,11 +286,11 @@
                "implicitDependencies": []
             }
          },
-         "@core/transactional": {
-            "name": "@core/transactional",
+         "@core/notifications": {
+            "name": "@core/notifications",
             "type": "lib",
             "data": {
-               "root": "core/transactional",
+               "root": "core/notifications",
                "targets": {
                   "typecheck": {
                      "executor": "nx:run-script",
@@ -352,7 +352,7 @@
                      "dependsOn": ["build-deps"],
                      "executor": "nx:run-commands",
                      "options": {
-                        "command": "bun nx watch --projects @core/transactional --includeDependentProjects -- bun nx build-deps @core/transactional"
+                        "command": "bun nx watch --projects @core/notifications --includeDependentProjects -- bun nx build-deps @core/notifications"
                      },
                      "configurations": {},
                      "parallelism": true
@@ -412,7 +412,7 @@
                      "outputs": ["{projectRoot}/coverage"]
                   }
                },
-               "name": "@core/transactional",
+               "name": "@core/notifications",
                "tags": ["npm:private"],
                "metadata": {
                   "targetGroups": {
@@ -426,202 +426,20 @@
                      ]
                   },
                   "js": {
-                     "packageName": "@core/transactional",
-                     "packageVersion": "0.8.1",
+                     "packageName": "@core/notifications",
+                     "packageVersion": "0.1.0",
                      "packageExports": {
+                        "./catalog": {
+                           "types": "./dist/catalog.d.ts",
+                           "default": "./dist/catalog.js"
+                        },
                         "./client": {
                            "types": "./dist/client.d.ts",
                            "default": "./dist/client.js"
                         },
-                        "./utils": {
-                           "types": "./dist/utils.d.ts",
-                           "default": "./dist/utils.js"
-                        },
                         "./emails/*": {
                            "types": "./dist/emails/*.d.ts",
                            "default": "./dist/emails/*.js"
-                        }
-                     },
-                     "isInPackageManagerWorkspaces": true
-                  }
-               },
-               "implicitDependencies": []
-            }
-         },
-         "@packages/analytics": {
-            "name": "@packages/analytics",
-            "type": "lib",
-            "data": {
-               "root": "packages/analytics",
-               "targets": {
-                  "typecheck": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "typecheck"
-                     },
-                     "metadata": {
-                        "technologies": ["typescript"],
-                        "description": "Runs type-checking for the project.",
-                        "help": {
-                           "command": "bun tsc --build --help",
-                           "example": {
-                              "args": ["--force"]
-                           }
-                        },
-                        "scriptContent": "tsgo",
-                        "runCommand": "bun run typecheck -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true,
-                     "cache": true,
-                     "dependsOn": ["^typecheck"],
-                     "inputs": ["default", "^default"],
-                     "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
-                  },
-                  "build": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "build"
-                     },
-                     "metadata": {
-                        "technologies": ["typescript"],
-                        "description": "Builds the project with `tsc`.",
-                        "help": {
-                           "command": "bun tsc --build --help",
-                           "example": {
-                              "args": ["--force"]
-                           }
-                        },
-                        "scriptContent": "tsc --build",
-                        "runCommand": "bun run build -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true,
-                     "cache": true,
-                     "dependsOn": ["^build"],
-                     "inputs": ["production", "^production"],
-                     "outputs": ["{projectRoot}/dist", "{projectRoot}/.cache"]
-                  },
-                  "build-deps": {
-                     "dependsOn": ["^build"],
-                     "configurations": {},
-                     "options": {},
-                     "parallelism": true,
-                     "executor": "nx:noop"
-                  },
-                  "watch-deps": {
-                     "continuous": true,
-                     "dependsOn": ["build-deps"],
-                     "executor": "nx:run-commands",
-                     "options": {
-                        "command": "bun nx watch --projects @packages/analytics --includeDependentProjects -- bun nx build-deps @packages/analytics"
-                     },
-                     "configurations": {},
-                     "parallelism": true
-                  },
-                  "check": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "check"
-                     },
-                     "metadata": {
-                        "scriptContent": "oxlint ./src",
-                        "runCommand": "bun run check -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true,
-                     "cache": true,
-                     "inputs": ["default"]
-                  },
-                  "format": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "format"
-                     },
-                     "metadata": {
-                        "scriptContent": "oxfmt --write ./src",
-                        "runCommand": "bun run format -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true
-                  },
-                  "format:check": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "format:check"
-                     },
-                     "metadata": {
-                        "scriptContent": "oxfmt --check ./src",
-                        "runCommand": "bun run format:check -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true
-                  },
-                  "test": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "test"
-                     },
-                     "metadata": {
-                        "scriptContent": "vitest run",
-                        "runCommand": "bun run test -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true,
-                     "cache": true,
-                     "dependsOn": ["^build"],
-                     "inputs": ["default", "^production"],
-                     "outputs": ["{projectRoot}/coverage"]
-                  }
-               },
-               "name": "@packages/analytics",
-               "tags": ["npm:private"],
-               "metadata": {
-                  "targetGroups": {
-                     "NPM Scripts": [
-                        "build",
-                        "check",
-                        "format",
-                        "format:check",
-                        "test",
-                        "typecheck"
-                     ]
-                  },
-                  "js": {
-                     "packageName": "@packages/analytics",
-                     "packageVersion": "0.1.0",
-                     "packageExports": {
-                        "./types": {
-                           "types": "./dist/types.d.ts",
-                           "default": "./dist/types.js"
-                        },
-                        "./compute-kpi": {
-                           "types": "./dist/compute-kpi.d.ts",
-                           "default": "./dist/compute-kpi.js"
-                        },
-                        "./compute-time-series": {
-                           "types": "./dist/compute-time-series.d.ts",
-                           "default": "./dist/compute-time-series.js"
-                        },
-                        "./compute-breakdown": {
-                           "types": "./dist/compute-breakdown.d.ts",
-                           "default": "./dist/compute-breakdown.js"
-                        },
-                        "./compute-insight": {
-                           "types": "./dist/compute-insight.d.ts",
-                           "default": "./dist/compute-insight.js"
-                        },
-                        "./defaults": {
-                           "types": "./dist/defaults.d.ts",
-                           "default": "./dist/defaults.js"
-                        },
-                        "./seed-defaults": {
-                           "types": "./dist/seed-defaults.d.ts",
-                           "default": "./dist/seed-defaults.js"
-                        },
-                        "./date-ranges": {
-                           "types": "./dist/date-ranges.d.ts",
-                           "default": "./dist/date-ranges.js"
                         }
                      },
                      "isInPackageManagerWorkspaces": true
@@ -811,30 +629,11 @@
                "implicitDependencies": []
             }
          },
-         "@tooling/boundary": {
-            "name": "@tooling/boundary",
+         "@modules/insights": {
+            "name": "@modules/insights",
             "type": "lib",
             "data": {
-               "root": "tooling/boundary",
-               "name": "@tooling/boundary",
-               "tags": ["npm:private"],
-               "metadata": {
-                  "targetGroups": {},
-                  "js": {
-                     "packageName": "@tooling/boundary",
-                     "packageVersion": "0.0.0",
-                     "isInPackageManagerWorkspaces": true
-                  }
-               },
-               "targets": {},
-               "implicitDependencies": []
-            }
-         },
-         "@modules/billing": {
-            "name": "@modules/billing",
-            "type": "lib",
-            "data": {
-               "root": "modules/billing",
+               "root": "modules/insights",
                "targets": {
                   "typecheck": {
                      "executor": "nx:run-script",
@@ -915,7 +714,7 @@
                      "outputs": ["{projectRoot}/coverage"]
                   }
                },
-               "name": "@modules/billing",
+               "name": "@modules/insights",
                "tags": ["npm:private"],
                "metadata": {
                   "targetGroups": {
@@ -928,14 +727,10 @@
                      ]
                   },
                   "js": {
-                     "packageName": "@modules/billing",
+                     "packageName": "@modules/insights",
                      "packageVersion": "0.1.0",
                      "packageExports": {
                         "./router/*": "./src/router/*.ts",
-                        "./contracts/*": "./src/contracts/*.ts",
-                        "./workflows/*": "./src/workflows/*.ts",
-                        "./services/*": "./src/services/*.ts",
-                        "./sse/*": "./src/sse/*.ts",
                         "./*": "./src/*.ts"
                      },
                      "isInPackageManagerWorkspaces": true
@@ -944,11 +739,30 @@
                "implicitDependencies": []
             }
          },
-         "@packages/events": {
-            "name": "@packages/events",
+         "@tooling/boundary": {
+            "name": "@tooling/boundary",
             "type": "lib",
             "data": {
-               "root": "packages/events",
+               "root": "tooling/boundary",
+               "name": "@tooling/boundary",
+               "tags": ["npm:private"],
+               "metadata": {
+                  "targetGroups": {},
+                  "js": {
+                     "packageName": "@tooling/boundary",
+                     "packageVersion": "0.0.0",
+                     "isInPackageManagerWorkspaces": true
+                  }
+               },
+               "targets": {},
+               "implicitDependencies": []
+            }
+         },
+         "@modules/account": {
+            "name": "@modules/account",
+            "type": "lib",
+            "data": {
+               "root": "modules/account",
                "targets": {
                   "typecheck": {
                      "executor": "nx:run-script",
@@ -973,47 +787,6 @@
                      "dependsOn": ["^typecheck"],
                      "inputs": ["default", "^default"],
                      "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
-                  },
-                  "build": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "build"
-                     },
-                     "metadata": {
-                        "technologies": ["typescript"],
-                        "description": "Builds the project with `tsc`.",
-                        "help": {
-                           "command": "bun tsc --build --help",
-                           "example": {
-                              "args": ["--force"]
-                           }
-                        },
-                        "scriptContent": "tsc --build",
-                        "runCommand": "bun run build -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true,
-                     "cache": true,
-                     "dependsOn": ["^build"],
-                     "inputs": ["production", "^production"],
-                     "outputs": ["{projectRoot}/dist", "{projectRoot}/.cache"]
-                  },
-                  "build-deps": {
-                     "dependsOn": ["^build"],
-                     "configurations": {},
-                     "options": {},
-                     "parallelism": true,
-                     "executor": "nx:noop"
-                  },
-                  "watch-deps": {
-                     "continuous": true,
-                     "dependsOn": ["build-deps"],
-                     "executor": "nx:run-commands",
-                     "options": {
-                        "command": "bun nx watch --projects @packages/events --includeDependentProjects -- bun nx build-deps @packages/events"
-                     },
-                     "configurations": {},
-                     "parallelism": true
                   },
                   "check": {
                      "executor": "nx:run-script",
@@ -1059,7 +832,7 @@
                         "script": "test"
                      },
                      "metadata": {
-                        "scriptContent": "vitest run",
+                        "scriptContent": "vitest run --passWithNoTests",
                         "runCommand": "bun run test -- undefined"
                      },
                      "configurations": {},
@@ -1070,12 +843,11 @@
                      "outputs": ["{projectRoot}/coverage"]
                   }
                },
-               "name": "@packages/events",
+               "name": "@modules/account",
                "tags": ["npm:private"],
                "metadata": {
                   "targetGroups": {
                      "NPM Scripts": [
-                        "build",
                         "check",
                         "format",
                         "format:check",
@@ -1084,77 +856,121 @@
                      ]
                   },
                   "js": {
-                     "packageName": "@packages/events",
+                     "packageName": "@modules/account",
                      "packageVersion": "0.1.0",
                      "packageExports": {
-                        "./catalog": {
-                           "types": "./dist/catalog.d.ts",
-                           "default": "./dist/catalog.js"
+                        "./router/*": "./src/router/*.ts",
+                        "./*": "./src/*.ts"
+                     },
+                     "isInPackageManagerWorkspaces": true
+                  }
+               },
+               "implicitDependencies": []
+            }
+         },
+         "@modules/finance": {
+            "name": "@modules/finance",
+            "type": "lib",
+            "data": {
+               "root": "modules/finance",
+               "targets": {
+                  "typecheck": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "typecheck"
+                     },
+                     "metadata": {
+                        "technologies": ["typescript"],
+                        "description": "Runs type-checking for the project.",
+                        "help": {
+                           "command": "bun tsc --build --help",
+                           "example": {
+                              "args": ["--force"]
+                           }
                         },
-                        "./emit": {
-                           "types": "./dist/emit.d.ts",
-                           "default": "./dist/emit.js"
-                        },
-                        "./utils": {
-                           "types": "./dist/utils.d.ts",
-                           "default": "./dist/utils.js"
-                        },
-                        "./refresh-views": {
-                           "types": "./dist/refresh-views.d.ts",
-                           "default": "./dist/refresh-views.js"
-                        },
-                        "./ai": {
-                           "types": "./dist/ai.d.ts",
-                           "default": "./dist/ai.js"
-                        },
-                        "./finance": {
-                           "types": "./dist/finance.d.ts",
-                           "default": "./dist/finance.js"
-                        },
-                        "./webhook": {
-                           "types": "./dist/webhook.d.ts",
-                           "default": "./dist/webhook.js"
-                        },
-                        "./dashboard": {
-                           "types": "./dist/dashboard.d.ts",
-                           "default": "./dist/dashboard.js"
-                        },
-                        "./insight": {
-                           "types": "./dist/insight.d.ts",
-                           "default": "./dist/insight.js"
-                        },
-                        "./credits": {
-                           "types": "./dist/credits.d.ts",
-                           "default": "./dist/credits.js"
-                        },
-                        "./reconcile": {
-                           "types": "./dist/reconcile.d.ts",
-                           "default": "./dist/reconcile.js"
-                        },
-                        "./contact": {
-                           "types": "./dist/contact.d.ts",
-                           "default": "./dist/contact.js"
-                        },
-                        "./inventory": {
-                           "types": "./dist/inventory.d.ts",
-                           "default": "./dist/inventory.js"
-                        },
-                        "./service": {
-                           "types": "./dist/service.d.ts",
-                           "default": "./dist/service.js"
-                        },
-                        "./nfe": {
-                           "types": "./dist/nfe.d.ts",
-                           "default": "./dist/nfe.js"
-                        },
-                        "./document": {
-                           "types": "./dist/document.d.ts",
-                           "default": "./dist/document.js"
-                        },
-                        "./queues/webhook-delivery": {
-                           "types": "./dist/queues/webhook-delivery.d.ts",
-                           "default": "./dist/queues/webhook-delivery.js"
-                        }
+                        "scriptContent": "tsgo",
+                        "runCommand": "bun run typecheck -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "dependsOn": ["^typecheck"],
+                     "inputs": ["default", "^default"],
+                     "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
+                  },
+                  "check": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "check"
+                     },
+                     "metadata": {
+                        "scriptContent": "oxlint ./src",
+                        "runCommand": "bun run check -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "inputs": ["default"]
+                  },
+                  "format": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "format"
+                     },
+                     "metadata": {
+                        "scriptContent": "oxfmt --write ./src",
+                        "runCommand": "bun run format -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "format:check": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "format:check"
+                     },
+                     "metadata": {
+                        "scriptContent": "oxfmt --check ./src",
+                        "runCommand": "bun run format:check -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "test": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "test"
+                     },
+                     "metadata": {
+                        "scriptContent": "vitest run --passWithNoTests",
+                        "runCommand": "bun run test -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "dependsOn": ["^build"],
+                     "inputs": ["default", "^production"],
+                     "outputs": ["{projectRoot}/coverage"]
+                  }
+               },
+               "name": "@modules/finance",
+               "tags": ["npm:private"],
+               "metadata": {
+                  "targetGroups": {
+                     "NPM Scripts": [
+                        "check",
+                        "format",
+                        "format:check",
+                        "test",
+                        "typecheck"
+                     ]
+                  },
+                  "js": {
+                     "packageName": "@modules/finance",
+                     "packageVersion": "0.1.0",
+                     "packageExports": {
+                        "./router/*": "./src/router/*.ts",
+                        "./*": "./src/*.ts"
                      },
                      "isInPackageManagerWorkspaces": true
                   }
@@ -1264,8 +1080,8 @@
                      "packageVersion": "0.1.0",
                      "packageExports": {
                         "./router/*": "./src/router/*.ts",
-                        "./contracts/*": "./src/contracts/*.ts",
                         "./tools/*": "./src/tools/*.ts",
+                        "./workflows/*": "./src/workflows/*.ts",
                         "./*": "./src/*.ts"
                      },
                      "isInPackageManagerWorkspaces": true
@@ -1608,6 +1424,116 @@
                "implicitDependencies": []
             }
          },
+         "@modules/inbox": {
+            "name": "@modules/inbox",
+            "type": "lib",
+            "data": {
+               "root": "modules/inbox",
+               "targets": {
+                  "typecheck": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "typecheck"
+                     },
+                     "metadata": {
+                        "technologies": ["typescript"],
+                        "description": "Runs type-checking for the project.",
+                        "help": {
+                           "command": "bun tsc --build --help",
+                           "example": {
+                              "args": ["--force"]
+                           }
+                        },
+                        "scriptContent": "tsgo",
+                        "runCommand": "bun run typecheck -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "dependsOn": ["^typecheck"],
+                     "inputs": ["default", "^default"],
+                     "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
+                  },
+                  "check": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "check"
+                     },
+                     "metadata": {
+                        "scriptContent": "oxlint ./src",
+                        "runCommand": "bun run check -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "inputs": ["default"]
+                  },
+                  "format": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "format"
+                     },
+                     "metadata": {
+                        "scriptContent": "oxfmt --write ./src",
+                        "runCommand": "bun run format -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "format:check": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "format:check"
+                     },
+                     "metadata": {
+                        "scriptContent": "oxfmt --check ./src",
+                        "runCommand": "bun run format:check -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "test": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "test"
+                     },
+                     "metadata": {
+                        "scriptContent": "vitest run --passWithNoTests",
+                        "runCommand": "bun run test -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "dependsOn": ["^build"],
+                     "inputs": ["default", "^production"],
+                     "outputs": ["{projectRoot}/coverage"]
+                  }
+               },
+               "name": "@modules/inbox",
+               "tags": ["npm:private"],
+               "metadata": {
+                  "targetGroups": {
+                     "NPM Scripts": [
+                        "check",
+                        "format",
+                        "format:check",
+                        "test",
+                        "typecheck"
+                     ]
+                  },
+                  "js": {
+                     "packageName": "@modules/inbox",
+                     "packageVersion": "0.1.0",
+                     "packageExports": {
+                        "./router/*": "./src/router/*.ts",
+                        "./*": "./src/*.ts"
+                     },
+                     "isInPackageManagerWorkspaces": true
+                  }
+               },
+               "implicitDependencies": []
+            }
+         },
          "@core/logging": {
             "name": "@core/logging",
             "type": "lib",
@@ -1942,6 +1868,1549 @@
                   }
                },
                "implicitDependencies": []
+            }
+         },
+         "landing": {
+            "name": "landing",
+            "type": "app",
+            "data": {
+               "root": "apps/landing",
+               "targets": {
+                  "typecheck": {
+                     "executor": "nx:run-script",
+                     "metadata": {
+                        "technologies": ["typescript"],
+                        "description": "Runs type-checking for the project.",
+                        "help": {
+                           "command": "bun tsc --build --help",
+                           "example": {
+                              "args": ["--force"]
+                           }
+                        },
+                        "scriptContent": "astro check",
+                        "runCommand": "bun run typecheck -- undefined"
+                     },
+                     "dependsOn": ["^build", "^typecheck"],
+                     "options": {
+                        "script": "typecheck"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "inputs": ["default", "^default"],
+                     "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
+                  },
+                  "build": {
+                     "executor": "nx:run-script",
+                     "metadata": {
+                        "technologies": ["typescript"],
+                        "description": "Builds the project with `tsc`.",
+                        "help": {
+                           "command": "bun tsc --build --help",
+                           "example": {
+                              "args": ["--force"]
+                           }
+                        },
+                        "scriptContent": "astro build",
+                        "runCommand": "bun run build -- undefined"
+                     },
+                     "inputs": [
+                        "production",
+                        "^production",
+                        {
+                           "env": "PUBLIC_POSTHOG_KEY"
+                        },
+                        {
+                           "env": "PUBLIC_POSTHOG_HOST"
+                        }
+                     ],
+                     "options": {
+                        "script": "build"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "dependsOn": ["^build"],
+                     "outputs": ["{projectRoot}/dist", "{projectRoot}/.cache"]
+                  },
+                  "build-deps": {
+                     "dependsOn": ["^build"],
+                     "configurations": {},
+                     "options": {},
+                     "parallelism": true,
+                     "executor": "nx:noop"
+                  },
+                  "watch-deps": {
+                     "continuous": true,
+                     "dependsOn": ["build-deps"],
+                     "executor": "nx:run-commands",
+                     "options": {
+                        "command": "bun nx watch --projects landing --includeDependentProjects -- bun nx build-deps landing"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "dev": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "dev"
+                     },
+                     "metadata": {
+                        "scriptContent": "astro dev --port 3001",
+                        "runCommand": "bun run dev -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": false
+                  },
+                  "start": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "start"
+                     },
+                     "metadata": {
+                        "scriptContent": "astro preview --host 0.0.0.0 --port ${PORT:-3001}",
+                        "runCommand": "bun run start -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "preview": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "preview"
+                     },
+                     "metadata": {
+                        "scriptContent": "astro preview --port 3001",
+                        "runCommand": "bun run preview -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "check": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "check"
+                     },
+                     "metadata": {
+                        "scriptContent": "oxlint astro.config.mjs src",
+                        "runCommand": "bun run check -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true,
+                     "cache": true,
+                     "inputs": ["default"]
+                  }
+               },
+               "name": "landing",
+               "tags": ["npm:private"],
+               "metadata": {
+                  "targetGroups": {
+                     "NPM Scripts": [
+                        "dev",
+                        "build",
+                        "start",
+                        "preview",
+                        "typecheck",
+                        "check"
+                     ]
+                  },
+                  "js": {
+                     "packageName": "landing",
+                     "isInPackageManagerWorkspaces": true
+                  }
+               },
+               "$schema": "../../node_modules/nx/schemas/project-schema.json",
+               "implicitDependencies": []
+            }
+         },
+         "web-e2e": {
+            "name": "web-e2e",
+            "type": "app",
+            "data": {
+               "root": "apps/web-e2e",
+               "targets": {
+                  "typecheck": {
+                     "dependsOn": ["^typecheck"],
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "command": "echo \"The 'typecheck' target is disabled because one or more project references set 'noEmit: true' in their tsconfig. Remove this property to resolve this issue.\""
+                     },
+                     "cache": true,
+                     "inputs": ["default", "^default"],
+                     "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"],
+                     "syncGenerators": ["@nx/js:typescript-sync"],
+                     "metadata": {
+                        "technologies": ["typescript"],
+                        "description": "Runs type-checking for the project.",
+                        "help": {
+                           "command": "bun tsc --build --help",
+                           "example": {
+                              "args": ["--force"]
+                           }
+                        }
+                     },
+                     "executor": "nx:run-commands",
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "build": {
+                     "dependsOn": ["^build"],
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "command": "tsc --build tsconfig.json"
+                     },
+                     "cache": true,
+                     "inputs": ["production", "^production"],
+                     "outputs": ["{projectRoot}/dist", "{projectRoot}/.cache"],
+                     "syncGenerators": ["@nx/js:typescript-sync"],
+                     "metadata": {
+                        "technologies": ["typescript"],
+                        "description": "Builds the project with `tsc`.",
+                        "help": {
+                           "command": "bun tsc --build --help",
+                           "example": {
+                              "args": ["--force"]
+                           }
+                        }
+                     },
+                     "executor": "nx:run-commands",
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "build-deps": {
+                     "dependsOn": ["^build"],
+                     "configurations": {},
+                     "options": {},
+                     "parallelism": true,
+                     "executor": "nx:noop"
+                  },
+                  "watch-deps": {
+                     "continuous": true,
+                     "dependsOn": ["build-deps"],
+                     "executor": "nx:run-commands",
+                     "options": {
+                        "command": "bun nx watch --projects web-e2e --includeDependentProjects -- bun nx build-deps web-e2e"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "e2e": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "command": "playwright test"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": ["{projectRoot}/test-results"],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/auth-route-transition.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/auth-route-transition.spec.ts --output=test-results/tests-auth-route-transition-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/auth-route-transition.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-auth-route-transition-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/bank-accounts-create.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/bank-accounts-create.spec.ts --output=test-results/tests-bank-accounts-create-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/bank-accounts-create.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-bank-accounts-create-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/bank-accounts-logos.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/bank-accounts-logos.spec.ts --output=test-results/tests-bank-accounts-logos-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/bank-accounts-logos.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-bank-accounts-logos-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/categories-create.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/categories-create.spec.ts --output=test-results/tests-categories-create-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/categories-create.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-categories-create-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/categories-default.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/categories-default.spec.ts --output=test-results/tests-categories-default-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/categories-default.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-categories-default-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/categories-filter-popover.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/categories-filter-popover.spec.ts --output=test-results/tests-categories-filter-popover-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/categories-filter-popover.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-categories-filter-popover-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/credit-cards-create.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/credit-cards-create.spec.ts --output=test-results/tests-credit-cards-create-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/credit-cards-create.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-credit-cards-create-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/credit-cards-logos.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/credit-cards-logos.spec.ts --output=test-results/tests-credit-cards-logos-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/credit-cards-logos.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-credit-cards-logos-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/datatable-layout-persistence.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/datatable-layout-persistence.spec.ts --output=test-results/tests-datatable-layout-persistence-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/datatable-layout-persistence.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-datatable-layout-persistence-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/datatable-url-state-sync.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/datatable-url-state-sync.spec.ts --output=test-results/tests-datatable-url-state-sync-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/datatable-url-state-sync.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-datatable-url-state-sync-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/import-templates.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/import-templates.spec.ts --output=test-results/tests-import-templates-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/import-templates.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-import-templates-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/invite-member-ui-signup.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/invite-member-ui-signup.spec.ts --output=test-results/tests-invite-member-ui-signup-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/invite-member-ui-signup.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-invite-member-ui-signup-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/invite-member.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/invite-member.spec.ts --output=test-results/tests-invite-member-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/invite-member.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-invite-member-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/members-export.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/members-export.spec.ts --output=test-results/tests-members-export-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/members-export.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-members-export-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/multi-org-onboarding.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/multi-org-onboarding.spec.ts --output=test-results/tests-multi-org-onboarding-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/multi-org-onboarding.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-multi-org-onboarding-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/onboarding.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/onboarding.spec.ts --output=test-results/tests-onboarding-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/onboarding.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-onboarding-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/org-switcher-default-team.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/org-switcher-default-team.spec.ts --output=test-results/tests-org-switcher-default-team-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/org-switcher-default-team.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-org-switcher-default-team-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/organization-logo.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/organization-logo.spec.ts --output=test-results/tests-organization-logo-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/organization-logo.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-organization-logo-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/space-access-by-org-member.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/space-access-by-org-member.spec.ts --output=test-results/tests-space-access-by-org-member-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/space-access-by-org-member.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-space-access-by-org-member-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/tags-create.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/tags-create.spec.ts --output=test-results/tests-tags-create-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/tags-create.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-tags-create-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/tags-edit.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/tags-edit.spec.ts --output=test-results/tests-tags-edit-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/tags-edit.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-tags-edit-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/transactions-bulk-actions.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/transactions-bulk-actions.spec.ts --output=test-results/tests-transactions-bulk-actions-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/transactions-bulk-actions.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-transactions-bulk-actions-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/transactions-category-hierarchy.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/transactions-category-hierarchy.spec.ts --output=test-results/tests-transactions-category-hierarchy-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/transactions-category-hierarchy.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-transactions-category-hierarchy-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/transactions-create.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/transactions-create.spec.ts --output=test-results/tests-transactions-create-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/transactions-create.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-transactions-create-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/transactions-import-bulk-mapping.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/transactions-import-bulk-mapping.spec.ts --output=test-results/tests-transactions-import-bulk-mapping-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/transactions-import-bulk-mapping.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-transactions-import-bulk-mapping-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/transactions-import-empty-state.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/transactions-import-empty-state.spec.ts --output=test-results/tests-transactions-import-empty-state-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/transactions-import-empty-state.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-transactions-import-empty-state-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/transactions-import-ofx.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/transactions-import-ofx.spec.ts --output=test-results/tests-transactions-import-ofx-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/transactions-import-ofx.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-transactions-import-ofx-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/transactions-import-xlsx-date.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/transactions-import-xlsx-date.spec.ts --output=test-results/tests-transactions-import-xlsx-date-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/transactions-import-xlsx-date.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-transactions-import-xlsx-date-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci--tests/user-avatar.spec.ts": {
+                     "options": {
+                        "cwd": "apps/web-e2e",
+                        "env": {},
+                        "command": "playwright test tests/user-avatar.spec.ts --output=test-results/tests-user-avatar-spec-ts"
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in tests/user-avatar.spec.ts in CI",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [
+                        "{projectRoot}/test-results/tests-user-avatar-spec-ts"
+                     ],
+                     "executor": "nx:run-commands",
+                     "configurations": {}
+                  },
+                  "e2e-ci": {
+                     "executor": "nx:noop",
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": ["{projectRoot}/test-results"],
+                     "dependsOn": [
+                        {
+                           "target": "e2e-ci--tests/auth-route-transition.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/bank-accounts-create.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/bank-accounts-logos.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/categories-create.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/categories-default.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/categories-filter-popover.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/credit-cards-create.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/credit-cards-logos.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/datatable-layout-persistence.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/datatable-url-state-sync.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/import-templates.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/invite-member-ui-signup.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/invite-member.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/members-export.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/multi-org-onboarding.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/onboarding.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/org-switcher-default-team.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/organization-logo.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/space-access-by-org-member.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/tags-create.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/tags-edit.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/transactions-bulk-actions.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/transactions-category-hierarchy.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/transactions-create.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/transactions-import-bulk-mapping.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/transactions-import-empty-state.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/transactions-import-ofx.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/transactions-import-xlsx-date.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        },
+                        {
+                           "target": "e2e-ci--tests/user-avatar.spec.ts",
+                           "projects": "self",
+                           "params": "forward",
+                           "options": "forward"
+                        }
+                     ],
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Runs Playwright Tests in CI",
+                        "nonAtomizedTarget": "e2e",
+                        "help": {
+                           "command": "bun playwright test --help",
+                           "example": {
+                              "options": {
+                                 "workers": 1
+                              }
+                           }
+                        }
+                     },
+                     "parallelism": false,
+                     "configurations": {},
+                     "options": {}
+                  },
+                  "e2e-ci--merge-reports": {
+                     "executor": "@nx/playwright:merge-reports",
+                     "cache": true,
+                     "inputs": [
+                        "default",
+                        "^production",
+                        "^{projectRoot}/tsconfig*.json",
+                        {
+                           "externalDependencies": ["@playwright/test"]
+                        }
+                     ],
+                     "outputs": [],
+                     "options": {
+                        "config": "playwright.config.ts",
+                        "expectedSuites": 29
+                     },
+                     "metadata": {
+                        "technologies": ["playwright"],
+                        "description": "Merges Playwright blob reports from atomized tasks to produce unified reports for the configured reporters."
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "e2e:ui": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "e2e:ui"
+                     },
+                     "metadata": {
+                        "scriptContent": "playwright test --ui",
+                        "runCommand": "bun run e2e:ui -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  },
+                  "e2e:install": {
+                     "executor": "nx:run-script",
+                     "options": {
+                        "script": "e2e:install"
+                     },
+                     "metadata": {
+                        "scriptContent": "playwright install --with-deps chromium",
+                        "runCommand": "bun run e2e:install -- undefined"
+                     },
+                     "configurations": {},
+                     "parallelism": true
+                  }
+               },
+               "metadata": {
+                  "targetGroups": {
+                     "E2E (CI)": [
+                        "e2e-ci--tests/auth-route-transition.spec.ts",
+                        "e2e-ci--tests/bank-accounts-create.spec.ts",
+                        "e2e-ci--tests/bank-accounts-logos.spec.ts",
+                        "e2e-ci--tests/categories-create.spec.ts",
+                        "e2e-ci--tests/categories-default.spec.ts",
+                        "e2e-ci--tests/categories-filter-popover.spec.ts",
+                        "e2e-ci--tests/credit-cards-create.spec.ts",
+                        "e2e-ci--tests/credit-cards-logos.spec.ts",
+                        "e2e-ci--tests/datatable-layout-persistence.spec.ts",
+                        "e2e-ci--tests/datatable-url-state-sync.spec.ts",
+                        "e2e-ci--tests/import-templates.spec.ts",
+                        "e2e-ci--tests/invite-member-ui-signup.spec.ts",
+                        "e2e-ci--tests/invite-member.spec.ts",
+                        "e2e-ci--tests/members-export.spec.ts",
+                        "e2e-ci--tests/multi-org-onboarding.spec.ts",
+                        "e2e-ci--tests/onboarding.spec.ts",
+                        "e2e-ci--tests/org-switcher-default-team.spec.ts",
+                        "e2e-ci--tests/organization-logo.spec.ts",
+                        "e2e-ci--tests/space-access-by-org-member.spec.ts",
+                        "e2e-ci--tests/tags-create.spec.ts",
+                        "e2e-ci--tests/tags-edit.spec.ts",
+                        "e2e-ci--tests/transactions-bulk-actions.spec.ts",
+                        "e2e-ci--tests/transactions-category-hierarchy.spec.ts",
+                        "e2e-ci--tests/transactions-create.spec.ts",
+                        "e2e-ci--tests/transactions-import-bulk-mapping.spec.ts",
+                        "e2e-ci--tests/transactions-import-empty-state.spec.ts",
+                        "e2e-ci--tests/transactions-import-ofx.spec.ts",
+                        "e2e-ci--tests/transactions-import-xlsx-date.spec.ts",
+                        "e2e-ci--tests/user-avatar.spec.ts",
+                        "e2e-ci",
+                        "e2e-ci--merge-reports"
+                     ],
+                     "NPM Scripts": ["e2e:ui", "e2e:install"]
+                  },
+                  "js": {
+                     "packageName": "web-e2e",
+                     "isInPackageManagerWorkspaces": true
+                  }
+               },
+               "name": "web-e2e",
+               "tags": ["npm:private"],
+               "$schema": "../../node_modules/nx/schemas/project-schema.json",
+               "implicitDependencies": ["web"]
             }
          },
          "@packages/ui": {
@@ -2364,9 +3833,9 @@
                            "types": "./dist/client.d.ts",
                            "default": "./dist/client.js"
                         },
-                        "./text-file-helper": {
-                           "types": "./dist/text-file-helpers.d.ts",
-                           "default": "./dist/text-file-helpers.js"
+                        "./keys": {
+                           "types": "./dist/keys.d.ts",
+                           "default": "./dist/keys.js"
                         }
                      },
                      "isInPackageManagerWorkspaces": true
@@ -3502,9 +4971,9 @@
                            "types": "./dist/models.d.ts",
                            "default": "./dist/models.js"
                         },
-                        "./middleware": {
-                           "types": "./dist/middleware.d.ts",
-                           "default": "./dist/middleware.js"
+                        "./otel": {
+                           "types": "./dist/otel.d.ts",
+                           "default": "./dist/otel.js"
                         }
                      },
                      "isInPackageManagerWorkspaces": true
@@ -3516,16 +4985,6 @@
       },
       "dependencies": {
          "@modules/classification": [
-            {
-               "source": "@modules/classification",
-               "target": "@core/ai",
-               "type": "static"
-            },
-            {
-               "source": "@modules/classification",
-               "target": "@core/posthog",
-               "type": "static"
-            },
             {
                "source": "@modules/classification",
                "target": "@core/database",
@@ -3558,12 +5017,22 @@
             },
             {
                "source": "@modules/classification",
+               "target": "@core/ai",
+               "type": "static"
+            },
+            {
+               "source": "@modules/classification",
                "target": "@core/environment",
                "type": "static"
             },
             {
                "source": "@modules/classification",
                "target": "@core/logging",
+               "type": "static"
+            },
+            {
+               "source": "@modules/classification",
+               "target": "@core/posthog",
                "type": "static"
             },
             {
@@ -3600,6 +5069,11 @@
             },
             {
                "source": "@core/authentication",
+               "target": "@core/notifications",
+               "type": "static"
+            },
+            {
+               "source": "@core/authentication",
                "target": "@core/posthog",
                "type": "static"
             },
@@ -3607,54 +5081,12 @@
                "source": "@core/authentication",
                "target": "@core/redis",
                "type": "static"
-            },
-            {
-               "source": "@core/authentication",
-               "target": "@core/transactional",
-               "type": "static"
             }
          ],
-         "@core/transactional": [
+         "@core/notifications": [
             {
-               "source": "@core/transactional",
+               "source": "@core/notifications",
                "target": "@tooling/typescript",
-               "type": "static"
-            },
-            {
-               "source": "@core/transactional",
-               "target": "@core/environment",
-               "type": "static"
-            },
-            {
-               "source": "@core/transactional",
-               "target": "@core/logging",
-               "type": "static"
-            },
-            {
-               "source": "@core/transactional",
-               "target": "@core/utils",
-               "type": "static"
-            }
-         ],
-         "@packages/analytics": [
-            {
-               "source": "@packages/analytics",
-               "target": "@tooling/typescript",
-               "type": "static"
-            },
-            {
-               "source": "@packages/analytics",
-               "target": "@core/database",
-               "type": "static"
-            },
-            {
-               "source": "@packages/analytics",
-               "target": "@core/logging",
-               "type": "static"
-            },
-            {
-               "source": "@packages/analytics",
-               "target": "@core/utils",
                "type": "static"
             }
          ],
@@ -3671,92 +5103,104 @@
                "type": "static"
             }
          ],
-         "@tooling/boundary": [],
-         "@modules/billing": [
+         "@modules/insights": [
             {
-               "source": "@modules/billing",
-               "target": "@core/database",
-               "type": "static"
-            },
-            {
-               "source": "@modules/billing",
-               "target": "@core/orpc",
-               "type": "static"
-            },
-            {
-               "source": "@modules/billing",
-               "target": "@core/orpc",
-               "type": "dynamic"
-            },
-            {
-               "source": "@modules/billing",
-               "target": "@core/dbos",
-               "type": "dynamic"
-            },
-            {
-               "source": "@modules/billing",
-               "target": "@core/dbos",
-               "type": "static"
-            },
-            {
-               "source": "@modules/billing",
+               "source": "@modules/insights",
                "target": "@tooling/typescript",
                "type": "static"
             },
             {
-               "source": "@modules/billing",
-               "target": "@core/environment",
+               "source": "@modules/insights",
+               "target": "@core/database",
                "type": "static"
             },
             {
-               "source": "@modules/billing",
+               "source": "@modules/insights",
                "target": "@core/logging",
                "type": "static"
             },
             {
-               "source": "@modules/billing",
-               "target": "@core/redis",
-               "type": "static"
-            },
-            {
-               "source": "@modules/billing",
-               "target": "@core/sse",
-               "type": "static"
-            },
-            {
-               "source": "@modules/billing",
-               "target": "@core/transactional",
-               "type": "static"
-            },
-            {
-               "source": "@modules/billing",
-               "target": "@core/utils",
+               "source": "@modules/insights",
+               "target": "@core/orpc",
                "type": "static"
             }
          ],
-         "@packages/events": [
+         "@tooling/boundary": [],
+         "@modules/account": [
             {
-               "source": "@packages/events",
-               "target": "@core/database",
-               "type": "static"
-            },
-            {
-               "source": "@packages/events",
+               "source": "@modules/account",
                "target": "@tooling/typescript",
                "type": "static"
             },
             {
-               "source": "@packages/events",
+               "source": "@modules/account",
+               "target": "@core/authentication",
+               "type": "static"
+            },
+            {
+               "source": "@modules/account",
+               "target": "@core/database",
+               "type": "static"
+            },
+            {
+               "source": "@modules/account",
+               "target": "@core/files",
+               "type": "static"
+            },
+            {
+               "source": "@modules/account",
                "target": "@core/logging",
                "type": "static"
             },
             {
-               "source": "@packages/events",
-               "target": "@core/posthog",
+               "source": "@modules/account",
+               "target": "@core/orpc",
                "type": "static"
             },
             {
-               "source": "@packages/events",
+               "source": "@modules/account",
+               "target": "@core/utils",
+               "type": "static"
+            },
+            {
+               "source": "@modules/account",
+               "target": "@modules/classification",
+               "type": "static"
+            }
+         ],
+         "@modules/finance": [
+            {
+               "source": "@modules/finance",
+               "target": "@core/database",
+               "type": "static"
+            },
+            {
+               "source": "@modules/finance",
+               "target": "@modules/classification",
+               "type": "static"
+            },
+            {
+               "source": "@modules/finance",
+               "target": "@core/orpc",
+               "type": "static"
+            },
+            {
+               "source": "@modules/finance",
+               "target": "@core/orpc",
+               "type": "dynamic"
+            },
+            {
+               "source": "@modules/finance",
+               "target": "@tooling/typescript",
+               "type": "static"
+            },
+            {
+               "source": "@modules/finance",
+               "target": "@core/logging",
+               "type": "static"
+            },
+            {
+               "source": "@modules/finance",
                "target": "@core/redis",
                "type": "static"
             }
@@ -3779,6 +5223,11 @@
             },
             {
                "source": "@modules/agents",
+               "target": "@core/dbos",
+               "type": "static"
+            },
+            {
+               "source": "@modules/agents",
                "target": "@core/environment",
                "type": "static"
             },
@@ -3799,7 +5248,12 @@
             },
             {
                "source": "@modules/agents",
-               "target": "@modules/billing",
+               "target": "@core/redis",
+               "type": "static"
+            },
+            {
+               "source": "@modules/agents",
+               "target": "@core/sse",
                "type": "static"
             }
          ],
@@ -3825,6 +5279,33 @@
                "type": "static"
             }
          ],
+         "@modules/inbox": [
+            {
+               "source": "@modules/inbox",
+               "target": "@tooling/typescript",
+               "type": "static"
+            },
+            {
+               "source": "@modules/inbox",
+               "target": "@core/database",
+               "type": "static"
+            },
+            {
+               "source": "@modules/inbox",
+               "target": "@core/logging",
+               "type": "static"
+            },
+            {
+               "source": "@modules/inbox",
+               "target": "@core/orpc",
+               "type": "static"
+            },
+            {
+               "source": "@modules/inbox",
+               "target": "@core/sse",
+               "type": "static"
+            }
+         ],
          "@core/logging": [
             {
                "source": "@core/logging",
@@ -3841,6 +5322,35 @@
             {
                "source": "@core/posthog",
                "target": "@core/environment",
+               "type": "static"
+            }
+         ],
+         "landing": [
+            {
+               "source": "landing",
+               "target": "@packages/ui",
+               "type": "static"
+            },
+            {
+               "source": "landing",
+               "target": "@tooling/css",
+               "type": "static"
+            }
+         ],
+         "web-e2e": [
+            {
+               "source": "web-e2e",
+               "target": "web",
+               "type": "implicit"
+            },
+            {
+               "source": "web-e2e",
+               "target": "@core/database",
+               "type": "static"
+            },
+            {
+               "source": "web-e2e",
+               "target": "@tooling/typescript",
                "type": "static"
             }
          ],
@@ -3896,12 +5406,7 @@
             },
             {
                "source": "worker",
-               "target": "@core/transactional",
-               "type": "static"
-            },
-            {
-               "source": "worker",
-               "target": "@modules/billing",
+               "target": "@modules/agents",
                "type": "static"
             },
             {
@@ -3914,16 +5419,6 @@
             {
                "source": "@core/files",
                "target": "@tooling/typescript",
-               "type": "static"
-            },
-            {
-               "source": "@core/files",
-               "target": "@core/environment",
-               "type": "static"
-            },
-            {
-               "source": "@core/files",
-               "target": "@core/logging",
                "type": "static"
             }
          ],
@@ -3996,7 +5491,17 @@
             },
             {
                "source": "@core/orpc",
+               "target": "@core/files",
+               "type": "static"
+            },
+            {
+               "source": "@core/orpc",
                "target": "@core/logging",
+               "type": "static"
+            },
+            {
+               "source": "@core/orpc",
+               "target": "@core/notifications",
                "type": "static"
             },
             {
@@ -4007,11 +5512,6 @@
             {
                "source": "@core/orpc",
                "target": "@core/redis",
-               "type": "static"
-            },
-            {
-               "source": "@core/orpc",
-               "target": "@core/transactional",
                "type": "static"
             },
             {
@@ -4065,6 +5565,11 @@
             },
             {
                "source": "web",
+               "target": "@core/notifications",
+               "type": "static"
+            },
+            {
+               "source": "web",
                "target": "@core/posthog",
                "type": "static"
             },
@@ -4085,12 +5590,12 @@
             },
             {
                "source": "web",
-               "target": "@modules/agents",
+               "target": "@modules/account",
                "type": "static"
             },
             {
                "source": "web",
-               "target": "@modules/billing",
+               "target": "@modules/agents",
                "type": "static"
             },
             {
@@ -4100,12 +5605,17 @@
             },
             {
                "source": "web",
-               "target": "@packages/analytics",
+               "target": "@modules/finance",
                "type": "static"
             },
             {
                "source": "web",
-               "target": "@packages/events",
+               "target": "@modules/inbox",
+               "type": "static"
+            },
+            {
+               "source": "web",
+               "target": "@modules/insights",
                "type": "static"
             },
             {
@@ -4115,7 +5625,7 @@
             },
             {
                "source": "web",
-               "target": "@core/transactional",
+               "target": "@core/orpc",
                "type": "static"
             }
          ],
@@ -4127,7 +5637,7 @@
             },
             {
                "source": "@core/ai",
-               "target": "@core/posthog",
+               "target": "@core/logging",
                "type": "static"
             }
          ]
