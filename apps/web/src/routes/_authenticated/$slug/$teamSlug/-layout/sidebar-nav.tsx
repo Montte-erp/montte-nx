@@ -1,10 +1,10 @@
 import { FeatureStageBadge } from "@/components/blocks/feature-stage-badge";
+import { Button } from "@packages/ui/components/button";
 import {
    Collapsible,
    CollapsibleContent,
    CollapsibleTrigger,
 } from "@packages/ui/components/collapsible";
-import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    SidebarGroup,
    SidebarGroupContent,
@@ -21,25 +21,19 @@ import {
 } from "@packages/ui/components/tooltip";
 import { cn } from "@packages/ui/lib/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
-import {
-   Check,
-   ChevronRight,
-   FolderOpen,
-   LayoutGrid,
-   Pencil,
-} from "lucide-react";
+import { ChevronRight, Pencil } from "lucide-react";
+import { useMemo } from "react";
+import { useCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useEarlyAccess } from "@/hooks/use-early-access";
 import {
-   setNavEditing,
    setSectionOpen,
-   toggleFinanceNavPref,
-   toggleHiddenItem,
-   useIsEditingNav,
    useIsFinanceItemWanted,
    useIsItemVisible,
    useIsSectionOpen,
+   useSidebarItemOrder,
 } from "./hooks/use-sidebar-store";
+import { SidebarCustomizeCredenza } from "./sidebar-customize-credenza";
 import type { NavGroupDef, NavItemDef } from "./sidebar-nav-items";
 import { navGroups } from "./sidebar-nav-items";
 
@@ -79,7 +73,12 @@ function NavItem({
          className="group/menu-item"
          id={`tour-nav-item-${item.id}`}
       >
-         <SidebarMenuButton asChild isActive={isActive} tooltip={tooltip}>
+         <SidebarMenuButton
+            asChild
+            className="h-7 rounded-md px-2 text-foreground data-[active=true]:bg-muted data-[active=true]:font-medium data-[active=true]:text-foreground"
+            isActive={isActive}
+            tooltip={tooltip}
+         >
             <Link params={{ slug, teamSlug }} to={item.route}>
                <Icon className={cn(item.iconColor)} />
                <span className="flex-1">{item.label}</span>
@@ -95,134 +94,100 @@ function NavItem({
    );
 }
 
-function EditableNavItem({ item }: { item: NavItemDef }) {
-   const { isEnrolled, updateEnrollment, getFeatureStage } = useEarlyAccess();
-   const isVisible = useIsItemVisible();
-   const isWanted = useIsFinanceItemWanted();
+function getOrderedItems(items: NavItemDef[], itemOrder: string[]) {
+   const itemMap = new Map(items.map((item) => [item.id, item]));
+   const orderedItems = itemOrder.flatMap((itemId) => {
+      const item = itemMap.get(itemId);
+      return item ? [item] : [];
+   });
+   const newItems = items.filter((item) => !itemOrder.includes(item.id));
 
-   const Icon = item.icon;
-   const stage = item.earlyAccessFlag
-      ? getFeatureStage(item.earlyAccessFlag)
-      : null;
-   const checked = item.earlyAccessFlag
-      ? isWanted(item.id) || isEnrolled(item.earlyAccessFlag)
-      : isVisible(item.id);
-
-   function handleToggle() {
-      if (item.earlyAccessFlag) {
-         toggleFinanceNavPref(item.id);
-         updateEnrollment(item.earlyAccessFlag, !checked);
-         return;
-      }
-      toggleHiddenItem(item.id);
-   }
-
-   return (
-      <SidebarMenuItem>
-         <SidebarMenuButton aria-pressed={checked} onClick={handleToggle}>
-            <Checkbox
-               aria-hidden="true"
-               checked={checked}
-               className="pointer-events-none shrink-0"
-               tabIndex={-1}
-            />
-            <Icon
-               aria-hidden="true"
-               className={cn(
-                  "shrink-0",
-                  item.iconColor ?? "text-muted-foreground",
-               )}
-            />
-            <span className="flex-1 truncate">{item.label}</span>
-            {stage && <FeatureStageBadge stage={stage} />}
-         </SidebarMenuButton>
-      </SidebarMenuItem>
-   );
+   return [...orderedItems, ...newItems];
 }
 
 function useVisibleItems(group: NavGroupDef) {
    const { isEnrolled } = useEarlyAccess();
    const isVisible = useIsItemVisible();
    const isWanted = useIsFinanceItemWanted();
+   const itemOrder = useSidebarItemOrder(group.id);
 
-   return group.items
-      .filter((item) => {
-         if (!item.earlyAccessFlag) return true;
-         if (group.label)
-            return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
-         return isEnrolled(item.earlyAccessFlag);
-      })
-      .filter((item) => isVisible(item.id));
-}
-
-function useEditableItems(group: NavGroupDef) {
-   const { isEnrolled } = useEarlyAccess();
-
-   return group.items.filter(
-      (item) =>
-         item.configurable &&
-         (!item.earlyAccessFlag || isEnrolled(item.earlyAccessFlag)),
+   return useMemo(
+      () =>
+         getOrderedItems(group.items, itemOrder)
+            .filter((item) => {
+               if (!item.earlyAccessFlag) return true;
+               if (group.label)
+                  return isWanted(item.id) || isEnrolled(item.earlyAccessFlag);
+               return isEnrolled(item.earlyAccessFlag);
+            })
+            .filter((item) => isVisible(item.id)),
+      [group.items, group.label, isEnrolled, isVisible, isWanted, itemOrder],
    );
 }
 
 function NavSection({ group }: { group: NavGroupDef }) {
    const { slug, teamSlug } = useDashboardSlugs();
-   const isEditingNav = useIsEditingNav();
    const sidebar = useSidebar();
+   const { openCredenza } = useCredenza();
    const sectionId = `nav:${group.id}`;
    const isOpen = useIsSectionOpen(sectionId, true);
    const visibleItems = useVisibleItems(group);
-   const editableItems = useEditableItems(group);
 
-   if (isEditingNav && editableItems.length === 0) return null;
-   if (!isEditingNav && visibleItems.length === 0) return null;
+   if (visibleItems.length === 0) return null;
 
-   const isMain = !group.label;
    const collapsibleOpen = sidebar.state === "collapsed" || isOpen;
 
    return (
       <Collapsible
-         className={isMain ? "group/projeto" : "group/group"}
+         className="group/group"
          onOpenChange={(open) => setSectionOpen(sectionId, open)}
          open={collapsibleOpen}
       >
-         <SidebarGroup className={isMain ? "py-0" : "pt-0"}>
-            {isMain ? (
-               <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
-                  <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
-                     <FolderOpen
-                        aria-hidden="true"
-                        className="size-4 shrink-0"
-                     />
-                     <span className="text-sm font-semibold uppercase tracking-wider">
-                        Projeto
-                     </span>
-                     <ChevronRight
-                        aria-hidden="true"
-                        className="size-4 transition-transform duration-200 group-data-[state=open]/projeto:rotate-90"
-                     />
-                  </CollapsibleTrigger>
-               </SidebarGroupLabel>
-            ) : (
-               <SidebarGroupLabel className="text-sm group-data-[collapsible=icon]:hidden">
+         <SidebarGroup className="pt-0">
+            <SidebarGroupLabel className="h-7 justify-between px-2 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
+               <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
                   {group.label}
-               </SidebarGroupLabel>
-            )}
+                  <ChevronRight
+                     aria-hidden="true"
+                     className="size-4 transition-transform duration-200 group-data-[state=open]/group:rotate-90"
+                  />
+               </CollapsibleTrigger>
+               <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Button
+                        aria-label="Customizar sidebar"
+                        className="text-muted-foreground"
+                        onClick={() =>
+                           openCredenza({
+                              className: "max-w-lg bg-background sm:max-w-lg",
+                              renderChildren: () => (
+                                 <SidebarCustomizeCredenza />
+                              ),
+                           })
+                        }
+                        size="icon-xs"
+                        type="button"
+                        variant="ghost"
+                     >
+                        <Pencil aria-hidden="true" className="size-4" />
+                     </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                     Customizar sidebar
+                  </TooltipContent>
+               </Tooltip>
+            </SidebarGroupLabel>
             <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                <SidebarGroupContent>
                   <SidebarMenu>
-                     {isEditingNav && !isMain
-                        ? editableItems.map((item) => (
-                             <EditableNavItem item={item} key={item.id} />
-                          ))
-                        : visibleItems.map((item) => (
-                             <NavItem
-                                item={item}
-                                key={item.id}
-                                slug={slug}
-                                teamSlug={teamSlug}
-                             />
-                          ))}
+                     {visibleItems.map((item) => (
+                        <NavItem
+                           item={item}
+                           key={item.id}
+                           slug={slug}
+                           teamSlug={teamSlug}
+                        />
+                     ))}
                   </SidebarMenu>
                </SidebarGroupContent>
             </CollapsibleContent>
@@ -231,75 +196,40 @@ function NavSection({ group }: { group: NavGroupDef }) {
    );
 }
 
-export function SidebarNav() {
-   const isEditingNav = useIsEditingNav();
-   const sidebar = useSidebar();
-   const isOpen = useIsSectionOpen("nav:modules-header", true);
+function MainNavSection({ group }: { group: NavGroupDef }) {
+   const { slug, teamSlug } = useDashboardSlugs();
+   const visibleItems = useVisibleItems(group);
 
+   if (visibleItems.length === 0) return null;
+
+   return (
+      <SidebarGroup className="py-0">
+         <SidebarGroupContent>
+            <SidebarMenu>
+               {visibleItems.map((item) => (
+                  <NavItem
+                     item={item}
+                     key={item.id}
+                     slug={slug}
+                     teamSlug={teamSlug}
+                  />
+               ))}
+            </SidebarMenu>
+         </SidebarGroupContent>
+      </SidebarGroup>
+   );
+}
+
+export function SidebarNav() {
    const mainGroup = navGroups.find((g) => !g.label);
    const moduleGroups = navGroups.filter((g) => g.label);
-   const collapsibleOpen = sidebar.state === "collapsed" || isOpen;
 
    return (
       <>
-         {mainGroup && <NavSection group={mainGroup} />}
-         <Collapsible
-            className="group/modules"
-            onOpenChange={(open) => setSectionOpen("nav:modules-header", open)}
-            open={collapsibleOpen}
-         >
-            <SidebarGroup className="p-0">
-               <SidebarGroupLabel className="justify-between px-4 group-data-[collapsible=icon]:hidden">
-                  <CollapsibleTrigger className="flex cursor-pointer items-center gap-2 transition-colors duration-150 hover:text-foreground">
-                     <LayoutGrid
-                        aria-hidden="true"
-                        className="size-4 shrink-0"
-                     />
-                     <span className="text-sm font-semibold uppercase tracking-wider">
-                        Módulos
-                     </span>
-                     <ChevronRight
-                        aria-hidden="true"
-                        className="size-4 transition-transform duration-200 group-data-[state=open]/modules:rotate-90"
-                     />
-                  </CollapsibleTrigger>
-                  <Tooltip>
-                     <TooltipTrigger asChild>
-                        <button
-                           aria-label={
-                              isEditingNav
-                                 ? "Concluir edição"
-                                 : "Personalizar módulos"
-                           }
-                           aria-pressed={isEditingNav}
-                           className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent hover:text-foreground"
-                           onClick={() => setNavEditing(!isEditingNav)}
-                           type="button"
-                        >
-                           {isEditingNav ? (
-                              <Check
-                                 aria-hidden="true"
-                                 className="size-4 text-primary"
-                              />
-                           ) : (
-                              <Pencil aria-hidden="true" className="size-4" />
-                           )}
-                        </button>
-                     </TooltipTrigger>
-                     <TooltipContent side="right">
-                        {isEditingNav
-                           ? "Concluir edição"
-                           : "Personalizar módulos"}
-                     </TooltipContent>
-                  </Tooltip>
-               </SidebarGroupLabel>
-               <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                  {moduleGroups.map((group) => (
-                     <NavSection group={group} key={group.id} />
-                  ))}
-               </CollapsibleContent>
-            </SidebarGroup>
-         </Collapsible>
+         {mainGroup && <MainNavSection group={mainGroup} />}
+         {moduleGroups.map((group) => (
+            <NavSection group={group} key={group.id} />
+         ))}
       </>
    );
 }

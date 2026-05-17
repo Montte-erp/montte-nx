@@ -1,4 +1,4 @@
-import { createStore, useStore } from "@tanstack/react-store";
+import { useStore } from "@tanstack/react-store";
 import { createPersistedStore } from "@/lib/store";
 
 interface SidebarPersistedState {
@@ -6,10 +6,7 @@ interface SidebarPersistedState {
    hiddenItems: string[];
    financeNavPrefs: string[];
    sectionOpen: Record<string, boolean>;
-}
-
-interface SidebarTransientState {
-   isEditingNav: boolean;
+   itemOrder: Record<string, string[]>;
 }
 
 const sidebarStore = createPersistedStore<SidebarPersistedState>(
@@ -19,16 +16,9 @@ const sidebarStore = createPersistedStore<SidebarPersistedState>(
       hiddenItems: [],
       financeNavPrefs: [],
       sectionOpen: {},
+      itemOrder: {},
    },
 );
-
-const transientStore = createStore<SidebarTransientState>({
-   isEditingNav: false,
-});
-
-export function setNavEditing(value: boolean) {
-   transientStore.setState((state) => ({ ...state, isEditingNav: value }));
-}
 
 export function setCollapsed(collapsed: boolean) {
    sidebarStore.setState((state) => ({ ...state, isCollapsed: collapsed }));
@@ -59,6 +49,13 @@ export function setSectionOpen(sectionId: string, open: boolean) {
    }));
 }
 
+export function setSidebarItemOrder(groupId: string, itemIds: string[]) {
+   sidebarStore.setState((state) => ({
+      ...state,
+      itemOrder: { ...(state.itemOrder ?? {}), [groupId]: itemIds },
+   }));
+}
+
 export function useSidebarCollapsed() {
    return useStore(sidebarStore, (s) => s.isCollapsed);
 }
@@ -78,6 +75,6 @@ export function useIsSectionOpen(sectionId: string, defaultOpen: boolean) {
    return sectionOpen?.[sectionId] ?? defaultOpen;
 }
 
-export function useIsEditingNav() {
-   return useStore(transientStore, (s) => s.isEditingNav);
+export function useSidebarItemOrder(groupId: string) {
+   return useStore(sidebarStore, (s) => s.itemOrder?.[groupId] ?? []);
 }
