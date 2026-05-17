@@ -1,10 +1,16 @@
 {
-   "extends": "@tooling/typescript/base.json",
+   "extends": "@tooling/typescript/tsconfig.package.json",
    "compilerOptions": {
-      "outDir": "dist",
-      "rootDir": "src",
-      "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+      "paths": {
+         "@core/logging/*": ["../logging/src/*"],
+         "@core/pg-boss/*": ["./src/*"]
+      }
    },
-   "include": ["src/**/*.ts"],
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../logging"
+      }
+   ],
    "exclude": ["dist", "node_modules"]
 }

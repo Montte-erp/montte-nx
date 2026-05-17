@@ -46,6 +46,16 @@ await setupAgentsWorkflows({
    workerConcurrency: 10,
 });
 
+DBOS.setConfig({
+   name: "montte-worker",
+   systemDatabaseUrl: env.DATABASE_URL,
+   logLevel: env.LOG_LEVEL ?? "info",
+   runAdminServer: false,
+});
+
+await DBOS.launch();
+logger.info("DBOS runtime started");
+
 const pgBossWorker = await startPgBossWorker({
    connectionString: env.DATABASE_URL,
    queues: agentPgBossQueues,
@@ -54,32 +64,31 @@ const pgBossWorker = await startPgBossWorker({
          boss,
          db,
          prompts: promptsClient,
+         redis,
       }),
 });
 logger.info("pg-boss runtime started");
 
-DBOS.setConfig({
-   name: "montte-worker",
-   systemDatabaseUrl: env.DATABASE_URL,
-   logLevel: env.LOG_LEVEL ?? "info",
-   runAdminServer: false,
-});
-
-DBOS.launch()
-   .then(() => {
-      logger.info("DBOS runtime started");
-   })
-   .catch((err: unknown) => {
-      logger.error({ err }, "DBOS launch failed");
-   });
-
 async function gracefulShutdown(signal: string) {
    logger.info(`${signal} received — shutting down`);
-   await pgBossWorker.stop();
-   await DBOS.shutdown();
-   await posthog.shutdown();
-   redis.disconnect();
-   await shutdownOtel();
+   const shutdowns: { name: string; promise: Promise<unknown> }[] = [
+      { name: "pg-boss", promise: pgBossWorker.stop() },
+      { name: "dbos", promise: DBOS.shutdown() },
+      { name: "posthog", promise: posthog.shutdown() },
+      { name: "redis", promise: Promise.resolve(redis.disconnect()) },
+      { name: "otel", promise: shutdownOtel() },
+   ];
+   const results = await Promise.allSettled(
+      shutdowns.map((shutdown) => shutdown.promise),
+   );
+   results.forEach((result, index) => {
+      if (result.status === "rejected") {
+         logger.error(
+            { err: result.reason, service: shutdowns[index]?.name },
+            "shutdown step failed",
+         );
+      }
+   });
    logger.info("Shutdown complete");
    process.exit(0);
 }

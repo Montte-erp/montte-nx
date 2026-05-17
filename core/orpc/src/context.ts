@@ -18,7 +18,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthog: PostHog;
    posthogPrompts: Prompts;
    redis: Redis;
-   pgBoss: PgBossClient;
+   pgBoss: Promise<PgBossClient>;
    workflowClient: DBOSClient;
    s3Client: S3Client;
 }

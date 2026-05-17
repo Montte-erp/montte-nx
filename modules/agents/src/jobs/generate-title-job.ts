@@ -1,6 +1,6 @@
 import { chat } from "@tanstack/ai";
 import { Result, TaggedError } from "better-result";
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import {
    fromDrizzle,
    type DrizzleTransactionLike,
@@ -16,7 +16,9 @@ import { threads } from "@core/database/schemas/threads";
 import { getLogger } from "@core/logging/root";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Prompts } from "@core/posthog/server";
+import type { Redis } from "@core/redis/connection";
 import { AGENT_PROMPTS, AGENT_QUEUES } from "../constants";
+import { agentsSseEvents } from "../sse";
 import {
    conversationTranscript,
    hasUserAndAssistantText,
@@ -44,7 +46,8 @@ export class GenerateThreadTitleJobError extends TaggedError(
       | "load_recent_messages"
       | "load_prompt"
       | "generate_title"
-      | "write_title";
+      | "write_title"
+      | "publish_title";
    message: string;
    threadId?: string;
    cause?: unknown;
@@ -130,6 +133,7 @@ export async function enqueueGenerateThreadTitleJob(options: {
 export async function handleGenerateThreadTitleJob(options: {
    db: DatabaseInstance;
    prompts: Prompts;
+   redis: Redis;
    job: Job<GenerateThreadTitleJobInput>;
 }) {
    const parsedInput = generateThreadTitleJobInputSchema.safeParse(
@@ -149,19 +153,33 @@ export async function handleGenerateThreadTitleJob(options: {
    const ctx = `[pg-boss generate-title] thread=${input.threadId}`;
    logger.info({ jobId: options.job.id, threadId: input.threadId }, "running");
 
-   const recent = await Result.tryPromise({
+   const loaded = await Result.tryPromise({
       try: () =>
          options.db.transaction(async (tx) => {
             const thread = await tx.query.threads.findFirst({
-               where: (f, { eq: eqFn }) => eqFn(f.id, input.threadId),
+               where: (f, { and: andFn, eq: eqFn }) =>
+                  andFn(
+                     eqFn(f.id, input.threadId),
+                     eqFn(f.teamId, input.teamId),
+                     eqFn(f.organizationId, input.organizationId),
+                  ),
             });
-            if (!thread || thread.title) return null;
-            return tx
+            if (!thread) return null;
+            if (thread.title) return { title: thread.title, recent: null };
+            const recent = await tx
                .select({ role: messages.role, parts: messages.parts })
                .from(messages)
-               .where(eq(messages.threadId, input.threadId))
+               .innerJoin(threads, eq(threads.id, messages.threadId))
+               .where(
+                  and(
+                     eq(messages.threadId, input.threadId),
+                     eq(threads.teamId, input.teamId),
+                     eq(threads.organizationId, input.organizationId),
+                  ),
+               )
                .orderBy(asc(messages.createdAt))
                .limit(6);
+            return { title: null, recent };
          }),
       catch: (cause) =>
          new GenerateThreadTitleJobError({
@@ -172,18 +190,32 @@ export async function handleGenerateThreadTitleJob(options: {
          }),
    });
 
-   if (Result.isError(recent)) {
-      return Result.err(recent.error);
+   if (Result.isError(loaded)) {
+      return Result.err(loaded.error);
    }
-   if (!recent.value || recent.value.length === 0) {
-      logger.info(`${ctx} skipping: no messages or title already set`);
+   if (!loaded.value) {
+      logger.info(`${ctx} skipping: thread not found in scope`);
+      return Result.ok(undefined);
+   }
+   if (loaded.value.title) {
+      const publish = await publishTitleUpdated({
+         redis: options.redis,
+         input,
+         title: loaded.value.title,
+      });
+      if (Result.isError(publish)) return Result.err(publish.error);
+      logger.info(`${ctx} republished existing title`);
+      return Result.ok(undefined);
+   }
+   if (!loaded.value.recent || loaded.value.recent.length === 0) {
+      logger.info(`${ctx} skipping: no messages`);
       return Result.ok(undefined);
    }
 
-   const transcript = conversationTranscript(recent.value);
+   const transcript = conversationTranscript(loaded.value.recent);
    if (
       transcript.length < MIN_TITLE_TRANSCRIPT_LENGTH ||
-      !hasUserAndAssistantText(recent.value)
+      !hasUserAndAssistantText(loaded.value.recent)
    ) {
       logger.info(`${ctx} skipping: conversation too shallow`);
       return Result.ok(undefined);
@@ -264,10 +296,18 @@ export async function handleGenerateThreadTitleJob(options: {
    const write = await Result.tryPromise({
       try: () =>
          options.db.transaction(async (tx) => {
-            await tx
+            return tx
                .update(threads)
                .set({ title })
-               .where(eq(threads.id, input.threadId));
+               .where(
+                  and(
+                     eq(threads.id, input.threadId),
+                     eq(threads.teamId, input.teamId),
+                     eq(threads.organizationId, input.organizationId),
+                     isNull(threads.title),
+                  ),
+               )
+               .returning({ title: threads.title });
          }),
       catch: (cause) =>
          new GenerateThreadTitleJobError({
@@ -281,7 +321,49 @@ export async function handleGenerateThreadTitleJob(options: {
    if (Result.isError(write)) {
       return Result.err(write.error);
    }
+   const writtenTitle = write.value[0]?.title;
+   if (!writtenTitle) {
+      logger.info(`${ctx} skipping: title already set concurrently`);
+      return Result.ok(undefined);
+   }
+
+   const publish = await publishTitleUpdated({
+      redis: options.redis,
+      input,
+      title: writtenTitle,
+   });
+   if (Result.isError(publish)) return Result.err(publish.error);
 
    logger.info({ threadId: input.threadId, title }, "completed");
    return Result.ok(undefined);
+}
+
+async function publishTitleUpdated(options: {
+   redis: Redis;
+   input: GenerateThreadTitleJobInput;
+   title: string;
+}) {
+   return Result.tryPromise({
+      try: async () => {
+         const publish = await agentsSseEvents.publish(
+            options.redis,
+            { kind: "team", id: options.input.teamId },
+            {
+               type: "agent.thread.title_updated",
+               payload: {
+                  threadId: options.input.threadId,
+                  title: options.title,
+               },
+            },
+         );
+         if (publish.isErr()) throw publish.error;
+      },
+      catch: (cause) =>
+         new GenerateThreadTitleJobError({
+            operation: "publish_title",
+            message: "Falha ao publicar título gerado.",
+            threadId: options.input.threadId,
+            cause,
+         }),
+   });
 }

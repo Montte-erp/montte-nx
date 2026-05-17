@@ -2,7 +2,7 @@ import { StreamProcessor, type UIMessage } from "@tanstack/ai";
 import type { ChatMiddleware } from "@tanstack/ai";
 import { Result } from "better-result";
 import dayjs from "dayjs";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
    messageMetadataSchema,
    messages,
@@ -25,13 +25,12 @@ const SUGGESTION_MESSAGE_INTERVAL = 4;
 
 export interface PersistMiddlewareDeps {
    db: DatabaseInstance;
-   pgBoss: PgBossClient;
+   pgBoss: Promise<PgBossClient>;
    redis: Redis;
    workflowClient: DBOSClient;
    threadId: string;
    teamId: string;
    organizationId: string;
-   threadHasTitle: boolean;
    history: UIMessage[];
 }
 
@@ -88,24 +87,46 @@ export function createPersistMiddleware(
                .set({ lastMessageAt: dayjs().toDate() })
                .where(eq(threads.id, deps.threadId));
 
-            if (
-               !deps.threadHasTitle &&
-               messageCount >= MIN_TITLE_MESSAGE_COUNT
-            ) {
-               const enqueueTitle = await enqueueGenerateThreadTitleJob({
-                  boss: deps.pgBoss,
-                  tx,
-                  input: {
-                     threadId: deps.threadId,
-                     teamId: deps.teamId,
-                     organizationId: deps.organizationId,
-                  },
-               });
-               if (Result.isError(enqueueTitle)) {
-                  logger.error(
-                     { err: enqueueTitle.error },
-                     "failed enqueue generate-title",
-                  );
+            if (messageCount >= MIN_TITLE_MESSAGE_COUNT) {
+               const [thread] = await tx
+                  .select({ title: threads.title })
+                  .from(threads)
+                  .where(
+                     and(
+                        eq(threads.id, deps.threadId),
+                        eq(threads.teamId, deps.teamId),
+                        eq(threads.organizationId, deps.organizationId),
+                        isNull(threads.title),
+                     ),
+                  )
+                  .limit(1);
+               if (thread) {
+                  const enqueueTitle = await Result.tryPromise({
+                     try: async () => {
+                        const boss = await deps.pgBoss;
+                        return enqueueGenerateThreadTitleJob({
+                           boss,
+                           tx,
+                           input: {
+                              threadId: deps.threadId,
+                              teamId: deps.teamId,
+                              organizationId: deps.organizationId,
+                           },
+                        });
+                     },
+                     catch: (cause) => cause,
+                  });
+                  if (Result.isError(enqueueTitle)) {
+                     logger.error(
+                        { err: enqueueTitle.error },
+                        "failed enqueue generate-title",
+                     );
+                  } else if (Result.isError(enqueueTitle.value)) {
+                     logger.error(
+                        { err: enqueueTitle.value.error },
+                        "failed enqueue generate-title",
+                     );
+                  }
                }
             }
 

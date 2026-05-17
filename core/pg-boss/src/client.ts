@@ -21,6 +21,7 @@ export function createPgBossClient(options: CreatePgBossClientOptions) {
       schedule: options.enableSchedules ?? false,
       supervise: options.supervise ?? true,
       persistWarnings: true,
+      warningRetentionDays: 7,
    };
    if (options.schema) constructorOptions.schema = options.schema;
 

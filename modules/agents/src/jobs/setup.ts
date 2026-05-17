@@ -3,6 +3,7 @@ import { Result } from "better-result";
 import { defaultPgBossWorkOptions } from "@core/pg-boss/worker";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Prompts } from "@core/posthog/server";
+import type { Redis } from "@core/redis/connection";
 import {
    generateThreadTitleQueue,
    handleGenerateThreadTitleJob,
@@ -15,6 +16,7 @@ export async function registerAgentPgBossJobs(options: {
    boss: PgBossClient;
    db: DatabaseInstance;
    prompts: Prompts;
+   redis: Redis;
 }) {
    await options.boss.work<GenerateThreadTitleJobInput>(
       generateThreadTitleQueue.name,
@@ -24,6 +26,7 @@ export async function registerAgentPgBossJobs(options: {
             const result = await handleGenerateThreadTitleJob({
                db: options.db,
                prompts: options.prompts,
+               redis: options.redis,
                job,
             });
             if (Result.isError(result)) throw result.error;

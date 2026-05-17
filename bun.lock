@@ -385,6 +385,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@core/logging": "workspace:*",
+        "better-result": "catalog:validation",
         "pg-boss": "catalog:workers",
       },
       "devDependencies": {

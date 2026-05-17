@@ -172,7 +172,6 @@ async function handlePost({ request }: { request: Request }) {
             threadId: input.threadId,
             teamId: ctx.teamId,
             organizationId: ctx.organizationId,
-            threadHasTitle: Boolean(thread.title),
             history,
          }),
       ],
