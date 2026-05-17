@@ -1,5 +1,5 @@
 import * as accountRouter from "@modules/account/router/profile";
-import * as threadsRouter from "@modules/agents/router/threads";
+import * as agentChatRouter from "@modules/agents/router/chat";
 import * as agentSettingsRouter from "@modules/account/router/agent-settings";
 import * as apiKeysRouter from "@modules/account/router/api-keys";
 import * as bankAccountsRouter from "@modules/finance/router/bank-accounts";
@@ -48,13 +48,14 @@ export default {
    transactions: transactionsRouter,
    organization: organizationRouter,
    threads: {
-      create: threadsRouter.create,
-      getById: threadsRouter.getById,
-      list: threadsRouter.list,
-      remove: threadsRouter.remove,
-      removeBulk: threadsRouter.removeBulk,
-      removeMessage: threadsRouter.removeMessage,
-      saveAssistantMessage: threadsRouter.saveAssistantMessage,
-      update: threadsRouter.update,
+      create: agentChatRouter.create,
+      chat: agentChatRouter.chat,
+      getById: agentChatRouter.getById,
+      list: agentChatRouter.list,
+      remove: agentChatRouter.remove,
+      removeBulk: agentChatRouter.removeBulk,
+      removeMessage: agentChatRouter.removeMessage,
+      saveAssistantMessage: agentChatRouter.saveAssistantMessage,
+      update: agentChatRouter.update,
    },
 };

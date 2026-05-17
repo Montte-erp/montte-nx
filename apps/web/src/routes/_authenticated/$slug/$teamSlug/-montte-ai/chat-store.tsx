@@ -21,7 +21,6 @@ import {
    type LucideIcon,
 } from "lucide-react";
 import dayjs from "dayjs";
-import { fromPromise } from "neverthrow";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { createPersistedStore } from "@/lib/store";
 import { client } from "@/integrations/orpc/client";
@@ -290,10 +289,6 @@ function collapseAdjacentAssistantMessages(messages: UIMessage[]): UIMessage[] {
    return collapsed;
 }
 
-function lastAssistantMessage(messages: UIMessage[]): UIMessage | null {
-   return messages.findLast((message) => message.role === "assistant") ?? null;
-}
-
 function convertMessage(message: UIMessage): ThreadMessageLike {
    const toolResults = new Map<string, { content: string; error?: string }>();
    for (const part of message.parts) {
@@ -380,30 +375,10 @@ export function ChatSessionProvider({
    const chat = useChat({
       connection,
       initialMessages: [],
-      onFinish: (message) => {
+      onFinish: () => {
          const id = chatStore.state.activeThreadId;
          if (!id) return;
-         const sourceMessages = chat.messages.some(
-            (item) => item.id === message.id,
-         )
-            ? chat.messages
-            : [...chat.messages, message];
-         const assistantMessage = lastAssistantMessage(
-            collapseAdjacentAssistantMessages(sourceMessages),
-         );
-         if (assistantMessage === null) return;
-         if (assistantMessage.parts.length === 0) return;
-         void fromPromise(
-            client.threads.saveAssistantMessage({
-               threadId: id,
-               parts: assistantMessage.parts,
-            }),
-            () => null,
-         ).then((result) => {
-            if (result.isErr())
-               toast.error("Falha ao salvar resposta da Montte AI.");
-            if (result.isOk()) void refreshChatData(queryClient, id);
-         });
+         void refreshChatData(queryClient, id);
       },
       onError: () => toast.error("Falha no streaming da Montte AI."),
    });
@@ -467,14 +442,14 @@ export function ChatSessionProvider({
    const ensureThread = useCallback(async (): Promise<string | null> => {
       const existing = chatStore.state.activeThreadId;
       if (existing !== null) return existing;
-      const result = await fromPromise(client.threads.create({}), () => null);
-      if (result.isErr()) {
+      const thread = await client.threads.create({}).catch(() => null);
+      if (thread === null) {
          toast.error("Falha ao criar conversa.");
          return null;
       }
       void refreshChatData(queryClient);
-      setActiveThread(result.value.id);
-      return result.value.id;
+      setActiveThread(thread.id);
+      return thread.id;
    }, [queryClient]);
 
    const onNew = useCallback(
@@ -521,11 +496,10 @@ export function ChatSessionProvider({
       async (messageId: string) => {
          const id = chatStore.state.activeThreadId;
          if (!id) return;
-         const result = await fromPromise(
-            client.threads.removeMessage({ threadId: id, messageId }),
-            () => null,
-         );
-         if (result.isErr()) {
+         const removed = await client.threads
+            .removeMessage({ threadId: id, messageId })
+            .catch(() => null);
+         if (removed === null) {
             toast.error("Falha ao excluir mensagem.");
             return;
          }

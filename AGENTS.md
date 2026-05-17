@@ -211,6 +211,8 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 - Use pg-boss for simple operational jobs: one-shot background work, retries, DLQ, singleton/debounce behavior, queueing from a Drizzle transaction, and non-critical side effects that can be retried or manually inspected. Current default candidate: `agent-title`.
 - pg-boss consumers run only in `apps/worker`. Web may enqueue through the oRPC context `pgBoss` promise and the package helper, but must not run workers/consumers.
 - pg-boss jobs log through `@core/logging` (`evlog`) with structured fields (`module`, `message`, ids, tenant scope). Do not use DBOS.logger in pg-boss jobs.
+- pg-boss jobs should use the platform features directly instead of local throttling logic: `retryLimit`, `retryDelay`, `retryBackoff`, `expireInSeconds`, `retentionSeconds`, `deadLetter`, `singletonKey`, `singletonSeconds`, `singletonNextSlot`, `sendDebounced`, `sendThrottled`, and `group` when the queue semantics need them. For `key_strict_fifo`, always provide a stable `singletonKey`.
+- Every pg-boss job needs a Zod input schema, a typed `Result` return, a typed `TaggedError` union carrying evlog catalog errors, queue registration helpers, and a worker handler that validates `job.data` before doing work. Empty/missing pg-boss job ids are errors, not successful no-ops.
 - If a job needs DBOS steps, workflow replay, deterministic scheduling, or is financially/security critical, keep it in DBOS instead of porting it to pg-boss.
 
 **Workflow rules:**
@@ -222,7 +224,7 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 - Self-rescheduling: re-check status in tx → do work → compute next wake **inside `DBOS.runStep`** → `DBOS.startWorkflow(self, { workflowID: "<deterministic-per-period>", queueName, enqueueOptions: { delaySeconds } })`.
 - Workflow inputs always carry both `teamId` and `organizationId` — don't look them up inside steps.
 
-Existing queues (modules with workflows: `classification`, `agents`): `workflow:classify`, `workflow:derive-keywords` (classification); `workflow:agent-title`, `workflow:agent-suggestions` (agents via `setupAgentsWorkflows(deps)`). Worker startup (`apps/worker/src/index.ts`): `initOtel` → `setupClassificationWorkflows(deps)` → `setupAgentsWorkflows(deps)` → `DBOS.setConfig` → `DBOS.launch()`. Each `setup<Module>Workflows` registers that module's current and future queues/workflows; both must complete before `DBOS.launch()`.
+Existing queues (modules with workflows: `classification`): `workflow:classify`, `workflow:derive-keywords` (classification). Agent title/suggestions are pg-boss jobs, not DBOS workflows. Worker startup (`apps/worker/src/index.ts`): `initOtel` → `setupClassificationWorkflows(deps)` → `setup<Module>Workflows(deps)` for modules that truly own DBOS workflows → `DBOS.setConfig` → `DBOS.launch()`; then start pg-boss and register job consumers such as `agent-title` / `agent-suggestions`. Each `setup<Module>Workflows` registers that module's current and future DBOS queues/workflows; pg-boss queues are registered separately.
 
 **Testing:** mock `@dbos-inc/dbos-sdk` with `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos` — `registerWorkflow` must return the function directly. pglite-backed `setupTestDb()` for assertions. Time-mocked: `vi.useFakeTimers()` + `vi.setSystemTime(T0)`. End-to-end real-runtime smoke: `__tests__/integration/dbos-smoke.test.ts` (pglite + `@electric-sql/pglite-socket`). Example: `__tests__/workflows/period-end-invoice.test.ts`.
 
@@ -238,7 +240,7 @@ Request telemetry belongs in the evlog wide event and leaves through the PostHog
 
 No standalone health heartbeat/logger in `@core/logging`: Railway health stays on `/api/ping`, and service/request telemetry belongs to evlog or OTEL/TanStack AI. Do not keep unused SDK oRPC procedure layers; API key auth should live in the active oRPC middleware path when needed.
 
-Error direction: keep `WebAppError` only as the current oRPC/HTTP transport adapter. New domain errors belong to the owning module, not `@core/logging`: define a module-local `defineErrorCatalog("<module>", ...)`, and when recoverable errors need to flow through `Result`, use `TaggedError("<Module>Error")<{ error: ReturnType<typeof moduleErrors.SOME_ERROR>; ...payload }>` directly. Do not add wrapper classes or factories around `TaggedError`. As modules are touched, migrate them away from direct `WebAppError` domain usage at the module boundary.
+Error direction: keep `WebAppError` only as the current oRPC/HTTP transport adapter. New domain errors belong to the owning module, not `@core/logging`: define a local `defineErrorCatalog("<bounded-context>", ...)` in the file/bounded context that owns the failure, register it through `declare module "evlog"`, and when recoverable errors need to flow through `Result`, use one `TaggedError("<Context>Error")<{ error: ReturnType<typeof catalog.SOME_ERROR>; ...payload }>` per bounded context. Do not add wrapper classes or factories around `TaggedError`. Do not create module-wide `errors.ts` files just to centralize errors; colocate the catalog with the router/job/runtime/tool that owns the contract. As modules are touched, migrate them away from direct `WebAppError` domain usage at the module boundary.
 
 Audit logs are not part of the current migration. Do not wire `auditEnricher`, `auditOnly`, signed filesystem journals, MinIO journals, or `log.audit()` until the audit phase is explicitly reopened.
 
@@ -257,7 +259,51 @@ const result = await chat({
 });
 ```
 
-Montte AI agent lives in `modules/agents/src/agent.ts`. Built on `@tanstack/ai` + `@tanstack/ai-openrouter`; tools wrap oRPC procedures via `createAgentToolClient` (`modules/agents/src/orpc-tool-router.ts`); skill catalog from `modules/agents/src/skills.ts`. No Mastra, no `@packages/agents`.
+`modules/agents` owns the agentic platform runtime: chat execution, prompts, tools, agent-owned thread state, OpenUI/AG-UI integration, AI telemetry, and agent operational jobs. Non-agentic CRUD/actions stay in the owning domain modules and may be exposed to the agent only through typed tools.
+
+Preferred structure:
+
+```text
+modules/agents/src/
+  router/chat.ts    # oRPC chat stream + thread procedures
+  runtime/          # chat(), middleware, model config, prompt assembly
+  threads/          # thread/message schemas and persistence use cases
+  tools/            # agent tool registry and domain tool adapters
+  openui/           # OpenUI component library, prompt spec, examples
+  jobs/             # pg-boss jobs: title, suggestions, lightweight async work
+  workflows/        # DBOS only for durable multi-step agentic workflows
+  harness/          # feature state, acceptance criteria, run evidence
+  telemetry/        # AI trace attributes and product analytics mapping
+```
+
+TanStack AI chat lifecycle logic belongs in `ChatMiddleware`, not endpoint/client callbacks. Keep the runtime middleware cohesive in `runtime/middleware/create-agent-runtime-middlewares.ts`; do not split one tiny file per side effect. Title and suggestions are pg-boss jobs triggered from middleware `onFinish`; keep them out of DBOS unless they become durable business workflows requiring replay/steps. Use `ctx.defer()` for non-blocking side effects, pg-boss singleton/debounce/retry/DLQ options for operational pacing, and wrap recoverable failures with `better-result` (`Result.tryPromise`, tagged errors), not raw `try/catch`.
+
+Chat transport belongs in oRPC, not a hand-written `/api/chat` route. Expose the stream as a typed oRPC procedure returning an Event Iterator (`streamToEventIterator`) and consume it from the TanStack AI client through an RPC stream adapter. Exclude streaming procedures from oRPC batching.
+
+Agents code uses Zod at every contract edge: HTTP body, forwarded props, tool input/output, OpenUI tool specs, job payloads, workflow inputs, message metadata, and persisted assistant parts. Do not let `unknown` cross the edge; parse or convert it into a typed catalog error immediately.
+
+Agents error pattern:
+
+- New agents/domain flows use `better-result` with `TaggedError` carrying evlog catalog errors and explicit pt-BR messages; do not import `WebAppError` or mix `neverthrow` into `modules/agents` code.
+- Do not create a module-wide `errors.ts`. Define the evlog catalog inside the owner: `agents.thread` in `router/chat.ts`, `agents.runtime` in the runtime middleware, `agents.job.title` in the title job, `agents.job.suggestions` in the suggestions job, and tool-specific catalogs in the owning tool file.
+- Use one `TaggedError` class per bounded context (`AgentThreadError`, `AgentRuntimeError`, job/tool error). The `error` catalog return type is the discriminator; do not create one class per catalog code.
+- A `TaggedError` payload should include `error: ReturnType<typeof catalog.ERROR_CODE>` plus the typed ids that help operate the failure (`threadId`, `teamId`, `organizationId`, `jobId`, `messageCount`). Avoid generic `operation` strings when the catalog code already identifies the failure.
+- Do not pass unknown `cause` through agents errors and do not add `toError` helpers. Every expected failure must be represented by a catalog code plus controlled `internal` metadata.
+- oRPC handlers in `modules/agents` may throw these typed tagged errors directly; do not translate them to `WebAppError` inside the module.
+
+Agents pg-boss pattern:
+
+- Title and suggestions are simple operational jobs, not DBOS workflows. Enqueue from `ChatMiddleware.onFinish` with `ctx.defer()` so chat response streaming does not wait for title/suggestion generation.
+- Title generation uses a stable per-thread singleton/debounce window so repeated messages do not create competing title jobs.
+- Suggestions use `sendDebounced` keyed by `threadId` so only the latest eligible message window wins.
+- Job files own the queue names, dead-letter queues, queue creation, enqueue helper, Zod payload schema, handler, catalog, and tagged error type. Keep that cohesion in one job file unless the job grows into multiple real subdomains.
+- Consumers live in `apps/worker`; web only enqueues through the `pgBoss` context promise and package helpers.
+
+TanStack AI streams AG-UI events. For assistant-ui, prefer the native AG-UI runtime once the endpoint speaks the AG-UI contract: `@assistant-ui/react-ag-ui` + `HttpAgent` from `@ag-ui/client` + `useAgUiRuntime({ agent })`. It parses `TEXT_MESSAGE_*`, `TOOL_CALL_*`, `THINKING_*`/`REASONING_*`, `STATE_SNAPSHOT`, `STATE_DELTA`, `RUN_ERROR`, and cancellation into assistant-ui state. While Montte keeps external thread state in TanStack DB/Query, `useExternalStoreRuntime` may remain as a transition adapter, but do not build a second custom AG-UI parser in the app.
+
+OpenUI is the generative UI layer, not a replacement for AG-UI transport. Backend prompt assembly should include the OpenUI component/tool spec and ask the model for OpenUI Lang; the frontend renders OpenUI content with the OpenUI renderer inside assistant-ui message parts. Keep OpenUI component definitions and tool specs in `modules/agents/src/openui`, and generate/update the prompt spec as part of the agents package workflow.
+
+No Mastra, no `@packages/agents`, no Vercel AI SDK.
 
 ---
 

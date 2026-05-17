@@ -1,14 +1,53 @@
 import { chat, toolDefinition } from "@tanstack/ai";
 import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
+import { defineErrorCatalog } from "evlog";
+import { Result, TaggedError } from "better-result";
 import { z } from "zod";
-import { fromPromise } from "neverthrow";
 import { proModel } from "@core/ai/models";
-import { WebAppError } from "@core/logging/errors";
 import { aiTraceAttributes } from "@core/ai/otel";
 import { getAiTracer } from "@core/logging";
 import type { Prompts } from "@core/posthog/server";
 import { AGENT_PROMPTS } from "@modules/agents/constants";
 import { SKILLS } from "@modules/agents/skills";
+
+const advisorErrors = defineErrorCatalog("agents.advisor", {
+   PROMPT_LOAD_FAILED: {
+      status: 500,
+      message: "Falha ao carregar prompt do advisor.",
+      why: "O prompt remoto do advisor não pôde ser carregado.",
+      fix: "Tente novamente. Se persistir, verifique a configuração de prompts.",
+      tags: ["agents", "advisor", "prompt"],
+   },
+   RUN_FAILED: {
+      status: 500,
+      message: "Advisor falhou ao responder.",
+      why: "A chamada de IA do advisor falhou.",
+      fix: "Tente novamente.",
+      tags: ["agents", "advisor", "ai"],
+   },
+   EMPTY_RESPONSE: {
+      status: 500,
+      message: "Advisor não retornou conteúdo.",
+      why: "A chamada de IA terminou sem texto utilizável.",
+      fix: "Tente novamente com mais contexto.",
+      tags: ["agents", "advisor", "ai"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "agents.advisor": typeof advisorErrors;
+   }
+}
+
+type AdvisorCatalogError =
+   | ReturnType<typeof advisorErrors.PROMPT_LOAD_FAILED>
+   | ReturnType<typeof advisorErrors.RUN_FAILED>
+   | ReturnType<typeof advisorErrors.EMPTY_RESPONSE>;
+
+class AdvisorToolError extends TaggedError("AdvisorToolError")<{
+   error: AdvisorCatalogError;
+}>() {}
 
 export interface AdvisorToolDeps {
    prompts: Prompts;
@@ -59,14 +98,17 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
          };
       }
 
-      const templateResult = await fromPromise(
-         deps.prompts.get(AGENT_PROMPTS.advisor, {
-            withMetadata: false,
-         }),
-         () => "Falha ao carregar prompt do advisor.",
-      );
-      if (templateResult.isErr())
-         throw WebAppError.internal(templateResult.error);
+      const templateResult = await Result.tryPromise({
+         try: () =>
+            deps.prompts.get(AGENT_PROMPTS.advisor, {
+               withMetadata: false,
+            }),
+         catch: () =>
+            new AdvisorToolError({
+               error: advisorErrors.PROMPT_LOAD_FAILED(),
+            }),
+      });
+      if (Result.isError(templateResult)) throw templateResult.error;
 
       const systemPrompt = deps.prompts.compile(templateResult.value, {});
 
@@ -83,54 +125,62 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
          ADVISOR_TIMEOUT_MS,
       );
 
-      const result = await fromPromise(
-         chat({
-            adapter: proModel,
-            systemPrompts: [systemPrompt],
-            messages: [
-               {
-                  role: "user",
-                  content: [{ type: "text", content: userContent }],
-               },
-            ],
-            stream: false,
-            abortController: advisorController,
-            middleware: [
-               otelMiddleware({
-                  tracer: getAiTracer(),
-                  captureContent: false,
-                  attributeEnricher: () =>
-                     aiTraceAttributes({
-                        distinctId: deps.distinctId,
-                        userId: deps.userId,
-                        organizationId: deps.organizationId,
-                        teamId: deps.teamId,
-                        threadId: deps.threadId,
-                        promptName: AGENT_PROMPTS.advisor,
-                        customProperties: {
-                           agent_role: "advisor",
-                           ...(deps.organizationId && {
-                              agent_organization_id: deps.organizationId,
-                           }),
-                           ...(deps.teamId && { agent_team_id: deps.teamId }),
-                           ...(deps.threadId && {
-                              agent_thread_id: deps.threadId,
-                           }),
-                           ...(deps.turnId && { agent_turn_id: deps.turnId }),
-                        },
-                     }),
-               }),
-            ],
-         }),
-         () => "Advisor falhou ao responder.",
-      );
+      const result = await Result.tryPromise({
+         try: () =>
+            chat({
+               adapter: proModel,
+               systemPrompts: [systemPrompt],
+               messages: [
+                  {
+                     role: "user",
+                     content: [{ type: "text", content: userContent }],
+                  },
+               ],
+               stream: false,
+               abortController: advisorController,
+               middleware: [
+                  otelMiddleware({
+                     tracer: getAiTracer(),
+                     captureContent: false,
+                     attributeEnricher: () =>
+                        aiTraceAttributes({
+                           distinctId: deps.distinctId,
+                           userId: deps.userId,
+                           organizationId: deps.organizationId,
+                           teamId: deps.teamId,
+                           threadId: deps.threadId,
+                           promptName: AGENT_PROMPTS.advisor,
+                           customProperties: {
+                              agent_role: "advisor",
+                              ...(deps.organizationId && {
+                                 agent_organization_id: deps.organizationId,
+                              }),
+                              ...(deps.teamId && {
+                                 agent_team_id: deps.teamId,
+                              }),
+                              ...(deps.threadId && {
+                                 agent_thread_id: deps.threadId,
+                              }),
+                              ...(deps.turnId && {
+                                 agent_turn_id: deps.turnId,
+                              }),
+                           },
+                        }),
+                  }),
+               ],
+            }),
+         catch: () =>
+            new AdvisorToolError({
+               error: advisorErrors.RUN_FAILED(),
+            }),
+      });
       clearTimeout(timeout);
 
-      if (result.isErr()) {
-         throw WebAppError.internal(result.error);
-      }
+      if (Result.isError(result)) throw result.error;
       if (!result.value)
-         throw WebAppError.internal("Advisor não retornou conteúdo.");
+         throw new AdvisorToolError({
+            error: advisorErrors.EMPTY_RESPONSE(),
+         });
       return {
          guidance: result.value,
          fallback: false,

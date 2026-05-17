@@ -7,10 +7,11 @@ export const AGENT_PROMPTS = {
 
 export type AgentPromptKey = keyof typeof AGENT_PROMPTS;
 
-export const AGENT_QUEUES = {
+export const AGENT_JOB_QUEUES = {
    generateTitle: "agent-title",
    generateTitleDeadLetter: "agent-title-dlq",
    refreshSuggestions: "agent-suggestions",
+   refreshSuggestionsDeadLetter: "agent-suggestions-dlq",
 } as const;
 
 export interface PageContext {
@@ -20,4 +21,5 @@ export interface PageContext {
    skillHint?: string;
 }
 
-export type AgentQueueName = (typeof AGENT_QUEUES)[keyof typeof AGENT_QUEUES];
+export type AgentJobQueueName =
+   (typeof AGENT_JOB_QUEUES)[keyof typeof AGENT_JOB_QUEUES];

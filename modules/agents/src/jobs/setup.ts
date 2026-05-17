@@ -9,10 +9,18 @@ import {
    handleGenerateThreadTitleJob,
    type GenerateThreadTitleJobInput,
 } from "./generate-title-job";
+import {
+   handleRefreshThreadSuggestionsJob,
+   refreshThreadSuggestionsDeadLetterQueue,
+   refreshThreadSuggestionsQueue,
+   type RefreshThreadSuggestionsJobInput,
+} from "./refresh-suggestions-job";
 
 export const agentPgBossQueues = [
    generateThreadTitleDeadLetterQueue,
    generateThreadTitleQueue,
+   refreshThreadSuggestionsDeadLetterQueue,
+   refreshThreadSuggestionsQueue,
 ];
 
 export async function registerAgentPgBossJobs(options: {
@@ -24,13 +32,35 @@ export async function registerAgentPgBossJobs(options: {
       generateThreadTitleQueue.name,
       defaultPgBossWorkOptions,
       async (jobs) => {
+         const errors: Error[] = [];
          for (const job of jobs) {
             const result = await handleGenerateThreadTitleJob({
                db: options.db,
                prompts: options.prompts,
                job,
             });
-            if (Result.isError(result)) throw result.error;
+            if (Result.isError(result)) errors.push(result.error);
+         }
+         if (errors.length > 0) {
+            throw new AggregateError(errors);
+         }
+      },
+   );
+   await options.boss.work<RefreshThreadSuggestionsJobInput>(
+      refreshThreadSuggestionsQueue.name,
+      defaultPgBossWorkOptions,
+      async (jobs) => {
+         const errors: Error[] = [];
+         for (const job of jobs) {
+            const result = await handleRefreshThreadSuggestionsJob({
+               db: options.db,
+               prompts: options.prompts,
+               job,
+            });
+            if (Result.isError(result)) errors.push(result.error);
+         }
+         if (errors.length > 0) {
+            throw new AggregateError(errors);
          }
       },
    );

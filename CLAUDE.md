@@ -214,7 +214,7 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 - Self-rescheduling: re-check status in tx → do work → compute next wake **inside `DBOS.runStep`** → `DBOS.startWorkflow(self, { workflowID: "<deterministic-per-period>", queueName, enqueueOptions: { delaySeconds } })`.
 - Workflow inputs always carry both `teamId` and `organizationId` — don't look them up inside steps.
 
-Existing queues (modules with workflows: `classification`, `agents`): `workflow:classify`, `workflow:derive-keywords` (classification); `workflow:agent-title`, `workflow:agent-suggestions` (agents via `setupAgentsWorkflows(deps)`). Worker startup (`apps/worker/src/index.ts`): `initOtel` → `setupClassificationWorkflows(deps)` → `setupAgentsWorkflows(deps)` → `DBOS.setConfig` → `DBOS.launch()`. Each `setup<Module>Workflows` registers that module's current and future queues/workflows; both must complete before `DBOS.launch()`.
+Existing queues (modules with workflows: `classification`): `workflow:classify`, `workflow:derive-keywords` (classification). Agent title/suggestions are pg-boss jobs, not DBOS workflows. Worker startup (`apps/worker/src/index.ts`): `initOtel` → `setupClassificationWorkflows(deps)` → `setup<Module>Workflows(deps)` for modules that truly own DBOS workflows → `DBOS.setConfig` → `DBOS.launch()`; then start pg-boss and register job consumers such as `agent-title` / `agent-suggestions`. Each `setup<Module>Workflows` registers that module's current and future DBOS queues/workflows; pg-boss queues are registered separately.
 
 **Testing:** mock `@dbos-inc/dbos-sdk` with `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos` — `registerWorkflow` must return the function directly. pglite-backed `setupTestDb()` for assertions. Time-mocked: `vi.useFakeTimers()` + `vi.setSystemTime(T0)`. End-to-end real-runtime smoke: `__tests__/integration/dbos-smoke.test.ts` (pglite + `@electric-sql/pglite-socket`). Example: `__tests__/workflows/period-end-invoice.test.ts`.
 
@@ -249,7 +249,34 @@ const result = await chat({
 });
 ```
 
-Montte AI agent lives in `modules/agents/src/agent.ts`. Built on `@tanstack/ai` + `@tanstack/ai-openrouter`; tools wrap oRPC procedures via `createAgentToolClient` (`modules/agents/src/orpc-tool-router.ts`); skill catalog from `modules/agents/src/skills.ts`. No Mastra, no `@packages/agents`.
+`modules/agents` owns the agentic platform runtime: chat execution, prompts, tools, agent-owned thread state, OpenUI/AG-UI integration, AI telemetry, and agent operational jobs. Non-agentic CRUD/actions stay in the owning domain modules and may be exposed to the agent only through typed tools.
+
+Preferred structure:
+
+```text
+modules/agents/src/
+  router/chat.ts    # oRPC chat stream + thread procedures
+  runtime/          # chat(), middleware, model config, prompt assembly
+  threads/          # thread/message schemas and persistence use cases
+  tools/            # agent tool registry and domain tool adapters
+  openui/           # OpenUI component library, prompt spec, examples
+  jobs/             # pg-boss jobs: title, suggestions, lightweight async work
+  workflows/        # DBOS only for durable multi-step agentic workflows
+  harness/          # feature state, acceptance criteria, run evidence
+  telemetry/        # AI trace attributes and product analytics mapping
+```
+
+TanStack AI chat lifecycle logic belongs in `ChatMiddleware`, not endpoint/client callbacks. Keep the runtime middleware cohesive in `runtime/middleware/create-agent-runtime-middlewares.ts`; do not split one tiny file per side effect. Title and suggestions are pg-boss jobs triggered from middleware `onFinish`; keep them out of DBOS unless they become durable business workflows requiring replay/steps. Use `ctx.defer()` for non-blocking side effects, pg-boss singleton/debounce/retry/DLQ options for operational pacing, and wrap recoverable failures with `better-result` (`Result.tryPromise`, tagged errors), not raw `try/catch`.
+
+Chat transport belongs in oRPC, not a hand-written `/api/chat` route. Expose the stream as a typed oRPC procedure returning an Event Iterator (`streamToEventIterator`) and consume it from the TanStack AI client through an RPC stream adapter. Exclude streaming procedures from oRPC batching.
+
+Agents code uses Zod at every contract edge: HTTP body, forwarded props, tool input/output, OpenUI tool specs, job payloads, workflow inputs, message metadata, and persisted assistant parts. New agents/domain flows use `better-result` with `TaggedError` carrying evlog catalog errors and explicit pt-BR messages; do not import `WebAppError` or mix `neverthrow` into `modules/agents` code. Do not create a module-wide `errors.ts`: define the evlog catalog inside the owning file/bounded context, such as `agents.thread` in `router/chat.ts`.
+
+TanStack AI streams AG-UI events. For assistant-ui, prefer the native AG-UI runtime once the endpoint speaks the AG-UI contract: `@assistant-ui/react-ag-ui` + `HttpAgent` from `@ag-ui/client` + `useAgUiRuntime({ agent })`. It parses `TEXT_MESSAGE_*`, `TOOL_CALL_*`, `THINKING_*`/`REASONING_*`, `STATE_SNAPSHOT`, `STATE_DELTA`, `RUN_ERROR`, and cancellation into assistant-ui state. While Montte keeps external thread state in TanStack DB/Query, `useExternalStoreRuntime` may remain as a transition adapter, but do not build a second custom AG-UI parser in the app.
+
+OpenUI is the generative UI layer, not a replacement for AG-UI transport. Backend prompt assembly should include the OpenUI component/tool spec and ask the model for OpenUI Lang; the frontend renders OpenUI content with the OpenUI renderer inside assistant-ui message parts. Keep OpenUI component definitions and tool specs in `modules/agents/src/openui`, and generate/update the prompt spec as part of the agents package workflow.
+
+No Mastra, no `@packages/agents`, no Vercel AI SDK.
 
 ---
 
