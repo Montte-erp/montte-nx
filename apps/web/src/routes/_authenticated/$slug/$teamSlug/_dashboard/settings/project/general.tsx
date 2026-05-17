@@ -17,7 +17,7 @@ import "dayjs/locale/pt-br";
 import { Hash, Loader2, Settings2 } from "lucide-react";
 import { Suspense, useState, useTransition } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import { DefaultHeader } from "../../../-layout/default-header";

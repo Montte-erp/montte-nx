@@ -12,7 +12,7 @@ import {
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { useCallback, useState, useTransition } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { useFileDownload } from "@/hooks/use-file-download";
 import type { DataImportConfig, ImportTemplateFile } from "./use-data-import";
 import type { UseDataImportApi } from "./use-data-import";

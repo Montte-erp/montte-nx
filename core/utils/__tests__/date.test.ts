@@ -60,6 +60,7 @@ describe("date utilities", () => {
          const invalidDate = new Date("invalid");
          const result = formatDate(invalidDate);
          expect(result).toBe("-");
+         expect(formatDate("invalid-date")).toBe("-");
       });
 
       it("should use UTC by default", () => {

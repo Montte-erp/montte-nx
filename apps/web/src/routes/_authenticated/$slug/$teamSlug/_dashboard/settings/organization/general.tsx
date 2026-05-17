@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
 import { authClient } from "@/integrations/better-auth/auth-client";
@@ -71,10 +71,15 @@ function DisplayNameSection({
    organizationId: string;
    currentName: string;
 }) {
+   const currentNormalizedName = currentName.trim();
    const form = useForm({
       defaultValues: { name: currentName },
       onSubmit: async ({ value, formApi }) => {
          const name = value.name.trim();
+         if (name === currentNormalizedName) {
+            formApi.reset({ name });
+            return;
+         }
          await authClient.organization.update(
             {
                data: { name },
@@ -142,12 +147,17 @@ function DisplayNameSection({
             <form.Subscribe
                selector={(state) => ({
                   canSubmit: state.canSubmit,
+                  hasNameChange:
+                     state.values.name.trim() !== currentNormalizedName,
                   isDirty: state.isDirty,
                   isSubmitting: state.isSubmitting,
                })}
             >
-               {({ canSubmit, isDirty, isSubmitting }) => (
-                  <Button disabled={!isDirty || !canSubmit} type="submit">
+               {({ canSubmit, hasNameChange, isDirty, isSubmitting }) => (
+                  <Button
+                     disabled={!isDirty || !hasNameChange || !canSubmit}
+                     type="submit"
+                  >
                      <span className="flex items-center gap-2">
                         {isSubmitting && (
                            <Loader2 className="size-4 animate-spin" />

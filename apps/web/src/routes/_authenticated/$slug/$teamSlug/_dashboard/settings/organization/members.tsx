@@ -30,7 +30,7 @@ import {
 import dayjs from "dayjs";
 import { Mail, Plus, RotateCw, ShieldCheck, Users, X } from "lucide-react";
 import { startTransition, useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";

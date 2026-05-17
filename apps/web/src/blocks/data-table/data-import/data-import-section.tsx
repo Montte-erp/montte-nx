@@ -9,7 +9,7 @@ import { cn } from "@packages/ui/lib/utils";
 import { Check, Loader2, TriangleAlert, X } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import type { DataImportConfig } from "./use-data-import";
 import type { UseDataImportApi } from "./use-data-import";

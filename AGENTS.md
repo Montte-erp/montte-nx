@@ -119,7 +119,7 @@ Available routers (aggregated keys): account, agentSettings, analytics, apiKeys,
 - Global `MutationCache` invalidates all queries after every mutation. Opt out with `meta: { skipGlobalInvalidation: true }`.
 - Filters / sort / pagination / tabs / selected ids → URL search params via `validateSearch` + `navigate({ search: prev => …, replace: true })`. Not `useState`.
 - SSE → `useQuery + experimental_liveOptions`. Never `consumeEventIterator + useEffect`.
-- Types: `import type { Inputs, Outputs } from "@/integrations/orpc/client"`. Frontend never imports `@core/*`.
+- Types: `import type { Inputs, Outputs } from "@/integrations/orpc/client"`. Frontend never imports `@core/*`, except frontend-safe shared utilities from `@core/utils/*` such as date/text formatting; do not create an app-web bridge just to avoid `@core/utils`.
 - Slugs: use `useDashboardSlugs` / `useOrgSlug` / `useTeamSlug` / `useActiveOrganization` / `useActiveTeam`. Never raw `useParams`.
 - Direct `orpc.*` calls only inside route loaders for prefetch — components always use `useMutation`/`useSuspenseQuery`.
 

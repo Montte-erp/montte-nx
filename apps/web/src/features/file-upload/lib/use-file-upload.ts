@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 
 interface FileUploadOptions {
    /** Maximum file size in bytes (default: 5MB) */

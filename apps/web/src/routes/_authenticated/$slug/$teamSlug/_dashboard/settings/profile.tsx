@@ -32,7 +32,7 @@ import { QRCodeSVG } from "qrcode.react";
 import type React from "react";
 import { useCallback, useState, useTransition } from "react";
 import type { FallbackProps } from "react-error-boundary";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { useUploadImage } from "@/hooks/use-upload-image";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";

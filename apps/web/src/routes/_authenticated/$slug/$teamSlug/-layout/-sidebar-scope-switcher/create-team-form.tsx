@@ -18,7 +18,7 @@ import { getInitials } from "@core/utils/text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { closeCredenza } from "@/hooks/use-credenza";

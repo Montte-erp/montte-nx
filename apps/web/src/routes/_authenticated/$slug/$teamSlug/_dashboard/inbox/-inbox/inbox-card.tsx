@@ -24,7 +24,7 @@ import {
    Info,
    MoreHorizontal,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { orpc } from "@/integrations/orpc/client";
 import { useOrgSlug, useTeamSlug } from "@/hooks/use-dashboard-slugs";
 import type { InboxItem } from "./inbox-types";

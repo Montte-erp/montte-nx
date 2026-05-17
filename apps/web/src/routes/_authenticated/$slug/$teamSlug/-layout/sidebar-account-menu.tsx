@@ -26,7 +26,7 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { ThemeSwitcher } from "./theme-switcher";
 
 function SidebarAccountMenuSkeleton() {

@@ -25,7 +25,7 @@ import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { Check, ChevronsUpDown, Plus, Settings, UserPlus } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { useTransition } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useActiveOrganization } from "@/hooks/use-active-organization";
 import { useActiveTeam } from "@/hooks/use-active-team";

@@ -16,7 +16,7 @@ import { fromPromise } from "neverthrow";
 import posthog from "posthog-js";
 import { Banknote, Check } from "lucide-react";
 import { type FormEvent, useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { RouteTransition } from "@/components/route-transition";
 import {

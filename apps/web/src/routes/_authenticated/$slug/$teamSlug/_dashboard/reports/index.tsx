@@ -23,7 +23,7 @@ import {
 } from "@tanstack/react-table";
 import { Plus, ReceiptText, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
