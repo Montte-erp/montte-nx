@@ -9,11 +9,12 @@ import {
 } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
 import type { DatabaseInstance } from "@core/database/client";
+import type { PgBossClient } from "@core/pg-boss/client";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { getLogger } from "@core/logging/root";
 import { agentsSseEvents } from "@modules/agents/sse";
-import { enqueueGenerateThreadTitle } from "@modules/agents/workflows/generate-title-workflow";
+import { enqueueGenerateThreadTitleJob } from "@modules/agents/jobs/generate-title-job";
 import { enqueueRefreshSuggestions } from "@modules/agents/workflows/refresh-suggestions-workflow";
 
 const logger = getLogger().child({ module: "agents.persist-middleware" });
@@ -23,6 +24,7 @@ const SUGGESTION_MESSAGE_INTERVAL = 4;
 
 export interface PersistMiddlewareDeps {
    db: DatabaseInstance;
+   pgBoss: PgBossClient;
    redis: Redis;
    workflowClient: DBOSClient;
    threadId: string;
@@ -84,6 +86,22 @@ export function createPersistMiddleware(
                .update(threads)
                .set({ lastMessageAt: dayjs().toDate() })
                .where(eq(threads.id, deps.threadId));
+
+            if (
+               !deps.threadHasTitle &&
+               messageCount >= MIN_TITLE_MESSAGE_COUNT
+            ) {
+               await enqueueGenerateThreadTitleJob({
+                  boss: deps.pgBoss,
+                  tx,
+                  input: {
+                     threadId: deps.threadId,
+                     teamId: deps.teamId,
+                     organizationId: deps.organizationId,
+                  },
+               });
+            }
+
             return rows;
          });
 
@@ -98,16 +116,6 @@ export function createPersistMiddleware(
                messageCount,
             }).catch((err: unknown) =>
                logger.error({ err }, "failed enqueue refresh-suggestions"),
-            );
-         }
-
-         if (!deps.threadHasTitle && messageCount >= MIN_TITLE_MESSAGE_COUNT) {
-            await enqueueGenerateThreadTitle(deps.workflowClient, {
-               threadId: deps.threadId,
-               teamId: deps.teamId,
-               organizationId: deps.organizationId,
-            }).catch((err: unknown) =>
-               logger.error({ err }, "failed enqueue generate-title"),
             );
          }
 

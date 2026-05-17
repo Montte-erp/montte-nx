@@ -40,6 +40,7 @@
       "@core/environment": "workspace:*",
       "@core/files": "workspace:*",
       "@core/logging": "workspace:*",
+      "@core/pg-boss": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
       "@core/transactional": "workspace:*",

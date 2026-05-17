@@ -1,6 +1,7 @@
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import type { S3Client } from "@core/files/client";
+import type { PgBossClient } from "@core/pg-boss/client";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
@@ -17,6 +18,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthog: PostHog;
    posthogPrompts: Prompts;
    redis: Redis;
+   pgBoss: PgBossClient;
    workflowClient: DBOSClient;
    s3Client: S3Client;
 }

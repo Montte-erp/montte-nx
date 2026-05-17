@@ -1,0 +1,47 @@
+{
+   "name": "@core/pg-boss",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "type": "module",
+   "exports": {
+      "./client": {
+         "types": "./dist/client.d.ts",
+         "default": "./dist/client.js"
+      },
+      "./drizzle": {
+         "types": "./dist/drizzle.d.ts",
+         "default": "./dist/drizzle.js"
+      },
+      "./worker": {
+         "types": "./dist/worker.d.ts",
+         "default": "./dist/worker.js"
+      },
+      "./dashboard": {
+         "types": "./dist/dashboard.d.ts",
+         "default": "./dist/dashboard.js"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "dashboard:dev": "dotenv -e ../../apps/web/.env.local -- pg-boss-dashboard",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "smoke": "dotenv -e ../../apps/web/.env.local -- bun run src/smoke.ts",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/database": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@pg-boss/dashboard": "catalog:workers",
+      "drizzle-orm": "catalog:database",
+      "pg-boss": "catalog:workers",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "dotenv-cli": "catalog:environment",
+      "typescript": "catalog:development"
+   }
+}

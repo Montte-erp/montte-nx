@@ -12,6 +12,7 @@ import {
 import { getLogger } from "@core/logging/root";
 import { buildWebContext } from "@core/orpc/server";
 import { createAgentChat } from "@modules/agents/agent";
+import { createPersistMiddleware } from "@modules/agents/persist-middleware";
 
 const logger = getLogger().child({ module: "api.chat" });
 
@@ -162,6 +163,19 @@ async function handlePost({ request }: { request: Request }) {
       pageContext: input.pageContext,
       reasoningEffort: chatSettings.reasoningEffort,
       abortSignal: abortController.signal,
+      extraMiddleware: [
+         createPersistMiddleware({
+            db: ctx.db,
+            pgBoss: ctx.pgBoss,
+            redis: ctx.redis,
+            workflowClient: ctx.workflowClient,
+            threadId: input.threadId,
+            teamId: ctx.teamId,
+            organizationId: ctx.organizationId,
+            threadHasTitle: Boolean(thread.title),
+            history,
+         }),
+      ],
    });
 
    return toHttpResponse(stream, {
