@@ -1,6 +1,6 @@
 import { StreamProcessor, type UIMessage } from "@tanstack/ai";
 import type { ChatMiddleware } from "@tanstack/ai";
-import { Result } from "better-result";
+import { Result, TaggedError } from "better-result";
 import dayjs from "dayjs";
 import { and, eq, isNull } from "drizzle-orm";
 import {
@@ -21,6 +21,15 @@ import { enqueueRefreshSuggestions } from "@modules/agents/workflows/refresh-sug
 const MIN_TITLE_MESSAGE_COUNT = 2;
 const MIN_SUGGESTION_MESSAGE_COUNT = 4;
 const SUGGESTION_MESSAGE_INTERVAL = 4;
+
+class PersistMiddlewareError extends TaggedError("PersistMiddlewareError")<{
+   operation: "enqueue_title" | "enqueue_suggestions" | "publish_persisted";
+   message: string;
+   threadId: string;
+   teamId: string;
+   organizationId: string;
+   cause?: unknown;
+}>() {}
 
 export interface PersistMiddlewareDeps {
    db: DatabaseInstance;
@@ -101,32 +110,15 @@ export function createPersistMiddleware(
                   )
                   .limit(1);
                if (thread) {
-                  const enqueueTitle = await Result.tryPromise({
-                     try: async () => {
-                        const boss = await deps.pgBoss;
-                        return enqueueGenerateThreadTitleJob({
-                           boss,
-                           tx,
-                           input: {
-                              threadId: deps.threadId,
-                              teamId: deps.teamId,
-                              organizationId: deps.organizationId,
-                           },
-                        });
-                     },
-                     catch: (cause) => cause,
+                  const enqueueTitle = await enqueueThreadTitle({
+                     deps,
+                     tx,
                   });
                   if (Result.isError(enqueueTitle)) {
                      log.error({
                         module: "agents.persist-middleware",
                         message: "failed enqueue generate-title",
                         err: enqueueTitle.error,
-                     });
-                  } else if (Result.isError(enqueueTitle.value)) {
-                     log.error({
-                        module: "agents.persist-middleware",
-                        message: "failed enqueue generate-title",
-                        err: enqueueTitle.value.error,
                      });
                   }
                }
@@ -139,42 +131,134 @@ export function createPersistMiddleware(
             messageCount >= MIN_SUGGESTION_MESSAGE_COUNT &&
             messageCount % SUGGESTION_MESSAGE_INTERVAL === 0
          ) {
-            await enqueueRefreshSuggestions(deps.workflowClient, {
-               threadId: deps.threadId,
-               teamId: deps.teamId,
-               organizationId: deps.organizationId,
+            const enqueueSuggestions = await enqueueThreadSuggestions({
+               deps,
                messageCount,
-            }).catch((err: unknown) => {
+            });
+            if (Result.isError(enqueueSuggestions)) {
                log.error({
                   module: "agents.persist-middleware",
                   message: "failed enqueue refresh-suggestions",
-                  err,
+                  err: enqueueSuggestions.error,
                });
-            });
+            }
          }
 
          const assistantRow = inserted.at(-1);
          if (assistantRow) {
-            const publish = await agentsSseEvents.publish(
-               deps.redis,
-               { kind: "team", id: deps.teamId },
-               {
-                  type: "agent.message.persisted",
-                  payload: {
-                     threadId: deps.threadId,
-                     messageId: assistantRow.id,
-                     role: "assistant",
-                  },
-               },
-            );
-            if (publish.isErr()) {
+            const publishPersisted = await publishAssistantPersisted({
+               deps,
+               messageId: assistantRow.id,
+            });
+            if (Result.isError(publishPersisted)) {
                log.error({
                   module: "agents.persist-middleware",
                   message: "failed publish SSE persisted",
-                  err: publish.error,
+                  err: publishPersisted.error,
                });
             }
          }
       },
    };
+}
+
+async function enqueueThreadTitle(options: {
+   deps: PersistMiddlewareDeps;
+   tx: Parameters<typeof enqueueGenerateThreadTitleJob>[0]["tx"];
+}) {
+   const { deps, tx } = options;
+   const result = await Result.tryPromise({
+      try: async () => {
+         const boss = await deps.pgBoss;
+         return enqueueGenerateThreadTitleJob({
+            boss,
+            tx,
+            input: {
+               threadId: deps.threadId,
+               teamId: deps.teamId,
+               organizationId: deps.organizationId,
+            },
+         });
+      },
+      catch: (cause) =>
+         new PersistMiddlewareError({
+            operation: "enqueue_title",
+            message: "Falha ao enfileirar geração de título.",
+            threadId: deps.threadId,
+            teamId: deps.teamId,
+            organizationId: deps.organizationId,
+            cause,
+         }),
+   });
+   if (Result.isError(result)) return Result.err(result.error);
+   if (Result.isError(result.value)) {
+      return Result.err(
+         new PersistMiddlewareError({
+            operation: "enqueue_title",
+            message: result.value.error.message,
+            threadId: deps.threadId,
+            teamId: deps.teamId,
+            organizationId: deps.organizationId,
+            cause: result.value.error,
+         }),
+      );
+   }
+   return Result.ok(result.value.value);
+}
+
+function enqueueThreadSuggestions(options: {
+   deps: PersistMiddlewareDeps;
+   messageCount: number;
+}) {
+   const { deps, messageCount } = options;
+   return Result.tryPromise({
+      try: () =>
+         enqueueRefreshSuggestions(deps.workflowClient, {
+            threadId: deps.threadId,
+            teamId: deps.teamId,
+            organizationId: deps.organizationId,
+            messageCount,
+         }),
+      catch: (cause) =>
+         new PersistMiddlewareError({
+            operation: "enqueue_suggestions",
+            message: "Falha ao enfileirar sugestões da conversa.",
+            threadId: deps.threadId,
+            teamId: deps.teamId,
+            organizationId: deps.organizationId,
+            cause,
+         }),
+   });
+}
+
+async function publishAssistantPersisted(options: {
+   deps: PersistMiddlewareDeps;
+   messageId: string;
+}) {
+   const { deps, messageId } = options;
+   const publish = await agentsSseEvents.publish(
+      deps.redis,
+      { kind: "team", id: deps.teamId },
+      {
+         type: "agent.message.persisted",
+         payload: {
+            threadId: deps.threadId,
+            messageId,
+            role: "assistant",
+         },
+      },
+   );
+   if (publish.isErr()) {
+      return Result.err(
+         new PersistMiddlewareError({
+            operation: "publish_persisted",
+            message: "Falha ao publicar mensagem persistida.",
+            threadId: deps.threadId,
+            teamId: deps.teamId,
+            organizationId: deps.organizationId,
+            cause: publish.error,
+         }),
+      );
+   }
+   return Result.ok(undefined);
 }
