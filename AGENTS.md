@@ -228,6 +228,8 @@ Web uses the Nitro v3 evlog module in `apps/web/vite.config.ts` with `experiment
 
 Request telemetry belongs in the evlog wide event and leaves through the PostHog Logs drain. Do not duplicate normal oRPC request telemetry with `captureServerEvent`; reserve direct PostHog capture for product analytics and identity/group calls.
 
+No standalone health heartbeat/logger in `@core/logging`: Railway health stays on `/api/ping`, and service/request telemetry belongs to evlog or OTEL/TanStack AI. Do not keep unused SDK oRPC procedure layers; API key auth should live in the active oRPC middleware path when needed.
+
 Error direction: keep `WebAppError` only as the current oRPC/HTTP transport adapter. New domain errors belong to the owning module, not `@core/logging`: define a module-local `defineErrorCatalog("<module>", ...)`, and when recoverable errors need to flow through `Result`, use `TaggedError("<Module>Error")<{ error: ReturnType<typeof moduleErrors.SOME_ERROR>; ...payload }>` directly. Do not add wrapper classes or factories around `TaggedError`. As modules are touched, migrate them away from direct `WebAppError` domain usage at the module boundary.
 
 Audit logs are not part of the current migration. Do not wire `auditEnricher`, `auditOnly`, signed filesystem journals, MinIO journals, or `log.audit()` until the audit phase is explicitly reopened.
@@ -434,4 +436,4 @@ skills:
   use: "@tanstack/devtools#devtools-app-setup"
 - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
   use: "dotenv#dotenv"
-   <!-- intent-skills:end -->
+    <!-- intent-skills:end -->

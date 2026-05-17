@@ -3,10 +3,7 @@ import {
    initLogger as initEvlogLogger,
 } from "evlog";
 import { trace } from "@opentelemetry/api";
-import { logs } from "@opentelemetry/api-logs";
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
-import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ORPCInstrumentation } from "@orpc/otel";
 import { PostHogSpanProcessor } from "@posthog/ai/otel";
@@ -17,7 +14,6 @@ import type {
 } from "evlog";
 import { createPostHogDrain } from "evlog/posthog";
 import { createDrainPipeline } from "evlog/pipeline";
-import type { PostHog } from "posthog-node";
 
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 type LogFields = Record<string, unknown>;
@@ -175,32 +171,16 @@ export function createLogger(config: LoggerConfig): Logger {
    return createCompatLogger(config);
 }
 
-export function createSafeLogger(config: LoggerConfig): Logger {
-   try {
-      return createLogger(config);
-   } catch {
-      configureEvlog({
-         name: config.name,
-         level: config.level,
-         posthog: undefined,
-      });
-      return createCompatLogger({
-         name: config.name,
-         level: config.level,
-      });
-   }
-}
-
 let rootLogger: Logger | null = null;
 
 export function initLogger(config: LoggerConfig): Logger {
-   rootLogger = createSafeLogger(config);
+   rootLogger = createLogger(config);
    return rootLogger;
 }
 
 export function getLogger(): Logger {
    if (!rootLogger) {
-      rootLogger = createSafeLogger({ name: "montte" });
+      rootLogger = createLogger({ name: "montte" });
    }
    return rootLogger;
 }
@@ -217,7 +197,6 @@ export function initOtel(config: OtelConfig): NodeSDK {
    if (sdk) return sdk;
 
    const host = config.posthogHost.replace(/\/$/, "");
-   const headers = { Authorization: `Bearer ${config.posthogKey}` };
 
    sdk = new NodeSDK({
       resource: resourceFromAttributes({
@@ -229,14 +208,6 @@ export function initOtel(config: OtelConfig): NodeSDK {
             apiKey: config.posthogKey,
             host,
          }),
-      ],
-      logRecordProcessors: [
-         new BatchLogRecordProcessor(
-            new OTLPLogExporter({
-               url: `${host}/i/v1/logs`,
-               headers,
-            }),
-         ),
       ],
    });
 
@@ -252,66 +223,5 @@ export async function shutdownOtel(): Promise<void> {
    if (sdk) {
       await sdk.shutdown();
       sdk = null;
-   }
-}
-
-const healthLogger = logs.getLogger("health");
-
-export interface HealthConfig {
-   serviceName: string;
-   posthog: PostHog;
-   intervalMs?: number;
-}
-
-let healthInterval: ReturnType<typeof setInterval> | null = null;
-let startTime: number | null = null;
-
-export function startHealthHeartbeat(config: HealthConfig): void {
-   if (healthInterval) return;
-
-   const interval = config.intervalMs ?? 60_000;
-   startTime = Date.now();
-
-   const emit = () => {
-      const mem = process.memoryUsage();
-      const uptimeMs = Date.now() - (startTime ?? Date.now());
-
-      const properties = {
-         serviceName: config.serviceName,
-         uptimeMs,
-         heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
-         heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024),
-         rssMb: Math.round(mem.rss / 1024 / 1024),
-         externalMb: Math.round(mem.external / 1024 / 1024),
-      };
-
-      healthLogger.emit({
-         severityText: "info",
-         body: `health heartbeat: ${config.serviceName}`,
-         attributes: {
-            "service.name": config.serviceName,
-            "health.uptimeMs": uptimeMs,
-            "health.heapUsedMb": properties.heapUsedMb,
-            "health.heapTotalMb": properties.heapTotalMb,
-            "health.rssMb": properties.rssMb,
-            "health.externalMb": properties.externalMb,
-         },
-      });
-
-      config.posthog.capture({
-         distinctId: `service:${config.serviceName}`,
-         event: "health_heartbeat",
-         properties,
-      });
-   };
-
-   emit();
-   healthInterval = setInterval(emit, interval);
-}
-
-export function stopHealthHeartbeat(): void {
-   if (healthInterval) {
-      clearInterval(healthInterval);
-      healthInterval = null;
    }
 }

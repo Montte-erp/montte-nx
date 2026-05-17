@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { Result } from "better-result";
 import { z } from "zod";
-import { ORPCError, os } from "@orpc/server";
+import { os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
@@ -172,9 +172,9 @@ const withDeps = base.use(async ({ context, next }) => {
 const withAuth = withDeps.use(({ context, next }) => {
    const { session } = context;
    if (!session?.user) {
-      throw new ORPCError("UNAUTHORIZED", {
-         message: "You must be logged in to access this resource",
-      });
+      throw WebAppError.unauthorized(
+         "Você precisa estar autenticado para acessar este recurso.",
+      );
    }
    return next({
       context: { ...context, session, userId: session.user.id },
@@ -186,14 +186,10 @@ const withOrganization = withAuth.use(({ context, next }) => {
    const organizationId = session.session.activeOrganizationId;
    const teamId = session.session.activeTeamId;
    if (!organizationId) {
-      throw new ORPCError("FORBIDDEN", {
-         message: "No active organization selected",
-      });
+      throw WebAppError.forbidden("Nenhuma organização ativa selecionada.");
    }
    if (!teamId) {
-      throw new ORPCError("FORBIDDEN", {
-         message: "No active team selected",
-      });
+      throw WebAppError.forbidden("Nenhum time ativo selecionado.");
    }
    return next({ context: { ...context, organizationId, teamId } });
 });

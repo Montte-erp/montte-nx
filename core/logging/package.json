@@ -20,10 +20,6 @@
          "types": "./dist/logger.d.ts",
          "default": "./dist/logger.js"
       },
-      "./health": {
-         "types": "./dist/logger.d.ts",
-         "default": "./dist/logger.js"
-      },
       "./root": {
          "types": "./dist/logger.d.ts",
          "default": "./dist/logger.js"
@@ -43,16 +39,12 @@
    },
    "dependencies": {
       "@opentelemetry/api": "catalog:telemetry",
-      "@opentelemetry/api-logs": "catalog:telemetry",
-      "@opentelemetry/exporter-logs-otlp-http": "catalog:telemetry",
       "@opentelemetry/resources": "catalog:telemetry",
-      "@opentelemetry/sdk-logs": "catalog:telemetry",
       "@opentelemetry/sdk-node": "catalog:telemetry",
       "@orpc/otel": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
       "@posthog/ai": "^7.16.0",
       "evlog": "catalog:logging",
-      "posthog-node": "catalog:analytics-client",
       "zod": "catalog:validation"
    },
    "devDependencies": {

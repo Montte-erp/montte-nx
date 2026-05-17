@@ -20,14 +20,12 @@ import { Route as AuthEmailVerificationRouteImport } from "./routes/auth/email-v
 import { Route as AuthCallbackRouteImport } from "./routes/auth/callback";
 import { Route as ApiUploadRouteImport } from "./routes/api/upload";
 import { Route as ApiPingRouteImport } from "./routes/api/ping";
-import { Route as ApiHealthRouteImport } from "./routes/api/health";
 import { Route as ApiChatRouteImport } from "./routes/api/chat";
 import { Route as AuthenticatedOnboardingRouteImport } from "./routes/_authenticated/onboarding";
 import { Route as AuthenticatedSlugRouteImport } from "./routes/_authenticated/$slug";
 import { Route as AuthSignInIndexRouteImport } from "./routes/auth/sign-in/index";
 import { Route as AuthSignInEmailRouteImport } from "./routes/auth/sign-in/email";
 import { Route as ApiRpcSplatRouteImport } from "./routes/api/rpc/$";
-import { Route as ApiOpenapiSplatRouteImport } from "./routes/api/openapi/$";
 import { Route as ApiFilesSplatRouteImport } from "./routes/api/files/$";
 import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
 import { Route as AuthenticatedSlugTeamSlugRouteImport } from "./routes/_authenticated/$slug/$teamSlug";
@@ -117,11 +115,6 @@ const ApiPingRoute = ApiPingRouteImport.update({
    path: "/api/ping",
    getParentRoute: () => rootRouteImport,
 } as any);
-const ApiHealthRoute = ApiHealthRouteImport.update({
-   id: "/api/health",
-   path: "/api/health",
-   getParentRoute: () => rootRouteImport,
-} as any);
 const ApiChatRoute = ApiChatRouteImport.update({
    id: "/api/chat",
    path: "/api/chat",
@@ -150,11 +143,6 @@ const AuthSignInEmailRoute = AuthSignInEmailRouteImport.update({
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
    id: "/api/rpc/$",
    path: "/api/rpc/$",
-   getParentRoute: () => rootRouteImport,
-} as any);
-const ApiOpenapiSplatRoute = ApiOpenapiSplatRouteImport.update({
-   id: "/api/openapi/$",
-   path: "/api/openapi/$",
    getParentRoute: () => rootRouteImport,
 } as any);
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
@@ -381,7 +369,6 @@ export interface FileRoutesByFullPath {
    "/$slug": typeof AuthenticatedSlugRouteWithChildren;
    "/onboarding": typeof AuthenticatedOnboardingRoute;
    "/api/chat": typeof ApiChatRoute;
-   "/api/health": typeof ApiHealthRoute;
    "/api/ping": typeof ApiPingRoute;
    "/api/upload": typeof ApiUploadRoute;
    "/auth/callback": typeof AuthCallbackRoute;
@@ -393,7 +380,6 @@ export interface FileRoutesByFullPath {
    "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
-   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
    "/auth/sign-in/email": typeof AuthSignInEmailRoute;
    "/auth/sign-in/": typeof AuthSignInIndexRoute;
@@ -434,7 +420,6 @@ export interface FileRoutesByTo {
    "/$slug": typeof AuthenticatedSlugRouteWithChildren;
    "/onboarding": typeof AuthenticatedOnboardingRoute;
    "/api/chat": typeof ApiChatRoute;
-   "/api/health": typeof ApiHealthRoute;
    "/api/ping": typeof ApiPingRoute;
    "/api/upload": typeof ApiUploadRoute;
    "/auth/callback": typeof AuthCallbackRoute;
@@ -445,7 +430,6 @@ export interface FileRoutesByTo {
    "/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugDashboardRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
-   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
    "/auth/sign-in/email": typeof AuthSignInEmailRoute;
    "/auth/sign-in": typeof AuthSignInIndexRoute;
@@ -486,7 +470,6 @@ export interface FileRoutesById {
    "/_authenticated/$slug": typeof AuthenticatedSlugRouteWithChildren;
    "/_authenticated/onboarding": typeof AuthenticatedOnboardingRoute;
    "/api/chat": typeof ApiChatRoute;
-   "/api/health": typeof ApiHealthRoute;
    "/api/ping": typeof ApiPingRoute;
    "/api/upload": typeof ApiUploadRoute;
    "/auth/callback": typeof AuthCallbackRoute;
@@ -498,7 +481,6 @@ export interface FileRoutesById {
    "/_authenticated/$slug/$teamSlug": typeof AuthenticatedSlugTeamSlugRouteWithChildren;
    "/api/auth/$": typeof ApiAuthSplatRoute;
    "/api/files/$": typeof ApiFilesSplatRoute;
-   "/api/openapi/$": typeof ApiOpenapiSplatRoute;
    "/api/rpc/$": typeof ApiRpcSplatRoute;
    "/auth/sign-in/email": typeof AuthSignInEmailRoute;
    "/auth/sign-in/": typeof AuthSignInIndexRoute;
@@ -542,7 +524,6 @@ export interface FileRouteTypes {
       | "/$slug"
       | "/onboarding"
       | "/api/chat"
-      | "/api/health"
       | "/api/ping"
       | "/api/upload"
       | "/auth/callback"
@@ -554,7 +535,6 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/files/$"
-      | "/api/openapi/$"
       | "/api/rpc/$"
       | "/auth/sign-in/email"
       | "/auth/sign-in/"
@@ -595,7 +575,6 @@ export interface FileRouteTypes {
       | "/$slug"
       | "/onboarding"
       | "/api/chat"
-      | "/api/health"
       | "/api/ping"
       | "/api/upload"
       | "/auth/callback"
@@ -606,7 +585,6 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/files/$"
-      | "/api/openapi/$"
       | "/api/rpc/$"
       | "/auth/sign-in/email"
       | "/auth/sign-in"
@@ -646,7 +624,6 @@ export interface FileRouteTypes {
       | "/_authenticated/$slug"
       | "/_authenticated/onboarding"
       | "/api/chat"
-      | "/api/health"
       | "/api/ping"
       | "/api/upload"
       | "/auth/callback"
@@ -658,7 +635,6 @@ export interface FileRouteTypes {
       | "/_authenticated/$slug/$teamSlug"
       | "/api/auth/$"
       | "/api/files/$"
-      | "/api/openapi/$"
       | "/api/rpc/$"
       | "/auth/sign-in/email"
       | "/auth/sign-in/"
@@ -700,12 +676,10 @@ export interface RootRouteChildren {
    AuthenticatedRoute: typeof AuthenticatedRouteWithChildren;
    AuthRoute: typeof AuthRouteWithChildren;
    ApiChatRoute: typeof ApiChatRoute;
-   ApiHealthRoute: typeof ApiHealthRoute;
    ApiPingRoute: typeof ApiPingRoute;
    ApiUploadRoute: typeof ApiUploadRoute;
    ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
    ApiFilesSplatRoute: typeof ApiFilesSplatRoute;
-   ApiOpenapiSplatRoute: typeof ApiOpenapiSplatRoute;
    ApiRpcSplatRoute: typeof ApiRpcSplatRoute;
    CallbackOrganizationInvitationInvitationIdRoute: typeof CallbackOrganizationInvitationInvitationIdRoute;
 }
@@ -789,13 +763,6 @@ declare module "@tanstack/react-router" {
          preLoaderRoute: typeof ApiPingRouteImport;
          parentRoute: typeof rootRouteImport;
       };
-      "/api/health": {
-         id: "/api/health";
-         path: "/api/health";
-         fullPath: "/api/health";
-         preLoaderRoute: typeof ApiHealthRouteImport;
-         parentRoute: typeof rootRouteImport;
-      };
       "/api/chat": {
          id: "/api/chat";
          path: "/api/chat";
@@ -836,13 +803,6 @@ declare module "@tanstack/react-router" {
          path: "/api/rpc/$";
          fullPath: "/api/rpc/$";
          preLoaderRoute: typeof ApiRpcSplatRouteImport;
-         parentRoute: typeof rootRouteImport;
-      };
-      "/api/openapi/$": {
-         id: "/api/openapi/$";
-         path: "/api/openapi/$";
-         fullPath: "/api/openapi/$";
-         preLoaderRoute: typeof ApiOpenapiSplatRouteImport;
          parentRoute: typeof rootRouteImport;
       };
       "/api/files/$": {
@@ -1288,12 +1248,10 @@ const rootRouteChildren: RootRouteChildren = {
    AuthenticatedRoute: AuthenticatedRouteWithChildren,
    AuthRoute: AuthRouteWithChildren,
    ApiChatRoute: ApiChatRoute,
-   ApiHealthRoute: ApiHealthRoute,
    ApiPingRoute: ApiPingRoute,
    ApiUploadRoute: ApiUploadRoute,
    ApiAuthSplatRoute: ApiAuthSplatRoute,
    ApiFilesSplatRoute: ApiFilesSplatRoute,
-   ApiOpenapiSplatRoute: ApiOpenapiSplatRoute,
    ApiRpcSplatRoute: ApiRpcSplatRoute,
    CallbackOrganizationInvitationInvitationIdRoute:
       CallbackOrganizationInvitationInvitationIdRoute,
@@ -1303,11 +1261,10 @@ export const routeTree = rootRouteImport
    ._addFileTypes<FileRouteTypes>();
 
 import type { getRouter } from "./router.tsx";
-import type { startInstance } from "./start.ts";
+import type { createStart } from "@tanstack/react-start";
 declare module "@tanstack/react-start" {
    interface Register {
       ssr: true;
       router: Awaited<ReturnType<typeof getRouter>>;
-      config: Awaited<ReturnType<typeof startInstance.getOptions>>;
    }
 }
