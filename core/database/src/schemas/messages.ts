@@ -25,6 +25,8 @@ export const messageMetadataSchema = z.object({
 });
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
 
+export const messagePartsSchema = z.array(z.json());
+
 export const messages = agentsSchema.table(
    "messages",
    {
@@ -45,8 +47,14 @@ export const messages = agentsSchema.table(
    (t) => [index("messages_thread_created_idx").on(t.threadId, t.createdAt)],
 );
 
-export const messageSchema = createSelectSchema(messages);
-export const insertMessageSchema = createInsertSchema(messages);
+export const messageSchema = createSelectSchema(messages, {
+   parts: messagePartsSchema,
+   metadata: messageMetadataSchema.optional(),
+});
+export const insertMessageSchema = createInsertSchema(messages, {
+   parts: messagePartsSchema,
+   metadata: messageMetadataSchema.optional(),
+});
 
 export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;

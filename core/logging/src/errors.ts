@@ -1,6 +1,7 @@
 import type { ORPCErrorCode, ORPCErrorOptions } from "@orpc/client";
 import { ORPCError } from "@orpc/server";
-import { ZodError, type z } from "zod";
+import { Result, TaggedError, type Result as ResultType } from "better-result";
+import type { z } from "zod";
 
 export class AppError extends Error {
    public status: number;
@@ -167,28 +168,26 @@ export class WebAppError<
    }
 }
 
-export function propagateError(err: unknown) {
-   if (err instanceof AppError) {
-      throw err;
-   }
-   return;
-}
+export class InputValidationError extends TaggedError("InputValidationError")<{
+   message: string;
+   issues: string[];
+}>() {}
 
-export function validateInput<T extends z.ZodTypeAny>(
+export function validateInputResult<T extends z.ZodTypeAny>(
    schema: T,
    value: unknown,
-): z.infer<T> {
+): ResultType<z.infer<T>, InputValidationError> {
    const parsed = schema.safeParse(value);
-   if (parsed.success) return parsed.data;
+   if (parsed.success) return Result.ok(parsed.data);
 
-   const errors =
-      parsed.error instanceof ZodError
-         ? parsed.error.issues
-              .map((err) => `${err.path.join(".")}: ${err.message}`)
-              .join("; ")
-         : "Input validation failed";
+   const issues = parsed.error.issues.map(
+      (err) => `${err.path.join(".")}: ${err.message}`,
+   );
 
-   throw AppError.validation("Input validation failed", {
-      cause: errors,
-   });
+   return Result.err(
+      new InputValidationError({
+         message: "Falha na validação da entrada.",
+         issues,
+      }),
+   );
 }

@@ -242,8 +242,10 @@
         "@core/posthog": "workspace:*",
         "@core/redis": "workspace:*",
         "better-auth": "catalog:auth",
+        "better-result": "catalog:validation",
         "react": "catalog:react",
         "react-dom": "catalog:react",
+        "zod": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
@@ -336,6 +338,7 @@
         "@orpc/otel": "catalog:orpc",
         "@orpc/server": "catalog:orpc",
         "@posthog/ai": "^7.16.0",
+        "better-result": "catalog:validation",
         "evlog": "catalog:logging",
         "zod": "catalog:validation",
       },
@@ -416,7 +419,6 @@
       "dependencies": {
         "@core/environment": "workspace:*",
         "@posthog/ai": "^7.16.0",
-        "neverthrow": "catalog:validation",
         "posthog-node": "catalog:analytics-client",
         "zod": "catalog:validation",
       },
@@ -443,7 +445,8 @@
       "version": "0.1.0",
       "dependencies": {
         "@core/redis": "workspace:*",
-        "neverthrow": "catalog:validation",
+        "better-result": "catalog:validation",
+        "dayjs": "catalog:ui",
         "zod": "catalog:validation",
       },
       "devDependencies": {

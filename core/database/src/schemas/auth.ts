@@ -9,7 +9,61 @@ import {
    index,
    uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { z } from "zod";
 import { authSchema } from "@core/database/schemas/schemas";
+
+export const onboardingProductSchema = z.enum(["finance"]);
+export const onboardingProductsSchema = z.array(onboardingProductSchema);
+export const onboardingTasksSchema = z.record(z.string(), z.boolean());
+
+const cnpjJsonValueSchema = z.json();
+
+export const cnpjQsaMemberSchema = z
+   .object({
+      nome_socio: z.string().nullable().optional(),
+      cnpj_cpf_do_socio: z.string().nullable().optional(),
+      codigo_qualificacao_socio: z.number().nullable().optional(),
+      qualificacao_socio: z.string().nullable().optional(),
+      data_entrada_sociedade: z.string().nullable().optional(),
+      identificador_de_socio: z.number().nullable().optional(),
+      faixa_etaria: z.string().nullable().optional(),
+      pais: z.string().nullable().optional(),
+      representante_legal: z.string().nullable().optional(),
+      nome_representante_legal: z.string().nullable().optional(),
+      qualificacao_representante_legal: z.string().nullable().optional(),
+   })
+   .catchall(cnpjJsonValueSchema);
+
+export const cnpjTaxRegimeSchema = z
+   .object({
+      ano: z.number().nullable().optional(),
+      cnpj_da_scp: z.string().nullable().optional(),
+      forma_de_tributacao: z.string().nullable().optional(),
+      quantidade_de_escrituracoes: z.number().nullable().optional(),
+   })
+   .catchall(cnpjJsonValueSchema);
+
+export const cnpjDataSchema = z.object({
+   cnpj: z.string(),
+   razao_social: z.string(),
+   nome_fantasia: z.string().nullable(),
+   cnae_fiscal: z.number(),
+   cnae_fiscal_descricao: z.string().nullable(),
+   cnaes_secundarios: z.array(
+      z.object({ codigo: z.number(), descricao: z.string() }),
+   ),
+   porte: z.string().nullable(),
+   natureza_juridica: z.string().nullable(),
+   municipio: z.string().nullable(),
+   uf: z.string().nullable(),
+   data_inicio_atividade: z.string(),
+   descricao_situacao_cadastral: z.string(),
+   qsa: z.array(cnpjQsaMemberSchema),
+   regime_tributario: z.array(cnpjTaxRegimeSchema).nullable(),
+});
+
+export type OnboardingProduct = z.infer<typeof onboardingProductSchema>;
+export type CnpjData = z.infer<typeof cnpjDataSchema>;
 
 export const user = authSchema.table("user", {
    id: uuid("id")
@@ -110,10 +164,15 @@ export const team = authSchema.table(
       slug: text("slug").notNull(),
       description: text("description").default(""),
       onboardingCompleted: boolean("onboarding_completed").default(false),
-      onboardingProducts: jsonb("onboarding_products"),
-      onboardingTasks: jsonb("onboarding_tasks"),
+      onboardingProducts: jsonb("onboarding_products").$type<
+         z.infer<typeof onboardingProductsSchema>
+      >(),
+      onboardingTasks:
+         jsonb("onboarding_tasks").$type<
+            z.infer<typeof onboardingTasksSchema>
+         >(),
       cnpj: text("cnpj"),
-      cnpjData: jsonb("cnpj_data"),
+      cnpjData: jsonb("cnpj_data").$type<CnpjData>(),
    },
    (table) => [index("team_organizationId_idx").on(table.organizationId)],
 );

@@ -164,13 +164,22 @@ async function refreshSuggestionsFn(input: RefreshSuggestionsInput) {
                   payload: { threadId: input.threadId, suggestions },
                },
             );
-            if (publish.isErr()) throw publish.error;
+            if (publish.isErr()) {
+               DBOS.logger.warn(
+                  `${ctx} falha ao publicar SSE: ${publish.error.message}`,
+               );
+            }
          },
          { name: "publishSuggestionsUpdated" },
       ),
       (e) => WorkflowError.internal("Falha ao publicar SSE.", { cause: e }),
    );
-   if (publishResult.isErr()) throw publishResult.error;
+   if (publishResult.isErr()) {
+      DBOS.logger.warn(
+         `${ctx} falha ao executar passo de publicação SSE: ${publishResult.error.message}`,
+      );
+      return;
+   }
 
    DBOS.logger.info(`${ctx} completed — ${suggestions.length} suggestions`);
 }

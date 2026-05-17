@@ -421,27 +421,26 @@ async function publishTitleUpdated(options: {
    input: GenerateThreadTitleJobInput;
    title: string;
 }) {
-   return Result.tryPromise({
-      try: async () => {
-         const publish = await agentsSseEvents.publish(
-            options.redis,
-            { kind: "team", id: options.input.teamId },
-            {
-               type: "agent.thread.title_updated",
-               payload: {
-                  threadId: options.input.threadId,
-                  title: options.title,
-               },
-            },
-         );
-         if (publish.isErr()) throw publish.error;
+   const publish = await agentsSseEvents.publish(
+      options.redis,
+      { kind: "team", id: options.input.teamId },
+      {
+         type: "agent.thread.title_updated",
+         payload: {
+            threadId: options.input.threadId,
+            title: options.title,
+         },
       },
-      catch: (cause) =>
+   );
+   if (Result.isError(publish)) {
+      return Result.err(
          new GenerateThreadTitleJobError({
             operation: "publish_title",
             message: "Falha ao publicar título gerado.",
             threadId: options.input.threadId,
-            cause,
+            cause: publish.error,
          }),
-   });
+      );
+   }
+   return Result.ok(undefined);
 }

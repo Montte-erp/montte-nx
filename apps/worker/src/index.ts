@@ -38,7 +38,7 @@ async function initWorker() {
       posthogHost: env.POSTHOG_HOST,
    });
 
-   return Result.tryPromise({
+   const setup = await Result.tryPromise({
       try: async () => {
          const db = createDb({ databaseUrl: env.DATABASE_URL });
          const redis = createRedis(env.REDIS_URL);
@@ -70,26 +70,42 @@ async function initWorker() {
          ]);
          log.info("worker", "DBOS runtime started");
 
-         const pgBossWorker = await startPgBossWorker({
-            connectionString: env.DATABASE_URL,
-            queues: agentPgBossQueues,
-            register: (boss) =>
-               registerAgentPgBossJobs({
-                  boss,
-                  db,
-                  prompts: promptsClient,
-                  redis,
-               }),
-         });
-         log.info("worker", "pg-boss runtime started");
-
-         return { db, redis, posthog, pgBossWorker };
+         return { db, redis, posthog, promptsClient };
       },
       catch: (cause) =>
          new WorkerInitError({
             message: "Falha ao iniciar worker.",
             cause,
          }),
+   });
+   if (Result.isError(setup)) return Result.err(setup.error);
+
+   const pgBossWorker = await startPgBossWorker({
+      connectionString: env.DATABASE_URL,
+      queues: agentPgBossQueues,
+      register: (boss) =>
+         registerAgentPgBossJobs({
+            boss,
+            db: setup.value.db,
+            prompts: setup.value.promptsClient,
+            redis: setup.value.redis,
+         }),
+   });
+   if (Result.isError(pgBossWorker)) {
+      return Result.err(
+         new WorkerInitError({
+            message: pgBossWorker.error.message,
+            cause: pgBossWorker.error,
+         }),
+      );
+   }
+
+   log.info("worker", "pg-boss runtime started");
+   return Result.ok({
+      db: setup.value.db,
+      redis: setup.value.redis,
+      posthog: setup.value.posthog,
+      pgBossWorker: pgBossWorker.value,
    });
 }
 

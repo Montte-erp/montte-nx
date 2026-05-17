@@ -1,10 +1,5 @@
-import {
-   errAsync,
-   fromPromise,
-   ok,
-   Result,
-   type ResultAsync,
-} from "neverthrow";
+import dayjs from "dayjs";
+import { Result, TaggedError, type Result as ResultType } from "better-result";
 import { z } from "zod";
 import type { Redis } from "@core/redis/connection";
 
@@ -19,22 +14,24 @@ export const sseScopeSchema = z.discriminatedUnion("kind", [
 
 export type SseScope = z.infer<typeof sseScopeSchema>;
 
+export const ssePayloadSchema = z.json();
+
 export const sseEnvelopeSchema = z.object({
    id: z.string(),
    type: z.string(),
    scope: sseScopeSchema,
-   payload: z.unknown(),
+   payload: ssePayloadSchema,
    timestamp: z.string(),
 });
 
 export type SseEnvelope = z.infer<typeof sseEnvelopeSchema>;
 
-export class SsePublishError extends Error {
-   constructor(message: string, options?: { cause?: unknown }) {
-      super(message, options);
-      this.name = "SsePublishError";
-   }
-}
+export class SsePublishError extends TaggedError("SsePublishError")<{
+   operation: "validate_event" | "publish_event";
+   message: string;
+   eventType: string;
+   cause?: unknown;
+}>() {}
 
 export function channelFor(scope: SseScope): string {
    return `sse:${scope.kind}:${scope.id}`;
@@ -54,7 +51,7 @@ export type SseModuleEvents<TDefs extends SseEventDefinitions> = {
       redis: Redis,
       scope: SseScope,
       event: SseEventOf<TDefs>,
-   ) => ResultAsync<SseEnvelope, SsePublishError>;
+   ) => Promise<ResultType<SseEnvelope, SsePublishError>>;
    eventTypes: ReadonlyArray<keyof TDefs & string>;
 };
 
@@ -63,47 +60,77 @@ export function defineSseEvents<TDefs extends SseEventDefinitions>(
 ): SseModuleEvents<TDefs> {
    const eventTypes = Object.keys(definitions) as (keyof TDefs & string)[];
 
-   const publish = (
+   const publish = async (
       redis: Redis,
       scope: SseScope,
       event: SseEventOf<TDefs>,
-   ): ResultAsync<SseEnvelope, SsePublishError> => {
+   ): Promise<ResultType<SseEnvelope, SsePublishError>> => {
       const schema = definitions[event.type];
       if (!schema) {
-         return errAsync(
-            new SsePublishError(`Unknown SSE event type: ${event.type}`),
+         return Result.err(
+            new SsePublishError({
+               operation: "validate_event",
+               eventType: event.type,
+               message: `Tipo de evento SSE desconhecido: ${event.type}`,
+            }),
          );
       }
       const validated = schema.safeParse(event.payload);
       if (!validated.success) {
-         return errAsync(
-            new SsePublishError(
-               `Invalid payload for SSE event ${event.type}: ${validated.error.message}`,
-               { cause: validated.error },
-            ),
+         return Result.err(
+            new SsePublishError({
+               operation: "validate_event",
+               eventType: event.type,
+               message: `Payload inválido para o evento SSE ${event.type}: ${validated.error.message}`,
+               cause: validated.error,
+            }),
+         );
+      }
+      const payload = ssePayloadSchema.safeParse(validated.data);
+      if (!payload.success) {
+         return Result.err(
+            new SsePublishError({
+               operation: "validate_event",
+               eventType: event.type,
+               message: `Payload JSON inválido para o evento SSE ${event.type}: ${payload.error.message}`,
+               cause: payload.error,
+            }),
          );
       }
       const envelope: SseEnvelope = {
          id: crypto.randomUUID(),
          type: event.type,
          scope,
-         payload: validated.data,
-         timestamp: new Date().toISOString(),
+         payload: payload.data,
+         timestamp: dayjs().toISOString(),
       };
-      return fromPromise(
-         redis.publish(channelFor(scope), JSON.stringify(envelope)),
-         (cause) =>
-            new SsePublishError("Failed to publish SSE event.", { cause }),
-      ).andThen(() => ok(envelope));
+      const published = await Result.tryPromise({
+         try: () => redis.publish(channelFor(scope), JSON.stringify(envelope)),
+         catch: (cause) =>
+            new SsePublishError({
+               operation: "publish_event",
+               eventType: event.type,
+               message: "Falha ao publicar evento SSE.",
+               cause,
+            }),
+      });
+      if (Result.isError(published)) return Result.err(published.error);
+      return Result.ok(envelope);
    };
 
    return { publish, eventTypes };
 }
 
-const safeJsonParse = Result.fromThrowable(
-   (input: string) => JSON.parse(input) as unknown,
-   () => null,
-);
+const safeJsonParse = (input: string) =>
+   Result.try({
+      try: () => JSON.parse(input),
+      catch: () =>
+         new SsePublishError({
+            operation: "validate_event",
+            eventType: "unknown",
+            message: "Envelope JSON de SSE inválido.",
+         }),
+   });
 
 export function subscribeSse(
    redis: Redis,
@@ -119,13 +146,15 @@ export function subscribeSse(
          const waiters: Array<
             (v: IteratorResult<SseEnvelope, undefined>) => void
          > = [];
-         let started = false;
-         let closed = false;
+         const state = {
+            started: false,
+            closed: false,
+         };
 
          const handler = (channel: string, message: string) => {
             if (!channelSet.has(channel)) return;
             const parsed = safeJsonParse(message);
-            if (parsed.isErr()) return;
+            if (Result.isError(parsed)) return;
             const validated = sseEnvelopeSchema.safeParse(parsed.value);
             if (!validated.success) return;
             const waiter = waiters.shift();
@@ -137,8 +166,8 @@ export function subscribeSse(
          };
 
          const close = async () => {
-            if (closed) return;
-            closed = true;
+            if (state.closed) return;
+            state.closed = true;
             subscriber.off("message", handler);
             await subscriber.unsubscribe(...channels).catch(() => undefined);
             subscriber.disconnect();
@@ -149,8 +178,8 @@ export function subscribeSse(
          signal?.addEventListener("abort", () => void close(), { once: true });
 
          const start = async () => {
-            if (started) return;
-            started = true;
+            if (state.started) return;
+            state.started = true;
             subscriber.on("message", handler);
             await subscriber.subscribe(...channels);
          };
@@ -158,7 +187,7 @@ export function subscribeSse(
          return {
             async next() {
                await start();
-               if (closed) return { value: undefined, done: true };
+               if (state.closed) return { value: undefined, done: true };
                const queued = queue.shift();
                if (queued) return { value: queued, done: false };
                return new Promise<IteratorResult<SseEnvelope, undefined>>(

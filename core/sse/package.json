@@ -22,7 +22,8 @@
    },
    "dependencies": {
       "@core/redis": "workspace:*",
-      "neverthrow": "catalog:validation",
+      "better-result": "catalog:validation",
+      "dayjs": "catalog:ui",
       "zod": "catalog:validation"
    },
    "devDependencies": {

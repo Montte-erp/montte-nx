@@ -35,7 +35,6 @@ const tagAndItemsSchema = z.object({
    items: z
       .array(
          z.object({
-            serviceId: z.string().uuid().nullable().optional(),
             description: z.string().max(500).nullable().optional(),
             quantity: z.string(),
             unitPrice: z.string(),
@@ -240,7 +239,6 @@ export const create = protectedProcedure
                   items.map((item) => ({
                      transactionId: row.id,
                      teamId: context.teamId,
-                     serviceId: item.serviceId ?? null,
                      description: item.description ?? null,
                      quantity: item.quantity,
                      unitPrice: item.unitPrice,
@@ -483,7 +481,6 @@ export const update = protectedProcedure
                      items.map((item) => ({
                         transactionId: id,
                         teamId: context.teamId,
-                        serviceId: item.serviceId ?? null,
                         description: item.description ?? null,
                         quantity: item.quantity,
                         unitPrice: item.unitPrice,
