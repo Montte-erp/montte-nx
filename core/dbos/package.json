@@ -42,7 +42,9 @@
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
-      "better-result": "catalog:validation"
+      "better-result": "catalog:validation",
+      "winston": "^3.19.0",
+      "winston-transport": "^4.9.0"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
