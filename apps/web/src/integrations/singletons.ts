@@ -5,11 +5,9 @@ import { createPostHog, createPromptsClient } from "@core/posthog/server";
 import { createS3Client } from "@core/files/client";
 import { createNotificationsClient } from "@core/notifications/client";
 import { createAuth } from "@core/authentication/server";
-import { DBOSClient } from "@dbos-inc/dbos-sdk";
+import { createWorkflowClient } from "@core/dbos/client";
 
-export const workflowClient = DBOSClient.create({
-   systemDatabaseUrl: env.DATABASE_URL,
-});
+export const workflowClient = createWorkflowClient(env.DATABASE_URL);
 
 export const db = createDb({ databaseUrl: env.DATABASE_URL });
 export const redis = createRedis(env.REDIS_URL);

@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { and, eq, isNull } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
@@ -12,12 +10,16 @@ import {
    type ClassifyBatchInput,
    type ClassifyBatchResult,
 } from "@modules/classification/ai/classify-batch";
-import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
 import { classificationSseEvents } from "@modules/classification/sse";
 import {
    matchByKeywords,
    type KeywordMatchResult,
 } from "@modules/classification/utils";
+import {
+   buildClassifyTransactionsBatchWorkflowId,
+   CLASSIFICATION_WORKFLOWS,
+   type ClassifyTransactionsBatchInput,
+} from "@modules/classification/workflows/constants";
 import {
    classificationDataSource,
    getClassificationPrompts,
@@ -26,12 +28,6 @@ import {
 } from "@modules/classification/workflows/context";
 
 const AI_CHUNK_SIZE = 20;
-
-export type ClassifyTransactionsBatchInput = {
-   organizationId: string;
-   teamId: string;
-   transactionIds: string[];
-};
 
 type CategoryRow = {
    id: string;
@@ -296,7 +292,7 @@ const stepEmitSse = (writes: ClassificationWrite[], teamId: string) =>
 async function classifyTransactionsBatchWorkflowFn(
    input: ClassifyTransactionsBatchInput,
 ) {
-   const batchId = buildWorkflowId(input);
+   const batchId = buildClassifyTransactionsBatchWorkflowId(input);
    const total = input.transactionIds.length;
    const log = `[classify-batch] team=${input.teamId} count=${total} batch=${batchId}`;
    DBOS.logger.info(`${log} started`);
@@ -436,27 +432,5 @@ async function classifyTransactionsBatchWorkflowFn(
 
 export const classifyTransactionsBatchWorkflow = registerWorkflowOnce(
    classifyTransactionsBatchWorkflowFn,
+   { name: CLASSIFICATION_WORKFLOWS.classifyTransactionsBatch },
 );
-
-function buildWorkflowId(input: ClassifyTransactionsBatchInput): string {
-   const sorted = [...input.transactionIds].sort();
-   const hash = createHash("sha256")
-      .update(sorted.join(","))
-      .digest("hex")
-      .slice(0, 12);
-   return `classify-batch-${input.teamId}-${hash}`;
-}
-
-export async function enqueueClassifyTransactionsBatchWorkflow(
-   client: DBOSClient,
-   input: ClassifyTransactionsBatchInput,
-) {
-   return client.enqueue(
-      {
-         workflowName: classifyTransactionsBatchWorkflowFn.name,
-         queueName: `workflow:${CLASSIFICATION_QUEUES.classify}`,
-         workflowID: buildWorkflowId(input),
-      },
-      input,
-   );
-}

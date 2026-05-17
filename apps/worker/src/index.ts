@@ -1,13 +1,18 @@
-import { DBOS } from "@dbos-inc/dbos-sdk";
-import { Result, TaggedError } from "better-result";
-import { env } from "@core/environment/worker";
-import { flushLogger, initLogger, log } from "@core/logging";
-import { initOtel, shutdownOtel } from "@core/logging";
 import { createDb } from "@core/database/client";
-import { createRedis } from "@core/redis/connection";
+import { launchDbosWorker, shutdownDbosWorker } from "@core/dbos/worker";
+import { env } from "@core/environment/worker";
+import {
+   flushLogger,
+   initLogger,
+   initOtel,
+   log,
+   shutdownOtel,
+} from "@core/logging";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
+import { createRedis } from "@core/redis/connection";
 import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
+import { Result, TaggedError } from "better-result";
 
 class WorkerInitError extends TaggedError("WorkerInitError")<{
    message: string;
@@ -41,27 +46,23 @@ async function initWorker() {
 
          log.info("worker", "Starting worker");
 
-         await setupClassificationWorkflows({
+         const classificationWorkflows = await setupClassificationWorkflows({
             redis,
             posthog,
             prompts: promptsClient,
             workerConcurrency: 10,
          });
-         await setupAgentsWorkflows({
+         const agentsQueues = await setupAgentsWorkflows({
             redis,
             posthog,
             prompts: promptsClient,
             workerConcurrency: 10,
          });
 
-         DBOS.setConfig({
-            name: "montte-worker",
-            systemDatabaseUrl: env.DATABASE_URL,
-            logLevel: env.LOG_LEVEL,
-            runAdminServer: false,
-         });
-
-         await DBOS.launch();
+         await launchDbosWorker([
+            ...classificationWorkflows.queues,
+            ...agentsQueues,
+         ]);
          log.info("worker", "DBOS runtime started");
 
          return { db, redis, posthog };
@@ -89,7 +90,7 @@ const workerDeps = worker.value;
 
 async function gracefulShutdown(signal: string) {
    log.info("worker", `${signal} received — shutting down`);
-   await DBOS.shutdown();
+   await shutdownDbosWorker();
    await workerDeps.posthog.shutdown();
    workerDeps.redis.disconnect();
    await shutdownOtel();

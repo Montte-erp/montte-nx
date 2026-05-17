@@ -29,6 +29,7 @@
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
       "@core/sse": "workspace:*",
+      "@core/utils": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@dbos-inc/drizzle-datasource": "catalog:workers",
       "@f-o-t/condition-evaluator": "catalog:fot",
@@ -47,8 +48,10 @@
       "@electric-sql/pglite": "^0.3.15",
       "@electric-sql/pglite-socket": "^0.0.20",
       "@tooling/typescript": "workspace:*",
+      "@types/pg": "catalog:database",
       "drizzle-kit": "catalog:database",
       "drizzle-seed": "catalog:database",
+      "pg": "catalog:database",
       "typescript": "catalog:development",
       "vitest": "catalog:testing"
    }

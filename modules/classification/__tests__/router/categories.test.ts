@@ -16,11 +16,18 @@ import { categories } from "@core/database/schemas/categories";
 import { makeCategory } from "../helpers/classification-factories";
 
 const { enqueueDeriveKeywordsSpy } = vi.hoisted(() => ({
-   enqueueDeriveKeywordsSpy: vi.fn().mockResolvedValue(undefined),
+   enqueueDeriveKeywordsSpy: vi.fn().mockResolvedValue({
+      ok: true,
+      value: { workflowId: "derive-keywords-test" },
+   }),
 }));
 
-vi.mock("../../src/workflows/derive-keywords-workflow", () => ({
+vi.mock("../../src/workflows/enqueue", () => ({
    enqueueDeriveKeywordsWorkflow: enqueueDeriveKeywordsSpy,
+   isClassificationWorkflowQueueFailure: (result: {
+      ok?: boolean;
+      error?: unknown;
+   }) => result.ok === false || result.error !== undefined,
 }));
 
 vi.mock("@core/orpc/server", async () =>

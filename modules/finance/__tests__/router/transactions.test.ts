@@ -23,12 +23,13 @@ import {
 const { enqueueClassifyTransactionsBatchWorkflowSpy } = vi.hoisted(() => ({
    enqueueClassifyTransactionsBatchWorkflowSpy: vi
       .fn()
-      .mockResolvedValue(undefined),
+      .mockResolvedValue({ ok: true, value: { workflowId: "classify-test" } }),
 }));
 
-vi.mock("@modules/classification/workflows/classification-workflow", () => ({
+vi.mock("@modules/classification/workflows/enqueue", () => ({
    enqueueClassifyTransactionsBatchWorkflow:
       enqueueClassifyTransactionsBatchWorkflowSpy,
+   isClassificationWorkflowQueueFailure: vi.fn(() => false),
 }));
 
 vi.mock("@core/orpc/server", async () =>
