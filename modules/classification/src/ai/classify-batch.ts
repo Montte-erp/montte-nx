@@ -1,5 +1,6 @@
 import { errAsync, fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import { z } from "zod";
 import { categorySchema } from "@core/database/schemas/categories";
 import { transactionSchema } from "@core/database/schemas/transactions";
@@ -7,10 +8,8 @@ import { AppError } from "@core/logging/errors";
 import type { Prompts } from "@core/posthog/server";
 import { CLASSIFICATION_PROMPTS } from "@modules/classification/constants";
 import { flashModel } from "@core/ai/models";
-import {
-   type AiObservabilityContext,
-   createAiObservabilityMiddleware,
-} from "@core/ai/middleware";
+import { aiTraceAttributes, type AiTraceContext } from "@core/ai/otel";
+import { getAiTracer } from "@core/logging";
 
 const MAX_BATCH_SIZE = 20;
 
@@ -84,7 +83,7 @@ export function classifyTransactionsBatch(
    prompts: Prompts,
    transactions: ClassifyBatchInput[],
    categories: ClassifyBatchOption[],
-   observability: AiObservabilityContext,
+   observability: AiTraceContext,
 ) {
    if (transactions.length > MAX_BATCH_SIZE) {
       return errAsync(
@@ -123,10 +122,15 @@ export function classifyTransactionsBatch(
                outputSchema,
                stream: false,
                middleware: [
-                  createAiObservabilityMiddleware({
-                     ...observability,
-                     promptName: name,
-                     promptVersion: version,
+                  otelMiddleware({
+                     tracer: getAiTracer(),
+                     captureContent: false,
+                     attributeEnricher: () =>
+                        aiTraceAttributes({
+                           ...observability,
+                           promptName: name,
+                           promptVersion: version,
+                        }),
                   }),
                ],
             }),

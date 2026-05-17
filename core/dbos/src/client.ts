@@ -11,6 +11,8 @@ export type WorkflowClient = DBOSClient;
 
 export type DbosQueueOptions = {
    concurrency?: number;
+   minPollingIntervalMs?: number;
+   onConflict?: "update_if_latest_version" | "always_update" | "never_update";
    partitionQueue?: boolean;
    priorityEnabled?: boolean;
    rateLimit?: {
@@ -21,7 +23,7 @@ export type DbosQueueOptions = {
 };
 
 export class DbosQueueError extends TaggedError("DbosQueueError")<{
-   operation: "create_client" | "ensure_queue" | "enqueue_workflow";
+   operation: "create_client" | "register_queue" | "enqueue_workflow";
    message: string;
    queueName?: string;
    workflowName?: string;
@@ -75,19 +77,40 @@ export async function ensureDbosQueue(input: {
    queueName: string;
    queueOptions?: DbosQueueOptions;
 }): Promise<ResultType<WorkflowClient, DbosQueueError>> {
-   if (input.client) return Result.ok(input.client);
-
-   if (!input.systemDatabaseUrl) {
-      return Result.err(
+   let client: ResultType<WorkflowClient, DbosQueueError>;
+   if (input.client) {
+      client = Result.ok(input.client);
+   } else if (input.systemDatabaseUrl) {
+      client = await getDbosClient(input.systemDatabaseUrl);
+   } else {
+      client = Result.err(
          new DbosQueueError({
-            operation: "ensure_queue",
+            operation: "create_client",
             queueName: input.queueName,
             message: "Cliente DBOS não informado para enfileirar workflow.",
          }),
       );
    }
+   if (Result.isError(client)) return client;
 
-   return getDbosClient(input.systemDatabaseUrl);
+   const onConflict = input.queueOptions?.onConflict ?? "always_update";
+   const registered = await Result.tryPromise({
+      try: () =>
+         client.value.registerQueue(input.queueName, {
+            ...input.queueOptions,
+            onConflict,
+         }),
+      catch: (cause) =>
+         new DbosQueueError({
+            operation: "register_queue",
+            queueName: input.queueName,
+            message: "Não foi possível registrar a fila DBOS.",
+            cause,
+         }),
+   });
+   if (Result.isError(registered)) return Result.err(registered.error);
+
+   return Result.ok(client.value);
 }
 
 export async function enqueueDbosWorkflow(

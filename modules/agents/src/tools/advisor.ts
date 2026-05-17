@@ -1,9 +1,11 @@
 import { chat, toolDefinition } from "@tanstack/ai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import { z } from "zod";
 import { fromPromise } from "neverthrow";
 import { proModel } from "@core/ai/models";
 import { WebAppError } from "@core/logging/errors";
-import { createAiObservabilityMiddleware } from "@core/ai/middleware";
+import { aiTraceAttributes } from "@core/ai/otel";
+import { getAiTracer } from "@core/logging";
 import type { Prompts } from "@core/posthog/server";
 import { AGENT_PROMPTS } from "@modules/agents/constants";
 import { SKILLS } from "@modules/agents/skills";
@@ -11,6 +13,7 @@ import { SKILLS } from "@modules/agents/skills";
 export interface AdvisorToolDeps {
    prompts: Prompts;
    distinctId: string;
+   userId?: string;
    organizationId?: string;
    teamId?: string;
    threadId?: string;
@@ -93,21 +96,29 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
             stream: false,
             abortController: advisorController,
             middleware: [
-               createAiObservabilityMiddleware({
-                  distinctId: deps.distinctId,
-                  organizationId: deps.organizationId,
-                  teamId: deps.teamId,
-                  conversationId: deps.threadId,
-                  promptName: AGENT_PROMPTS.advisor,
-                  customProperties: {
-                     agent_role: "advisor",
-                     ...(deps.organizationId && {
-                        agent_organization_id: deps.organizationId,
+               otelMiddleware({
+                  tracer: getAiTracer(),
+                  captureContent: false,
+                  attributeEnricher: () =>
+                     aiTraceAttributes({
+                        distinctId: deps.distinctId,
+                        userId: deps.userId,
+                        organizationId: deps.organizationId,
+                        teamId: deps.teamId,
+                        threadId: deps.threadId,
+                        promptName: AGENT_PROMPTS.advisor,
+                        customProperties: {
+                           agent_role: "advisor",
+                           ...(deps.organizationId && {
+                              agent_organization_id: deps.organizationId,
+                           }),
+                           ...(deps.teamId && { agent_team_id: deps.teamId }),
+                           ...(deps.threadId && {
+                              agent_thread_id: deps.threadId,
+                           }),
+                           ...(deps.turnId && { agent_turn_id: deps.turnId }),
+                        },
                      }),
-                     ...(deps.teamId && { agent_team_id: deps.teamId }),
-                     ...(deps.threadId && { agent_thread_id: deps.threadId }),
-                     ...(deps.turnId && { agent_turn_id: deps.turnId }),
-                  },
                }),
             ],
          }),

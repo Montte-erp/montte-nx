@@ -1,6 +1,7 @@
 import type { AuthInstance } from "@core/authentication/server";
 import type { DatabaseInstance } from "@core/database/client";
 import type { S3Client } from "@core/files/client";
+import type { RequestLogger } from "@core/logging";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import type { WorkflowClient } from "@core/dbos/client";
@@ -8,6 +9,7 @@ import type { WorkflowClient } from "@core/dbos/client";
 export interface ORPCContext {
    headers: Headers;
    request: Request;
+   log: RequestLogger;
 }
 
 export interface ORPCContextWithAuth extends ORPCContext {

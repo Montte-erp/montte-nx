@@ -13,24 +13,16 @@
          "default": "./dist/logger.js"
       },
       "./types": {
-         "types": "./dist/types.d.ts",
-         "default": "./dist/types.js"
+         "types": "./dist/logger.d.ts",
+         "default": "./dist/logger.js"
       },
       "./otel": {
-         "types": "./dist/otel.d.ts",
-         "default": "./dist/otel.js"
-      },
-      "./health": {
-         "types": "./dist/health.d.ts",
-         "default": "./dist/health.js"
-      },
-      "./orpc-plugin": {
-         "types": "./dist/orpc-plugin.d.ts",
-         "default": "./dist/orpc-plugin.js"
+         "types": "./dist/logger.d.ts",
+         "default": "./dist/logger.js"
       },
       "./root": {
-         "types": "./dist/root.d.ts",
-         "default": "./dist/root.js"
+         "types": "./dist/logger.d.ts",
+         "default": "./dist/logger.js"
       },
       "./errors": {
          "types": "./dist/errors.d.ts",
@@ -42,29 +34,22 @@
       "check": "oxlint ./src",
       "format": "oxfmt --write ./src",
       "format:check": "oxfmt --check ./src",
-      "test": "vitest run",
+      "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {
       "@opentelemetry/api": "catalog:telemetry",
-      "@opentelemetry/api-logs": "catalog:telemetry",
-      "@opentelemetry/exporter-logs-otlp-http": "catalog:telemetry",
-      "@opentelemetry/exporter-trace-otlp-http": "catalog:telemetry",
       "@opentelemetry/resources": "catalog:telemetry",
-      "@opentelemetry/sdk-logs": "catalog:telemetry",
       "@opentelemetry/sdk-node": "catalog:telemetry",
-      "@orpc/experimental-pino": "catalog:orpc",
       "@orpc/otel": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
-      "pino": "catalog:logging",
-      "pino-opentelemetry-transport": "catalog:telemetry",
-      "posthog-node": "catalog:analytics-client",
+      "@posthog/ai": "^7.16.0",
+      "evlog": "catalog:logging",
       "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "@types/node": "^20",
-      "pino-pretty": "catalog:logging",
       "typescript": "catalog:development"
    }
 }

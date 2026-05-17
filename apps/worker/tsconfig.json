@@ -3,6 +3,7 @@
    "compilerOptions": {
       "composite": false,
       "noEmit": true,
+      "rootDir": "../..",
       "jsx": "react-jsx",
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],

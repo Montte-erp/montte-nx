@@ -10,9 +10,10 @@ import { createRouterClient } from "@orpc/server";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
+import type { ORPCContext } from "@core/orpc/server";
 import posthogJs from "posthog-js";
+import { getRequestLog } from "@/integrations/evlog";
 import router from "./router";
-import type { ORPCContext } from "./server";
 
 const getORPCClient = createIsomorphicFn()
    .server(() =>
@@ -20,6 +21,7 @@ const getORPCClient = createIsomorphicFn()
          context: async (): Promise<ORPCContext> => ({
             headers: getRequestHeaders(),
             request: new Request("http://localhost"),
+            log: getRequestLog(),
          }),
       }),
    )
@@ -28,11 +30,9 @@ const getORPCClient = createIsomorphicFn()
          url: `${window.location.origin}/api/rpc`,
          headers: () => {
             const posthogSessionId = posthogJs?.get_session_id?.();
-            return {
-               ...(posthogSessionId
-                  ? { "X-PostHog-Session-Id": posthogSessionId }
-                  : {}),
-            };
+            return posthogSessionId
+               ? { "X-PostHog-Session-Id": posthogSessionId }
+               : {};
          },
          plugins: [
             new BatchLinkPlugin({

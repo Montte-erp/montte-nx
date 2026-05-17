@@ -24,6 +24,9 @@ export default defineConfig({
    integrations: [react(), sitemap(), mdx()],
    prefetch: { defaultStrategy: "viewport" },
    vite: {
+      resolve: {
+         tsconfigPaths: true,
+      },
       plugins: [tailwindcss()],
    },
 });

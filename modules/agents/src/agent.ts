@@ -5,9 +5,11 @@ import {
    type ChatMiddleware,
    type UIMessage,
 } from "@tanstack/ai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import type { Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
-import { createAiObservabilityMiddleware } from "@core/ai/middleware";
+import { aiTraceAttributes } from "@core/ai/otel";
+import { getAiTracer } from "@core/logging";
 import { AGENT_PROMPTS, type PageContext } from "@modules/agents/constants";
 import { buildSkillCatalog } from "@modules/agents/skills";
 import { buildAdvisorTool } from "@modules/agents/tools/advisor";
@@ -62,6 +64,7 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
       buildAdvisorTool({
          prompts: options.prompts,
          distinctId: options.userId,
+         userId: options.userId,
          organizationId: options.organizationId,
          teamId: options.teamId,
          threadId: options.threadId,
@@ -92,22 +95,30 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          ? abortControllerFromSignal(options.abortSignal)
          : undefined,
       middleware: [
-         createAiObservabilityMiddleware({
-            distinctId: options.userId,
-            organizationId: options.organizationId,
-            teamId: options.teamId,
-            conversationId: options.threadId,
-            promptName: AGENT_PROMPTS.root,
-            customProperties: {
-               agent_role: "executor",
-               agent_organization_id: options.organizationId,
-               agent_team_id: options.teamId,
-               ...(options.threadId && { agent_thread_id: options.threadId }),
-               agent_turn_id: turnId,
-               ...(options.pageContext?.skillHint && {
-                  agent_skill: options.pageContext.skillHint,
+         otelMiddleware({
+            tracer: getAiTracer(),
+            captureContent: false,
+            attributeEnricher: () =>
+               aiTraceAttributes({
+                  distinctId: options.userId,
+                  userId: options.userId,
+                  organizationId: options.organizationId,
+                  teamId: options.teamId,
+                  threadId: options.threadId,
+                  promptName: AGENT_PROMPTS.root,
+                  customProperties: {
+                     agent_role: "executor",
+                     agent_organization_id: options.organizationId,
+                     agent_team_id: options.teamId,
+                     ...(options.threadId && {
+                        agent_thread_id: options.threadId,
+                     }),
+                     agent_turn_id: turnId,
+                     ...(options.pageContext?.skillHint && {
+                        agent_skill: options.pageContext.skillHint,
+                     }),
+                  },
                }),
-            },
          }),
          ...(options.extraMiddleware ?? []),
       ],
