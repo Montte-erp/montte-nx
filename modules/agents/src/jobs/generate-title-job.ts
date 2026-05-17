@@ -1,4 +1,5 @@
 import { chat } from "@tanstack/ai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import { Result, TaggedError } from "better-result";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import {
@@ -9,11 +10,11 @@ import {
 } from "pg-boss";
 import { z } from "zod";
 import { flashModel } from "@core/ai/models";
-import { createAiObservabilityMiddleware } from "@core/ai/middleware";
+import { aiTraceAttributes } from "@core/ai/otel";
 import type { DatabaseInstance } from "@core/database/client";
 import { messages } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
-import { getLogger } from "@core/logging/root";
+import { getAiTracer, log } from "@core/logging";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Prompts } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
@@ -23,8 +24,6 @@ import {
    conversationTranscript,
    hasUserAndAssistantText,
 } from "../workflows/conversation-transcript";
-
-const logger = getLogger().child({ module: "agents.generate-title-job" });
 
 export const generateThreadTitleJobInputSchema = z.object({
    threadId: z.string().uuid(),
@@ -181,8 +180,14 @@ export async function handleGenerateThreadTitleJob(options: {
    }
 
    const input = parsedInput.data;
-   const ctx = `[pg-boss generate-title] thread=${input.threadId}`;
-   logger.info({ jobId: options.job.id, threadId: input.threadId }, "running");
+   log.info({
+      module: "agents.generate-title-job",
+      message: "running",
+      jobId: options.job.id,
+      threadId: input.threadId,
+      teamId: input.teamId,
+      organizationId: input.organizationId,
+   });
 
    const loaded = await Result.tryPromise({
       try: () =>
@@ -225,7 +230,12 @@ export async function handleGenerateThreadTitleJob(options: {
       return Result.err(loaded.error);
    }
    if (!loaded.value) {
-      logger.info(`${ctx} skipping: thread not found in scope`);
+      log.info({
+         module: "agents.generate-title-job",
+         message: "skipping: thread not found in scope",
+         jobId: options.job.id,
+         threadId: input.threadId,
+      });
       return Result.ok(undefined);
    }
    if (loaded.value.title) {
@@ -235,11 +245,21 @@ export async function handleGenerateThreadTitleJob(options: {
          title: loaded.value.title,
       });
       if (Result.isError(publish)) return Result.err(publish.error);
-      logger.info(`${ctx} republished existing title`);
+      log.info({
+         module: "agents.generate-title-job",
+         message: "republished existing title",
+         jobId: options.job.id,
+         threadId: input.threadId,
+      });
       return Result.ok(undefined);
    }
    if (!loaded.value.recent || loaded.value.recent.length === 0) {
-      logger.info(`${ctx} skipping: no messages`);
+      log.info({
+         module: "agents.generate-title-job",
+         message: "skipping: no messages",
+         jobId: options.job.id,
+         threadId: input.threadId,
+      });
       return Result.ok(undefined);
    }
 
@@ -248,7 +268,12 @@ export async function handleGenerateThreadTitleJob(options: {
       transcript.length < MIN_TITLE_TRANSCRIPT_LENGTH ||
       !hasUserAndAssistantText(loaded.value.recent)
    ) {
-      logger.info(`${ctx} skipping: conversation too shallow`);
+      log.info({
+         module: "agents.generate-title-job",
+         message: "skipping: conversation too shallow",
+         jobId: options.job.id,
+         threadId: input.threadId,
+      });
       return Result.ok(undefined);
    }
 
@@ -290,18 +315,24 @@ export async function handleGenerateThreadTitleJob(options: {
             stream: false,
             conversationId: input.threadId,
             middleware: [
-               createAiObservabilityMiddleware({
-                  distinctId: input.teamId,
-                  organizationId: input.organizationId,
-                  teamId: input.teamId,
-                  conversationId: input.threadId,
-                  promptName: prompt.value.name,
-                  promptVersion: prompt.value.version,
-                  customProperties: {
-                     agent_role: "job",
-                     agent_workflow: "generate-title",
-                     agent_thread_id: input.threadId,
-                  },
+               otelMiddleware({
+                  tracer: getAiTracer(),
+                  captureContent: false,
+                  attributeEnricher: () =>
+                     aiTraceAttributes({
+                        distinctId: input.teamId,
+                        organizationId: input.organizationId,
+                        teamId: input.teamId,
+                        threadId: input.threadId,
+                        promptName: prompt.value.name,
+                        promptVersion: prompt.value.version,
+                        customProperties: {
+                           agent_role: "job",
+                           agent_workflow: "generate-title",
+                           agent_thread_id: input.threadId,
+                           pg_boss_job_id: options.job.id,
+                        },
+                     }),
                }),
             ],
          }),
@@ -320,7 +351,12 @@ export async function handleGenerateThreadTitleJob(options: {
 
    const title = titleResult.value.trim().slice(0, 80);
    if (title.length === 0) {
-      logger.warn(`${ctx} empty title generated: skipping`);
+      log.warn({
+         module: "agents.generate-title-job",
+         message: "empty title generated: skipping",
+         jobId: options.job.id,
+         threadId: input.threadId,
+      });
       return Result.ok(undefined);
    }
 
@@ -354,7 +390,12 @@ export async function handleGenerateThreadTitleJob(options: {
    }
    const writtenTitle = write.value[0]?.title;
    if (!writtenTitle) {
-      logger.info(`${ctx} skipping: title already set concurrently`);
+      log.info({
+         module: "agents.generate-title-job",
+         message: "skipping: title already set concurrently",
+         jobId: options.job.id,
+         threadId: input.threadId,
+      });
       return Result.ok(undefined);
    }
 
@@ -365,7 +406,13 @@ export async function handleGenerateThreadTitleJob(options: {
    });
    if (Result.isError(publish)) return Result.err(publish.error);
 
-   logger.info({ threadId: input.threadId, title }, "completed");
+   log.info({
+      module: "agents.generate-title-job",
+      message: "completed",
+      jobId: options.job.id,
+      threadId: input.threadId,
+      title,
+   });
    return Result.ok(undefined);
 }
 

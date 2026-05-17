@@ -5,6 +5,7 @@
       "declaration": false,
       "declarationMap": false,
       "noEmit": true,
+      "rootDir": "../..",
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],

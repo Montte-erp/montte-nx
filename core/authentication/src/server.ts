@@ -1,9 +1,10 @@
+import { createHash } from "node:crypto";
 import dayjs from "dayjs";
 import { apiKey } from "@better-auth/api-key";
 import { i18n } from "@better-auth/i18n";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
-import { getLogger } from "@core/logging/root";
+import { log } from "@core/logging";
 import {
    sendEmailOTP,
    sendMagicLinkEmail,
@@ -25,8 +26,6 @@ import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import type { ResendClient } from "@core/transactional/utils";
-
-const logger = getLogger().child({ module: "auth" });
 
 export const cnpjDataSchema = z.object({
    cnpj: z.string(),
@@ -52,6 +51,14 @@ export type CnpjData = z.infer<typeof cnpjDataSchema>;
 export const ORGANIZATION_LIMIT = 3;
 
 const devMagicLinkStore = new Map<string, string>();
+
+function emailDomain(email: string): string {
+   return email.split("@").at(1) ?? "unknown";
+}
+
+function secretHash(value: string): string {
+   return createHash("sha256").update(value).digest("hex").slice(0, 12);
+}
 
 export function getDevMagicLink(email: string): string | undefined {
    const url = devMagicLinkStore.get(email);
@@ -135,10 +142,11 @@ export function createAuth(deps: CreateAuthDeps) {
 
                      return { data: session };
                   } catch (error) {
-                     logger.error(
-                        { err: error },
-                        "Error in session create before hook",
-                     );
+                     log.error({
+                        module: "auth",
+                        message: "Error in session create before hook",
+                        err: error,
+                     });
                      return { data: session };
                   }
                },
@@ -188,7 +196,13 @@ export function createAuth(deps: CreateAuthDeps) {
             expiresIn: 60 * 15,
             async sendMagicLink({ email, url }) {
                if (!isProduction) {
-                  logger.info({ email, url }, "DEV magic link generated");
+                  log.info({
+                     module: "auth",
+                     message: "DEV magic link generated",
+                     emailDomain: emailDomain(email),
+                     flow: "magic-link",
+                     tokenHash: secretHash(url),
+                  });
                   devMagicLinkStore.set(email, url);
                   return;
                }
@@ -208,7 +222,14 @@ export function createAuth(deps: CreateAuthDeps) {
             },
             async sendVerificationOTP({ email, otp, type }) {
                if (!isProduction) {
-                  logger.info({ email, type, otp }, "DEV OTP generated");
+                  log.info({
+                     module: "auth",
+                     message: "DEV OTP generated",
+                     emailDomain: emailDomain(email),
+                     flow: type,
+                     type,
+                     tokenHash: secretHash(otp),
+                  });
                   return;
                }
                await sendEmailOTP(resendClient, { email, otp, type });
@@ -303,10 +324,13 @@ export function createAuth(deps: CreateAuthDeps) {
             async sendInvitationEmail(data) {
                const inviteLink = `${getDomain()}/callback/organization/invitation/${data.id}`;
                if (!isProduction) {
-                  logger.info(
-                     { email: data.email, inviteLink },
-                     "DEV organization invitation generated",
-                  );
+                  log.info({
+                     module: "auth",
+                     message: "DEV organization invitation generated",
+                     emailDomain: emailDomain(data.email),
+                     flow: "organization-invitation",
+                     tokenHash: secretHash(inviteLink),
+                  });
                   return;
                }
                await sendOrganizationInvitation(resendClient, {

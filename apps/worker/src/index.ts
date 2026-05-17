@@ -1,7 +1,8 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
+import { Result, TaggedError } from "better-result";
 import { env } from "@core/environment/worker";
-import { initLogger, getLogger } from "@core/logging/root";
-import { initOtel, shutdownOtel } from "@core/logging/otel";
+import { flushLogger, initLogger, log } from "@core/logging";
+import { initOtel, shutdownOtel } from "@core/logging";
 import { createDb } from "@core/database/client";
 import { startPgBossWorker } from "@core/pg-boss/worker";
 import { createRedis } from "@core/redis/connection";
@@ -13,69 +14,107 @@ import {
 import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 
-initOtel({
-   serviceName: "montte-worker",
-   posthogKey: env.POSTHOG_KEY,
-   posthogHost: env.POSTHOG_HOST,
-});
+class WorkerInitError extends TaggedError("WorkerInitError")<{
+   message: string;
+   cause: unknown;
+}>() {}
 
-initLogger({ name: "montte-worker", level: env.LOG_LEVEL });
+async function initWorker() {
+   initOtel({
+      serviceName: "montte-worker",
+      posthogKey: env.POSTHOG_KEY,
+      posthogHost: env.POSTHOG_HOST,
+   });
 
-const logger = getLogger();
-const db = createDb({ databaseUrl: env.DATABASE_URL });
-const redis = createRedis(env.REDIS_URL);
-const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
-const promptsClient = createPromptsClient({
-   personalApiKey: env.POSTHOG_PERSONAL_API_KEY,
-   projectApiKey: env.POSTHOG_KEY,
-   host: env.POSTHOG_HOST,
-});
+   initLogger({
+      name: "montte-worker",
+      level: env.LOG_LEVEL,
+      posthogKey: env.POSTHOG_KEY,
+      posthogHost: env.POSTHOG_HOST,
+   });
 
-logger.info("Starting worker");
+   return Result.tryPromise({
+      try: async () => {
+         const db = createDb({ databaseUrl: env.DATABASE_URL });
+         const redis = createRedis(env.REDIS_URL);
+         const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
+         const promptsClient = createPromptsClient({
+            personalApiKey: env.POSTHOG_PERSONAL_API_KEY,
+            projectApiKey: env.POSTHOG_KEY,
+            host: env.POSTHOG_HOST,
+         });
 
-await setupClassificationWorkflows({
-   redis,
-   posthog,
-   prompts: promptsClient,
-   workerConcurrency: 10,
-});
-await setupAgentsWorkflows({
-   redis,
-   posthog,
-   prompts: promptsClient,
-   workerConcurrency: 10,
-});
+         log.info("worker", "Starting worker");
 
-DBOS.setConfig({
-   name: "montte-worker",
-   systemDatabaseUrl: env.DATABASE_URL,
-   logLevel: env.LOG_LEVEL ?? "info",
-   runAdminServer: false,
-});
+         await setupClassificationWorkflows({
+            redis,
+            posthog,
+            prompts: promptsClient,
+            workerConcurrency: 10,
+         });
+         await setupAgentsWorkflows({
+            redis,
+            posthog,
+            prompts: promptsClient,
+            workerConcurrency: 10,
+         });
 
-await DBOS.launch();
-logger.info("DBOS runtime started");
+         DBOS.setConfig({
+            name: "montte-worker",
+            systemDatabaseUrl: env.DATABASE_URL,
+            logLevel: env.LOG_LEVEL,
+            runAdminServer: false,
+         });
 
-const pgBossWorker = await startPgBossWorker({
-   connectionString: env.DATABASE_URL,
-   queues: agentPgBossQueues,
-   register: (boss) =>
-      registerAgentPgBossJobs({
-         boss,
-         db,
-         prompts: promptsClient,
-         redis,
-      }),
-});
-logger.info("pg-boss runtime started");
+         await DBOS.launch();
+         log.info("worker", "DBOS runtime started");
+
+         const pgBossWorker = await startPgBossWorker({
+            connectionString: env.DATABASE_URL,
+            queues: agentPgBossQueues,
+            register: (boss) =>
+               registerAgentPgBossJobs({
+                  boss,
+                  db,
+                  prompts: promptsClient,
+                  redis,
+               }),
+         });
+         log.info("worker", "pg-boss runtime started");
+
+         return { db, redis, posthog, pgBossWorker };
+      },
+      catch: (cause) =>
+         new WorkerInitError({
+            message: "Falha ao iniciar worker.",
+            cause,
+         }),
+   });
+}
+
+const worker = await initWorker();
+if (worker.isErr()) {
+   log.error({
+      module: "worker",
+      message: worker.error.message,
+      err: worker.error.cause,
+   });
+   await flushLogger();
+   process.exit(1);
+}
+
+const workerDeps = worker.value;
 
 async function gracefulShutdown(signal: string) {
-   logger.info(`${signal} received — shutting down`);
+   log.info("worker", `${signal} received — shutting down`);
    const shutdowns: { name: string; promise: Promise<unknown> }[] = [
-      { name: "pg-boss", promise: pgBossWorker.stop() },
+      { name: "pg-boss", promise: workerDeps.pgBossWorker.stop() },
       { name: "dbos", promise: DBOS.shutdown() },
-      { name: "posthog", promise: posthog.shutdown() },
-      { name: "redis", promise: Promise.resolve(redis.disconnect()) },
+      { name: "posthog", promise: workerDeps.posthog.shutdown() },
+      {
+         name: "redis",
+         promise: Promise.resolve(workerDeps.redis.disconnect()),
+      },
       { name: "otel", promise: shutdownOtel() },
    ];
    const results = await Promise.allSettled(
@@ -83,17 +122,20 @@ async function gracefulShutdown(signal: string) {
    );
    results.forEach((result, index) => {
       if (result.status === "rejected") {
-         logger.error(
-            { err: result.reason, service: shutdowns[index]?.name },
-            "shutdown step failed",
-         );
+         log.error({
+            module: "worker",
+            message: "shutdown step failed",
+            service: shutdowns[index]?.name,
+            err: result.reason,
+         });
       }
    });
-   logger.info("Shutdown complete");
+   log.info("worker", "Shutdown complete");
+   await flushLogger();
    process.exit(0);
 }
 
 process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => void gracefulShutdown("SIGINT"));
 
-void db;
+void workerDeps.db;

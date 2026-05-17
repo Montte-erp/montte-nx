@@ -1,8 +1,6 @@
 import { PgBoss } from "pg-boss";
 import type { ConstructorOptions } from "pg-boss";
-import { getLogger } from "@core/logging/root";
-
-const logger = getLogger().child({ module: "pg-boss" });
+import { log } from "@core/logging";
 
 export type PgBossClient = PgBoss;
 
@@ -34,10 +32,10 @@ export function createPgBossClient(options: CreatePgBossClientOptions) {
 
    const boss = new PgBoss(constructorOptions);
    boss.on("error", (err) => {
-      logger.error({ err }, "pg-boss error");
+      log.error({ module: "pg-boss", message: "pg-boss error", err });
    });
    boss.on("warning", (warning) => {
-      logger.warn({ warning }, "pg-boss warning");
+      log.warn({ module: "pg-boss", message: "pg-boss warning", warning });
    });
    return boss;
 }

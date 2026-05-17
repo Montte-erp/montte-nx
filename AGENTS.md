@@ -205,6 +205,14 @@ Config: `core/authentication/src/server.ts`. Plugins: Magic Link, Email OTP, 2FA
 
 DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.workflowClient` (`DBOSClient`, PostgreSQL-backed). Each workflow file declares its own `WorkflowQueue`; DBOS processes them automatically.
 
+**DBOS vs pg-boss:**
+
+- Use DBOS for durable/crítico workflows: billing, ledger, entitlement, invoice period closing, multi-step state machines, deterministic self-rescheduling, DBOS transactions/steps, and anything where replay/observability of a business workflow is part of the correctness model.
+- Use pg-boss for simple operational jobs: one-shot background work, retries, DLQ, singleton/debounce behavior, queueing from a Drizzle transaction, and non-critical side effects that can be retried or manually inspected. Current default candidate: `agent-title`.
+- pg-boss consumers run only in `apps/worker`. Web may enqueue through the oRPC context `pgBoss` promise and the package helper, but must not run workers/consumers.
+- pg-boss jobs log through `@core/logging` (`evlog`) with structured fields (`module`, `message`, ids, tenant scope). Do not use DBOS.logger in pg-boss jobs.
+- If a job needs DBOS steps, workflow replay, deterministic scheduling, or is financially/security critical, keep it in DBOS instead of porting it to pg-boss.
+
 **Workflow rules:**
 
 - Use `<module>DataSource = new DrizzleDataSource<DatabaseInstance>(...)` per module. Inside steps: `dataSource.runTransaction(async () => { const tx = <module>DataSource.client; … }, { name })`. Generic gives a typed `client` — never cast. Never use plain `db` or repositories.
@@ -217,6 +225,22 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 Existing queues (modules with workflows: `classification`, `agents`): `workflow:classify`, `workflow:derive-keywords` (classification); `workflow:agent-title`, `workflow:agent-suggestions` (agents via `setupAgentsWorkflows(deps)`). Worker startup (`apps/worker/src/index.ts`): `initOtel` → `setupClassificationWorkflows(deps)` → `setupAgentsWorkflows(deps)` → `DBOS.setConfig` → `DBOS.launch()`. Each `setup<Module>Workflows` registers that module's current and future queues/workflows; both must complete before `DBOS.launch()`.
 
 **Testing:** mock `@dbos-inc/dbos-sdk` with `vi.hoisted` + `dbosSdkMockFactory` / `drizzleDataSourceMockFactory` from `@core/dbos/testing/mock-dbos` — `registerWorkflow` must return the function directly. pglite-backed `setupTestDb()` for assertions. Time-mocked: `vi.useFakeTimers()` + `vi.setSystemTime(T0)`. End-to-end real-runtime smoke: `__tests__/integration/dbos-smoke.test.ts` (pglite + `@electric-sql/pglite-socket`). Example: `__tests__/workflows/period-end-invoice.test.ts`.
+
+---
+
+## Logging
+
+`@core/logging` is backed by `evlog`. The official wide-event drain is PostHog Logs via `createPostHogDrain({ mode: "logs" })`; do not add a parallel evlog OTLP drain. OTLP remains reserved for DBOS/TanStack AI observability (`initOtel` / future AI middleware) and should still drain into PostHog endpoints.
+
+Web uses the Nitro v3 evlog module in `apps/web/nitro.config.ts` with `experimental.asyncContext`. Request context is available as `useRequest().context.log`; pass that logger into oRPC/server handlers instead of adding Pino plugins or standalone request loggers. Better Auth identity is attached in the evlog request hook with masked emails.
+
+Request telemetry belongs in the evlog wide event and leaves through the PostHog Logs drain. Do not duplicate normal oRPC request telemetry with `captureServerEvent`; reserve direct PostHog capture for product analytics and identity/group calls.
+
+No standalone health heartbeat/logger in `@core/logging`: Railway health stays on `/api/ping`, and service/request telemetry belongs to evlog or OTEL/TanStack AI. Do not keep unused SDK oRPC procedure layers; API key auth should live in the active oRPC middleware path when needed.
+
+Error direction: keep `WebAppError` only as the current oRPC/HTTP transport adapter. New domain errors belong to the owning module, not `@core/logging`: define a module-local `defineErrorCatalog("<module>", ...)`, and when recoverable errors need to flow through `Result`, use `TaggedError("<Module>Error")<{ error: ReturnType<typeof moduleErrors.SOME_ERROR>; ...payload }>` directly. Do not add wrapper classes or factories around `TaggedError`. As modules are touched, migrate them away from direct `WebAppError` domain usage at the module boundary.
+
+Audit logs are not part of the current migration. Do not wire `auditEnricher`, `auditOnly`, signed filesystem journals, MinIO journals, or `log.audit()` until the audit phase is explicitly reopened.
 
 ---
 
@@ -420,4 +444,4 @@ skills:
   use: "@tanstack/devtools#devtools-app-setup"
 - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
   use: "dotenv#dotenv"
-   <!-- intent-skills:end -->
+    <!-- intent-skills:end -->

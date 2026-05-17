@@ -220,6 +220,22 @@ Existing queues (modules with workflows: `classification`, `agents`): `workflow:
 
 ---
 
+## Logging
+
+`@core/logging` is backed by `evlog`. The official wide-event drain is PostHog Logs via `createPostHogDrain({ mode: "logs" })`; do not add a parallel evlog OTLP drain. OTLP remains reserved for DBOS/TanStack AI observability (`initOtel` / future AI middleware) and should still drain into PostHog endpoints.
+
+Web uses the Nitro v3 evlog module in `apps/web/nitro.config.ts` with `experimental.asyncContext`. Request context is available as `useRequest().context.log`; pass that logger into oRPC/server handlers instead of adding Pino plugins or standalone request loggers. Better Auth identity is attached in the evlog request hook with masked emails.
+
+Request telemetry belongs in the evlog wide event and leaves through the PostHog Logs drain. Do not duplicate normal oRPC request telemetry with `captureServerEvent`; reserve direct PostHog capture for product analytics and identity/group calls.
+
+No standalone health heartbeat/logger in `@core/logging`: Railway health stays on `/api/ping`, and service/request telemetry belongs to evlog or OTEL/TanStack AI. Do not keep unused SDK oRPC procedure layers; API key auth should live in the active oRPC middleware path when needed.
+
+Error direction: keep `WebAppError` only as the current oRPC/HTTP transport adapter. New domain errors belong to the owning module, not `@core/logging`: define a module-local `defineErrorCatalog("<module>", ...)`, and when recoverable errors need to flow through `Result`, use `TaggedError("<Module>Error")<{ error: ReturnType<typeof moduleErrors.SOME_ERROR>; ...payload }>` directly. Do not add wrapper classes or factories around `TaggedError`. As modules are touched, migrate them away from direct `WebAppError` domain usage at the module boundary.
+
+Audit logs are not part of the current migration. Do not wire `auditEnricher`, `auditOnly`, signed filesystem journals, MinIO journals, or `log.audit()` until the audit phase is explicitly reopened.
+
+---
+
 ## AI Agents
 
 Always `@tanstack/ai` + `@tanstack/ai-openrouter` (`catalog:tanstack-ai`). Never the Vercel AI SDK (`ai`, `@openrouter/ai-sdk-provider`).
@@ -421,4 +437,4 @@ skills:
   use: "@tanstack/devtools#devtools-app-setup"
 - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
   use: "dotenv#dotenv"
-    <!-- intent-skills:end -->
+     <!-- intent-skills:end -->

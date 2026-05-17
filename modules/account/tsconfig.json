@@ -5,6 +5,7 @@
       "declaration": false,
       "declarationMap": false,
       "noEmit": true,
+      "rootDir": "../..",
       "jsx": "react-jsx",
       "paths": {
          "@core/authentication": ["../../core/authentication/src/index.ts"],

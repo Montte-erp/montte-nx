@@ -13,12 +13,11 @@ import type { DatabaseInstance } from "@core/database/client";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
-import { getLogger } from "@core/logging/root";
+import { log } from "@core/logging";
 import { agentsSseEvents } from "@modules/agents/sse";
 import { enqueueGenerateThreadTitleJob } from "@modules/agents/jobs/generate-title-job";
 import { enqueueRefreshSuggestions } from "@modules/agents/workflows/refresh-suggestions-workflow";
 
-const logger = getLogger().child({ module: "agents.persist-middleware" });
 const MIN_TITLE_MESSAGE_COUNT = 2;
 const MIN_SUGGESTION_MESSAGE_COUNT = 4;
 const SUGGESTION_MESSAGE_INTERVAL = 4;
@@ -57,10 +56,11 @@ export function createPersistMiddleware(
             .filter((m) => m.role === "assistant" && m.parts.length > 0);
 
          if (newAssistantMessages.length === 0) {
-            logger.warn(
-               { threadId: deps.threadId },
-               "agent chat produced no assistant parts",
-            );
+            log.warn({
+               module: "agents.persist-middleware",
+               message: "agent chat produced no assistant parts",
+               threadId: deps.threadId,
+            });
             return;
          }
          const messageCount = processor.getMessages().length;
@@ -117,15 +117,17 @@ export function createPersistMiddleware(
                      catch: (cause) => cause,
                   });
                   if (Result.isError(enqueueTitle)) {
-                     logger.error(
-                        { err: enqueueTitle.error },
-                        "failed enqueue generate-title",
-                     );
+                     log.error({
+                        module: "agents.persist-middleware",
+                        message: "failed enqueue generate-title",
+                        err: enqueueTitle.error,
+                     });
                   } else if (Result.isError(enqueueTitle.value)) {
-                     logger.error(
-                        { err: enqueueTitle.value.error },
-                        "failed enqueue generate-title",
-                     );
+                     log.error({
+                        module: "agents.persist-middleware",
+                        message: "failed enqueue generate-title",
+                        err: enqueueTitle.value.error,
+                     });
                   }
                }
             }
@@ -142,9 +144,13 @@ export function createPersistMiddleware(
                teamId: deps.teamId,
                organizationId: deps.organizationId,
                messageCount,
-            }).catch((err: unknown) =>
-               logger.error({ err }, "failed enqueue refresh-suggestions"),
-            );
+            }).catch((err: unknown) => {
+               log.error({
+                  module: "agents.persist-middleware",
+                  message: "failed enqueue refresh-suggestions",
+                  err,
+               });
+            });
          }
 
          const assistantRow = inserted.at(-1);
@@ -162,10 +168,11 @@ export function createPersistMiddleware(
                },
             );
             if (publish.isErr()) {
-               logger.error(
-                  { err: publish.error },
-                  "failed publish SSE persisted",
-               );
+               log.error({
+                  module: "agents.persist-middleware",
+                  message: "failed publish SSE persisted",
+                  err: publish.error,
+               });
             }
          }
       },

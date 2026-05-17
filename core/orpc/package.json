@@ -8,14 +8,6 @@
    ],
    "type": "module",
    "exports": {
-      "./sdk-context": {
-         "types": "./dist/sdk-context.d.ts",
-         "default": "./dist/sdk-context.js"
-      },
-      "./sdk-procedure": {
-         "types": "./dist/sdk-procedure.d.ts",
-         "default": "./dist/sdk-procedure.js"
-      },
       "./server": {
          "types": "./dist/server.d.ts",
          "default": "./dist/server.js"
@@ -46,11 +38,10 @@
       "@core/transactional": "workspace:*",
       "@core/utils": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
-      "@opentelemetry/api-logs": "catalog:telemetry",
       "@orpc/contract": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
-      "dayjs": "catalog:ui",
-      "neverthrow": "catalog:validation"
+      "better-result": "catalog:validation",
+      "dayjs": "catalog:ui"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

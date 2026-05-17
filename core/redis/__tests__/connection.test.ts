@@ -24,13 +24,11 @@ const {
    };
 });
 
-vi.mock("@core/logging/root", () => ({
-   getLogger: () => ({
-      child: () => ({
-         error: loggerErrorMock,
-         info: loggerInfoMock,
-      }),
-   }),
+vi.mock("@core/logging", () => ({
+   log: {
+      error: loggerErrorMock,
+      info: loggerInfoMock,
+   },
 }));
 
 vi.mock("ioredis", () => ({
@@ -80,10 +78,14 @@ describe("redis connection", () => {
       errorHandler?.(error);
       connectHandler?.();
 
-      expect(loggerErrorMock).toHaveBeenCalledWith(
-         { err: error },
-         "Connection error",
+      expect(loggerErrorMock).toHaveBeenCalledWith({
+         module: "redis",
+         message: "Connection error",
+         err: error,
+      });
+      expect(loggerInfoMock).toHaveBeenCalledWith(
+         "redis",
+         "Connected successfully",
       );
-      expect(loggerInfoMock).toHaveBeenCalledWith("Connected successfully");
    });
 });

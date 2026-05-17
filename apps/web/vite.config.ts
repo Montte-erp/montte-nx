@@ -32,20 +32,7 @@ const config = defineConfig({
             autoCodeSplitting: true,
          },
       }),
-      nitro({
-         preset: "bun",
-         rollupConfig: {
-            external: (id: string) =>
-               id === "@dbos-inc/dbos-sdk" ||
-               id.startsWith("@dbos-inc/dbos-sdk/") ||
-               id === "katex" ||
-               id.startsWith("katex/") ||
-               id === "mermaid" ||
-               id.startsWith("mermaid/") ||
-               id === "streamdown" ||
-               id.startsWith("streamdown/"),
-         },
-      }),
+      nitro({ preset: "bun" }),
       viteReact(),
       tailwindcss(),
       devtools(),

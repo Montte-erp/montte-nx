@@ -1,9 +1,6 @@
-import { logs } from "@opentelemetry/api-logs";
-import { ORPCError } from "@orpc/server";
 import type { ORPCErrorCode, ORPCErrorOptions } from "@orpc/client";
+import { ORPCError } from "@orpc/server";
 import { ZodError, type z } from "zod";
-
-const otelLogger = logs.getLogger("montte-errors");
 
 export class AppError extends Error {
    public status: number;
@@ -17,24 +14,12 @@ export class AppError extends Error {
          data?: unknown;
       },
    ) {
-      super(message);
+      super(message, { cause: options?.cause });
       this.name = "AppError";
       this.status = status;
-      this.cause = options?.cause;
       this.data = options?.data;
 
       Error.captureStackTrace?.(this, AppError);
-
-      otelLogger.emit({
-         severityText: status >= 500 ? "error" : "warn",
-         body: message,
-         attributes: {
-            "error.type": "AppError",
-            "error.status": status,
-            "error.stack": this.stack ?? "",
-            ...(options?.cause ? { "error.cause": String(options.cause) } : {}),
-         },
-      });
    }
 
    static database(
@@ -94,34 +79,23 @@ export class AppError extends Error {
    }
 }
 
-const SERVER_ERROR_CODES = new Set([
-   "INTERNAL_SERVER_ERROR",
-   "NOT_IMPLEMENTED",
-   "BAD_GATEWAY",
-   "SERVICE_UNAVAILABLE",
-   "GATEWAY_TIMEOUT",
-]);
-
 export class WebAppError<
    TCode extends ORPCErrorCode = ORPCErrorCode,
    TData = unknown,
-> extends ORPCError<TCode, TData> {
+> extends ORPCError<TCode, TData | undefined> {
+   public readonly source?: string;
+
    constructor(
       code: TCode,
-      options?: ORPCErrorOptions<TData> & { source?: string },
+      options?: ORPCErrorOptions<TData | undefined> & { source?: string },
    ) {
-      super(code, options as ORPCErrorOptions<TData>);
-
-      otelLogger.emit({
-         severityText: SERVER_ERROR_CODES.has(code) ? "error" : "warn",
-         body: options?.message ?? code,
-         attributes: {
-            "error.type": "WebAppError",
-            "error.code": code,
-            "error.stack": this.stack ?? "",
-            ...(options?.source ? { "error.source": options.source } : {}),
-         },
-      });
+      if (!options) {
+         super(code);
+         return;
+      }
+      const { source, ...rest } = options;
+      super(code, rest);
+      this.source = source;
    }
 
    static notFound(
@@ -204,17 +178,17 @@ export function validateInput<T extends z.ZodTypeAny>(
    schema: T,
    value: unknown,
 ): z.infer<T> {
-   try {
-      return schema.parse(value);
-   } catch (e) {
-      if (e instanceof ZodError) {
-         const errors = e.issues
-            .map((err) => `${err.path.join(".")}: ${err.message}`)
-            .join("; ");
-         throw AppError.validation("Input validation failed", {
-            cause: errors,
-         });
-      }
-      throw e;
-   }
+   const parsed = schema.safeParse(value);
+   if (parsed.success) return parsed.data;
+
+   const errors =
+      parsed.error instanceof ZodError
+         ? parsed.error.issues
+              .map((err) => `${err.path.join(".")}: ${err.message}`)
+              .join("; ")
+         : "Input validation failed";
+
+   throw AppError.validation("Input validation failed", {
+      cause: errors,
+   });
 }
