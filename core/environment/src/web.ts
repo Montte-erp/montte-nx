@@ -30,7 +30,7 @@ export const env = createEnv({
          .optional()
          .default("development"),
       LOG_LEVEL: z
-         .enum(["trace", "debug", "info", "warn", "error", "fatal"])
+         .enum(["debug", "info", "warn", "error"])
          .optional()
          .default("info"),
    },

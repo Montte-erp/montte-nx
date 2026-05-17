@@ -1,4 +1,4 @@
-import { getLogger } from "@core/logging";
+import { log } from "@core/logging";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
@@ -10,12 +10,11 @@ export const createDb = (opts: {
    databaseUrl: string;
    max?: number;
 }): DatabaseInstance => {
-   const logger = getLogger().child({ module: "database" });
    const pool = new Pool({
       connectionString: opts.databaseUrl,
       max: opts.max ?? 20,
    });
-   logger.info("Connected successfully");
+   log.info("database", "Connected successfully");
    return drizzle({
       casing: "snake_case",
       client: pool,

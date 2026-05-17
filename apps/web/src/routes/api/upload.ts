@@ -1,12 +1,10 @@
 import { handleRequest, route, type Router } from "@better-upload/server";
 import { env } from "@core/environment/web";
-import { getLogger } from "@core/logging";
+import { log } from "@core/logging";
 import { createFileRoute } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
 import { err, fromPromise, ok } from "neverthrow";
 import { auth, s3Client } from "@/integrations/singletons";
-
-const logger = getLogger().child({ module: "api:upload" });
 
 const BUCKET = env.AWS_S3_BUCKET_NAME;
 const ORG_LOGO_PREFIX = "organization-logos";
@@ -62,10 +60,12 @@ function uploadRouter(organizationId: string, userId: string): Router {
             }),
             onAfterSignedUrl: ({ file, metadata }) => {
                const url = publicUrlFor(file.objectInfo.key);
-               logger.info(
-                  { organizationId: metadata.organizationId, url },
-                  "organization logo presigned",
-               );
+               log.info({
+                  module: "api:upload",
+                  message: "organization logo presigned",
+                  organizationId: metadata.organizationId,
+                  url,
+               });
                return { metadata: { publicUrl: url } };
             },
          }),
@@ -82,10 +82,12 @@ function uploadRouter(organizationId: string, userId: string): Router {
             }),
             onAfterSignedUrl: ({ file, metadata }) => {
                const url = publicUrlFor(file.objectInfo.key);
-               logger.info(
-                  { userId: metadata.userId, url },
-                  "user avatar presigned",
-               );
+               log.info({
+                  module: "api:upload",
+                  message: "user avatar presigned",
+                  userId: metadata.userId,
+                  url,
+               });
                return { metadata: { publicUrl: url } };
             },
          }),
@@ -108,14 +110,13 @@ function uploadRouter(organizationId: string, userId: string): Router {
                      absolutePublicUrlFor(f.objectInfo.key),
                   ]),
                );
-               logger.info(
-                  {
-                     organizationId: metadata.organizationId,
-                     userId: metadata.userId,
-                     count: files.length,
-                  },
-                  "transaction attachments presigned",
-               );
+               log.info({
+                  module: "api:upload",
+                  message: "transaction attachments presigned",
+                  organizationId: metadata.organizationId,
+                  userId: metadata.userId,
+                  count: files.length,
+               });
                return { metadata: { publicUrls } };
             },
          }),

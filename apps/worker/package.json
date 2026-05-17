@@ -16,7 +16,8 @@
       "@core/redis": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",
       "@modules/agents": "workspace:*",
-      "@modules/classification": "workspace:*"
+      "@modules/classification": "workspace:*",
+      "better-result": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

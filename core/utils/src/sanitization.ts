@@ -1,6 +1,3 @@
-import { getLogger } from "@core/logging";
-
-const logger = getLogger().child({ module: "utils:sanitize" });
 const SENSITIVE_KEYS = [
    "password",
    "confirmpassword",
@@ -74,8 +71,7 @@ function cloneAndSanitize(value: unknown): unknown {
             } else {
                out[k] = cloneAndSanitize(v);
             }
-         } catch (e) {
-            logger.error({ err: e, key: k }, "Error sanitizing key");
+         } catch {
             out[k] = MASK;
          }
       }

@@ -11,6 +11,17 @@ export default defineConfig({
          env: {
             service: "montte-web",
          },
+         redact: {
+            paths: [
+               "headers.authorization",
+               "headers.cookie",
+               "headers.set-cookie",
+               "orpc.input.password",
+               "orpc.input.token",
+               "orpc.input.secret",
+               "orpc.input.apiKey",
+            ],
+         },
       }),
    ],
    plugins: ["./src/integrations/evlog"],

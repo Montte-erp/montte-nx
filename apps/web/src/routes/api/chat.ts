@@ -9,12 +9,10 @@ import {
    messagePageContextSchema,
    messages,
 } from "@core/database/schemas/messages";
-import { getLogger } from "@core/logging";
+import { log } from "@core/logging";
 import { buildWebContext } from "@core/orpc/server";
 import { createAgentChat } from "@modules/agents/agent";
 import { getRequestLog } from "@/integrations/evlog";
-
-const logger = getLogger().child({ module: "api.chat" });
 
 const bodySchema = z.object({
    threadId: z.string().uuid(),
@@ -56,10 +54,12 @@ async function handlePost({ request }: { request: Request }) {
       return new Response("Conversa não encontrada.", { status: 404 });
    }
 
-   logger.info(
-      { userId: ctx.userId, threadId: input.threadId },
-      "agent chat send start",
-   );
+   log.info({
+      module: "api.chat",
+      message: "agent chat send start",
+      userId: ctx.userId,
+      threadId: input.threadId,
+   });
 
    const historyRows = await ctx.db.transaction(async (tx) => {
       await tx.execute(

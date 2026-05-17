@@ -5,7 +5,12 @@ import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import { env } from "@core/environment/web";
 import { initLogger } from "@core/logging";
 
-initLogger({ name: "montte", level: env.LOG_LEVEL });
+initLogger({
+   name: "montte-web",
+   level: env.LOG_LEVEL,
+   posthogKey: env.POSTHOG_KEY,
+   posthogHost: env.POSTHOG_HOST,
+});
 
 export default createServerEntry({
    fetch(request) {

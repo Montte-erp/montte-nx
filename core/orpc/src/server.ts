@@ -16,7 +16,6 @@ import { createRedis } from "@core/redis/connection";
 import { AppError, WebAppError } from "@core/logging/errors";
 import { createResendClient } from "@core/transactional/utils";
 import { createWorkflowClient } from "@core/dbos/client";
-import { sanitizeData } from "@core/utils/sanitization";
 import type {
    ORPCContext,
    ORPCContextAuthenticated,
@@ -240,7 +239,7 @@ const withLogger = withOrganization.use(
             durationMs,
             endAt: dayjs().toISOString(),
             success: isSuccess,
-            input: sanitizeData(input),
+            input,
             ...(error
                ? { errorName: error.name, errorMessage: error.message }
                : {}),

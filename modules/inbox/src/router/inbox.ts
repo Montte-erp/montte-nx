@@ -4,7 +4,7 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { inboxItems } from "@core/database/schemas/inbox";
 import { WebAppError } from "@core/logging/errors";
-import { getLogger } from "@core/logging";
+import { log } from "@core/logging";
 import { protectedProcedure } from "@core/orpc/server";
 import { sseEnvelopeSchema, type SseScope, subscribeSse } from "@core/sse";
 import {
@@ -12,8 +12,6 @@ import {
    inboxItemDtoSchema,
 } from "@modules/inbox/schemas/inbox-item";
 import { aggregateInbox } from "@modules/inbox/services/aggregate";
-
-const logger = getLogger().child({ module: "router:inbox" });
 
 const itemKeySchema = z.object({ itemKey: z.string().min(1) });
 
@@ -118,14 +116,13 @@ export const markRead = protectedProcedure
 export const subscribe = protectedProcedure
    .output(eventIterator(sseEnvelopeSchema))
    .handler(async function* ({ context, signal }) {
-      logger.info(
-         {
-            userId: context.userId,
-            teamId: context.teamId,
-            organizationId: context.organizationId,
-         },
-         "Inbox SSE subscribe started",
-      );
+      log.info({
+         module: "router:inbox",
+         message: "Inbox SSE subscribe started",
+         userId: context.userId,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+      });
       const scopes: SseScope[] = [
          { kind: "user", id: context.userId },
          { kind: "team", id: context.teamId },
@@ -140,9 +137,11 @@ export const subscribe = protectedProcedure
             yield envelope;
          }
       } finally {
-         logger.info(
-            { userId: context.userId, teamId: context.teamId },
-            "Inbox SSE subscribe ended",
-         );
+         log.info({
+            module: "router:inbox",
+            message: "Inbox SSE subscribe ended",
+            userId: context.userId,
+            teamId: context.teamId,
+         });
       }
    });

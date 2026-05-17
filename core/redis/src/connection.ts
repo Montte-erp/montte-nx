@@ -1,19 +1,17 @@
-import { getLogger } from "@core/logging";
+import { log } from "@core/logging";
 import { Redis } from "ioredis";
 
 export function createRedis(url: string): Redis {
-   const logger = getLogger().child({ module: "redis" });
-
    const redis = new Redis(`${url}?family=6`, {
       maxRetriesPerRequest: null,
    });
 
    redis.on("error", (err) => {
-      logger.error({ err }, "Connection error");
+      log.error({ module: "redis", message: "Connection error", err });
    });
 
    redis.on("connect", () => {
-      logger.info("Connected successfully");
+      log.info("redis", "Connected successfully");
    });
 
    return redis;
