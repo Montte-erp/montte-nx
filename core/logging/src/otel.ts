@@ -1,10 +1,10 @@
 import { trace } from "@opentelemetry/api";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ORPCInstrumentation } from "@orpc/otel";
+import { PostHogSpanProcessor } from "@posthog/ai/otel";
 
 export interface OtelConfig {
    serviceName: string;
@@ -27,10 +27,12 @@ export function initOtel(config: OtelConfig): NodeSDK {
          "service.name": config.serviceName,
       }),
       instrumentations: [new ORPCInstrumentation()],
-      traceExporter: new OTLPTraceExporter({
-         url: `${host}/i/v0/ai/otel/v1/traces`,
-         headers,
-      }),
+      spanProcessors: [
+         new PostHogSpanProcessor({
+            apiKey: config.posthogKey,
+            host,
+         }),
+      ],
       logRecordProcessors: [
          new BatchLogRecordProcessor(
             new OTLPLogExporter({

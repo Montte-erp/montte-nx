@@ -51,6 +51,7 @@
       "@opentelemetry/sdk-node": "catalog:telemetry",
       "@orpc/otel": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
+      "@posthog/ai": "^7.16.0",
       "evlog": "catalog:logging",
       "posthog-node": "catalog:analytics-client",
       "zod": "catalog:validation"

@@ -1,15 +1,14 @@
 import { fromPromise } from "neverthrow";
 import { chat } from "@tanstack/ai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import { z } from "zod";
 import { categorySchema } from "@core/database/schemas/categories";
 import { AppError } from "@core/logging/errors";
 import type { Prompts } from "@core/posthog/server";
 import { CLASSIFICATION_PROMPTS } from "@modules/classification/constants";
 import { proModel } from "@core/ai/models";
-import {
-   type AiObservabilityContext,
-   createAiObservabilityMiddleware,
-} from "@core/ai/middleware";
+import { aiTraceAttributes, type AiTraceContext } from "@core/ai/otel";
+import { getAiTracer } from "@core/logging/otel";
 
 const KEYWORDS_MIN = 5;
 const KEYWORDS_MAX = 15;
@@ -44,7 +43,7 @@ function buildUserMessage(input: DeriveKeywordsInput): string {
 export function deriveKeywords(
    prompts: Prompts,
    input: DeriveKeywordsInput,
-   observability: AiObservabilityContext,
+   observability: AiTraceContext,
 ) {
    return fromPromise(
       prompts.get(CLASSIFICATION_PROMPTS.deriveKeywords, {
@@ -73,10 +72,15 @@ export function deriveKeywords(
                outputSchema,
                stream: false,
                middleware: [
-                  createAiObservabilityMiddleware({
-                     ...observability,
-                     promptName: name,
-                     promptVersion: version,
+                  otelMiddleware({
+                     tracer: getAiTracer(),
+                     captureContent: false,
+                     attributeEnricher: () =>
+                        aiTraceAttributes({
+                           ...observability,
+                           promptName: name,
+                           promptVersion: version,
+                        }),
                   }),
                ],
             }),
