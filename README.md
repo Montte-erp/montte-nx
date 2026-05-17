@@ -3,18 +3,21 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
-**Montte** is an open source, AI-native ERP for SaaS companies and coworking spaces in Brazil. Today the product focuses on the ERP screens for finance, CRM, analytics, accounts and teams. **Montte AI** is present as the AI layer, but operational skills and automations are not available yet; future skills are planned for finance, classification, contacts, insights and onboarding.
+**Montte** e uma plataforma operacional para empresas brasileiras. O produto combina financeiro, contatos, servicos, cobrancas recorrentes e assistencia por IA em um monorepo Nx com Bun.
 
-> **Status:** pre-launch private beta. Not on production yet. Expect breaking changes.
+O app ainda esta em pre-lancamento. A base de recorrencia/cobrancas ja aparece no modelo de dados e na direcao de produto, mas a superficie principal disponivel hoje e o dashboard web com financeiro, classificacao, inbox, relatorios, configuracoes, API keys e chat do Montte AI.
+
+> **Status:** beta privado, sem garantia de estabilidade. Espere mudancas de schema, rotas e fluxos.
 
 ---
 
-## Getting Started
+## Primeiros passos
 
-### Prerequisites
+### Requisitos
 
-- [Bun](https://bun.sh/) ≥ 1.0
-- [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/) with Compose
+- [Bun](https://bun.sh/) >= 1.x
+- [Node.js](https://nodejs.org/) >= 22.12
+- [Docker](https://docs.docker.com/get-docker/) ou [Podman](https://podman.io/) com Compose
 
 ### Setup
 
@@ -22,153 +25,195 @@
 git clone https://github.com/Montte-erp/montte-nx.git
 cd montte-nx
 bun install
+bun run setup
+```
+
+Depois do setup inicial, use:
+
+```bash
 bun dev
 ```
 
-`bun dev` handles everything on first run — creates `apps/web/.env.local` from `.env.example`, installs dependencies if missing, starts the local containers, pushes the DB schema, then runs `web` (http://localhost:3000), `worker` (DBOS), and `landing` (http://localhost:3001) in parallel.
+`bun dev` roda `scripts/dev-init.ts`, garante `apps/web/.env.local`, instala dependencias quando necessario, tenta subir os containers locais, aplica o schema com `db:push` e inicia `web`, `worker` e `landing` em paralelo.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for staging setup and all available commands.
+- App web: `http://localhost:3000`
+- Landing Astro: `http://localhost:3001`
+- Worker DBOS: processo separado em `apps/worker`
 
----
-
-## What Montte does today
-
-### Finance (`@modules/finance`)
-
-- **Bank accounts** — manage multiple accounts, balances tracked per account
-- **Transactions** — import (CSV/XLSX/OFX), categorize, bulk operations, smart filters; statement import auto-categorizes via AI when enabled
-- **Credit cards** — track cards, statements and totals
-
-### CRM & contacts (`@modules/account`, `@modules/classification`)
-
-- **Contacts** — clients, suppliers and service providers
-- **Categories & tags** — custom categories with subcategories; tags double as **centros de custo** (cost centers) for project-level breakdowns
-
-### Analytics (`@modules/insights`)
-
-- **Custom dashboards** — flexible insight tiles you arrange yourself
-- **Analytics engine** — breakdowns, trends, KPIs, time series across financial data
-
-### Montte AI — the AI layer (`@modules/agents`)
-
-- **Chat-first UX** — Montte AI is a persistent drawer available on every page; ask in Portuguese, get answers backed by your real data
-- **Tools wrap oRPC procedures** — Montte AI reads and writes through the same API your dashboard uses; no parallel implementation
-- **Skills** — no operational skills are available today; `finance`, `classification`, `contacts`, `insights`, and `onboarding` are planned next
-- **Multi-model via TanStack AI + OpenRouter** — model selection per call
-
-### Account & teams (`@modules/account`)
-
-- **Multi-tenant organizations** with team-scoped data isolation
-- **Roles**: owner, admin, member with granular permissions
-- **Email invitations** with pending invite management
-- **Onboarding** — minimal CNPJ + profile flow today; conversational chat-onboarding via Montte AI shipping in v1
-
-### Integrations
-
-- **Public API** — every oRPC procedure is exposed via OpenAPI at `/api/openapi/docs` (Scalar reference). Authenticate with API keys.
-- **Webhooks** — outgoing webhooks for real-time event notifications
-- **API keys** — programmatic access from Settings → Project → API Keys
-
-### Auth & security (`@core/authentication`)
-
-- Email/password, Magic Link, Email OTP
-- Two-factor authentication (2FA)
-- Organization + API key plugins
-- Session management with device tracking
-
-### What's NOT in the box yet
-
-These are tracked publicly on Linear and GitHub — they're real next, not today:
-
-- **Pay-as-you-go billing** — landed after the HyprPay payment layer ships
-- **NFe (Nota Fiscal Eletrônica)** — own implementation, no third-party SaaS
-- **GED** — document management with OCR + ParadeDB BM25 search
-- **E-signature** — DocuSeal self-hosted
-- **Inventory** — unified SKU / service / space model (ex-`@modules/inventory` was removed and is being redesigned)
-
-If you're seeing a feature mentioned in older docs, blog posts, or the Linear backlog that isn't here, it was either removed or hasn't shipped yet. The README is the source of truth.
+Veja [CONTRIBUTING.md](CONTRIBUTING.md) para comandos, validacoes e padroes de contribuicao.
 
 ---
 
-## Tech Stack
+## O que existe hoje
 
-Built as an **Nx** monorepo with **Bun**.
+### Web app (`apps/web`)
 
-| Category      | Technology                                                                                                          |
-| :------------ | :------------------------------------------------------------------------------------------------------------------ |
-| **Frontend**  | React 19, TanStack Start (SSR), Astro landing, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS, TypeScript |
-| **AI**        | TanStack AI + `@tanstack/ai-openrouter`                                                                             |
-| **Backend**   | oRPC (type-safe API + OpenAPI), Drizzle ORM, PostgreSQL (ParadeDB image)                                            |
-| **Auth**      | Better Auth (Magic Link, Email OTP, 2FA, Organization, API Key plugins)                                             |
-| **Workflows** | DBOS (durable workflows, queues, cron, retries) running in `apps/worker`                                            |
-| **Realtime**  | `@core/sse` — scope-routed Redis pub/sub (user / team / org)                                                        |
-| **Storage**   | MinIO (S3-compatible)                                                                                               |
-| **Analytics** | PostHog (server + client; surveys + feature flags + early-access)                                                   |
-| **Email**     | Resend (React Email templates)                                                                                      |
-| **Tooling**   | Nx, oxlint, oxfmt                                                                                                   |
+- Dashboard autenticado com TanStack Start, TanStack Router e oRPC.
+- Rotas principais para inbox, transacoes, contas bancarias, cartoes, categorias, centros de custo, relatorios, chat e configuracoes.
+- Agregador oRPC em `apps/web/src/integrations/orpc/router/index.ts`.
+- OpenAPI/Scalar em `/api/openapi/docs` quando o app esta rodando.
+
+### Landing (`apps/landing`)
+
+- Landing publica em Astro.
+- Blog, SEO, sitemap, waitlist e PostHog client-side.
+- Build separado via `bun run landing:build`.
+
+### Worker (`apps/worker`)
+
+- Runtime DBOS separado do processo web.
+- Inicializa observabilidade, Redis, PostHog e workflows dos modulos `classification` e `agents`.
+
+### Financeiro (`@modules/finance`)
+
+- Contas bancarias.
+- Transacoes com criacao, listagem, filtros, status, bulk actions e importacao CSV/XLSX/OFX.
+- Cartoes de credito, faturas e totais.
+- Recorrencias e parcelas em servicos internos.
+
+### Classificacao (`@modules/classification`)
+
+- Categorias e subcategorias.
+- Tags usadas no produto como **Centro de Custo**.
+- Workflows de classificacao e derivacao de palavras-chave via DBOS.
+
+### Inbox (`@modules/inbox`)
+
+- Inbox operacional por time.
+- Agregacao de pendencias como pagamentos a vencer e transacoes sem categoria.
+- SSE para eventos operacionais e acoes de dismiss/snooze.
+
+### Relatorios (`@modules/insights`)
+
+- Relatorios persistidos e telas de detalhe.
+- Base para analises financeiras e paineis internos.
+
+### Conta, times e autenticacao (`@modules/account`, `@core/authentication`)
+
+- Better Auth com Magic Link, Email OTP, 2FA, organizacoes, times e API keys.
+- Perfil, sessoes, organizacao, times, onboarding, CNPJ e configuracoes financeiras.
+- Dados isolados por organizacao/time.
+
+### Montte AI (`@modules/agents`)
+
+- Chat e threads dentro do dashboard.
+- Ferramentas do agente chamam os mesmos procedimentos oRPC usados pela UI.
+- TanStack AI + OpenRouter.
+- Workflows para titulo de conversa e sugestoes.
+
+### Recorrencia e cobrancas
+
+Ainda nao existe um pacote `@modules/billing` no workspace atual. A base vive hoje em schemas do `@core/database`, como `services`, `meters`, `prices`, `subscriptions`, `subscription-items`, `coupons`, `benefits`, `invoices` e `usage-events`, alem de UI/copy da landing voltada para cobrancas recorrentes. A camada de produto e API dedicada ainda esta em construcao.
+
+### Integracoes oficiais
+
+- PostHog para analytics, surveys, feature flags, prompts e observabilidade.
+- Twenty e o CRM externo planejado para a frente de waitlist/relacionamento.
 
 ---
 
-## Project Structure
+## Stack
 
-```
+| Area | Tecnologias |
+| :-- | :-- |
+| Monorepo | Nx, Bun, TypeScript |
+| Web | React 19, TanStack Start, TanStack Router, TanStack Query, TanStack DB, shadcn/ui, Tailwind CSS |
+| Landing | Astro, React islands, sitemap, RSS/MDX quando aplicavel |
+| API | oRPC, OpenAPI, Scalar |
+| Banco | Drizzle ORM, PostgreSQL usando imagem local ParadeDB |
+| Auth | Better Auth |
+| Workflows | DBOS em `apps/worker` |
+| IA | TanStack AI, OpenRouter, PostHog prompts |
+| Realtime | Redis + `@core/sse` |
+| Arquivos | MinIO via `@core/files` |
+| Email | Resend + React Email |
+| Observabilidade | PostHog, OpenTelemetry, Pino |
+| Qualidade | oxlint, oxfmt, Vitest, Playwright |
+
+---
+
+## Estrutura
+
+```text
 montte-nx/
 ├── apps/
-│   ├── landing/         # Astro public landing page
-│   ├── web/             # TanStack Start (SSR) — dashboard + oRPC aggregator
-│   └── worker/          # DBOS runtime — durable workflows for all modules
-├── core/                # Infra packages (no domain logic)
-│   ├── ai/              # AI primitives (chat, middleware, schemas)
-│   ├── authentication/  # Better Auth setup (server + client)
-│   ├── database/        # Drizzle schemas + client (schemas: auth, finance, crm, platform, settings, agents)
-│   ├── dbos/            # DBOS factory + testing helpers
-│   ├── environment/     # Zod-validated env vars (web + worker)
-│   ├── files/           # MinIO file storage client
-│   ├── logging/         # Pino logger + WebAppError + OTel
-│   ├── orpc/            # oRPC server + procedures + context + telemetry
-│   ├── posthog/         # PostHog server/client + surveys/flags config
-│   ├── redis/           # Redis singleton
-│   ├── sse/             # Agnostic SSE pub/sub over Redis
-│   ├── transactional/   # Resend + transactional email templates
-│   └── utils/           # Shared utilities
-├── modules/             # Domain modules — each owns its router, services, workflows, sse
-│   ├── account/         # Profile, org, team, sessions, API keys, onboarding, settings
-│   ├── agents/          # Montte AI chat + threads + tools + skills
-│   ├── billing/         # Services catalog, meters, prices, subscriptions, benefits, coupons, usage
-│   ├── classification/  # Categories, tags, AI categorization workflows
-│   ├── finance/         # Bank accounts, transactions, credit cards
-│   └── insights/        # Dashboards, insights, analytics
+│   ├── landing/         # landing publica Astro
+│   ├── web/             # app TanStack Start + agregador oRPC
+│   ├── web-e2e/         # Playwright E2E
+│   └── worker/          # runtime DBOS
+├── core/                # infraestrutura compartilhada
+│   ├── ai/
+│   ├── authentication/
+│   ├── database/
+│   ├── dbos/
+│   ├── environment/
+│   ├── files/
+│   ├── logging/
+│   ├── orpc/
+│   ├── posthog/
+│   ├── redis/
+│   ├── sse/
+│   ├── transactional/
+│   └── utils/
+├── modules/             # dominios de produto
+│   ├── account/
+│   ├── agents/
+│   ├── classification/
+│   ├── finance/
+│   ├── inbox/
+│   └── insights/
 ├── packages/
-│   └── ui/              # shadcn primitives + Montte components
+│   └── ui/
 └── tooling/
-    ├── boundary/        # Import boundary rules
-    ├── css/             # Tailwind config
-    ├── oxc/             # oxlint + oxfmt configs
-    └── typescript/      # Shared TypeScript configs
+    ├── boundary/
+    ├── css/
+    ├── oxc/
+    └── typescript/
 ```
 
-The web app is the host: it imports routers from each `@modules/*` package and aggregates them in `apps/web/src/integrations/orpc/router/index.ts`. Workflows run in the separate `apps/worker` process. New domains land as a new `modules/<name>` package with its own router, services, workflows and (optionally) SSE channels.
+`apps/web` hospeda a UI e agrega os routers dos modulos. `apps/worker` registra e executa workflows. `core/*` contem infra e singletons compartilhados. `modules/*` contem regras de dominio, routers, services, workflows e contratos quando existem.
 
 ---
 
-## Public API
+## Comandos principais
 
-Every oRPC procedure is exposed via OpenAPI when the app runs. Open the interactive reference at:
-
+```bash
+bun dev                  # dev-init + web + worker + landing
+bun dev:all              # todos os apps/pacotes com target dev
+bun run build            # build via Nx
+bun run typecheck        # typecheck via Nx
+bun run check            # oxlint
+bun run format           # oxfmt --write
+bun run test             # testes via Nx
+bun run db:push          # aplica schema local
+bun run doctor           # diagnostico do ambiente
+bun run check-boundaries # valida regras de importacao
+bun run landing:build    # build da landing Astro
+bun run e2e              # Playwright
 ```
+
+Scripts operacionais ficam em `scripts/`, incluindo `setup.ts`, `dev-init.ts`, `doctor.ts`, `clean.ts`, `db-push.ts`, `ensure-database.ts`, `ensure-schemas.ts`, `check-env.ts`, `env-setup.ts`, `set-bucket-cors.ts` e `backfill-category-icons.ts`.
+
+---
+
+## API publica
+
+Com o web app rodando, a referencia OpenAPI fica em:
+
+```text
 http://localhost:3000/api/openapi/docs
 ```
 
-Authenticate with `x-api-key` (created in Settings → Project → API Keys) or with the session cookie when called from a logged-in browser.
+Para chamadas programaticas, crie uma chave em Configuracoes do projeto -> API Keys e envie `x-api-key`.
 
 ---
 
-## Roadmap & contributing
+## Contribuicao
 
-- The roadmap and active work are public on Linear at [linear.app/montte](https://linear.app/montte).
-- Read [CONTRIBUTING.md](CONTRIBUTING.md) before sending a PR. Code style is opinionated and enforced (oxlint + oxfmt + boundary rules).
-- Bugs and feature requests welcome as GitHub issues.
+Leia [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir PR. O projeto usa padroes fortes para oRPC, Drizzle, TanStack Query, DBOS, UI e boundaries.
 
-## License
+Roadmap e trabalho ativo vivem no Linear do Montte. Issues no GitHub sao bem-vindas para bugs e sugestoes publicas.
 
-Apache-2.0. See [LICENSE.md](LICENSE.md).
+## Licenca
+
+Apache-2.0. Veja [LICENSE.md](LICENSE.md).
