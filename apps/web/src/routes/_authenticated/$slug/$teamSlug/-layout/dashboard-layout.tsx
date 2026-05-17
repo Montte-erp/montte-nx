@@ -8,7 +8,6 @@ import { cn } from "@packages/ui/lib/utils";
 import { useMatches } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import type * as React from "react";
-import { useInboxStream } from "@/features/inbox/use-inbox-stream";
 import { ContextPanelTabContent } from "../-context-panel/context-panel";
 import { contextPanelStore } from "../-context-panel/context-panel-store";
 import { AutoBugReporter } from "./feedback/auto-bug-reporter";
@@ -41,8 +40,6 @@ function InlineContextPanel() {
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-   useInboxStream();
-
    const persistedCollapsed = useSidebarCollapsed();
    const matches = useMatches();
    const isSettingsPage = matches.some((m) =>

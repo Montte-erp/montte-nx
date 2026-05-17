@@ -18,15 +18,11 @@
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/sse": ["../../core/sse/src/sse.ts"],
          "@modules/agents/*": ["./src/*"]
       }
    },
    "include": ["src"],
    "references": [
-      {
-         "path": "../../core/sse"
-      },
       {
          "path": "../../core/redis"
       },

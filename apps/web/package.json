@@ -27,7 +27,6 @@
       "@core/notifications": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
-      "@core/sse": "workspace:*",
       "@dnd-kit/core": "catalog:dnd",
       "@dnd-kit/modifiers": "catalog:dnd",
       "@dnd-kit/sortable": "catalog:dnd",

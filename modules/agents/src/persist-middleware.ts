@@ -12,9 +12,7 @@ import { threads } from "@core/database/schemas/threads";
 import type { DatabaseInstance } from "@core/database/client";
 import type { WorkflowClient } from "@core/dbos/client";
 import type { PgBossClient } from "@core/pg-boss/client";
-import type { Redis } from "@core/redis/connection";
 import { log } from "@core/logging";
-import { agentsSseEvents } from "@modules/agents/sse";
 import { enqueueGenerateThreadTitleJob } from "@modules/agents/jobs/generate-title-job";
 import { enqueueRefreshSuggestions } from "@modules/agents/workflows/refresh-suggestions-workflow";
 
@@ -23,7 +21,7 @@ const MIN_SUGGESTION_MESSAGE_COUNT = 4;
 const SUGGESTION_MESSAGE_INTERVAL = 4;
 
 class PersistMiddlewareError extends TaggedError("PersistMiddlewareError")<{
-   operation: "enqueue_title" | "enqueue_suggestions" | "publish_persisted";
+   operation: "enqueue_title" | "enqueue_suggestions";
    message: string;
    threadId: string;
    teamId: string;
@@ -34,7 +32,6 @@ class PersistMiddlewareError extends TaggedError("PersistMiddlewareError")<{
 export interface PersistMiddlewareDeps {
    db: DatabaseInstance;
    pgBoss: Promise<PgBossClient>;
-   redis: Redis;
    workflowClient: WorkflowClient;
    threadId: string;
    teamId: string;
@@ -74,22 +71,17 @@ export function createPersistMiddleware(
          }
          const messageCount = processor.getMessages().length;
 
-         const inserted = await deps.db.transaction(async (tx) => {
-            const rows: { id: string }[] = [];
+         await deps.db.transaction(async (tx) => {
             for (const msg of newAssistantMessages) {
                const metadata: MessageMetadata = messageMetadataSchema.parse({
                   ...(traceId && { traceId }),
                });
-               const [row] = await tx
-                  .insert(messages)
-                  .values({
-                     threadId: deps.threadId,
-                     role: "assistant",
-                     parts: msg.parts,
-                     metadata,
-                  })
-                  .returning({ id: messages.id });
-               if (row) rows.push(row);
+               await tx.insert(messages).values({
+                  threadId: deps.threadId,
+                  role: "assistant",
+                  parts: msg.parts,
+                  metadata,
+               });
             }
             await tx
                .update(threads)
@@ -123,8 +115,6 @@ export function createPersistMiddleware(
                   }
                }
             }
-
-            return rows;
          });
 
          if (
@@ -140,21 +130,6 @@ export function createPersistMiddleware(
                   module: "agents.persist-middleware",
                   message: "failed enqueue refresh-suggestions",
                   err: enqueueSuggestions.error,
-               });
-            }
-         }
-
-         const assistantRow = inserted.at(-1);
-         if (assistantRow) {
-            const publishPersisted = await publishAssistantPersisted({
-               deps,
-               messageId: assistantRow.id,
-            });
-            if (Result.isError(publishPersisted)) {
-               log.error({
-                  module: "agents.persist-middleware",
-                  message: "failed publish SSE persisted",
-                  err: publishPersisted.error,
                });
             }
          }
@@ -229,36 +204,4 @@ function enqueueThreadSuggestions(options: {
             cause,
          }),
    });
-}
-
-async function publishAssistantPersisted(options: {
-   deps: PersistMiddlewareDeps;
-   messageId: string;
-}) {
-   const { deps, messageId } = options;
-   const publish = await agentsSseEvents.publish(
-      deps.redis,
-      { kind: "team", id: deps.teamId },
-      {
-         type: "agent.message.persisted",
-         payload: {
-            threadId: deps.threadId,
-            messageId,
-            role: "assistant",
-         },
-      },
-   );
-   if (publish.isErr()) {
-      return Result.err(
-         new PersistMiddlewareError({
-            operation: "publish_persisted",
-            message: "Falha ao publicar mensagem persistida.",
-            threadId: deps.threadId,
-            teamId: deps.teamId,
-            organizationId: deps.organizationId,
-            cause: publish.error,
-         }),
-      );
-   }
-   return Result.ok(undefined);
 }

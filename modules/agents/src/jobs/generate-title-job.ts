@@ -17,9 +17,7 @@ import { threads } from "@core/database/schemas/threads";
 import { getAiTracer, log } from "@core/logging";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Prompts } from "@core/posthog/server";
-import type { Redis } from "@core/redis/connection";
 import { AGENT_PROMPTS, AGENT_QUEUES } from "../constants";
-import { agentsSseEvents } from "../sse";
 import {
    conversationTranscript,
    hasUserAndAssistantText,
@@ -45,8 +43,7 @@ export class GenerateThreadTitleJobError extends TaggedError(
       | "load_recent_messages"
       | "load_prompt"
       | "generate_title"
-      | "write_title"
-      | "publish_title";
+      | "write_title";
    message: string;
    threadId?: string;
    cause?: unknown;
@@ -163,7 +160,6 @@ async function ensureGenerateThreadTitleQueues(boss: PgBossClient) {
 export async function handleGenerateThreadTitleJob(options: {
    db: DatabaseInstance;
    prompts: Prompts;
-   redis: Redis;
    job: Job<GenerateThreadTitleJobInput>;
 }) {
    const parsedInput = generateThreadTitleJobInputSchema.safeParse(
@@ -239,15 +235,9 @@ export async function handleGenerateThreadTitleJob(options: {
       return Result.ok(undefined);
    }
    if (loaded.value.title) {
-      const publish = await publishTitleUpdated({
-         redis: options.redis,
-         input,
-         title: loaded.value.title,
-      });
-      if (Result.isError(publish)) return Result.err(publish.error);
       log.info({
          module: "agents.generate-title-job",
-         message: "republished existing title",
+         message: "skipping: title already exists",
          jobId: options.job.id,
          threadId: input.threadId,
       });
@@ -399,13 +389,6 @@ export async function handleGenerateThreadTitleJob(options: {
       return Result.ok(undefined);
    }
 
-   const publish = await publishTitleUpdated({
-      redis: options.redis,
-      input,
-      title: writtenTitle,
-   });
-   if (Result.isError(publish)) return Result.err(publish.error);
-
    log.info({
       module: "agents.generate-title-job",
       message: "completed",
@@ -413,34 +396,5 @@ export async function handleGenerateThreadTitleJob(options: {
       threadId: input.threadId,
       title,
    });
-   return Result.ok(undefined);
-}
-
-async function publishTitleUpdated(options: {
-   redis: Redis;
-   input: GenerateThreadTitleJobInput;
-   title: string;
-}) {
-   const publish = await agentsSseEvents.publish(
-      options.redis,
-      { kind: "team", id: options.input.teamId },
-      {
-         type: "agent.thread.title_updated",
-         payload: {
-            threadId: options.input.threadId,
-            title: options.title,
-         },
-      },
-   );
-   if (Result.isError(publish)) {
-      return Result.err(
-         new GenerateThreadTitleJobError({
-            operation: "publish_title",
-            message: "Falha ao publicar título gerado.",
-            threadId: options.input.threadId,
-            cause: publish.error,
-         }),
-      );
-   }
    return Result.ok(undefined);
 }

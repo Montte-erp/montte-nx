@@ -11,7 +11,6 @@ import {
    member,
    organization,
    team,
-   teamMember,
    user as userTable,
 } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -53,6 +52,8 @@ type CachedDb = {
    pool: Pool;
 };
 
+type TeamRecord = typeof team.$inferSelect;
+
 let cachedDb: CachedDb | undefined;
 
 function db(): DatabaseInstance {
@@ -93,16 +94,20 @@ export async function findFirstOrgByUserEmail(email: string) {
    return member?.organization ?? null;
 }
 
-export async function findTeamByOrgAndSlug(orgSlug: string, teamSlug: string) {
+export async function findTeamByOrgAndSlug(
+   orgSlug: string,
+   teamSlug: string,
+): Promise<TeamRecord | null> {
    const org = await db().query.organization.findFirst({
       where: (f, { eq: eqOp }) => eqOp(f.slug, orgSlug),
    });
    if (!org) return null;
 
-   return db().query.team.findFirst({
+   const foundTeam = await db().query.team.findFirst({
       where: (f, { and, eq: eqOp }) =>
          and(eqOp(f.organizationId, org.id), eqOp(f.slug, teamSlug)),
    });
+   return foundTeam ?? null;
 }
 
 export async function clearUserAvatarByEmail(email: string) {
@@ -180,7 +185,9 @@ export async function markOnboardingIncomplete(orgSlug: string) {
       .where(eq(team.organizationId, org.id));
 }
 
-export async function findTeamsByOrgSlug(orgSlug: string) {
+export async function findTeamsByOrgSlug(
+   orgSlug: string,
+): Promise<TeamRecord[]> {
    const org = await db().query.organization.findFirst({
       where: (f, { eq: eqOp }) => eqOp(f.slug, orgSlug),
    });

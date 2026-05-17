@@ -31,7 +31,6 @@ import {
    getThreadsCollection,
    refreshChatData,
 } from "./chat-data";
-import { useAgentLive } from "./use-agent-live";
 
 type ChatMessageMetadata = ChatMessage["metadata"];
 type ChatPageContext = NonNullable<
@@ -356,8 +355,6 @@ export function ChatSessionProvider({
    const pendingTurn = useRef<ChatTurnRequest | null>(null);
    const loadedSnapshotKey = useRef<string | null>(null);
    const visibleMessages = useRef<UIMessage[]>([]);
-
-   useAgentLive();
 
    const connection = useMemo(
       () =>

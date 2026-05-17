@@ -23,10 +23,7 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
    return mod.drizzleDataSourceMockFactory(await dbosMocks);
 });
 
-import {
-   posthogCaptureSpy,
-   ssePublishSpy,
-} from "../helpers/mock-classification-context";
+import { posthogCaptureSpy } from "../helpers/mock-classification-context";
 
 import { LLMock } from "@copilotkit/aimock";
 import { eq } from "drizzle-orm";
@@ -65,12 +62,6 @@ beforeEach(async () => {
    mocks.setActiveDb(testDb.db);
 });
 
-function countSseByType(type: string): number {
-   return ssePublishSpy.mock.calls.filter(
-      (c) => (c[2] as { type: string }).type === type,
-   ).length;
-}
-
 async function getTransaction(id: string) {
    const [row] = await testDb.db
       .select()
@@ -80,7 +71,7 @@ async function getTransaction(id: string) {
 }
 
 describe("classifyTransactionsBatchWorkflow", () => {
-   it("returns early on empty input — no DB writes, no LLM call, no SSE", async () => {
+   it("returns early on empty input — no DB writes and no LLM call", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
 
       await classifyTransactionsBatchWorkflow({
@@ -89,7 +80,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
          transactionIds: [],
       });
 
-      expect(ssePublishSpy).not.toHaveBeenCalled();
+      expect(llmMock.getRequests()).toHaveLength(0);
    });
 
    it("classifies all by keyword match — no LLM call, suggestedCategoryId set, tag auto-resolved via category.dreGroupId", async () => {
@@ -127,20 +118,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t2?.suggestedTagId).toBe(ops.id);
       expect(t3?.suggestedTagId).toBe(ops.id);
 
-      expect(countSseByType("classification.transaction_classified")).toBe(3);
-      expect(countSseByType("classification.batch_started")).toBe(1);
-      expect(countSseByType("classification.batch_completed")).toBe(1);
-      expect(ssePublishSpy).toHaveBeenCalledWith(
-         expect.anything(),
-         { kind: "team", id: teamId },
-         expect.objectContaining({
-            type: "classification.transaction_classified",
-            payload: expect.objectContaining({
-               categoryId: food.id,
-               tagId: ops.id,
-            }),
-         }),
-      );
+      expect(llmMock.getRequests()).toHaveLength(0);
    });
 
    it("classifies by AI when no keyword match — tag resolved from category.dreGroupId, null when category has no group", async () => {
@@ -184,8 +162,6 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t1?.suggestedTagId).toBe(ops.id);
       expect(t2?.suggestedCategoryId).toBe(misc.id);
       expect(t2?.suggestedTagId).toBeNull();
-
-      expect(countSseByType("classification.transaction_classified")).toBe(2);
    });
 
    it("mixes keyword + AI — keyword writes 2, AI writes 3, all 5 go through", async () => {
@@ -240,8 +216,6 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(k1?.suggestedTagId).toBe(ops.id);
       expect(a1?.suggestedCategoryId).toBe(fuel.id);
       expect(a1?.suggestedTagId).toBe(ops.id);
-
-      expect(countSseByType("classification.transaction_classified")).toBe(5);
    });
 
    it("idempotency — skips transactions that already have categoryId set", async () => {
@@ -274,7 +248,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(done?.suggestedCategoryId).toBeNull();
       expect(pending?.suggestedCategoryId).toBe(food.id);
 
-      expect(countSseByType("classification.transaction_classified")).toBe(1);
+      expect(llmMock.getRequests()).toHaveLength(0);
    });
 
    it("chunks AI calls when unmatched > 20 — makes 2 distinct LLM calls for 25 unmatched", async () => {
@@ -371,7 +345,6 @@ describe("classifyTransactionsBatchWorkflow", () => {
             .filter(Boolean),
       );
       expect(distinctUserMessages.size).toBe(2);
-      expect(countSseByType("classification.transaction_classified")).toBe(25);
    });
 
    it("handles AI returning fewer results than requested — only returned IDs get suggestedCategoryId", async () => {
@@ -413,7 +386,6 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t2?.suggestedCategoryId).toBe(food.id);
       expect(t3?.suggestedCategoryId).toBeNull();
 
-      expect(countSseByType("classification.transaction_classified")).toBe(2);
       expect(posthogCaptureSpy).toBeDefined();
    });
 });

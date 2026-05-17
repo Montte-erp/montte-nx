@@ -7,7 +7,7 @@ import {
    it,
    vi,
 } from "vitest";
-import { ok, okAsync } from "neverthrow";
+import { ok } from "neverthrow";
 import { eq } from "drizzle-orm";
 
 const dbosMocks = vi.hoisted(async () => {
@@ -29,26 +29,11 @@ vi.mock("../../src/ai/derive-keywords", () => ({
    deriveKeywords: vi.fn(),
 }));
 
-const { ssePublishSpy } = vi.hoisted(() => ({
-   ssePublishSpy: vi.fn(),
-}));
-
-vi.mock("../../src/sse", () => ({
-   classificationSseEvents: {
-      publish: ssePublishSpy,
-      eventTypes: [
-         "classification.transaction_classified",
-         "classification.keywords_derived",
-      ],
-   },
-}));
-
 vi.mock("../../src/workflows/context", async (importOriginal) => {
    const actual =
       await importOriginal<typeof import("../../src/workflows/context")>();
    return {
       ...actual,
-      getClassificationRedis: () => ({}),
       getClassificationPosthog: () => ({ capture: vi.fn() }),
       getClassificationPrompts: () => ({
          get: vi.fn().mockResolvedValue({
@@ -89,26 +74,12 @@ beforeEach(async () => {
    vi.clearAllMocks();
    const mocks = await dbosMocks;
    mocks.setActiveDb(testDb.db);
-   ssePublishSpy.mockImplementation(
-      (
-         _redis: unknown,
-         scope: { kind: string; id: string },
-         event: { type: string; payload: unknown },
-      ) =>
-         okAsync({
-            id: crypto.randomUUID(),
-            type: event.type,
-            scope,
-            payload: event.payload,
-            timestamp: new Date().toISOString(),
-         }),
-   );
 });
 
 const KEYWORDS = ["fast food", "restaurant", "burger", "delivery", "cafe"];
 
 describe("deriveKeywords handoff (pglite-backed integration)", () => {
-   it("category enqueue → workflow executes → DB write + SSE published", async () => {
+   it("category enqueue → workflow executes → DB write", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
@@ -162,19 +133,5 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
          .where(eq(categories.id, category.id));
       expect(updated?.keywords).toEqual(KEYWORDS);
       expect(updated?.keywordsUpdatedAt).toBeInstanceOf(Date);
-
-      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
-      expect(ssePublishSpy).toHaveBeenCalledWith(
-         expect.anything(),
-         { kind: "team", id: teamId },
-         expect.objectContaining({
-            type: "classification.keywords_derived",
-            payload: expect.objectContaining({
-               categoryId: category.id,
-               categoryName: "Alimentação",
-               count: KEYWORDS.length,
-            }),
-         }),
-      );
    }, 30_000);
 });

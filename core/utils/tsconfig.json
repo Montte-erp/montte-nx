@@ -15,9 +15,5 @@
       }
    },
    "include": ["src"],
-   "references": [
-      {
-         "path": "../logging"
-      }
-   ]
+   "references": []
 }

@@ -168,7 +168,6 @@ async function handlePost({ request }: { request: Request }) {
          createPersistMiddleware({
             db: ctx.db,
             pgBoss: ctx.pgBoss,
-            redis: ctx.redis,
             workflowClient: ctx.workflowClient,
             threadId: input.threadId,
             teamId: ctx.teamId,

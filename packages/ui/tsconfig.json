@@ -16,9 +16,5 @@
       }
    },
    "include": ["src"],
-   "references": [
-      {
-         "path": "../../core/utils"
-      }
-   ]
+   "references": []
 }
