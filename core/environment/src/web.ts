@@ -23,6 +23,8 @@ export const env = createEnv({
       AWS_ACCESS_KEY_ID: z.string().min(1),
       AWS_SECRET_ACCESS_KEY: z.string().min(1),
 
+      MONTTE_VAULT_MASTER_KEY: z.string().min(32),
+
       OPENROUTER_API_KEY: z.string().optional(),
 
       NODE_ENV: z

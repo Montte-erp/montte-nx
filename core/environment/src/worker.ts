@@ -12,6 +12,8 @@ export const env = createEnv({
 
       RESEND_API_KEY: z.string(),
 
+      MONTTE_VAULT_MASTER_KEY: z.string().min(32),
+
       OPENROUTER_API_KEY: z.string().optional(),
 
       LOG_LEVEL: z

@@ -23,6 +23,7 @@ export default mergeConfig(
             AWS_ENDPOINT_URL: "http://localhost:9000",
             AWS_ACCESS_KEY_ID: "test",
             AWS_SECRET_ACCESS_KEY: "test",
+            MONTTE_VAULT_MASTER_KEY: "test-vault-master-key-32-bytes!!!",
             NODE_ENV: "test",
             LOG_LEVEL: "info",
          },
