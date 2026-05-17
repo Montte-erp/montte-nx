@@ -11,7 +11,8 @@
          "@core/database/*": ["../../core/database/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
-         "@core/orpc/*": ["../../core/orpc/src/*"]
+         "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@core/utils/*": ["../../core/utils/src/*"]
       }
    },
    "include": ["src"],
@@ -21,6 +22,9 @@
       },
       {
          "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/utils"
       }
    ]
 }

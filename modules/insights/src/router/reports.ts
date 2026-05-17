@@ -21,16 +21,13 @@ import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
+import { isIsoDateString } from "@core/utils/dates";
 
 dayjs.extend(customParseFormat);
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const reportStatus = z.enum(["paid", "pending", "all"]);
 const optionalUuid = z.string().uuid().optional();
-
-function isValidIsoDate(value: string) {
-   return dayjs(value, "YYYY-MM-DD", true).isValid();
-}
 
 function isValidRange(values: { dateFrom: string; dateTo: string }) {
    return !dayjs(values.dateFrom).isAfter(dayjs(values.dateTo));
@@ -49,7 +46,8 @@ const baseFiltersShape = {
 const baseFilters = z
    .object(baseFiltersShape)
    .refine(
-      (value) => isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+      (value) =>
+         isIsoDateString(value.dateFrom) && isIsoDateString(value.dateTo),
       {
          path: ["dateFrom"],
          message: "Informe datas válidas.",
@@ -70,7 +68,8 @@ const baseFiltersWithoutContactShape = {
 const cashFlowFilters = z
    .object(baseFiltersWithoutContactShape)
    .refine(
-      (value) => isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+      (value) =>
+         isIsoDateString(value.dateFrom) && isIsoDateString(value.dateTo),
       {
          path: ["dateFrom"],
          message: "Informe datas válidas.",
@@ -92,7 +91,8 @@ const agingFilters = z
       status: z.enum(["open", "overdue", "settled"]).default("open"),
    })
    .refine(
-      (value) => isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+      (value) =>
+         isIsoDateString(value.dateFrom) && isIsoDateString(value.dateTo),
       {
          path: ["dateFrom"],
          message: "Informe datas válidas.",
@@ -109,7 +109,8 @@ const expensesByCategoryFilters = z
       minAmount: z.number().nonnegative().default(0),
    })
    .refine(
-      (value) => isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+      (value) =>
+         isIsoDateString(value.dateFrom) && isIsoDateString(value.dateTo),
       {
          path: ["dateFrom"],
          message: "Informe datas válidas.",
@@ -277,7 +278,7 @@ export const profitAndLoss = protectedProcedure
          })
          .refine(
             (value) =>
-               isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+               isIsoDateString(value.dateFrom) && isIsoDateString(value.dateTo),
             {
                path: ["dateFrom"],
                message: "Informe datas válidas.",

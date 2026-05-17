@@ -28,7 +28,7 @@ import {
    SelectValue,
 } from "@packages/ui/components/select";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { getInitials } from "@core/utils/text";
+import { getInitials } from "@/utils/text";
 import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {

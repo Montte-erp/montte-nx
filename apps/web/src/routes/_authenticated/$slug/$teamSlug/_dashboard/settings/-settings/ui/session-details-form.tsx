@@ -15,7 +15,6 @@ import {
    ItemTitle,
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
-import { formatDate } from "@core/utils/date";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
@@ -23,6 +22,7 @@ import { toast } from "@packages/ui/hooks/use-toast";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+import { formatDate } from "@/utils/date";
 
 interface SessionDetailsFormProps {
    session: {

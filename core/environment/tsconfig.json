@@ -10,14 +10,9 @@
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
-         "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/utils/*": ["../../core/utils/src/*"]
+         "@core/redis/*": ["../../core/redis/src/*"]
       }
    },
    "include": ["src"],
-   "references": [
-      {
-         "path": "../utils"
-      }
-   ]
+   "references": []
 }

@@ -2,11 +2,9 @@ import { sql } from "drizzle-orm";
 import { jsonb, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import { z } from "zod";
 import { platformSchema } from "@core/database/schemas/schemas";
-
-dayjs.extend(customParseFormat);
+import { isIsoDateString } from "@core/utils/dates";
 
 export const reportTypeEnum = platformSchema.enum("report_type", [
    "dre",
@@ -17,10 +15,6 @@ export const reportTypeEnum = platformSchema.enum("report_type", [
 ]);
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-
-function isValidIsoDate(value: string) {
-   return dayjs(value, "YYYY-MM-DD", true).isValid();
-}
 
 export const reportConfigSchema = z
    .object({
@@ -37,11 +31,11 @@ export const reportConfigSchema = z
       categoryDepth: z.enum(["group", "subcategory"]).default("group"),
       minAmount: z.number().nonnegative().default(0),
    })
-   .refine((value) => isValidIsoDate(value.dateFrom), {
+   .refine((value) => isIsoDateString(value.dateFrom), {
       path: ["dateFrom"],
       message: "Data inicial inválida.",
    })
-   .refine((value) => isValidIsoDate(value.dateTo), {
+   .refine((value) => isIsoDateString(value.dateTo), {
       path: ["dateTo"],
       message: "Data final inválida.",
    })
