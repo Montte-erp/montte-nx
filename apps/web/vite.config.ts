@@ -36,8 +36,7 @@ const config = defineConfig({
          preset: "bun",
          rollupConfig: {
             external: (id: string) =>
-               id === "@dbos-inc/dbos-sdk" ||
-               id.startsWith("@dbos-inc/dbos-sdk/") ||
+               id.startsWith("@dbos-inc/") ||
                id === "katex" ||
                id.startsWith("katex/") ||
                id === "mermaid" ||

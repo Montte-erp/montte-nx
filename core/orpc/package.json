@@ -44,7 +44,6 @@
       "@core/redis": "workspace:*",
       "@core/transactional": "workspace:*",
       "@core/utils": "workspace:*",
-      "@dbos-inc/dbos-sdk": "catalog:workers",
       "@opentelemetry/api-logs": "catalog:telemetry",
       "@orpc/contract": "catalog:orpc",
       "@orpc/server": "catalog:orpc",

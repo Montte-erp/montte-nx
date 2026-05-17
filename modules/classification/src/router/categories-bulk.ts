@@ -14,7 +14,10 @@ import {
    requireOwnedCategoryIds,
    withExpandedCategoryIds,
 } from "@modules/classification/router/middlewares";
-import { enqueueDeriveKeywordsWorkflow } from "@modules/classification/workflows/derive-keywords-workflow";
+import {
+   enqueueDeriveKeywordsWorkflow,
+   isClassificationWorkflowQueueFailure,
+} from "@modules/classification/workflows/enqueue";
 
 const idsSchema = z.object({ ids: z.array(z.string().uuid()).min(1) });
 
@@ -89,7 +92,7 @@ export const importBatch = protectedProcedure
       if (result.isErr()) throw result.error;
 
       const { all, parents } = result.value;
-      await Promise.all(
+      const queued = await Promise.all(
          parents.map((p) =>
             enqueueDeriveKeywordsWorkflow(context.workflowClient, {
                categoryId: p.id,
@@ -101,6 +104,13 @@ export const importBatch = protectedProcedure
             }),
          ),
       );
+      if (
+         queued.some((result) => isClassificationWorkflowQueueFailure(result))
+      ) {
+         throw WebAppError.internal(
+            "Falha ao enfileirar derivação de palavras-chave.",
+         );
+      }
       return all;
    });
 

@@ -1,5 +1,5 @@
-import { DBOS } from "@dbos-inc/dbos-sdk";
 import { env } from "@core/environment/worker";
+import { launchDbosWorker, shutdownDbosWorker } from "@core/dbos/worker";
 import { initLogger, getLogger } from "@core/logging/root";
 import { initOtel, shutdownOtel } from "@core/logging/otel";
 import { createDb } from "@core/database/client";
@@ -28,37 +28,25 @@ const promptsClient = createPromptsClient({
 
 logger.info("Starting worker");
 
-await setupClassificationWorkflows({
+const classificationWorkflows = await setupClassificationWorkflows({
    redis,
    posthog,
    prompts: promptsClient,
    workerConcurrency: 10,
 });
-await setupAgentsWorkflows({
+const agentsQueues = await setupAgentsWorkflows({
    redis,
    posthog,
    prompts: promptsClient,
    workerConcurrency: 10,
 });
 
-DBOS.setConfig({
-   name: "montte-worker",
-   systemDatabaseUrl: env.DATABASE_URL,
-   logLevel: env.LOG_LEVEL ?? "info",
-   runAdminServer: false,
-});
-
-DBOS.launch()
-   .then(() => {
-      logger.info("DBOS runtime started");
-   })
-   .catch((err: unknown) => {
-      logger.error({ err }, "DBOS launch failed");
-   });
+await launchDbosWorker([...classificationWorkflows.queues, ...agentsQueues]);
+logger.info("DBOS runtime started");
 
 async function gracefulShutdown(signal: string) {
    logger.info(`${signal} received — shutting down`);
-   await DBOS.shutdown();
+   await shutdownDbosWorker();
    await posthog.shutdown();
    redis.disconnect();
    await shutdownOtel();

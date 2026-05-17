@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import { eq } from "drizzle-orm";
 import { ok, errAsync } from "neverthrow";
+import { Result } from "better-result";
 
 const dbosMocks = vi.hoisted(async () => {
    const mod = await import("@core/dbos/testing/mock-dbos");
@@ -36,10 +37,8 @@ import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { categories } from "@core/database/schemas/categories";
 import { makeCategory } from "../helpers/classification-factories";
-import {
-   deriveKeywordsWorkflow,
-   enqueueDeriveKeywordsWorkflow,
-} from "../../src/workflows/derive-keywords-workflow";
+import { deriveKeywordsWorkflow } from "../../src/workflows/derive-keywords-workflow";
+import { enqueueDeriveKeywordsWorkflow } from "../../src/workflows/enqueue";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -125,7 +124,7 @@ describe("deriveKeywordsWorkflow", () => {
       const fakeClient = {
          enqueue: vi.fn(async (args: { workflowID?: string }) => {
             enqueueCalls.push(args);
-            return undefined;
+            return { workflowID: args.workflowID ?? "derive-keywords-test" };
          }),
       };
 
@@ -137,10 +136,18 @@ describe("deriveKeywordsWorkflow", () => {
       };
 
       // oxlint-ignore no-explicit-any
-      await enqueueDeriveKeywordsWorkflow(fakeClient as any, input);
+      const first = await enqueueDeriveKeywordsWorkflow(
+         fakeClient as any,
+         input,
+      );
       // oxlint-ignore no-explicit-any
-      await enqueueDeriveKeywordsWorkflow(fakeClient as any, input);
+      const second = await enqueueDeriveKeywordsWorkflow(
+         fakeClient as any,
+         input,
+      );
 
+      expect(Result.isOk(first)).toBe(true);
+      expect(Result.isOk(second)).toBe(true);
       expect(enqueueCalls).toHaveLength(2);
       expect(enqueueCalls[0]?.workflowID).toBe(`derive-category-${categoryId}`);
       expect(enqueueCalls[1]?.workflowID).toBe(`derive-category-${categoryId}`);

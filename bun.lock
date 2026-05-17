@@ -74,6 +74,7 @@
         "@better-upload/server": "catalog:files",
         "@core/authentication": "workspace:*",
         "@core/database": "workspace:*",
+        "@core/dbos": "workspace:*",
         "@core/environment": "workspace:*",
         "@core/files": "workspace:*",
         "@core/logging": "workspace:*",
@@ -81,7 +82,6 @@
         "@core/redis": "workspace:*",
         "@core/sse": "workspace:*",
         "@core/utils": "workspace:*",
-        "@dbos-inc/dbos-sdk": "catalog:workers",
         "@dnd-kit/core": "catalog:dnd",
         "@dnd-kit/modifiers": "catalog:dnd",
         "@dnd-kit/sortable": "catalog:dnd",
@@ -198,6 +198,7 @@
       "name": "worker",
       "dependencies": {
         "@core/database": "workspace:*",
+        "@core/dbos": "workspace:*",
         "@core/environment": "workspace:*",
         "@core/logging": "workspace:*",
         "@core/posthog": "workspace:*",
@@ -280,7 +281,9 @@
       "version": "0.1.0",
       "dependencies": {
         "@core/database": "workspace:*",
+        "@core/environment": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
+        "better-result": "catalog:validation",
       },
       "devDependencies": {
         "@tooling/typescript": "workspace:*",
@@ -359,7 +362,6 @@
         "@core/redis": "workspace:*",
         "@core/transactional": "workspace:*",
         "@core/utils": "workspace:*",
-        "@dbos-inc/dbos-sdk": "catalog:workers",
         "@opentelemetry/api-logs": "catalog:telemetry",
         "@orpc/contract": "catalog:orpc",
         "@orpc/server": "catalog:orpc",
@@ -527,6 +529,7 @@
         "@tanstack/ai": "catalog:tanstack-ai",
         "@tanstack/ai-openrouter": "catalog:tanstack-ai",
         "@tanstack/store": "catalog:tanstack",
+        "better-result": "catalog:validation",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
         "drizzle-zod": "catalog:database",
@@ -2958,6 +2961,8 @@
     "better-auth": ["better-auth@1.6.5", "", { "dependencies": { "@better-auth/core": "1.6.5", "@better-auth/drizzle-adapter": "1.6.5", "@better-auth/kysely-adapter": "1.6.5", "@better-auth/memory-adapter": "1.6.5", "@better-auth/mongo-adapter": "1.6.5", "@better-auth/prisma-adapter": "1.6.5", "@better-auth/telemetry": "1.6.5", "@better-auth/utils": "0.4.0", "@better-fetch/fetch": "1.1.21", "@noble/ciphers": "^2.1.1", "@noble/hashes": "^2.0.1", "better-call": "1.3.5", "defu": "^6.1.4", "jose": "^6.1.3", "kysely": "^0.28.14", "nanostores": "^1.1.1", "zod": "^4.3.6" }, "peerDependencies": { "@lynx-js/react": "*", "@prisma/client": "^5.0.0 || ^6.0.0 || ^7.0.0", "@sveltejs/kit": "^2.0.0", "@tanstack/react-start": "^1.0.0", "@tanstack/solid-start": "^1.0.0", "better-sqlite3": "^12.0.0", "drizzle-kit": ">=0.31.4", "drizzle-orm": "^0.45.2", "mongodb": "^6.0.0 || ^7.0.0", "mysql2": "^3.0.0", "next": "^14.0.0 || ^15.0.0 || ^16.0.0", "pg": "^8.0.0", "prisma": "^5.0.0 || ^6.0.0 || ^7.0.0", "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0", "solid-js": "^1.0.0", "svelte": "^4.0.0 || ^5.0.0", "vitest": "^2.0.0 || ^3.0.0 || ^4.0.0", "vue": "^3.0.0" }, "optionalPeers": ["@lynx-js/react", "@prisma/client", "@sveltejs/kit", "@tanstack/react-start", "@tanstack/solid-start", "better-sqlite3", "drizzle-kit", "drizzle-orm", "mongodb", "mysql2", "next", "pg", "prisma", "react", "react-dom", "solid-js", "svelte", "vitest", "vue"] }, "sha512-rSt8JtJOJK0MqPShXINCmM6DV30GsDvnCTlIxQIzP9OpUx/umA40nUc4ALZHQyqAPbw1ib/a549kIWw/WyxxKA=="],
 
     "better-call": ["better-call@1.3.5", "", { "dependencies": { "@better-auth/utils": "^0.4.0", "@better-fetch/fetch": "^1.1.21", "rou3": "^0.7.12", "set-cookie-parser": "^3.0.1" }, "peerDependencies": { "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-kOFJkBP7utAQLEYrobZm3vkTH8mXq5GNgvjc5/XEST1ilVHaxXUXfeDeFlqoETMtyqS4+3/h4ONX2i++ebZrvA=="],
+
+    "better-result": ["better-result@2.9.2", "", {}, "sha512-WIFoBPCdnTOdk9inkE1ZRvCZ4P0CpSkAiLlchC65N7n9DcjZ3NhqkBOlafzpOVnO8ixyi37kicmSJ3ENhPZl7Q=="],
 
     "bidi-js": ["bidi-js@1.0.3", "", { "dependencies": { "require-from-string": "^2.0.2" } }, "sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw=="],
 

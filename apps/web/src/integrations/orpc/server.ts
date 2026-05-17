@@ -13,7 +13,7 @@ import {
 } from "@core/posthog/server";
 import { AppError, WebAppError } from "@core/logging/errors";
 import type { Redis } from "@core/redis/connection";
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
+import type { WorkflowClient } from "@core/dbos/client";
 import { sanitizeData } from "@core/utils/sanitization";
 import type { S3Client } from "@core/files/client";
 import {
@@ -38,7 +38,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthog: PostHog;
    posthogPrompts: Prompts;
    redis: Redis;
-   workflowClient: DBOSClient;
+   workflowClient: WorkflowClient;
    s3Client: S3Client;
 }
 

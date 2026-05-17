@@ -1,12 +1,12 @@
 import type { DatabaseInstance } from "@core/database/client";
 import type { PostHog } from "@core/posthog/server";
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
+import type { WorkflowClient } from "@core/dbos/client";
 
 export interface SDKBaseContext {
    db: DatabaseInstance;
    posthog: PostHog;
    request: Request;
-   workflowClient: DBOSClient;
+   workflowClient: WorkflowClient;
 }
 
 export interface SDKContext extends SDKBaseContext {
