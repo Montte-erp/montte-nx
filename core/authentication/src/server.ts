@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import dayjs from "dayjs";
 import { apiKey } from "@better-auth/api-key";
 import { i18n } from "@better-auth/i18n";
@@ -50,6 +51,14 @@ export type CnpjData = z.infer<typeof cnpjDataSchema>;
 export const ORGANIZATION_LIMIT = 3;
 
 const devMagicLinkStore = new Map<string, string>();
+
+function emailDomain(email: string): string {
+   return email.split("@").at(1) ?? "unknown";
+}
+
+function secretHash(value: string): string {
+   return createHash("sha256").update(value).digest("hex").slice(0, 12);
+}
 
 export function getDevMagicLink(email: string): string | undefined {
    const url = devMagicLinkStore.get(email);
@@ -190,8 +199,9 @@ export function createAuth(deps: CreateAuthDeps) {
                   log.info({
                      module: "auth",
                      message: "DEV magic link generated",
-                     email,
-                     url,
+                     emailDomain: emailDomain(email),
+                     flow: "magic-link",
+                     tokenHash: secretHash(url),
                   });
                   devMagicLinkStore.set(email, url);
                   return;
@@ -215,9 +225,10 @@ export function createAuth(deps: CreateAuthDeps) {
                   log.info({
                      module: "auth",
                      message: "DEV OTP generated",
-                     email,
+                     emailDomain: emailDomain(email),
+                     flow: type,
                      type,
-                     otp,
+                     tokenHash: secretHash(otp),
                   });
                   return;
                }
@@ -316,8 +327,9 @@ export function createAuth(deps: CreateAuthDeps) {
                   log.info({
                      module: "auth",
                      message: "DEV organization invitation generated",
-                     email: data.email,
-                     inviteLink,
+                     emailDomain: emailDomain(data.email),
+                     flow: "organization-invitation",
+                     tokenHash: secretHash(inviteLink),
                   });
                   return;
                }

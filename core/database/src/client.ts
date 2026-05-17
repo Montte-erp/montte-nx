@@ -14,7 +14,12 @@ export const createDb = (opts: {
       connectionString: opts.databaseUrl,
       max: opts.max ?? 20,
    });
-   log.info("database", "Connected successfully");
+   pool.once("connect", () => {
+      log.info("database", "Connected successfully");
+   });
+   pool.on("error", (err) => {
+      log.error({ module: "database", message: "Connection error", err });
+   });
    return drizzle({
       casing: "snake_case",
       client: pool,

@@ -106,9 +106,12 @@ const withDeps = base.use(async ({ context, next }) => {
             );
          }
 
+         const apiKeyHeaders = new Headers();
+         apiKeyHeaders.set("x-api-key", apiKeyValue);
+
          const session = yield* Result.await(
             Result.tryPromise({
-               try: () => auth.api.getSession({ headers: context.headers }),
+               try: () => auth.api.getSession({ headers: apiKeyHeaders }),
                catch: () =>
                   WebAppError.unauthorized(
                      "Falha ao resolver sessão da API key.",
@@ -118,6 +121,11 @@ const withDeps = base.use(async ({ context, next }) => {
          if (!session?.user) {
             return Result.err(
                WebAppError.unauthorized("API key sem sessão associada."),
+            );
+         }
+         if (session.user.id !== verified.key.referenceId) {
+            return Result.err(
+               WebAppError.unauthorized("API key não pertence à sessão."),
             );
          }
 
@@ -263,18 +271,32 @@ const withTelemetry = withLogger.use(async ({ context, next }) => {
    const userName = context.session.user.name;
    const organizationId = context.organizationId;
 
-   identifyUser(context.posthog, userId, {
-      email: userEmail,
-      name: userName,
-   });
-   setGroup(context.posthog, organizationId, {});
+   const telemetry = Result.try({
+      try: () => {
+         identifyUser(context.posthog, userId, {
+            email: userEmail,
+            name: userName,
+         });
+         setGroup(context.posthog, organizationId, {});
 
-   context.log.set({
-      posthog: {
-         distinctId: userId,
-         group: { organization: organizationId },
+         context.log.set({
+            posthog: {
+               distinctId: userId,
+               group: { organization: organizationId },
+            },
+         });
       },
+      catch: toError,
    });
+
+   if (telemetry.isErr()) {
+      context.log.warn("PostHog telemetry failed", {
+         posthog: {
+            errorName: telemetry.error.name,
+            errorMessage: telemetry.error.message,
+         },
+      });
+   }
 
    return next();
 });

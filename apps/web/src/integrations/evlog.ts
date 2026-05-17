@@ -13,8 +13,22 @@ import { createDrainPipeline } from "evlog/pipeline";
 import { definePlugin } from "nitro";
 import { useRequest } from "nitro/context";
 
+function isRequestLogger(value: unknown): value is RequestLogger {
+   return (
+      value !== null &&
+      typeof value === "object" &&
+      "set" in value &&
+      typeof value.set === "function" &&
+      "emit" in value &&
+      typeof value.emit === "function"
+   );
+}
+
 export function getRequestLog(): RequestLogger {
-   return useRequest().context!.log as RequestLogger;
+   const request = useRequest();
+   const requestLog = request.context?.log;
+   if (isRequestLogger(requestLog)) return requestLog;
+   throw new Error("evlog request logger missing from Nitro context.");
 }
 
 function enrichCloudflare(ctx: EnrichContext): void {
@@ -79,7 +93,10 @@ export default definePlugin((nitroApp) => {
    nitroApp.hooks.hook("evlog:drain", drain);
    nitroApp.hooks.hook("close", () => drain.flush());
    nitroApp.hooks.hook("request", async (event) => {
-      const log = event.req.context!.log as RequestLogger;
+      const log = event.req.context?.log;
+      if (!isRequestLogger(log)) {
+         throw new Error("evlog request logger missing from Nitro context.");
+      }
 
       await identify({
          path: new URL(event.req.url, "http://localhost").pathname,

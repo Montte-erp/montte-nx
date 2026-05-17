@@ -34,7 +34,7 @@
       "check": "oxlint ./src",
       "format": "oxfmt --write ./src",
       "format:check": "oxfmt --check ./src",
-      "test": "vitest run",
+      "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {

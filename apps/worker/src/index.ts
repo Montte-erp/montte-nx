@@ -1,7 +1,7 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { Result, TaggedError } from "better-result";
 import { env } from "@core/environment/worker";
-import { initLogger, log } from "@core/logging";
+import { flushLogger, initLogger, log } from "@core/logging";
 import { initOtel, shutdownOtel } from "@core/logging";
 import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
@@ -81,20 +81,24 @@ if (worker.isErr()) {
       message: worker.error.message,
       err: worker.error.cause,
    });
+   await flushLogger();
    process.exit(1);
 }
+
+const workerDeps = worker.value;
 
 async function gracefulShutdown(signal: string) {
    log.info("worker", `${signal} received — shutting down`);
    await DBOS.shutdown();
-   await worker.value.posthog.shutdown();
-   worker.value.redis.disconnect();
+   await workerDeps.posthog.shutdown();
+   workerDeps.redis.disconnect();
    await shutdownOtel();
    log.info("worker", "Shutdown complete");
+   await flushLogger();
    process.exit(0);
 }
 
 process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => void gracefulShutdown("SIGINT"));
 
-void worker.value.db;
+void workerDeps.db;

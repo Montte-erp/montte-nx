@@ -32,7 +32,7 @@ const config = defineConfig({
             autoCodeSplitting: true,
          },
       }),
-      nitro(),
+      nitro({ preset: "bun" }),
       viteReact(),
       tailwindcss(),
       devtools(),

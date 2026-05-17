@@ -82,12 +82,20 @@ export class AppError extends Error {
 export class WebAppError<
    TCode extends ORPCErrorCode = ORPCErrorCode,
    TData = unknown,
-> extends ORPCError<TCode, TData> {
+> extends ORPCError<TCode, TData | undefined> {
+   public readonly source?: string;
+
    constructor(
       code: TCode,
-      options?: ORPCErrorOptions<TData> & { source?: string },
+      options?: ORPCErrorOptions<TData | undefined> & { source?: string },
    ) {
-      super(code, options as ORPCErrorOptions<TData>);
+      if (!options) {
+         super(code);
+         return;
+      }
+      const { source, ...rest } = options;
+      super(code, rest);
+      this.source = source;
    }
 
    static notFound(

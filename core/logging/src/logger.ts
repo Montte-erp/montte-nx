@@ -6,7 +6,7 @@ import { PostHogSpanProcessor } from "@posthog/ai/otel";
 import { initLogger as initEvlogLogger, log } from "evlog";
 import type { DrainContext, LogLevel, RequestLogger } from "evlog";
 import { createPostHogDrain } from "evlog/posthog";
-import { createDrainPipeline } from "evlog/pipeline";
+import { createDrainPipeline, type PipelineDrainFn } from "evlog/pipeline";
 
 type LoggerConfig = {
    name: string;
@@ -18,8 +18,10 @@ type LoggerConfig = {
 export type { RequestLogger };
 export { log };
 
+let loggerDrain: PipelineDrainFn<DrainContext>;
+
 export function initLogger(config: LoggerConfig): void {
-   const drain = createDrainPipeline<DrainContext>({
+   loggerDrain = createDrainPipeline<DrainContext>({
       batch: { size: 50, intervalMs: 5000 },
       retry: { maxAttempts: 3, backoff: "exponential", initialDelayMs: 1000 },
    })(
@@ -36,7 +38,7 @@ export function initLogger(config: LoggerConfig): void {
          environment: process.env.NODE_ENV ?? "development",
       },
       minLevel: config.level,
-      drain,
+      drain: loggerDrain,
       pretty: process.env.NODE_ENV !== "production",
       redact: {
          paths: [
@@ -51,6 +53,10 @@ export function initLogger(config: LoggerConfig): void {
       },
       silent: false,
    });
+}
+
+export function flushLogger(): Promise<void> {
+   return loggerDrain.flush();
 }
 
 export interface OtelConfig {

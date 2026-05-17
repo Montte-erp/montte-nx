@@ -224,7 +224,7 @@ Existing queues (modules with workflows: `classification`, `agents`): `workflow:
 
 `@core/logging` is backed by `evlog`. The official wide-event drain is PostHog Logs via `createPostHogDrain({ mode: "logs" })`; do not add a parallel evlog OTLP drain. OTLP remains reserved for DBOS/TanStack AI observability (`initOtel` / future AI middleware) and should still drain into PostHog endpoints.
 
-Web uses the Nitro v3 evlog module in `apps/web/vite.config.ts` with `experimental.asyncContext`. Request context is available as `useRequest().context.log`; pass that logger into oRPC/server handlers instead of adding Pino plugins or standalone request loggers. Better Auth identity is attached in the evlog request hook with masked emails.
+Web uses the Nitro v3 evlog module in `apps/web/nitro.config.ts` with `experimental.asyncContext`. Request context is available as `useRequest().context.log`; pass that logger into oRPC/server handlers instead of adding Pino plugins or standalone request loggers. Better Auth identity is attached in the evlog request hook with masked emails.
 
 Request telemetry belongs in the evlog wide event and leaves through the PostHog Logs drain. Do not duplicate normal oRPC request telemetry with `captureServerEvent`; reserve direct PostHog capture for product analytics and identity/group calls.
 
