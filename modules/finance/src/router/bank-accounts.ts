@@ -20,7 +20,7 @@ import {
 } from "@core/database/schemas/bank-accounts";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
-import { getLogger } from "@core/logging/root";
+import { log } from "@core/logging";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/finance/router/middlewares";
 import {
@@ -30,8 +30,6 @@ import {
 } from "@modules/finance/services/bank-account-balance";
 
 const idSchema = z.object({ id: z.string().uuid() });
-const logger = getLogger();
-
 export const create = protectedProcedure
    .input(createBankAccountSchema)
    .handler(async ({ context, input }) => {
@@ -400,10 +398,12 @@ async function fetchBanks(
 ): Promise<BrasilApiBank[]> {
    const cached = await fromPromise(redis.get(BANKS_REDIS_KEY), (e) => e);
    if (cached.isErr()) {
-      logger.warn(
-         { err: cached.error, key: BANKS_REDIS_KEY },
-         "Falha ao ler cache da lista de bancos",
-      );
+      log.warn({
+         module: "finance.bank-accounts",
+         message: "Falha ao ler cache da lista de bancos",
+         err: cached.error,
+         key: BANKS_REDIS_KEY,
+      });
    }
    if (cached.isOk() && cached.value) {
       const cachedPayload = cached.value;
@@ -412,10 +412,13 @@ async function fetchBanks(
          (e) => e,
       )();
       if (parsed.isOk()) return withFallbackBanks(parsed.value);
-      logger.warn(
-         { err: parsed.error, key: BANKS_REDIS_KEY },
-         "Falha ao interpretar cache da lista de bancos com BrasilApiBankArraySchema",
-      );
+      log.warn({
+         module: "finance.bank-accounts",
+         message:
+            "Falha ao interpretar cache da lista de bancos com BrasilApiBankArraySchema",
+         err: parsed.error,
+         key: BANKS_REDIS_KEY,
+      });
    }
 
    const responseResult = await fromPromise(
@@ -425,43 +428,49 @@ async function fetchBanks(
       (e) => e,
    );
    if (responseResult.isErr()) {
-      logger.error(
-         { err: responseResult.error, fallbackCount: FALLBACK_BANKS.length },
-         "Falha ao buscar bancos na BrasilAPI, retornando FALLBACK_BANKS",
-      );
+      log.error({
+         module: "finance.bank-accounts",
+         message:
+            "Falha ao buscar bancos na BrasilAPI, retornando FALLBACK_BANKS",
+         err: responseResult.error,
+         fallbackCount: FALLBACK_BANKS.length,
+      });
       return FALLBACK_BANKS;
    }
    if (!responseResult.value.ok) {
-      logger.warn(
-         {
-            status: responseResult.value.status,
-            statusText: responseResult.value.statusText,
-            fallbackCount: FALLBACK_BANKS.length,
-         },
-         "Lista de bancos da BrasilAPI retornou resposta sem sucesso, retornando FALLBACK_BANKS",
-      );
+      log.warn({
+         module: "finance.bank-accounts",
+         message:
+            "Lista de bancos da BrasilAPI retornou resposta sem sucesso, retornando FALLBACK_BANKS",
+         status: responseResult.value.status,
+         statusText: responseResult.value.statusText,
+         fallbackCount: FALLBACK_BANKS.length,
+      });
       return FALLBACK_BANKS;
    }
 
    const jsonResult = await fromPromise(responseResult.value.json(), (e) => e);
    if (jsonResult.isErr()) {
-      logger.error(
-         { err: jsonResult.error, fallbackCount: FALLBACK_BANKS.length },
-         "Falha ao interpretar JSON da lista de bancos da BrasilAPI, retornando FALLBACK_BANKS",
-      );
+      log.error({
+         module: "finance.bank-accounts",
+         message:
+            "Falha ao interpretar JSON da lista de bancos da BrasilAPI, retornando FALLBACK_BANKS",
+         err: jsonResult.error,
+         fallbackCount: FALLBACK_BANKS.length,
+      });
       return FALLBACK_BANKS;
    }
 
    const parsed = BrasilApiBankArraySchema.safeParse(jsonResult.value);
    if (!parsed.success) {
-      logger.error(
-         {
-            err: parsed.error,
-            schema: "BrasilApiBankArraySchema",
-            fallbackCount: FALLBACK_BANKS.length,
-         },
-         "Lista de bancos da BrasilAPI falhou na validação de schema, retornando FALLBACK_BANKS",
-      );
+      log.error({
+         module: "finance.bank-accounts",
+         message:
+            "Lista de bancos da BrasilAPI falhou na validação de schema, retornando FALLBACK_BANKS",
+         err: parsed.error,
+         schema: "BrasilApiBankArraySchema",
+         fallbackCount: FALLBACK_BANKS.length,
+      });
       return FALLBACK_BANKS;
    }
 
@@ -475,10 +484,13 @@ async function fetchBanks(
       (e) => e,
    );
    if (cacheResult.isErr()) {
-      logger.warn(
-         { err: cacheResult.error, key: BANKS_REDIS_KEY },
-         "Falha ao persistir lista de bancos da BrasilAPI com redis.set",
-      );
+      log.warn({
+         module: "finance.bank-accounts",
+         message:
+            "Falha ao persistir lista de bancos da BrasilAPI com redis.set",
+         err: cacheResult.error,
+         key: BANKS_REDIS_KEY,
+      });
    }
    return withFallbackBanks(parsed.data);
 }

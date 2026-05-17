@@ -15,7 +15,7 @@ export const env = createEnv({
       OPENROUTER_API_KEY: z.string().optional(),
 
       LOG_LEVEL: z
-         .enum(["trace", "debug", "info", "warn", "error", "fatal"])
+         .enum(["debug", "info", "warn", "error"])
          .optional()
          .default("info"),
    },

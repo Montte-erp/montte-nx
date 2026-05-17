@@ -9,7 +9,7 @@ import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import type { Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { aiTraceAttributes } from "@core/ai/otel";
-import { getAiTracer } from "@core/logging/otel";
+import { getAiTracer } from "@core/logging";
 import { AGENT_PROMPTS, type PageContext } from "@modules/agents/constants";
 import { buildSkillCatalog } from "@modules/agents/skills";
 import { buildAdvisorTool } from "@modules/agents/tools/advisor";

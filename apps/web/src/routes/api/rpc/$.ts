@@ -2,33 +2,20 @@ import "@/polyfill";
 
 import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
-import { FetchLoggingPlugin } from "@core/logging/orpc-plugin";
+import type { ORPCContext } from "@core/orpc/server";
 import { createFileRoute } from "@tanstack/react-router";
-import pino from "pino";
+import { getRequestLog } from "@/integrations/evlog";
 import router from "@/integrations/orpc/router";
-import type { ORPCContext } from "@/integrations/orpc/server";
-
-const logger = pino(
-   { name: "montte-web-rpc" },
-   pino.destination({ sync: true }),
-);
 
 const handler = new RPCHandler(router, {
-   plugins: [
-      new BatchHandlerPlugin(),
-      new FetchLoggingPlugin<ORPCContext>({
-         logger,
-         generateId: () => crypto.randomUUID(),
-         logRequestResponse: true,
-         logRequestAbort: true,
-      }),
-   ],
+   plugins: [new BatchHandlerPlugin()],
 });
 
 async function handle({ request }: { request: Request }) {
    const context: ORPCContext = {
       headers: request.headers,
       request,
+      log: getRequestLog(),
    };
 
    const { response } = await handler.handle(request, {

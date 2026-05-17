@@ -1,10 +1,8 @@
 import { getObjectStream } from "@better-upload/server/helpers";
-import { getLogger } from "@core/logging/root";
+import { log } from "@core/logging";
 import { createFileRoute } from "@tanstack/react-router";
 import { fromPromise } from "neverthrow";
 import { s3Client } from "@/integrations/singletons";
-
-const logger = getLogger().child({ module: "api:files" });
 
 async function handle({
    params,
@@ -23,7 +21,13 @@ async function handle({
    const result = await fromPromise(
       getObjectStream(s3Client, { bucket: bucketName, key: fileName }),
       (err) => {
-         logger.error({ err, bucketName, fileName }, "Error serving file");
+         log.error({
+            module: "api:files",
+            message: "Error serving file",
+            err,
+            bucketName,
+            fileName,
+         });
          return err;
       },
    );
