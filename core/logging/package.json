@@ -24,10 +24,6 @@
          "types": "./dist/health.d.ts",
          "default": "./dist/health.js"
       },
-      "./orpc-plugin": {
-         "types": "./dist/orpc-plugin.d.ts",
-         "default": "./dist/orpc-plugin.js"
-      },
       "./root": {
          "types": "./dist/root.d.ts",
          "default": "./dist/root.js"
@@ -53,18 +49,15 @@
       "@opentelemetry/resources": "catalog:telemetry",
       "@opentelemetry/sdk-logs": "catalog:telemetry",
       "@opentelemetry/sdk-node": "catalog:telemetry",
-      "@orpc/experimental-pino": "catalog:orpc",
       "@orpc/otel": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
-      "pino": "catalog:logging",
-      "pino-opentelemetry-transport": "catalog:telemetry",
+      "evlog": "catalog:logging",
       "posthog-node": "catalog:analytics-client",
       "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
       "@types/node": "^20",
-      "pino-pretty": "catalog:logging",
       "typescript": "catalog:development"
    }
 }

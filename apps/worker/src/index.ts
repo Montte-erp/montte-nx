@@ -14,7 +14,14 @@ initOtel({
    posthogHost: env.POSTHOG_HOST,
 });
 
-initLogger({ name: "montte-worker", level: env.LOG_LEVEL });
+initLogger({
+   name: "montte-worker",
+   level: env.LOG_LEVEL,
+   posthog: {
+      apiKey: env.POSTHOG_KEY,
+      host: env.POSTHOG_HOST,
+   },
+});
 
 const logger = getLogger();
 const db = createDb({ databaseUrl: env.DATABASE_URL });

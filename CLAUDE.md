@@ -220,6 +220,16 @@ Existing queues (modules with workflows: `classification`, `agents`): `workflow:
 
 ---
 
+## Logging
+
+`@core/logging` is backed by `evlog`. The official wide-event drain is PostHog Logs via `createPostHogDrain({ mode: "logs" })`; do not add a parallel evlog OTLP drain. OTLP remains reserved for DBOS/TanStack AI observability (`initOtel` / future AI middleware) and should still drain into PostHog endpoints.
+
+Web uses the Nitro v3 evlog module in `apps/web/vite.config.ts` with `experimental.asyncContext`. Request context is available as `useRequest().context.log`; pass that logger into oRPC/server handlers instead of adding Pino plugins or standalone request loggers. Better Auth identity is attached in the evlog request hook with masked emails.
+
+Audit logs are not part of the current migration. Do not wire `auditEnricher`, `auditOnly`, signed filesystem journals, MinIO journals, or `log.audit()` until the audit phase is explicitly reopened.
+
+---
+
 ## AI Agents
 
 Always `@tanstack/ai` + `@tanstack/ai-openrouter` (`catalog:tanstack-ai`). Never the Vercel AI SDK (`ai`, `@openrouter/ai-sdk-provider`).

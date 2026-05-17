@@ -1,7 +1,6 @@
 import dayjs from "dayjs";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
-import { logs } from "@opentelemetry/api-logs";
 import { ORPCError, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createDb } from "@core/database/client";
@@ -51,8 +50,6 @@ const s3Client = createS3Client({
    region: env.AWS_DEFAULT_REGION,
 });
 
-const otelLogger = logs.getLogger("montte-web-orpc");
-
 export async function buildWebContext(
    request: Request,
 ): Promise<ORPCContextWithOrganization | null> {
@@ -64,6 +61,7 @@ export async function buildWebContext(
    return {
       headers: request.headers,
       request,
+      log: undefined,
       auth,
       db,
       session,
@@ -224,10 +222,13 @@ const withTelemetry = withOrganization.use(
          path: path.join("."),
       };
 
-      otelLogger.emit({
-         severityText: "info",
-         body: `oRPC request: ${path.join(".")}`,
-         attributes: otelIdentity,
+      context.log?.set({
+         orpc: {
+            path: path.join("."),
+            rootPath: path[0],
+         },
+         userId,
+         ...otelIdentity,
       });
 
       if (userId && context.posthog) {
@@ -247,15 +248,12 @@ const withTelemetry = withOrganization.use(
       const isSuccess = result.isOk();
       const error = result.isErr() ? result.error : null;
 
-      otelLogger.emit({
-         severityText: isSuccess ? "info" : "error",
-         body: isSuccess
-            ? `oRPC completed: ${path.join(".")} (${durationMs}ms)`
-            : `oRPC error: ${path.join(".")} — ${error?.message}`,
-         attributes: {
-            ...otelIdentity,
+      context.log?.set({
+         orpc: {
+            path: path.join("."),
             durationMs,
             success: isSuccess,
+            input: sanitizeData(input),
             ...(error
                ? { errorName: error.name, errorMessage: error.message }
                : {}),

@@ -91,6 +91,7 @@
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "drizzle-zod": "catalog:database",
+      "evlog": "catalog:logging",
       "foxact": "catalog:ui",
       "lucide-react": "catalog:ui",
       "motion": "catalog:ui",
