@@ -75,7 +75,7 @@ function NavItem({
       >
          <SidebarMenuButton
             asChild
-            className="h-7 rounded-md px-2 text-foreground data-[active=true]:bg-muted data-[active=true]:font-medium data-[active=true]:text-foreground"
+            className="text-foreground data-[active=true]:bg-muted data-[active=true]:font-medium data-[active=true]:text-foreground"
             isActive={isActive}
             tooltip={tooltip}
          >
