@@ -15,7 +15,11 @@ export type StartPgBossWorkerOptions = {
 
 export const defaultPgBossWorkOptions = {
    localConcurrency: 2,
+   batchSize: 1,
    pollingIntervalSeconds: 1,
+   heartbeatRefreshSeconds: 15,
+   priority: true,
+   orderByCreatedOn: true,
 } satisfies WorkOptions;
 
 export async function startPgBossWorker(options: StartPgBossWorkerOptions) {
@@ -27,8 +31,13 @@ export async function startPgBossWorker(options: StartPgBossWorkerOptions) {
    const setup = await Result.tryPromise({
       try: async () => {
          for (const queue of options.queues) {
-            const { name, ...queueOptions } = queue;
-            await boss.createQueue(name, queueOptions);
+            const { name, partition, policy, ...queueOptions } = queue;
+            await boss.createQueue(name, {
+               ...queueOptions,
+               partition,
+               policy,
+            });
+            await boss.updateQueue(name, queueOptions);
          }
          await options.register(boss);
       },

@@ -55,14 +55,28 @@ export class GenerateThreadTitleJobError extends TaggedError(
 
 const MIN_TITLE_TRANSCRIPT_LENGTH = 24;
 
+export const generateThreadTitleDeadLetterQueue = {
+   name: AGENT_QUEUES.generateTitleDeadLetter,
+   retryLimit: 0,
+   expireInSeconds: 60,
+   retentionSeconds: 2_592_000,
+   deleteAfterSeconds: 2_592_000,
+   warningQueueSize: 1,
+};
+
 export const generateThreadTitleQueue = {
    name: AGENT_QUEUES.generateTitle,
-   retryLimit: 2,
-   retryDelay: 1,
+   policy: "key_strict_fifo",
+   retryLimit: 3,
+   retryDelay: 5,
    retryBackoff: true,
-   expireInSeconds: 120,
-   retentionSeconds: 86_400,
-   deleteAfterSeconds: 86_400,
+   retryDelayMax: 300,
+   expireInSeconds: 300,
+   retentionSeconds: 2_592_000,
+   deleteAfterSeconds: 604_800,
+   heartbeatSeconds: 30,
+   warningQueueSize: 25,
+   deadLetter: AGENT_QUEUES.generateTitleDeadLetter,
 };
 
 export async function enqueueGenerateThreadTitleJob(options: {
@@ -71,11 +85,7 @@ export async function enqueueGenerateThreadTitleJob(options: {
    tx?: DrizzleTransactionLike;
 }) {
    const queue = await Result.tryPromise({
-      try: () =>
-         options.boss.createQueue(
-            generateThreadTitleQueue.name,
-            generateThreadTitleQueue,
-         ),
+      try: () => ensureGenerateThreadTitleQueues(options.boss),
       catch: (cause) =>
          new GenerateThreadTitleJobError({
             operation: "ensure_queue",
@@ -93,9 +103,13 @@ export async function enqueueGenerateThreadTitleJob(options: {
       retryLimit: generateThreadTitleQueue.retryLimit,
       retryDelay: generateThreadTitleQueue.retryDelay,
       retryBackoff: generateThreadTitleQueue.retryBackoff,
+      retryDelayMax: generateThreadTitleQueue.retryDelayMax,
       expireInSeconds: generateThreadTitleQueue.expireInSeconds,
       retentionSeconds: generateThreadTitleQueue.retentionSeconds,
       deleteAfterSeconds: generateThreadTitleQueue.deleteAfterSeconds,
+      heartbeatSeconds: generateThreadTitleQueue.heartbeatSeconds,
+      deadLetter: generateThreadTitleQueue.deadLetter,
+      group: { id: options.input.teamId },
    };
    if (options.tx) sendOptions.db = fromDrizzle(options.tx, sql);
 
@@ -128,6 +142,23 @@ export async function enqueueGenerateThreadTitleJob(options: {
       );
    }
    return Result.ok(jobId.value);
+}
+
+async function ensureGenerateThreadTitleQueues(boss: PgBossClient) {
+   const { name: deadLetterQueueName, ...deadLetterQueueOptions } =
+      generateThreadTitleDeadLetterQueue;
+   await boss.createQueue(deadLetterQueueName, deadLetterQueueOptions);
+   await boss.updateQueue(deadLetterQueueName, deadLetterQueueOptions);
+   const {
+      name: generateTitleQueueName,
+      policy,
+      ...generateTitleQueueOptions
+   } = generateThreadTitleQueue;
+   await boss.createQueue(generateTitleQueueName, {
+      ...generateTitleQueueOptions,
+      policy,
+   });
+   await boss.updateQueue(generateTitleQueueName, generateTitleQueueOptions);
 }
 
 export async function handleGenerateThreadTitleJob(options: {

@@ -22,6 +22,13 @@ export function createPgBossClient(options: CreatePgBossClientOptions) {
       supervise: options.supervise ?? true,
       persistWarnings: true,
       warningRetentionDays: 7,
+      warningSlowQuerySeconds: 30,
+      warningQueueSize: 100,
+      superviseIntervalSeconds: 60,
+      maintenanceIntervalSeconds: 300,
+      queueCacheIntervalSeconds: 60,
+      monitorIntervalSeconds: 30,
+      bamIntervalSeconds: 60,
    };
    if (options.schema) constructorOptions.schema = options.schema;
 

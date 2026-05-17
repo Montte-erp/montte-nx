@@ -5,12 +5,16 @@ import type { PgBossClient } from "@core/pg-boss/client";
 import type { Prompts } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 import {
+   generateThreadTitleDeadLetterQueue,
    generateThreadTitleQueue,
    handleGenerateThreadTitleJob,
    type GenerateThreadTitleJobInput,
 } from "./generate-title-job";
 
-export const agentPgBossQueues = [generateThreadTitleQueue];
+export const agentPgBossQueues = [
+   generateThreadTitleDeadLetterQueue,
+   generateThreadTitleQueue,
+];
 
 export async function registerAgentPgBossJobs(options: {
    boss: PgBossClient;
