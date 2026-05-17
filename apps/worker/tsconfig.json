@@ -26,10 +26,16 @@
          "path": "../../core/posthog"
       },
       {
+         "path": "../../core/pg-boss"
+      },
+      {
          "path": "../../core/logging"
       },
       {
          "path": "../../core/environment"
+      },
+      {
+         "path": "../../core/dbos"
       },
       {
          "path": "../../core/database"

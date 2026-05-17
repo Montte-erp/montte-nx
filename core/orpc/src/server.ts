@@ -12,9 +12,9 @@ import {
    identifyUser,
    setGroup,
 } from "@core/posthog/server";
+import { createNotificationsClient } from "@core/notifications/client";
 import { createRedis } from "@core/redis/connection";
 import { AppError, WebAppError } from "@core/logging/errors";
-import { createResendClient } from "@core/transactional/utils";
 import { createWorkflowClient } from "@core/dbos/client";
 import { startPgBossClient } from "@core/pg-boss/client";
 import type {
@@ -32,12 +32,14 @@ const posthogPrompts = createPromptsClient({
    projectApiKey: env.POSTHOG_KEY,
    host: env.POSTHOG_HOST,
 });
-const resendClient = createResendClient(env.RESEND_API_KEY);
+const notificationsClient = createNotificationsClient({
+   resendApiKey: env.RESEND_API_KEY,
+});
 const auth = createAuth({
    db,
    redis,
    posthog,
-   resendClient,
+   notificationsClient,
    env,
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);

@@ -1,26 +1,28 @@
 import { Button, Section, Text } from "@react-email/components";
-import { DefaultFooter } from "@core/transactional/emails/default-footer";
-import { DefaultHeading } from "@core/transactional/emails/default-heading";
-import { DefaultEmailLayout } from "@core/transactional/emails/default-layout";
+import { MontteEmailLayout } from "@core/notifications/emails/layout";
+import {
+   MontteEmailFooter,
+   MontteEmailHeading,
+} from "@core/notifications/emails/partials";
 
-interface OrganizationInvitationEmailProps {
+export interface OrganizationInvitationEmailProps {
    invitedByUsername: string;
    invitedByEmail: string;
    teamName: string;
    inviteLink: string;
 }
 
-export default function OrganizationInvitationEmail({
+export function OrganizationInvitationEmail({
    invitedByUsername,
    invitedByEmail,
    teamName,
    inviteLink,
 }: OrganizationInvitationEmailProps) {
    return (
-      <DefaultEmailLayout
+      <MontteEmailLayout
          preview={`${invitedByUsername} convidou você para ${teamName}`}
       >
-         <DefaultHeading />
+         <MontteEmailHeading />
          <Section style={{ padding: "32px 24px", textAlign: "center" }}>
             <Text
                style={{
@@ -33,7 +35,6 @@ export default function OrganizationInvitationEmail({
             >
                Você recebeu um convite!
             </Text>
-
             <Text
                style={{
                   color: "#374151",
@@ -47,12 +48,11 @@ export default function OrganizationInvitationEmail({
                <strong style={{ color: "#1a1a2e" }}>{teamName}</strong> no
                Montte.
             </Text>
-
             <Section
                style={{
                   backgroundColor: "#f8fafc",
-                  borderRadius: "12px",
                   border: "1px solid #e2e8f0",
+                  borderRadius: "12px",
                   margin: "0 0 28px 0",
                   padding: "24px",
                }}
@@ -61,9 +61,9 @@ export default function OrganizationInvitationEmail({
                   style={{
                      color: "#475569",
                      fontSize: "14px",
+                     fontWeight: 600,
                      lineHeight: "22px",
                      margin: "0 0 8px 0",
-                     fontWeight: 600,
                   }}
                >
                   O que você poderá fazer:
@@ -77,11 +77,10 @@ export default function OrganizationInvitationEmail({
                      textAlign: "left",
                   }}
                >
-                  • Gerenciar financeiro, vendas e operações
-                  <br />• Usar assistentes de IA integrados
-                  <br />• Colaborar com sua equipe em tempo real
+                  - Gerenciar financeiro, vendas e operações
+                  <br />- Usar assistentes de IA integrados
+                  <br />- Colaborar com sua equipe em tempo real
                </Text>
-
                <Button
                   href={inviteLink}
                   style={{
@@ -98,7 +97,6 @@ export default function OrganizationInvitationEmail({
                   Aceitar convite
                </Button>
             </Section>
-
             <Text
                style={{
                   color: "#94a3b8",
@@ -121,14 +119,7 @@ export default function OrganizationInvitationEmail({
                pode ignorar este e-mail com segurança.
             </Text>
          </Section>
-         <DefaultFooter />
-      </DefaultEmailLayout>
+         <MontteEmailFooter />
+      </MontteEmailLayout>
    );
 }
-
-OrganizationInvitationEmail.PreviewProps = {
-   invitedByEmail: "maria@exemplo.com",
-   invitedByUsername: "Maria Silva",
-   inviteLink: "https://app.montte.co/callback/organization/invitation/abc123",
-   teamName: "Empresa ABC",
-} satisfies OrganizationInvitationEmailProps;

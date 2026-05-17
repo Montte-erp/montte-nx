@@ -33,9 +33,9 @@
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
+      "@core/notifications": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
-      "@core/transactional": "workspace:*",
       "better-auth": "catalog:auth",
       "react": "catalog:react",
       "react-dom": "catalog:react"

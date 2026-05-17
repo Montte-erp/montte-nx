@@ -1,6 +1,6 @@
 {
-   "name": "@core/transactional",
-   "version": "0.8.1",
+   "name": "@core/notifications",
+   "version": "0.1.0",
    "private": true,
    "license": "Apache-2.0",
    "files": [
@@ -8,13 +8,13 @@
    ],
    "type": "module",
    "exports": {
+      "./catalog": {
+         "types": "./dist/catalog.d.ts",
+         "default": "./dist/catalog.js"
+      },
       "./client": {
          "types": "./dist/client.d.ts",
          "default": "./dist/client.js"
-      },
-      "./utils": {
-         "types": "./dist/utils.d.ts",
-         "default": "./dist/utils.js"
       },
       "./emails/*": {
          "types": "./dist/emails/*.d.ts",
@@ -30,20 +30,19 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@core/environment": "workspace:*",
+      "@betternotify/core": "catalog:notifications",
+      "@betternotify/email": "catalog:notifications",
+      "@betternotify/react-email": "catalog:notifications",
+      "@betternotify/resend": "catalog:notifications",
       "@core/logging": "workspace:*",
-      "@core/utils": "workspace:*",
-      "@react-email/components": "catalog:transactional",
-      "dayjs": "catalog:ui",
+      "@react-email/components": "catalog:notifications",
       "react": "catalog:react",
-      "react-dom": "catalog:react",
-      "resend": "catalog:transactional"
+      "react-email": "catalog:notifications",
+      "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
-      "@types/react": "catalog:react",
-      "@types/react-dom": "catalog:react",
-      "react-email": "catalog:transactional",
-      "typescript": "catalog:development"
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
    }
 }

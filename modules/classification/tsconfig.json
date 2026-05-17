@@ -25,10 +25,16 @@
    "include": ["src"],
    "references": [
       {
+         "path": "../../core/utils"
+      },
+      {
          "path": "../../core/sse"
       },
       {
          "path": "../../core/redis"
+      },
+      {
+         "path": "../../core/posthog"
       },
       {
          "path": "../../core/logging"
@@ -37,16 +43,13 @@
          "path": "../../core/environment"
       },
       {
+         "path": "../../core/ai"
+      },
+      {
          "path": "../../core/dbos"
       },
       {
          "path": "../../core/database"
-      },
-      {
-         "path": "../../core/posthog"
-      },
-      {
-         "path": "../../core/ai"
       }
    ]
 }

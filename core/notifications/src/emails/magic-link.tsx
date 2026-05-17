@@ -1,17 +1,18 @@
 import { Button, Section, Text } from "@react-email/components";
+import { MontteEmailLayout } from "@core/notifications/emails/layout";
+import {
+   MontteEmailFooter,
+   MontteEmailHeading,
+} from "@core/notifications/emails/partials";
 
-import { DefaultFooter } from "@core/transactional/emails/default-footer";
-import { DefaultHeading } from "@core/transactional/emails/default-heading";
-import { DefaultEmailLayout } from "@core/transactional/emails/default-layout";
-
-interface MagicLinkEmailProps {
+export interface MagicLinkEmailProps {
    magicLinkUrl: string;
 }
 
-export default function MagicLinkEmail({ magicLinkUrl }: MagicLinkEmailProps) {
+export function MagicLinkEmail({ magicLinkUrl }: MagicLinkEmailProps) {
    return (
-      <DefaultEmailLayout preview="Seu link de acesso Montte">
-         <DefaultHeading />
+      <MontteEmailLayout preview="Seu link de acesso Montte">
+         <MontteEmailHeading />
          <Section style={{ padding: "32px 24px", textAlign: "center" }}>
             <Text
                style={{
@@ -32,7 +33,7 @@ export default function MagicLinkEmail({ magicLinkUrl }: MagicLinkEmailProps) {
                   margin: "0 0 24px 0",
                }}
             >
-               Clique no botao abaixo para acessar sua conta. Este link expira
+               Clique no botão abaixo para acessar sua conta. Este link expira
                em 15 minutos.
             </Text>
             <Button
@@ -58,14 +59,10 @@ export default function MagicLinkEmail({ magicLinkUrl }: MagicLinkEmailProps) {
                   margin: "24px 0 0 0",
                }}
             >
-               Se voce nao solicitou este link, ignore este e-mail.
+               Se você não solicitou este link, ignore este e-mail.
             </Text>
          </Section>
-         <DefaultFooter />
-      </DefaultEmailLayout>
+         <MontteEmailFooter />
+      </MontteEmailLayout>
    );
 }
-
-MagicLinkEmail.PreviewProps = {
-   magicLinkUrl: "https://app.montte.co/auth/sign-in?token=abc123",
-} satisfies MagicLinkEmailProps;

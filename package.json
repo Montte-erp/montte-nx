@@ -76,6 +76,15 @@
          "logging": {
             "evlog": "^2.17.0"
          },
+         "notifications": {
+            "@betternotify/core": "1.0.0-beta.6",
+            "@betternotify/email": "1.0.0-beta.2.canary.20260513232850.71ca915b",
+            "@betternotify/react-email": "1.0.0-beta.1",
+            "@betternotify/resend": "1.0.0-beta.2.canary.20260513232856.71ca915b",
+            "@react-email/components": "1.0.12",
+            "react-email": "6.0.0",
+            "resend": "6.12.0"
+         },
          "orpc": {
             "@orpc/client": "^1.13.14",
             "@orpc/contract": "^1.13.14",
@@ -137,11 +146,6 @@
             "@vitest/coverage-istanbul": "^4.1.4",
             "@vitest/coverage-v8": "^4.1.4",
             "vitest": "^4.1.4"
-         },
-         "transactional": {
-            "@react-email/components": "1.0.12",
-            "react-email": "6.0.0",
-            "resend": "6.12.0"
          },
          "ui": {
             "@assistant-ui/react": "^0.12.28",

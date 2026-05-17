@@ -173,8 +173,8 @@ export function OnboardingWizard({
             <div className="flex w-full items-center gap-4">
                <img
                   alt="Montte"
-                  className="size-8 shrink-0 rounded-full"
-                  src="/favicon.svg"
+                  className="size-4 shrink-0 rounded-full object-contain"
+                  src="/logo.png"
                />
                <Progress className="flex-1" value={progress} />
             </div>

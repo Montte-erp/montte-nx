@@ -22,6 +22,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
    await runtime?.shutdown();
+   runtime = undefined;
 });
 
 describe("DBOS smoke (pglite) — classification", () => {

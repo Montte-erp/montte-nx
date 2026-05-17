@@ -9,31 +9,31 @@ import {
 } from "@react-email/components";
 import type { ReactNode } from "react";
 
-interface DefaultEmailLayoutProps {
+interface MontteEmailLayoutProps {
    children: ReactNode;
    preview?: string;
 }
 
-export const DefaultEmailLayout = ({
+export function MontteEmailLayout({
    children,
    preview,
-}: DefaultEmailLayoutProps) => {
+}: MontteEmailLayoutProps) {
    return (
       <Tailwind
          config={{
             theme: {
                extend: {
                   colors: {
+                     background: "#f5f7f6",
+                     border: "#e5e7eb",
+                     card: "#ffffff",
+                     foreground: "#1a1a2e",
+                     muted: "#6b7280",
                      primary: {
                         DEFAULT: "#22C55E",
                         dark: "#166534",
                         light: "#86EFAC",
                      },
-                     background: "#f5f7f6",
-                     foreground: "#1a1a2e",
-                     muted: "#6b7280",
-                     card: "#ffffff",
-                     border: "#e5e7eb",
                   },
                   borderRadius: {
                      DEFAULT: "0.8rem",
@@ -50,8 +50,8 @@ export const DefaultEmailLayout = ({
                   fontStyle="normal"
                   fontWeight={400}
                   webFont={{
-                     url: "https://app.montte.co/email/montserrat-regular.woff2",
                      format: "woff2",
+                     url: "https://app.montte.co/email/montserrat-regular.woff2",
                   }}
                />
             </Head>
@@ -80,4 +80,4 @@ export const DefaultEmailLayout = ({
          </Html>
       </Tailwind>
    );
-};
+}

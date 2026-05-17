@@ -5,11 +5,6 @@ import { i18n } from "@better-auth/i18n";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
 import { log } from "@core/logging";
-import {
-   sendEmailOTP,
-   sendMagicLinkEmail,
-   sendOrganizationInvitation,
-} from "@core/transactional/client";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth/minimal";
 import {
@@ -23,9 +18,9 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { ptBRTranslations } from "@core/authentication/translations/pt-br";
 import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
+import type { NotificationsClient } from "@core/notifications/client";
 import type { PostHog } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
-import type { ResendClient } from "@core/transactional/utils";
 
 export const cnpjDataSchema = z.object({
    cnpj: z.string(),
@@ -70,7 +65,7 @@ export interface CreateAuthDeps {
    db: DatabaseInstance;
    redis: Redis;
    posthog: PostHog;
-   resendClient: ResendClient;
+   notificationsClient: NotificationsClient;
    env: {
       BETTER_AUTH_URL?: string;
       BETTER_AUTH_SECRET: string;
@@ -79,7 +74,7 @@ export interface CreateAuthDeps {
 }
 
 export function createAuth(deps: CreateAuthDeps) {
-   const { db, redis, resendClient, env } = deps;
+   const { db, redis, notificationsClient, env } = deps;
 
    const auth = betterAuth({
       baseURL: env.BETTER_AUTH_URL,
@@ -206,9 +201,9 @@ export function createAuth(deps: CreateAuthDeps) {
                   devMagicLinkStore.set(email, url);
                   return;
                }
-               await sendMagicLinkEmail(resendClient, {
-                  email,
-                  magicLinkUrl: url,
+               await notificationsClient.magicLink.send({
+                  to: email,
+                  input: { magicLinkUrl: url },
                });
             },
          }),
@@ -232,7 +227,10 @@ export function createAuth(deps: CreateAuthDeps) {
                   });
                   return;
                }
-               await sendEmailOTP(resendClient, { email, otp, type });
+               await notificationsClient.emailOtp.send({
+                  to: email,
+                  input: { otp, type },
+               });
             },
          }),
 
@@ -333,12 +331,14 @@ export function createAuth(deps: CreateAuthDeps) {
                   });
                   return;
                }
-               await sendOrganizationInvitation(resendClient, {
-                  email: data.email,
-                  invitedByEmail: data.inviter.user.email,
-                  invitedByUsername: data.inviter.user.name,
-                  inviteLink,
-                  teamName: data.organization.name,
+               await notificationsClient.organizationInvitation.send({
+                  to: data.email,
+                  input: {
+                     invitedByEmail: data.inviter.user.email,
+                     invitedByUsername: data.inviter.user.name,
+                     inviteLink,
+                     teamName: data.organization.name,
+                  },
                });
             },
             teams: {
