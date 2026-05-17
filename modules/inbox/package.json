@@ -19,7 +19,6 @@
       "@core/database": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
-      "@core/sse": "workspace:*",
       "@orpc/server": "catalog:orpc",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",

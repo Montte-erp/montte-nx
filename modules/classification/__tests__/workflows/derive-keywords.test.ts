@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import { eq } from "drizzle-orm";
 import { ok, errAsync } from "neverthrow";
+import "../helpers/mock-classification-context";
 
 const dbosMocks = vi.hoisted(async () => {
    const mod = await import("@core/dbos/testing/mock-dbos");
@@ -24,8 +25,6 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
    const mod = await import("@core/dbos/testing/mock-dbos");
    return mod.drizzleDataSourceMockFactory(await dbosMocks);
 });
-
-import { ssePublishSpy } from "../helpers/mock-classification-context";
 
 vi.mock("../../src/ai/derive-keywords", () => ({
    deriveKeywords: vi.fn(),
@@ -70,7 +69,7 @@ async function getCategory(id: string) {
 }
 
 describe("deriveKeywordsWorkflow", () => {
-   it("category success — derives keywords, writes keywords + keywordsUpdatedAt, publishes SSE, ingests usage", async () => {
+   it("category success — derives keywords and writes keywords + keywordsUpdatedAt", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
@@ -100,20 +99,6 @@ describe("deriveKeywordsWorkflow", () => {
       const after = await getCategory(category.id);
       expect(after?.keywords).toEqual(KEYWORDS);
       expect(after?.keywordsUpdatedAt).toBeInstanceOf(Date);
-
-      expect(ssePublishSpy).toHaveBeenCalledTimes(1);
-      expect(ssePublishSpy).toHaveBeenCalledWith(
-         expect.anything(),
-         { kind: "team", id: teamId },
-         expect.objectContaining({
-            type: "classification.keywords_derived",
-            payload: {
-               categoryId: category.id,
-               categoryName: "Food",
-               count: KEYWORDS.length,
-            },
-         }),
-      );
    });
 
    it("workflow ID dedup — same categoryId produces same workflowID across enqueues", async () => {
@@ -147,7 +132,7 @@ describe("deriveKeywordsWorkflow", () => {
       expect(enqueueCalls[1]?.workflowID).toBe(`derive-category-${categoryId}`);
    });
 
-   it("AI failure — workflow throws, no DB write, no SSE", async () => {
+   it("AI failure — workflow throws and does not write", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
@@ -168,7 +153,6 @@ describe("deriveKeywordsWorkflow", () => {
 
       const after = await getCategory(category.id);
       expect(after?.keywords).toBeNull();
-      expect(ssePublishSpy).not.toHaveBeenCalled();
    });
 
    it("dedupes derived keywords against sibling categories", async () => {

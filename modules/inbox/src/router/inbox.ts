@@ -1,12 +1,9 @@
-import { eventIterator } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { inboxItems } from "@core/database/schemas/inbox";
 import { WebAppError } from "@core/logging/errors";
-import { log } from "@core/logging";
 import { protectedProcedure } from "@core/orpc/server";
-import { sseEnvelopeSchema, type SseScope, subscribeSse } from "@core/sse";
 import {
    inboxCountsSchema,
    inboxItemDtoSchema,
@@ -111,37 +108,4 @@ export const markRead = protectedProcedure
       );
       if (result.isErr()) throw result.error;
       return { ok: true as const };
-   });
-
-export const subscribe = protectedProcedure
-   .output(eventIterator(sseEnvelopeSchema))
-   .handler(async function* ({ context, signal }) {
-      log.info({
-         module: "router:inbox",
-         message: "Inbox SSE subscribe started",
-         userId: context.userId,
-         teamId: context.teamId,
-         organizationId: context.organizationId,
-      });
-      const scopes: SseScope[] = [
-         { kind: "user", id: context.userId },
-         { kind: "team", id: context.teamId },
-         { kind: "org", id: context.organizationId },
-      ];
-      try {
-         for await (const envelope of subscribeSse(
-            context.redis,
-            scopes,
-            signal,
-         )) {
-            yield envelope;
-         }
-      } finally {
-         log.info({
-            module: "router:inbox",
-            message: "Inbox SSE subscribe ended",
-            userId: context.userId,
-            teamId: context.teamId,
-         });
-      }
    });

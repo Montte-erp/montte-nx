@@ -10,7 +10,6 @@ import {
    type ClassifyBatchInput,
    type ClassifyBatchResult,
 } from "@modules/classification/ai/classify-batch";
-import { classificationSseEvents } from "@modules/classification/sse";
 import {
    matchByKeywords,
    type KeywordMatchResult,
@@ -23,7 +22,6 @@ import {
 import {
    classificationDataSource,
    getClassificationPrompts,
-   getClassificationRedis,
    registerWorkflowOnce,
 } from "@modules/classification/workflows/context";
 
@@ -189,106 +187,6 @@ const stepWrite = (writes: ClassificationWrite[], teamId: string) =>
       { name: "write-classifications" },
    );
 
-const emitBatchStarted = (teamId: string, batchId: string, total: number) =>
-   DBOS.runStep(
-      async () => {
-         const publish = await classificationSseEvents.publish(
-            getClassificationRedis(),
-            { kind: "team", id: teamId },
-            {
-               type: "classification.batch_started",
-               payload: { batchId, total },
-            },
-         );
-         if (publish.isErr()) {
-            DBOS.logger.warn(
-               `Failed to publish batch_started — team=${teamId} err=${publish.error.message}`,
-            );
-         }
-      },
-      { name: "emit-batch-started" },
-   );
-
-const emitBatchProgress = (
-   teamId: string,
-   batchId: string,
-   total: number,
-   processed: number,
-) =>
-   DBOS.runStep(
-      async () => {
-         const publish = await classificationSseEvents.publish(
-            getClassificationRedis(),
-            { kind: "team", id: teamId },
-            {
-               type: "classification.batch_progress",
-               payload: { batchId, total, processed },
-            },
-         );
-         if (publish.isErr()) {
-            DBOS.logger.warn(
-               `Failed to publish batch_progress — team=${teamId} err=${publish.error.message}`,
-            );
-         }
-      },
-      { name: "emit-batch-progress" },
-   );
-
-const emitBatchCompleted = (
-   teamId: string,
-   batchId: string,
-   total: number,
-   classified: number,
-) =>
-   DBOS.runStep(
-      async () => {
-         const publish = await classificationSseEvents.publish(
-            getClassificationRedis(),
-            { kind: "team", id: teamId },
-            {
-               type: "classification.batch_completed",
-               payload: { batchId, total, classified },
-            },
-         );
-         if (publish.isErr()) {
-            DBOS.logger.warn(
-               `Failed to publish batch_completed — team=${teamId} err=${publish.error.message}`,
-            );
-         }
-      },
-      { name: "emit-batch-completed" },
-   );
-
-const stepEmitSse = (writes: ClassificationWrite[], teamId: string) =>
-   DBOS.runStep(
-      async () => {
-         const redis = getClassificationRedis();
-         const scope = { kind: "team" as const, id: teamId };
-         await Promise.all(
-            writes.map(async (w) => {
-               const publish = await classificationSseEvents.publish(
-                  redis,
-                  scope,
-                  {
-                     type: "classification.transaction_classified",
-                     payload: {
-                        transactionId: w.transactionId,
-                        categoryId: w.categoryId,
-                        tagId: w.tagId,
-                     },
-                  },
-               );
-               if (publish.isErr()) {
-                  DBOS.logger.warn(
-                     `Failed to publish classification SSE event — tx=${w.transactionId} team=${teamId} err=${publish.error.message}`,
-                  );
-               }
-            }),
-         );
-      },
-      { name: "emit-sse-events" },
-   );
-
 async function classifyTransactionsBatchWorkflowFn(
    input: ClassifyTransactionsBatchInput,
 ) {
@@ -302,8 +200,6 @@ async function classifyTransactionsBatchWorkflowFn(
       return;
    }
 
-   await emitBatchStarted(input.teamId, batchId, total).catch(() => undefined);
-
    const loadResult = await fromPromise(stepLoadInputs(input), (e) =>
       WorkflowError.database("Falha ao carregar dados de classificação.", {
          cause: e,
@@ -315,9 +211,6 @@ async function classifyTransactionsBatchWorkflowFn(
    if (loaded.transactions.length === 0) {
       DBOS.logger.info(
          `${log} no pending transactions to classify — already classified or filtered out`,
-      );
-      await emitBatchCompleted(input.teamId, batchId, total, 0).catch(
-         () => undefined,
       );
       return;
    }
@@ -344,14 +237,6 @@ async function classifyTransactionsBatchWorkflowFn(
    const unmatched = named.filter((t) => !matchedIds.has(t.id));
 
    const aiResults: ClassifyBatchResult[] = [];
-   if (keywordHits.length > 0) {
-      await emitBatchProgress(
-         input.teamId,
-         batchId,
-         total,
-         keywordHits.length,
-      ).catch(() => undefined);
-   }
    if (unmatched.length > 0 && loaded.categories.length > 0) {
       const chunks = chunk(unmatched, AI_CHUNK_SIZE);
       for (let i = 0; i < chunks.length; i += 1) {
@@ -375,12 +260,6 @@ async function classifyTransactionsBatchWorkflowFn(
          );
          if (ai.isErr()) throw ai.error;
          aiResults.push(...ai.value);
-         await emitBatchProgress(
-            input.teamId,
-            batchId,
-            total,
-            keywordHits.length + aiResults.length,
-         ).catch(() => undefined);
       }
    }
 
@@ -403,9 +282,6 @@ async function classifyTransactionsBatchWorkflowFn(
 
    if (writes.length === 0) {
       DBOS.logger.info(`${log} no classifications produced — exiting`);
-      await emitBatchCompleted(input.teamId, batchId, total, 0).catch(
-         () => undefined,
-      );
       return;
    }
 
@@ -413,17 +289,6 @@ async function classifyTransactionsBatchWorkflowFn(
       WorkflowError.database("Falha ao gravar classificações.", { cause: e }),
    );
    if (writeResult.isErr()) throw writeResult.error;
-
-   const emitResult = await fromPromise(
-      stepEmitSse(writes, input.teamId),
-      (e) =>
-         WorkflowError.internal("Falha ao emitir eventos SSE.", { cause: e }),
-   );
-   if (emitResult.isErr()) throw emitResult.error;
-
-   await emitBatchCompleted(input.teamId, batchId, total, writes.length).catch(
-      () => undefined,
-   );
 
    DBOS.logger.info(
       `${log} completed — keyword=${keywordHits.length} ai=${aiResults.length} written=${writes.length}`,

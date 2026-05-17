@@ -4,7 +4,6 @@ import type { DatabaseInstance } from "@core/database/client";
 import type { DbosWorkerQueue } from "@core/dbos/worker";
 import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
-import type { Redis } from "@core/redis/connection";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import { CLASSIFICATION_WORKFLOW_QUEUES } from "@modules/classification/workflows/constants";
 
@@ -18,24 +17,20 @@ export const classificationDataSource = new DrizzleDataSource<DatabaseInstance>(
 
 type ClassificationWorkflowContext = {
    posthog: PostHog | null;
-   redis: Redis | null;
    prompts: Prompts | null;
 };
 
 const store = createStore<ClassificationWorkflowContext>({
    posthog: null,
-   redis: null,
    prompts: null,
 });
 
 export function initClassificationWorkflowContext(deps: {
-   redis: Redis;
    posthog: PostHog;
    prompts: Prompts;
 }) {
    store.setState(() => ({
       posthog: deps.posthog,
-      redis: deps.redis,
       prompts: deps.prompts,
    }));
 }
@@ -52,13 +47,6 @@ export function getClassificationPosthog(): PostHog {
    if (!posthog)
       throw new Error("Classification workflow context not initialized");
    return posthog;
-}
-
-export function getClassificationRedis(): Redis {
-   const { redis } = store.state;
-   if (!redis)
-      throw new Error("Classification workflow context not initialized");
-   return redis;
 }
 
 export function createClassificationQueues(options: {

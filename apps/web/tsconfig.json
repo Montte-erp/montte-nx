@@ -20,7 +20,6 @@
          "@core/notifications/*": ["../../core/notifications/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/sse": ["../../core/sse/src/sse.ts"],
          "@packages/ui/*": ["../../packages/ui/src/*"],
          "@modules/account/*": ["../../modules/account/src/*"],
          "@modules/agents/*": ["../../modules/agents/src/*"],
@@ -36,9 +35,6 @@
       },
       {
          "path": "../../core/utils"
-      },
-      {
-         "path": "../../core/sse"
       },
       {
          "path": "../../core/redis"

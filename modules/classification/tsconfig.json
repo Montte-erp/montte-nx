@@ -18,17 +18,13 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
-         "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/sse": ["../../core/sse/src/sse.ts"]
+         "@core/redis/*": ["../../core/redis/src/*"]
       }
    },
    "include": ["src"],
    "references": [
       {
          "path": "../../core/utils"
-      },
-      {
-         "path": "../../core/sse"
       },
       {
          "path": "../../core/redis"

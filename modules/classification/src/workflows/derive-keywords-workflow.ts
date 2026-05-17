@@ -4,7 +4,6 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import { categories } from "@core/database/schemas/categories";
 import { WorkflowError } from "@core/dbos/errors";
 import { deriveKeywords } from "@modules/classification/ai/derive-keywords";
-import { classificationSseEvents } from "@modules/classification/sse";
 import {
    CLASSIFICATION_WORKFLOWS,
    type DeriveKeywordsWorkflowInput,
@@ -12,7 +11,6 @@ import {
 import {
    classificationDataSource,
    getClassificationPrompts,
-   getClassificationRedis,
    registerWorkflowOnce,
 } from "./context";
 
@@ -113,29 +111,6 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
          }),
    );
    if (writeResult.isErr()) throw writeResult.error;
-
-   await DBOS.runStep(
-      async () => {
-         const publish = await classificationSseEvents.publish(
-            getClassificationRedis(),
-            { kind: "team", id: input.teamId },
-            {
-               type: "classification.keywords_derived",
-               payload: {
-                  categoryId: input.categoryId,
-                  categoryName: input.name,
-                  count: keywords.length,
-               },
-            },
-         );
-         if (publish.isErr()) {
-            DBOS.logger.warn(
-               `Failed to publish keywords_derived SSE event — category=${input.categoryId} team=${input.teamId} err=${publish.error.message}`,
-            );
-         }
-      },
-      { name: "emitSse" },
-   );
 
    DBOS.logger.info(`${ctx} completed — wrote ${keywords.length} keywords`);
 }

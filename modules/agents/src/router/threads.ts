@@ -12,7 +12,6 @@ import {
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireThread } from "@modules/agents/router/middlewares";
-import { agentsSseEvents } from "@modules/agents/sse";
 
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
 
@@ -181,14 +180,6 @@ export const create = protectedProcedure
          return ok(row);
       });
       if (result.isErr()) throw result.error;
-      void agentsSseEvents.publish(
-         context.redis,
-         { kind: "team", id: context.teamId },
-         {
-            type: "agent.thread.created",
-            payload: { threadId: result.value.id },
-         },
-      );
       return result.value;
    });
 
@@ -287,18 +278,6 @@ export const saveAssistantMessage = protectedProcedure
          return ok(row);
       });
       if (result.isErr()) throw result.error;
-      void agentsSseEvents.publish(
-         context.redis,
-         { kind: "team", id: context.teamId },
-         {
-            type: "agent.message.persisted",
-            payload: {
-               threadId: input.threadId,
-               messageId: result.value.id,
-               role: "assistant",
-            },
-         },
-      );
       return result.value;
    });
 

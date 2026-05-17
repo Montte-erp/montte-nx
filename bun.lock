@@ -81,7 +81,6 @@
         "@core/notifications": "workspace:*",
         "@core/posthog": "workspace:*",
         "@core/redis": "workspace:*",
-        "@core/sse": "workspace:*",
         "@dnd-kit/core": "catalog:dnd",
         "@dnd-kit/modifiers": "catalog:dnd",
         "@dnd-kit/sortable": "catalog:dnd",
@@ -440,20 +439,6 @@
         "typescript": "catalog:development",
       },
     },
-    "core/sse": {
-      "name": "@core/sse",
-      "version": "0.1.0",
-      "dependencies": {
-        "@core/redis": "workspace:*",
-        "better-result": "catalog:validation",
-        "dayjs": "catalog:ui",
-        "zod": "catalog:validation",
-      },
-      "devDependencies": {
-        "@tooling/typescript": "workspace:*",
-        "typescript": "catalog:development",
-      },
-    },
     "core/utils": {
       "name": "@core/utils",
       "version": "0.28.0",
@@ -503,7 +488,6 @@
         "@core/pg-boss": "workspace:*",
         "@core/posthog": "workspace:*",
         "@core/redis": "workspace:*",
-        "@core/sse": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
         "@dbos-inc/drizzle-datasource": "catalog:workers",
         "@orpc/server": "catalog:orpc",
@@ -535,7 +519,6 @@
         "@core/orpc": "workspace:*",
         "@core/posthog": "workspace:*",
         "@core/redis": "workspace:*",
-        "@core/sse": "workspace:*",
         "@core/utils": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
         "@dbos-inc/drizzle-datasource": "catalog:workers",
@@ -594,7 +577,6 @@
         "@core/database": "workspace:*",
         "@core/logging": "workspace:*",
         "@core/orpc": "workspace:*",
-        "@core/sse": "workspace:*",
         "@orpc/server": "catalog:orpc",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
@@ -1360,8 +1342,6 @@
     "@core/posthog": ["@core/posthog@workspace:core/posthog"],
 
     "@core/redis": ["@core/redis@workspace:core/redis"],
-
-    "@core/sse": ["@core/sse@workspace:core/sse"],
 
     "@core/utils": ["@core/utils@workspace:core/utils"],
 

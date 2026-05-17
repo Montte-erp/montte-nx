@@ -13,7 +13,6 @@
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
-         "@core/sse": ["../../core/sse/src/sse.ts"],
          "@modules/inbox/*": ["./src/*"]
       }
    },
@@ -24,9 +23,6 @@
       },
       {
          "path": "../../core/database"
-      },
-      {
-         "path": "../../core/sse"
       }
    ]
 }

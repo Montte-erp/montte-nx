@@ -10,7 +10,6 @@ import {
 } from "@core/logging";
 import { startPgBossWorker } from "@core/pg-boss/worker";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
-import { createRedis } from "@core/redis/connection";
 import {
    agentPgBossQueues,
    registerAgentPgBossJobs,
@@ -41,7 +40,6 @@ async function initWorker() {
    const setup = await Result.tryPromise({
       try: async () => {
          const db = createDb({ databaseUrl: env.DATABASE_URL });
-         const redis = createRedis(env.REDIS_URL);
          const posthog = createPostHog(env.POSTHOG_KEY, env.POSTHOG_HOST);
          const promptsClient = createPromptsClient({
             personalApiKey: env.POSTHOG_PERSONAL_API_KEY,
@@ -52,13 +50,11 @@ async function initWorker() {
          log.info("worker", "Starting worker");
 
          const classificationWorkflows = await setupClassificationWorkflows({
-            redis,
             posthog,
             prompts: promptsClient,
             workerConcurrency: 10,
          });
          const agentsQueues = await setupAgentsWorkflows({
-            redis,
             posthog,
             prompts: promptsClient,
             workerConcurrency: 10,
@@ -70,7 +66,7 @@ async function initWorker() {
          ]);
          log.info("worker", "DBOS runtime started");
 
-         return { db, redis, posthog, promptsClient };
+         return { db, posthog, promptsClient };
       },
       catch: (cause) =>
          new WorkerInitError({
@@ -88,7 +84,6 @@ async function initWorker() {
             boss,
             db: setup.value.db,
             prompts: setup.value.promptsClient,
-            redis: setup.value.redis,
          }),
    });
    if (Result.isError(pgBossWorker)) {
@@ -103,7 +98,6 @@ async function initWorker() {
    log.info("worker", "pg-boss runtime started");
    return Result.ok({
       db: setup.value.db,
-      redis: setup.value.redis,
       posthog: setup.value.posthog,
       pgBossWorker: pgBossWorker.value,
    });
@@ -128,10 +122,6 @@ async function gracefulShutdown(signal: string) {
       { name: "pg-boss", promise: workerDeps.pgBossWorker.stop() },
       { name: "dbos", promise: shutdownDbosWorker() },
       { name: "posthog", promise: workerDeps.posthog.shutdown() },
-      {
-         name: "redis",
-         promise: Promise.resolve(workerDeps.redis.disconnect()),
-      },
       { name: "otel", promise: shutdownOtel() },
    ];
    const results = await Promise.allSettled(

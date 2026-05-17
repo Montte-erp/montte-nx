@@ -11,7 +11,6 @@ import { messages } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
 import { getAiTracer } from "@core/logging";
 import { AGENT_PROMPTS, AGENT_QUEUES } from "../constants";
-import { agentsSseEvents } from "../sse";
 import {
    conversationTranscript,
    hasUserAndAssistantText,
@@ -20,7 +19,6 @@ import {
    agentsDataSource,
    createEnqueuer,
    getAgentsPrompts,
-   getAgentsRedis,
    registerWorkflowOnce,
 } from "./context";
 
@@ -143,34 +141,6 @@ async function generateThreadTitleFn(input: GenerateTitleInput) {
       (e) => WorkflowError.database("Falha ao atualizar título.", { cause: e }),
    );
    if (updateResult.isErr()) throw updateResult.error;
-
-   const publishResult = await fromPromise(
-      DBOS.runStep(
-         async () => {
-            const publish = await agentsSseEvents.publish(
-               getAgentsRedis(),
-               { kind: "team", id: input.teamId },
-               {
-                  type: "agent.thread.title_updated",
-                  payload: { threadId: input.threadId, title },
-               },
-            );
-            if (publish.isErr()) {
-               DBOS.logger.warn(
-                  `${ctx} falha ao publicar SSE: ${publish.error.message}`,
-               );
-            }
-         },
-         { name: "publishTitleUpdated" },
-      ),
-      (e) => WorkflowError.internal("Falha ao publicar SSE.", { cause: e }),
-   );
-   if (publishResult.isErr()) {
-      DBOS.logger.warn(
-         `${ctx} falha ao executar passo de publicação SSE: ${publishResult.error.message}`,
-      );
-      return;
-   }
 
    DBOS.logger.info(`${ctx} completed — title="${title}"`);
 }
