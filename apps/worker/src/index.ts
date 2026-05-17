@@ -8,8 +8,13 @@ import {
    log,
    shutdownOtel,
 } from "@core/logging";
+import { startPgBossWorker } from "@core/pg-boss/worker";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
 import { createRedis } from "@core/redis/connection";
+import {
+   agentPgBossQueues,
+   registerAgentPgBossJobs,
+} from "@modules/agents/jobs/setup";
 import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 import { Result, TaggedError } from "better-result";
@@ -65,7 +70,20 @@ async function initWorker() {
          ]);
          log.info("worker", "DBOS runtime started");
 
-         return { db, redis, posthog };
+         const pgBossWorker = await startPgBossWorker({
+            connectionString: env.DATABASE_URL,
+            queues: agentPgBossQueues,
+            register: (boss) =>
+               registerAgentPgBossJobs({
+                  boss,
+                  db,
+                  prompts: promptsClient,
+                  redis,
+               }),
+         });
+         log.info("worker", "pg-boss runtime started");
+
+         return { db, redis, posthog, pgBossWorker };
       },
       catch: (cause) =>
          new WorkerInitError({
@@ -90,10 +108,29 @@ const workerDeps = worker.value;
 
 async function gracefulShutdown(signal: string) {
    log.info("worker", `${signal} received — shutting down`);
-   await shutdownDbosWorker();
-   await workerDeps.posthog.shutdown();
-   workerDeps.redis.disconnect();
-   await shutdownOtel();
+   const shutdowns: { name: string; promise: Promise<unknown> }[] = [
+      { name: "pg-boss", promise: workerDeps.pgBossWorker.stop() },
+      { name: "dbos", promise: shutdownDbosWorker() },
+      { name: "posthog", promise: workerDeps.posthog.shutdown() },
+      {
+         name: "redis",
+         promise: Promise.resolve(workerDeps.redis.disconnect()),
+      },
+      { name: "otel", promise: shutdownOtel() },
+   ];
+   const results = await Promise.allSettled(
+      shutdowns.map((shutdown) => shutdown.promise),
+   );
+   results.forEach((result, index) => {
+      if (result.status === "rejected") {
+         log.error({
+            module: "worker",
+            message: "shutdown step failed",
+            service: shutdowns[index]?.name,
+            err: result.reason,
+         });
+      }
+   });
    log.info("worker", "Shutdown complete");
    await flushLogger();
    process.exit(0);

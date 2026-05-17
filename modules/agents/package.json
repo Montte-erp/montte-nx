@@ -6,6 +6,7 @@
    "type": "module",
    "exports": {
       "./router/*": "./src/router/*.ts",
+      "./jobs/*": "./src/jobs/*.ts",
       "./tools/*": "./src/tools/*.ts",
       "./workflows/*": "./src/workflows/*.ts",
       "./*": "./src/*.ts"
@@ -24,6 +25,7 @@
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
+      "@core/pg-boss": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
       "@core/sse": "workspace:*",
@@ -33,9 +35,11 @@
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",
       "@tanstack/store": "catalog:tanstack",
+      "better-result": "catalog:validation",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "neverthrow": "catalog:validation",
+      "pg-boss": "catalog:workers",
       "zod": "catalog:validation"
    },
    "devDependencies": {

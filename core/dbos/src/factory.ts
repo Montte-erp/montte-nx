@@ -1,4 +1,5 @@
-import { DBOS, type DBOSClient, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import type { WorkflowClient } from "@core/dbos/client";
 
 export function createQueue(
    name: string,
@@ -39,7 +40,11 @@ export function createEnqueuer<T>(
    queueName: string,
    getWorkflowId?: (input: T) => string,
 ) {
-   return (client: DBOSClient, input: T, options?: { delaySeconds?: number }) =>
+   return (
+      client: WorkflowClient,
+      input: T,
+      options?: { delaySeconds?: number },
+   ) =>
       client.enqueue(
          {
             workflowName,
