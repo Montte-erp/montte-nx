@@ -48,8 +48,10 @@
       "@electric-sql/pglite": "^0.3.15",
       "@electric-sql/pglite-socket": "^0.0.20",
       "@tooling/typescript": "workspace:*",
+      "@types/pg": "catalog:database",
       "drizzle-kit": "catalog:database",
       "drizzle-seed": "catalog:database",
+      "pg": "catalog:database",
       "typescript": "catalog:development",
       "vitest": "catalog:testing"
    }

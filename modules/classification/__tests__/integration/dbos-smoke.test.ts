@@ -13,7 +13,7 @@ const smokeQueue = new WorkflowQueue("classification-smoke-test", {
    workerConcurrency: 1,
 });
 
-let runtime: PgliteDbosRuntime;
+let runtime: PgliteDbosRuntime | undefined;
 
 beforeEach(async () => {
    fired = false;
@@ -21,7 +21,7 @@ beforeEach(async () => {
 }, 30_000);
 
 afterEach(async () => {
-   await runtime.shutdown();
+   await runtime?.shutdown();
 });
 
 describe("DBOS smoke (pglite) — classification", () => {

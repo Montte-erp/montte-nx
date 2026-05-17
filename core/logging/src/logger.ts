@@ -41,6 +41,7 @@ export function initLogger(config: LoggerConfig): void {
       drain: loggerDrain,
       pretty: process.env.NODE_ENV !== "production",
       redact: {
+         builtins: false,
          paths: [
             "headers.authorization",
             "headers.cookie",
