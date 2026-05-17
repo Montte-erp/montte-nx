@@ -36,6 +36,7 @@ import {
 import { SidebarCustomizeCredenza } from "./sidebar-customize-credenza";
 import type { NavGroupDef, NavItemDef } from "./sidebar-nav-items";
 import { navGroups } from "./sidebar-nav-items";
+import { getOrderedItems } from "./sidebar-utils";
 
 function NavItem({
    item,
@@ -92,17 +93,6 @@ function NavItem({
          </SidebarMenuButton>
       </SidebarMenuItem>
    );
-}
-
-function getOrderedItems(items: NavItemDef[], itemOrder: string[]) {
-   const itemMap = new Map(items.map((item) => [item.id, item]));
-   const orderedItems = itemOrder.flatMap((itemId) => {
-      const item = itemMap.get(itemId);
-      return item ? [item] : [];
-   });
-   const newItems = items.filter((item) => !itemOrder.includes(item.id));
-
-   return [...orderedItems, ...newItems];
 }
 
 function useVisibleItems(group: NavGroupDef) {

@@ -53,17 +53,7 @@ import {
 } from "./hooks/use-sidebar-store";
 import type { NavGroupDef, NavItemDef } from "./sidebar-nav-items";
 import { navGroups } from "./sidebar-nav-items";
-
-function getOrderedItems(items: NavItemDef[], itemOrder: string[]) {
-   const itemMap = new Map(items.map((item) => [item.id, item]));
-   const orderedItems = itemOrder.flatMap((itemId) => {
-      const item = itemMap.get(itemId);
-      return item ? [item] : [];
-   });
-   const newItems = items.filter((item) => !itemOrder.includes(item.id));
-
-   return [...orderedItems, ...newItems];
-}
+import { getOrderedItems } from "./sidebar-utils";
 
 function SidebarCustomizeItem({ item }: { item: NavItemDef }) {
    const {
@@ -126,7 +116,7 @@ function SidebarCustomizeItem({ item }: { item: NavItemDef }) {
             </ItemContent>
             <ItemActions>
                <ItemDescription>
-                  {checked ? "Mostrar" : "Ocultar"}
+                  {checked ? "Visível" : "Oculto"}
                </ItemDescription>
                <Switch
                   aria-label={`Mostrar ${item.label} na sidebar`}
@@ -155,12 +145,19 @@ function SidebarCustomizeGroup({ group }: { group: NavGroupDef }) {
       [group.items, itemOrder, isEnrolled],
    );
    const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+   const mouseSensorOptions = useMemo(
+      () => ({ activationConstraint: { distance: 5 } }),
+      [],
+   );
+   const touchSensorOptions = useMemo(() => ({}), []);
+   const keyboardSensorOptions = useMemo(
+      () => ({ coordinateGetter: sortableKeyboardCoordinates }),
+      [],
+   );
    const sensors = useSensors(
-      useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-      useSensor(TouchSensor, {}),
-      useSensor(KeyboardSensor, {
-         coordinateGetter: sortableKeyboardCoordinates,
-      }),
+      useSensor(MouseSensor, mouseSensorOptions),
+      useSensor(TouchSensor, touchSensorOptions),
+      useSensor(KeyboardSensor, keyboardSensorOptions),
    );
 
    function handleDragEnd(event: DragEndEvent) {

@@ -19,6 +19,7 @@ const sidebarStore = createPersistedStore<SidebarPersistedState>(
       itemOrder: {},
    },
 );
+const EMPTY_ITEM_ORDER: string[] = [];
 
 export function setCollapsed(collapsed: boolean) {
    sidebarStore.setState((state) => ({ ...state, isCollapsed: collapsed }));
@@ -76,5 +77,8 @@ export function useIsSectionOpen(sectionId: string, defaultOpen: boolean) {
 }
 
 export function useSidebarItemOrder(groupId: string) {
-   return useStore(sidebarStore, (s) => s.itemOrder?.[groupId] ?? []);
+   return useStore(
+      sidebarStore,
+      (s) => s.itemOrder?.[groupId] ?? EMPTY_ITEM_ORDER,
+   );
 }
