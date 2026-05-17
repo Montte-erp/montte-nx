@@ -1,5 +1,14 @@
-import { of, toDecimal } from "@f-o-t/money";
+import {
+   add,
+   greaterThan,
+   of,
+   subtract,
+   toDecimal,
+   zero,
+   type Money,
+} from "@f-o-t/money";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { and, asc, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { fromPromise } from "neverthrow";
@@ -13,11 +22,21 @@ import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 
+dayjs.extend(customParseFormat);
+
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const reportStatus = z.enum(["paid", "pending", "all"]);
 const optionalUuid = z.string().uuid().optional();
 
-const baseFilters = z.object({
+function isValidIsoDate(value: string) {
+   return dayjs(value, "YYYY-MM-DD", true).isValid();
+}
+
+function isValidRange(values: { dateFrom: string; dateTo: string }) {
+   return !dayjs(values.dateFrom).isAfter(dayjs(values.dateTo));
+}
+
+const baseFiltersShape = {
    dateFrom: isoDate,
    dateTo: isoDate,
    status: reportStatus.default("paid"),
@@ -25,23 +44,81 @@ const baseFilters = z.object({
    categoryId: optionalUuid,
    tagId: optionalUuid,
    contactId: optionalUuid,
-});
+};
 
-const cashFlowFilters = baseFilters.omit({ contactId: true });
-const expensesByCostCenterFilters = baseFilters.omit({ contactId: true });
-const agingFilters = z.object({
-   type: z.enum(["income", "expense"]).default("income"),
+const baseFilters = z
+   .object(baseFiltersShape)
+   .refine(
+      (value) => isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+      {
+         path: ["dateFrom"],
+         message: "Informe datas válidas.",
+      },
+   )
+   .refine(isValidRange, {
+      path: ["dateTo"],
+      message: "Data final deve ser maior ou igual à inicial.",
+   });
+const baseFiltersWithoutContactShape = {
    dateFrom: isoDate,
    dateTo: isoDate,
-   contactId: optionalUuid,
+   status: reportStatus.default("paid"),
+   bankAccountId: optionalUuid,
    categoryId: optionalUuid,
    tagId: optionalUuid,
-   status: z.enum(["open", "overdue", "settled"]).default("open"),
-});
-const expensesByCategoryFilters = baseFilters.omit({ contactId: true }).extend({
-   depth: z.enum(["group", "subcategory"]).default("group"),
-   minAmount: z.number().nonnegative().default(0),
-});
+};
+const cashFlowFilters = z
+   .object(baseFiltersWithoutContactShape)
+   .refine(
+      (value) => isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+      {
+         path: ["dateFrom"],
+         message: "Informe datas válidas.",
+      },
+   )
+   .refine(isValidRange, {
+      path: ["dateTo"],
+      message: "Data final deve ser maior ou igual à inicial.",
+   });
+const expensesByCostCenterFilters = cashFlowFilters;
+const agingFilters = z
+   .object({
+      type: z.enum(["income", "expense"]).default("income"),
+      dateFrom: isoDate,
+      dateTo: isoDate,
+      contactId: optionalUuid,
+      categoryId: optionalUuid,
+      tagId: optionalUuid,
+      status: z.enum(["open", "overdue", "settled"]).default("open"),
+   })
+   .refine(
+      (value) => isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+      {
+         path: ["dateFrom"],
+         message: "Informe datas válidas.",
+      },
+   )
+   .refine(isValidRange, {
+      path: ["dateTo"],
+      message: "Data final deve ser maior ou igual à inicial.",
+   });
+const expensesByCategoryFilters = z
+   .object({
+      ...baseFiltersWithoutContactShape,
+      depth: z.enum(["group", "subcategory"]).default("group"),
+      minAmount: z.number().nonnegative().default(0),
+   })
+   .refine(
+      (value) => isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+      {
+         path: ["dateFrom"],
+         message: "Informe datas válidas.",
+      },
+   )
+   .refine(isValidRange, {
+      path: ["dateTo"],
+      message: "Data final deve ser maior ou igual à inicial.",
+   });
 const idSchema = z.object({ id: z.string().uuid() });
 
 type BaseFilters = z.infer<typeof baseFilters>;
@@ -95,7 +172,7 @@ export const create = protectedProcedure
 
 export const remove = protectedProcedure
    .input(idSchema)
-   .handler(async ({ context, input }) => {
+   .use(async ({ context, next }, input) => {
       const existing = await fromPromise(
          context.db.query.reports.findFirst({
             where: (f, { and, eq }) =>
@@ -107,22 +184,39 @@ export const remove = protectedProcedure
       if (!existing.value)
          throw WebAppError.notFound("Relatório não encontrado.");
 
+      return next({ context: { entity: existing.value } });
+   })
+   .handler(async ({ context }) => {
       const result = await fromPromise(
          context.db.transaction(async (tx) => {
-            await tx.delete(reports).where(eq(reports.id, input.id));
+            return tx
+               .delete(reports)
+               .where(eq(reports.id, context.entity.id))
+               .returning();
          }),
          () => WebAppError.internal("Falha ao excluir relatório."),
       );
       if (result.isErr()) throw result.error;
+      if (result.value.length === 0)
+         throw WebAppError.internal("Falha ao excluir relatório.");
       return { success: true };
    });
+
+function moneyValue(value: string | number | null | undefined) {
+   return of(String(value ?? "0"), "BRL");
+}
 
 function money(value: string | number | null | undefined) {
    return toDecimal(of(String(value ?? "0"), "BRL"));
 }
 
-function numberValue(value: string | number | null | undefined) {
-   return Number(value ?? 0);
+function decimal(value: Money) {
+   return toDecimal(value);
+}
+
+function ratio(value: Money, total: Money) {
+   if (!greaterThan(total, zero("BRL"))) return 0;
+   return Number(toDecimal(value)) / Number(toDecimal(total));
 }
 
 function periodLabel(value: string) {
@@ -175,7 +269,25 @@ function baseTransactionConditions(
 }
 
 export const profitAndLoss = protectedProcedure
-   .input(baseFilters.extend({ dreOnly: z.boolean().default(true) }))
+   .input(
+      z
+         .object({
+            ...baseFiltersShape,
+            dreOnly: z.boolean().default(true),
+         })
+         .refine(
+            (value) =>
+               isValidIsoDate(value.dateFrom) && isValidIsoDate(value.dateTo),
+            {
+               path: ["dateFrom"],
+               message: "Informe datas válidas.",
+            },
+         )
+         .refine(isValidRange, {
+            path: ["dateTo"],
+            message: "Data final deve ser maior ou igual à inicial.",
+         }),
+   )
    .handler(async ({ context, input }) => {
       const effectiveDate = effectiveDateSql();
       const conditions = baseTransactionConditions(
@@ -224,13 +336,13 @@ export const profitAndLoss = protectedProcedure
             id: string;
             name: string;
             type: "income" | "expense" | "transfer";
-            total: number;
-            periods: Map<string, number>;
+            total: Money;
+            periods: Map<string, Money>;
             rows: {
                id: string;
                name: string;
-               total: number;
-               periods: Map<string, number>;
+               total: Money;
+               periods: Map<string, Money>;
             }[];
          }
       >();
@@ -242,19 +354,25 @@ export const profitAndLoss = protectedProcedure
             id: key,
             name: row.groupName,
             type: row.type,
-            total: 0,
-            periods: new Map<string, number>(),
+            total: zero("BRL"),
+            periods: new Map<string, Money>(),
             rows: [],
          };
-         const value = numberValue(row.amount);
+         const value = moneyValue(row.amount);
          const month = row.period;
-         group.total += value;
-         group.periods.set(month, (group.periods.get(month) ?? 0) + value);
+         group.total = add(group.total, value);
+         group.periods.set(
+            month,
+            add(group.periods.get(month) ?? zero("BRL"), value),
+         );
          const childId = row.categoryId ?? `${key}:uncategorized`;
          const child = group.rows.find((item) => item.id === childId);
          if (child) {
-            child.total += value;
-            child.periods.set(month, (child.periods.get(month) ?? 0) + value);
+            child.total = add(child.total, value);
+            child.periods.set(
+               month,
+               add(child.periods.get(month) ?? zero("BRL"), value),
+            );
          } else {
             group.rows.push({
                id: childId,
@@ -270,29 +388,29 @@ export const profitAndLoss = protectedProcedure
          id: group.id,
          name: group.name,
          type: group.type,
-         total: money(group.total),
+         total: decimal(group.total),
          periods: periods.map((period) => ({
             period,
             label: periodLabel(period),
-            amount: money(group.periods.get(period)),
+            amount: decimal(group.periods.get(period) ?? zero("BRL")),
          })),
          rows: group.rows.map((row) => ({
             id: row.id,
             name: row.name,
-            total: money(row.total),
+            total: decimal(row.total),
             periods: periods.map((period) => ({
                period,
                label: periodLabel(period),
-               amount: money(row.periods.get(period)),
+               amount: decimal(row.periods.get(period) ?? zero("BRL")),
             })),
          })),
       }));
       const income = result.value
          .filter((row) => row.type === "income")
-         .reduce((acc, row) => acc + numberValue(row.amount), 0);
+         .reduce((acc, row) => add(acc, moneyValue(row.amount)), zero("BRL"));
       const expense = result.value
          .filter((row) => row.type === "expense")
-         .reduce((acc, row) => acc + numberValue(row.amount), 0);
+         .reduce((acc, row) => add(acc, moneyValue(row.amount)), zero("BRL"));
 
       return {
          periods: periods.map((period) => ({
@@ -301,9 +419,9 @@ export const profitAndLoss = protectedProcedure
          })),
          groups,
          totals: {
-            income: money(income),
-            expense: money(expense),
-            result: money(income - expense),
+            income: decimal(income),
+            expense: decimal(expense),
+            result: decimal(subtract(income, expense)),
          },
       };
    });
@@ -395,70 +513,74 @@ export const cashFlow = protectedProcedure
       );
       if (result.isErr()) throw result.error;
 
-      const openingByAccount = new Map<string, number>();
+      const openingByAccount = new Map<string, Money>();
       for (const account of result.value.accounts) {
          const initialDate = account.initialBalanceDate;
          const initial =
             !initialDate ||
             dayjs(initialDate).isSame(input.dateFrom) ||
             dayjs(initialDate).isBefore(input.dateFrom)
-               ? numberValue(account.initialBalance)
-               : 0;
+               ? moneyValue(account.initialBalance)
+               : zero("BRL");
          openingByAccount.set(account.id, initial);
       }
       for (const row of result.value.openings) {
          if (!row.accountId) continue;
          openingByAccount.set(
             row.accountId,
-            (openingByAccount.get(row.accountId) ?? 0) +
-               numberValue(row.amount),
+            add(
+               openingByAccount.get(row.accountId) ?? zero("BRL"),
+               moneyValue(row.amount),
+            ),
          );
       }
 
-      const movementMap = new Map<
-         string,
-         { income: number; expense: number }
-      >();
+      const movementMap = new Map<string, { income: Money; expense: Money }>();
       for (const row of result.value.movements) {
          if (!row.accountId) continue;
          movementMap.set(`${row.period}:${row.accountId}`, {
-            income: numberValue(row.income),
-            expense: numberValue(row.expense),
+            income: moneyValue(row.income),
+            expense: moneyValue(row.expense),
          });
       }
 
       const running = new Map(openingByAccount);
       const rows = periods.map((period) => {
-         let initialBalance = 0;
-         let income = 0;
-         let expense = 0;
+         let initialBalance = zero("BRL");
+         let income = zero("BRL");
+         let expense = zero("BRL");
          const accounts = result.value.accounts.map((account) => {
-            const start = running.get(account.id) ?? 0;
+            const start = running.get(account.id) ?? zero("BRL");
             const movement = movementMap.get(`${period}:${account.id}`) ?? {
-               income: 0,
-               expense: 0,
+               income: zero("BRL"),
+               expense: zero("BRL"),
             };
-            const ending = start + movement.income - movement.expense;
+            const ending = subtract(
+               add(start, movement.income),
+               movement.expense,
+            );
             running.set(account.id, ending);
-            initialBalance += start;
-            income += movement.income;
-            expense += movement.expense;
+            initialBalance = add(initialBalance, start);
+            income = add(income, movement.income);
+            expense = add(expense, movement.expense);
             return {
                id: account.id,
                name: account.name,
-               initialBalance: money(start),
-               income: money(movement.income),
-               expense: money(movement.expense),
-               endingBalance: money(ending),
+               initialBalance: decimal(start),
+               income: decimal(movement.income),
+               expense: decimal(movement.expense),
+               endingBalance: decimal(ending),
             };
          });
          return {
             period,
             label: periodLabel(period),
-            initialBalance: money(initialBalance),
-            income: money(income),
-            expense: money(expense),
-            endingBalance: money(initialBalance + income - expense),
+            initialBalance: decimal(initialBalance),
+            income: decimal(income),
+            expense: decimal(expense),
+            endingBalance: decimal(
+               subtract(add(initialBalance, income), expense),
+            ),
             accounts,
          };
       });
@@ -507,8 +629,8 @@ export const expensesByCostCenter = protectedProcedure
       if (result.isErr()) throw result.error;
 
       const total = result.value.reduce(
-         (acc, row) => acc + numberValue(row.amount),
-         0,
+         (acc, row) => add(acc, moneyValue(row.amount)),
+         zero("BRL"),
       );
       const byTag = new Map<
          string,
@@ -516,8 +638,8 @@ export const expensesByCostCenter = protectedProcedure
             id: string;
             name: string;
             color: string;
-            amount: number;
-            categories: { id: string; name: string; amount: number }[];
+            amount: Money;
+            categories: { id: string; name: string; amount: Money }[];
          }
       >();
       for (const row of result.value) {
@@ -527,11 +649,11 @@ export const expensesByCostCenter = protectedProcedure
             id,
             name: row.tagName,
             color: row.tagColor,
-            amount: 0,
+            amount: zero("BRL"),
             categories: [],
          };
-         const amount = numberValue(row.amount);
-         parent.amount += amount;
+         const amount = moneyValue(row.amount);
+         parent.amount = add(parent.amount, amount);
          parent.categories.push({
             id: row.categoryId ?? `${id}:uncategorized`,
             name: row.categoryName,
@@ -541,18 +663,18 @@ export const expensesByCostCenter = protectedProcedure
       }
 
       return {
-         total: money(total),
+         total: decimal(total),
          rows: [...byTag.values()].map((row) => ({
             id: row.id,
             name: row.name,
             color: row.color,
-            amount: money(row.amount),
-            percent: total > 0 ? row.amount / total : 0,
+            amount: decimal(row.amount),
+            percent: ratio(row.amount, total),
             categories: row.categories.map((category) => ({
                id: category.id,
                name: category.name,
-               amount: money(category.amount),
-               percent: total > 0 ? category.amount / total : 0,
+               amount: decimal(category.amount),
+               percent: ratio(category.amount, total),
             })),
          })),
       };
@@ -608,10 +730,10 @@ export const aging = protectedProcedure
       if (result.isErr()) throw result.error;
 
       const buckets = new Map([
-         ["due", 0],
-         ["0-30", 0],
-         ["31-60", 0],
-         [">60", 0],
+         ["due", zero("BRL")],
+         ["0-30", zero("BRL")],
+         ["31-60", zero("BRL")],
+         [">60", zero("BRL")],
       ]);
       const rows = result.value.map((row) => {
          const due = dayjs(row.dueDate);
@@ -623,7 +745,7 @@ export const aging = protectedProcedure
          else if (overdueDays > 0) bucket = "0-30";
          buckets.set(
             bucket,
-            (buckets.get(bucket) ?? 0) + numberValue(row.amount),
+            add(buckets.get(bucket) ?? zero("BRL"), moneyValue(row.amount)),
          );
          return {
             id: row.id,
@@ -644,18 +766,26 @@ export const aging = protectedProcedure
       return {
          rows,
          buckets: [
-            { id: "due", label: "A vencer", amount: money(buckets.get("due")) },
+            {
+               id: "due",
+               label: "A vencer",
+               amount: decimal(buckets.get("due") ?? zero("BRL")),
+            },
             {
                id: "0-30",
                label: "0-30 dias",
-               amount: money(buckets.get("0-30")),
+               amount: decimal(buckets.get("0-30") ?? zero("BRL")),
             },
             {
                id: "31-60",
                label: "31-60 dias",
-               amount: money(buckets.get("31-60")),
+               amount: decimal(buckets.get("31-60") ?? zero("BRL")),
             },
-            { id: ">60", label: ">60 dias", amount: money(buckets.get(">60")) },
+            {
+               id: ">60",
+               label: ">60 dias",
+               amount: decimal(buckets.get(">60") ?? zero("BRL")),
+            },
          ],
       };
    });
@@ -709,17 +839,17 @@ export const expensesByCategory = protectedProcedure
       if (result.isErr()) throw result.error;
 
       const total = result.value.reduce(
-         (acc, row) => acc + numberValue(row.amount),
-         0,
+         (acc, row) => add(acc, moneyValue(row.amount)),
+         zero("BRL"),
       );
       return {
-         total: money(total),
+         total: decimal(total),
          rows: result.value.map((row) => ({
             id: row.id,
             name: row.name,
             color: row.color,
             amount: money(row.amount),
-            percent: total > 0 ? numberValue(row.amount) / total : 0,
+            percent: ratio(moneyValue(row.amount), total),
             count: row.count,
          })),
       };

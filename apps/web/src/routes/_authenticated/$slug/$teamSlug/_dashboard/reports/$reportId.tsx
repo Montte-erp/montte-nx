@@ -1,13 +1,25 @@
 import { Button } from "@packages/ui/components/button";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { ArrowLeft, FileDown } from "lucide-react";
+import {
+   ArrowLeft,
+   CalendarDays,
+   FileDown,
+   Filter,
+   ReceiptText,
+} from "lucide-react";
+import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@/components/blocks/announcement";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { orpc } from "@/integrations/orpc/client";
-import { REPORT_LABELS } from "../-reports/report-labels";
+import { REPORT_LABELS, type SavedReport } from "../-reports/report-labels";
 import { ReportData } from "../-reports/report-panels";
+import { DefaultHeader } from "../../-layout/default-header";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/reports/$reportId",
@@ -73,51 +85,91 @@ function ReportDetailPage() {
 function ReportDetailContent() {
    const { reportId } = Route.useParams();
    const { slug, teamSlug } = useDashboardSlugs();
+   const navigate = useNavigate();
    const { data: report } = useSuspenseQuery(
       orpc.reports.get.queryOptions({ input: { id: reportId } }),
    );
-   const Icon = REPORT_LABELS[report.type].icon;
 
    return (
       <div className="flex flex-1 min-h-0 flex-col gap-4">
-         <div className="flex flex-wrap items-center justify-between gap-2">
-            <Button asChild size="sm" variant="ghost">
-               <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/reports">
-                  <ArrowLeft />
-                  Relatórios
-               </Link>
-            </Button>
-            <Button onClick={() => window.print()} size="sm" variant="outline">
-               <FileDown />
-               Exportar PDF
-            </Button>
-         </div>
+         <DefaultHeader
+            description={
+               <>
+                  {REPORT_LABELS[report.type].label} ·{" "}
+                  {dayjs(report.config.dateFrom).format("DD/MM/YYYY")} —{" "}
+                  {dayjs(report.config.dateTo).format("DD/MM/YYYY")}
+               </>
+            }
+            onBack={() =>
+               navigate({
+                  to: "/$slug/$teamSlug/reports",
+                  params: { slug, teamSlug },
+               })
+            }
+            secondaryActions={<ReportDetailToolbar report={report} />}
+            title={report.name}
+         />
 
-         <div className="bg-card flex flex-col gap-4 rounded-md border p-4">
-            <div className="flex flex-wrap items-start gap-4">
-               <span className="text-muted-foreground bg-muted/30 flex size-10 items-center justify-center rounded-md border">
-                  <Icon className="size-4" />
-               </span>
-               <div className="flex min-w-0 flex-col gap-2">
-                  <h1 className="truncate text-base font-semibold">
-                     {report.name}
-                  </h1>
-                  <p className="text-muted-foreground text-sm">
-                     {REPORT_LABELS[report.type].label} ·{" "}
-                     {dayjs(report.config.dateFrom).format("DD/MM/YYYY")} —{" "}
-                     {dayjs(report.config.dateTo).format("DD/MM/YYYY")}
-                  </p>
-               </div>
-            </div>
-         </div>
-
-         <div className="bg-card flex min-h-0 flex-1 flex-col gap-4 overflow-auto rounded-md border p-4">
+         <div className="flex min-h-0 flex-1 flex-col overflow-auto">
             <QueryBoundary
                fallback={<ReportDetailSkeleton />}
                errorTitle="Erro ao carregar dados"
             >
                <ReportData report={report} />
             </QueryBoundary>
+         </div>
+      </div>
+   );
+}
+
+function ReportDetailToolbar({ report }: { report: SavedReport }) {
+   const statusLabel =
+      report.config.status === "paid"
+         ? "Realizados"
+         : report.config.status === "pending"
+           ? "Planejados"
+           : "Realizados e planejados";
+
+   return (
+      <div className="flex w-full flex-wrap items-center gap-2">
+         <Announcement className="cursor-default shadow-none hover:shadow-none">
+            <AnnouncementTag>
+               <ReceiptText className="size-3" />
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               {REPORT_LABELS[report.type].label}
+            </AnnouncementTitle>
+         </Announcement>
+         <Announcement className="cursor-default shadow-none hover:shadow-none">
+            <AnnouncementTag>
+               <CalendarDays className="size-3" />
+            </AnnouncementTag>
+            <AnnouncementTitle>
+               {dayjs(report.config.dateFrom).format("DD/MM/YYYY")} —{" "}
+               {dayjs(report.config.dateTo).format("DD/MM/YYYY")}
+            </AnnouncementTitle>
+         </Announcement>
+         <Announcement className="cursor-default shadow-none hover:shadow-none">
+            <AnnouncementTag>
+               <Filter className="size-3" />
+            </AnnouncementTag>
+            <AnnouncementTitle>{statusLabel}</AnnouncementTitle>
+         </Announcement>
+         {report.type === "dre" && report.config.dreOnly ? (
+            <Announcement className="cursor-default shadow-none hover:shadow-none">
+               <AnnouncementTitle>Somente categorias DRE</AnnouncementTitle>
+            </Announcement>
+         ) : null}
+         <div className="flex flex-1 justify-end">
+            <Button
+               onClick={() => window.print()}
+               size="icon-sm"
+               tooltip="Exportar PDF"
+               variant="outline"
+            >
+               <FileDown />
+               <span className="sr-only">Exportar PDF</span>
+            </Button>
          </div>
       </div>
    );

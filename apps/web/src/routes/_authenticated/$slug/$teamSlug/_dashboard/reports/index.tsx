@@ -57,7 +57,7 @@ const searchSchema = z.object({
       .default([]),
    search: z.string().max(100).catch("").default(""),
    page: z.number().int().min(1).catch(1).default(1),
-   pageSize: z.number().int().catch(20).default(20),
+   pageSize: z.number().int().min(1).catch(20).default(20),
 });
 
 const skeletonColumns = buildReportsColumns();
@@ -294,12 +294,22 @@ function ReportsList() {
                   renderRow={({ row }) => (
                      <TableRow
                         className="hover:bg-muted/50 cursor-pointer"
+                        aria-selected={row.getIsSelected()}
                         data-selected={row.getIsSelected()}
                         data-state={
                            row.getIsSelected() ? "selected" : undefined
                         }
                         key={row.id}
                         onClick={() => goToReport(row.original.id)}
+                        onKeyDown={(event) => {
+                           if (event.key !== "Enter" && event.key !== " ") {
+                              return;
+                           }
+                           event.preventDefault();
+                           goToReport(row.original.id);
+                        }}
+                        role="row"
+                        tabIndex={0}
                      >
                         {row.getVisibleCells().map((cell) => {
                            const col = cell.column;

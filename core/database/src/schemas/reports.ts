@@ -1,8 +1,12 @@
 import { sql } from "drizzle-orm";
 import { jsonb, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { z } from "zod";
 import { platformSchema } from "@core/database/schemas/schemas";
+
+dayjs.extend(customParseFormat);
 
 export const reportTypeEnum = platformSchema.enum("report_type", [
    "dre",
@@ -14,20 +18,37 @@ export const reportTypeEnum = platformSchema.enum("report_type", [
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-export const reportConfigSchema = z.object({
-   dateFrom: isoDate,
-   dateTo: isoDate,
-   status: z.enum(["paid", "pending", "all"]).default("paid"),
-   bankAccountId: z.string().uuid().optional(),
-   categoryId: z.string().uuid().optional(),
-   tagId: z.string().uuid().optional(),
-   contactId: z.string().uuid().optional(),
-   dreOnly: z.boolean().default(true),
-   agingType: z.enum(["income", "expense"]).default("income"),
-   agingStatus: z.enum(["open", "overdue", "settled"]).default("open"),
-   categoryDepth: z.enum(["group", "subcategory"]).default("group"),
-   minAmount: z.number().nonnegative().default(0),
-});
+function isValidIsoDate(value: string) {
+   return dayjs(value, "YYYY-MM-DD", true).isValid();
+}
+
+export const reportConfigSchema = z
+   .object({
+      dateFrom: isoDate,
+      dateTo: isoDate,
+      status: z.enum(["paid", "pending", "all"]).default("paid"),
+      bankAccountId: z.string().uuid().optional(),
+      categoryId: z.string().uuid().optional(),
+      tagId: z.string().uuid().optional(),
+      contactId: z.string().uuid().optional(),
+      dreOnly: z.boolean().default(true),
+      agingType: z.enum(["income", "expense"]).default("income"),
+      agingStatus: z.enum(["open", "overdue", "settled"]).default("open"),
+      categoryDepth: z.enum(["group", "subcategory"]).default("group"),
+      minAmount: z.number().nonnegative().default(0),
+   })
+   .refine((value) => isValidIsoDate(value.dateFrom), {
+      path: ["dateFrom"],
+      message: "Data inicial inválida.",
+   })
+   .refine((value) => isValidIsoDate(value.dateTo), {
+      path: ["dateTo"],
+      message: "Data final inválida.",
+   })
+   .refine((value) => !dayjs(value.dateFrom).isAfter(dayjs(value.dateTo)), {
+      path: ["dateTo"],
+      message: "Data final deve ser maior ou igual à inicial.",
+   });
 
 export type ReportConfig = z.infer<typeof reportConfigSchema>;
 

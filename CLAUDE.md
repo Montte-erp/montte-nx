@@ -42,7 +42,7 @@ Skills live in `.agents/skills/<name>/SKILL.md`. Open the SKILL.md before writin
 
 Domain → skill map (open before coding):
 
-- oRPC handlers/errors → `neverthrow`. Schema/queries → `postgres-drizzle`. Search/BM25 → `paradedb-skill`. Redis → `redis-best-practices`.
+- New Payments/Vault/domain errors → `better-result`. Legacy oRPC handlers/errors still using `neverthrow` → `neverthrow`. Schema/queries → `postgres-drizzle`. Search/BM25 → `paradedb-skill`. Redis → `redis-best-practices`.
 - Client data → `tanstack-query`. Forms → `tanstack-form`. Tables → `tanstack-table` (+ `tanstack-virtual` for long lists). Routes → `tanstack-router`. Stores → `tanstack-store` (+ `tanstack-db`). SSR/server fns → `tanstack-start` (+ `tanstack-devtools`).
 - AI agents → `tanstack-ai`. Durable workflows → `dbos-typescript`.
 - Auth → `better-auth-best-practices` (sub-skills exist for email/2FA/orgs/scaffolding).
@@ -186,7 +186,7 @@ Schemas in `core/database/src/schemas/`. **Always namespace** — never raw `pgT
 - `agentsSchema` → threads
 - `authSchema` → Better Auth managed (user, session, account, organization, team, member, invitation, twoFactor, apikey) — **read-only** (extend via `additionalFields` in auth config)
 
-Local DB image is `postgres:17` (pinned in `apps/web/docker-compose.yml`). Do not bump to `:latest`/PG18 without running `pg_upgrade` — PG18 changed the data-dir layout and rejects the existing `montte_pgdata` volume. ParadeDB BM25 features run only in environments using a ParadeDB-compatible image (prod); local dev uses vanilla Postgres.
+Local DB image is `paradedb/paradedb` — don't swap.
 
 ---
 
@@ -250,7 +250,7 @@ Routers tag cost-incurring procedures with `billableProcedure` + `.meta({ billab
 ## Code Style
 
 - TypeScript: **never `as`** in any form (including `[] as string[]`) — fix the source type. No redundant return types Claude can infer. No unused params (delete; no `_foo`). No JSDoc / section comments / inline rationale. No barrel files. No relative imports in `core/` — `@core/<pkg>/*`. No dynamic imports.
-- Errors: **no `try/catch`** — use `neverthrow` (`fromPromise`, `fromThrowable`, `ok`, `err`, `Result`, `ResultAsync`, `safeTry`). Patterns: early return on `isErr`, `andThen` chains, no `match(v=>v, e=>throw)`, no `Promise.reject` inside `match`, fire-and-forget uses `.catch(log)`. Exception: tests and scripts.
+- Errors: **no `try/catch`** — for new Payments/Vault/domain code use `better-result` with tagged expected errors, Zod at contract edges, no `unknown` leakage, and serialization across workflow/API boundaries when needed. Legacy modules still on `neverthrow` may keep `fromPromise`, `fromThrowable`, `ok`, `err`, `Result`, `ResultAsync`, `safeTry`; do not mix both libraries inside one module. Exception: tests and scripts.
 - Control flow: early returns, never `else` after `return`. Minimize `useEffect` — derive state or use event handlers; `useEffect` only for external sync. Use `useCallback`, never `useStableHandler`.
 - Dates: always `dayjs`. Never `new Date()` (exceptions: Drizzle `.$onUpdate()`, test fixtures). `.toDate()` for Drizzle, `.toISOString()` for ISO, `.format("YYYY-MM-DD")` for date strings.
 - Naming: files kebab-case. Components PascalCase `[Feature][Action][Type]`. Hooks `use[Feature][Action]`.
@@ -262,8 +262,8 @@ Routers tag cost-incurring procedures with `billableProcedure` + `.meta({ billab
 
 ## UI Conventions
 
-- Modals/drawers genéricos: **`useCredenza`**. Destructive confirmation: `useAlertDialog`. Never import Sheet/Dialog/Drawer/AlertDialog/Credenza directly.
-- DataTable create flows: **`useSheet`** (`@/hooks/use-sheet`) — botão `+` da toolbar abre side sheet com TanStack Form completo, schema do `core/database`, blocos condicionais por tipo. Edit fica inline célula a célula. Padrão: `openSheet({ renderChildren: () => <FeatureForm /> })`; form chama `closeTopSheet()` no `onSuccess`.
+- Modals/sheets/drawers: **forms always use `useSheet`**. Other modal flows use `useCredenza`. Destructive confirmation: `useAlertDialog`. Never import Dialog/Drawer/AlertDialog/Credenza primitives directly.
+- Reports: the DRE preview may be based on Centros de Custo when that is the selected reporting flow.
 - Empty states: `Empty / EmptyHeader / EmptyMedia / EmptyTitle / EmptyDescription / EmptyContent` from `@packages/ui/components/empty`.
 - DataTable (`@packages/ui/components/data-table`): never wrap in `Card`. Required props: `getRowId`, `sorting`, `onSortingChange`, `columnFilters`, `onColumnFiltersChange`, `tableState`, `onTableStateChange`. Column defs **must** be memoized. `manualSorting`/`manualFiltering` already wired internally. Per usage: a module-level `createLocalStorageState<DataTableStoredState | null>("montte:datatable:<feature>", null)` + `validateSearch` with `sorting` + `columnFilters` arrays. `ColumnMeta`: `label`, `filterVariant` (`"text"|"select"|"range"|"date"`), `align`, `exportable`. View toggle via `useViewSwitch("feature:view", VIEWS)` — never `renderMobileCard`.
 - Animations: Tailwind-first. Framer Motion only for state-dependent enter/exit, `layoutId`, gestures — client components only, wrap shadcn primitives in `motion.div` (never modify them). Animate only `transform` and `opacity`.
@@ -421,4 +421,4 @@ skills:
   use: "@tanstack/devtools#devtools-app-setup"
 - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
   use: "dotenv#dotenv"
-   <!-- intent-skills:end -->
+    <!-- intent-skills:end -->

@@ -18,10 +18,12 @@ import {
 import { toast } from "@packages/ui/components/sonner";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSheet } from "@/hooks/use-sheet";
 import { orpc } from "@/integrations/orpc/client";
 import { REPORT_LABELS, type ReportType } from "./report-labels";
@@ -33,6 +35,8 @@ const REPORT_TYPES = [
    "aging",
    "categories",
 ] as const;
+dayjs.extend(customParseFormat);
+
 const STATUSES = ["paid", "pending", "all"] as const;
 type ReportStatus = (typeof STATUSES)[number];
 
@@ -44,13 +48,25 @@ const STATUS_LABELS: Record<ReportStatus, string> = {
 
 const formSchema = z
    .object({
-      name: z.string().trim().min(2, "Nome deve ter no mínimo 2 caracteres."),
+      name: z
+         .string()
+         .trim()
+         .min(2, "Nome deve ter no mínimo 2 caracteres.")
+         .max(120, "Nome deve ter no máximo 120 caracteres."),
       type: z.enum(REPORT_TYPES),
       dateFrom: z
          .string()
          .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inicial inválida."),
       dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data final inválida."),
       status: z.enum(STATUSES),
+   })
+   .refine((v) => dayjs(v.dateFrom, "YYYY-MM-DD", true).isValid(), {
+      path: ["dateFrom"],
+      message: "Data inicial inválida.",
+   })
+   .refine((v) => dayjs(v.dateTo, "YYYY-MM-DD", true).isValid(), {
+      path: ["dateTo"],
+      message: "Data final inválida.",
    })
    .refine((v) => v.dateFrom <= v.dateTo, {
       path: ["dateTo"],
@@ -84,14 +100,13 @@ function parseStatus(value: string): ReportStatus | undefined {
 export function ReportFormSheet() {
    const { closeTopSheet } = useSheet();
    const navigate = useNavigate();
-   const { slug, teamSlug } = useParams({ strict: false });
+   const { slug, teamSlug } = useDashboardSlugs();
 
    const createMutation = useMutation(
       orpc.reports.create.mutationOptions({
          onSuccess: (report) => {
             toast.success("Relatório criado.");
             closeTopSheet();
-            if (!slug || !teamSlug) return;
             navigate({
                to: "/$slug/$teamSlug/reports/$reportId",
                params: { slug, teamSlug, reportId: report.id },
@@ -166,7 +181,7 @@ export function ReportFormSheet() {
 
             <form.Field name="type">
                {(field) => (
-                  <Field>
+                  <Field data-invalid={isFieldInvalid(field) || undefined}>
                      <FieldLabel htmlFor={field.name}>Tipo</FieldLabel>
                      <Select
                         value={field.state.value}
@@ -176,7 +191,11 @@ export function ReportFormSheet() {
                            field.handleChange(parsed);
                         }}
                      >
-                        <SelectTrigger id={field.name} name={field.name}>
+                        <SelectTrigger
+                           aria-invalid={isFieldInvalid(field)}
+                           id={field.name}
+                           name={field.name}
+                        >
                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -245,7 +264,7 @@ export function ReportFormSheet() {
 
             <form.Field name="status">
                {(field) => (
-                  <Field>
+                  <Field data-invalid={isFieldInvalid(field) || undefined}>
                      <FieldLabel htmlFor={field.name}>Status</FieldLabel>
                      <Select
                         value={field.state.value}
@@ -255,7 +274,11 @@ export function ReportFormSheet() {
                            field.handleChange(parsed);
                         }}
                      >
-                        <SelectTrigger id={field.name} name={field.name}>
+                        <SelectTrigger
+                           aria-invalid={isFieldInvalid(field)}
+                           id={field.name}
+                           name={field.name}
+                        >
                            <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
