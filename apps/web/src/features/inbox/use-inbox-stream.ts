@@ -6,43 +6,6 @@ import { orpc } from "@/integrations/orpc/client";
 
 const knownEventSchema = z.discriminatedUnion("type", [
    z.object({
-      type: z.literal("billing.trial_expiring"),
-      payload: z.object({
-         subscriptionId: z.string(),
-         trialEndsAt: z.string(),
-         daysLeft: z.number().int().nonnegative(),
-      }),
-   }),
-   z.object({
-      type: z.literal("billing.trial_completed"),
-      payload: z.object({
-         subscriptionId: z.string(),
-      }),
-   }),
-   z.object({
-      type: z.literal("billing.invoice_generated"),
-      payload: z.object({
-         invoiceId: z.string(),
-         subscriptionId: z.string(),
-         total: z.string(),
-         currency: z.string(),
-      }),
-   }),
-   z.object({
-      type: z.literal("billing.benefit_granted"),
-      payload: z.object({
-         subscriptionId: z.string(),
-         benefitIds: z.array(z.string()),
-      }),
-   }),
-   z.object({
-      type: z.literal("billing.benefit_revoked"),
-      payload: z.object({
-         subscriptionId: z.string(),
-         benefitIds: z.array(z.string()),
-      }),
-   }),
-   z.object({
       type: z.literal("billing.usage_ingested"),
       payload: z.object({
          meterId: z.string(),
@@ -100,31 +63,6 @@ type ToastSpec = {
 
 function eventToToast(event: KnownEvent): ToastSpec | null {
    switch (event.type) {
-      case "billing.trial_expiring":
-         return {
-            kind: "info",
-            message: `Período de teste expira em ${event.payload.daysLeft} dia(s).`,
-         };
-      case "billing.trial_completed":
-         return {
-            kind: "success",
-            message: "Período de teste encerrado — assinatura ativada.",
-         };
-      case "billing.invoice_generated":
-         return {
-            kind: "success",
-            message: `Fatura gerada — total ${event.payload.total} ${event.payload.currency}.`,
-         };
-      case "billing.benefit_granted":
-         return {
-            kind: "success",
-            message: `Benefícios concedidos (${event.payload.benefitIds.length}).`,
-         };
-      case "billing.benefit_revoked":
-         return {
-            kind: "info",
-            message: `Benefícios revogados (${event.payload.benefitIds.length}).`,
-         };
       case "billing.usage_ingested":
          return null;
       case "classification.transaction_classified":

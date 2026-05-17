@@ -37,8 +37,10 @@
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
       "better-auth": "catalog:auth",
+      "better-result": "catalog:validation",
       "react": "catalog:react",
-      "react-dom": "catalog:react"
+      "react-dom": "catalog:react",
+      "zod": "catalog:validation"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

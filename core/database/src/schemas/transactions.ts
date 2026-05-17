@@ -16,7 +16,6 @@ import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { contacts } from "@core/database/schemas/contacts";
 import { creditCards } from "@core/database/schemas/credit-cards";
-import { services } from "@core/database/schemas/services";
 import { tags } from "@core/database/schemas/tags";
 import { z } from "zod";
 
@@ -192,9 +191,6 @@ export const transactionItems = financeSchema.table("transaction_items", {
    transactionId: uuid("transaction_id")
       .notNull()
       .references(() => transactions.id, { onDelete: "cascade" }),
-   serviceId: uuid("service_id").references(() => services.id, {
-      onDelete: "set null",
-   }),
    teamId: uuid("team_id").notNull(),
    description: text("description"),
    quantity: numeric("quantity", { precision: 12, scale: 4 })

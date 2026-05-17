@@ -1,8 +1,15 @@
 import { createHash } from "node:crypto";
+import { Result, TaggedError } from "better-result";
 import dayjs from "dayjs";
 import { apiKey } from "@better-auth/api-key";
 import { i18n } from "@better-auth/i18n";
 import * as schema from "@core/database/schema";
+import {
+   cnpjDataSchema,
+   onboardingProductsSchema,
+   onboardingTasksSchema,
+   type CnpjData,
+} from "@core/database/schemas/auth";
 import { getDomain, isProduction } from "@core/environment/helpers";
 import { log } from "@core/logging";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
@@ -22,28 +29,16 @@ import type { NotificationsClient } from "@core/notifications/client";
 import type { PostHog } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
 
-export const cnpjDataSchema = z.object({
-   cnpj: z.string(),
-   razao_social: z.string(),
-   nome_fantasia: z.string().nullable(),
-   cnae_fiscal: z.number(),
-   cnae_fiscal_descricao: z.string().nullable(),
-   cnaes_secundarios: z.array(
-      z.object({ codigo: z.number(), descricao: z.string() }),
-   ),
-   porte: z.string().nullable(),
-   natureza_juridica: z.string().nullable(),
-   municipio: z.string().nullable(),
-   uf: z.string().nullable(),
-   data_inicio_atividade: z.string(),
-   descricao_situacao_cadastral: z.string(),
-   qsa: z.array(z.unknown()),
-   regime_tributario: z.array(z.unknown()).nullable(),
-});
-
-export type CnpjData = z.infer<typeof cnpjDataSchema>;
+export { cnpjDataSchema, type CnpjData };
 
 export const ORGANIZATION_LIMIT = 3;
+
+class AuthSessionHookError extends TaggedError("AuthSessionHookError")<{
+   operation: "hydrate_active_scope";
+   message: string;
+   userId: string;
+   cause?: unknown;
+}>() {}
 
 const devMagicLinkStore = new Map<string, string>();
 
@@ -115,35 +110,52 @@ export function createAuth(deps: CreateAuthDeps) {
          session: {
             create: {
                before: async (session) => {
-                  try {
-                     const member = await db.query.member.findFirst({
-                        where: (f, { eq }) => eq(f.userId, session.userId),
-                     });
-
-                     if (member?.organizationId) {
-                        const existingTeam = await db.query.team.findFirst({
-                           where: (fields, { eq }) =>
-                              eq(fields.organizationId, member.organizationId),
+                  const hydrated = await Result.tryPromise({
+                     try: async () => {
+                        const member = await db.query.member.findFirst({
+                           where: (f, { eq }) => eq(f.userId, session.userId),
                         });
 
-                        return {
-                           data: {
-                              ...session,
-                              activeOrganizationId: member.organizationId,
-                              activeTeamId: existingTeam?.id,
-                           },
-                        };
-                     }
+                        if (member?.organizationId) {
+                           const existingTeam = await db.query.team.findFirst({
+                              where: (fields, { eq }) =>
+                                 eq(
+                                    fields.organizationId,
+                                    member.organizationId,
+                                 ),
+                           });
 
-                     return { data: session };
-                  } catch (error) {
+                           return {
+                              data: {
+                                 ...session,
+                                 activeOrganizationId: member.organizationId,
+                                 activeTeamId: existingTeam?.id,
+                              },
+                           };
+                        }
+
+                        return { data: session };
+                     },
+                     catch: (cause) =>
+                        new AuthSessionHookError({
+                           operation: "hydrate_active_scope",
+                           message:
+                              "Falha ao preencher organização/projeto ativo na sessão.",
+                           userId: session.userId,
+                           cause,
+                        }),
+                  });
+                  if (Result.isError(hydrated)) {
                      log.error({
                         module: "auth",
-                        message: "Error in session create before hook",
-                        err: error,
+                        message:
+                           "Falha ao preencher organização/projeto ativo na sessão",
+                        err: hydrated.error,
+                        userId: session.userId,
                      });
                      return { data: session };
                   }
+                  return hydrated.value;
                },
             },
          },
@@ -280,9 +292,7 @@ export function createAuth(deps: CreateAuthDeps) {
                         required: false,
                         type: "json",
                         validator: {
-                           input: z
-                              .array(z.enum(["content", "forms", "analytics"]))
-                              .nullable(),
+                           input: onboardingProductsSchema.nullable(),
                         },
                      },
                      onboardingTasks: {
@@ -291,7 +301,7 @@ export function createAuth(deps: CreateAuthDeps) {
                         required: false,
                         type: "json",
                         validator: {
-                           input: z.record(z.string(), z.boolean()).nullable(),
+                           input: onboardingTasksSchema.nullable(),
                         },
                      },
                      cnpj: {
