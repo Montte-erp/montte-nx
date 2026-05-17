@@ -1,10 +1,10 @@
 import { DBOS, WorkflowQueue } from "@dbos-inc/dbos-sdk";
+import type { DbosQueueOptions } from "@core/dbos/client";
 import { env } from "@core/environment/worker";
 import {
    configurePostHogOtlpHeaders,
    getPostHogOtlpLogsEndpoint,
 } from "@core/logging";
-import type { DbosQueueOptions } from "./client";
 
 export type DbosWorkerQueue = {
    name: string;
@@ -17,17 +17,14 @@ const launchState: {
    promise?: Promise<void>;
 } = {};
 
-export function createDbosQueue(queue: DbosWorkerQueueInput): WorkflowQueue {
-   if (queue instanceof WorkflowQueue) return queue;
-   if (!queue.options) return new WorkflowQueue(queue.name);
-   return new WorkflowQueue(queue.name, queue.options);
-}
-
 export async function launchDbosWorker(queues: DbosWorkerQueueInput[]) {
    if (DBOS.isInitialized()) return;
 
    if (!launchState.promise) {
-      launchState.promise = launchDbosRuntime(queues);
+      launchState.promise = launchDbosRuntime(queues).catch((error) => {
+         launchState.promise = undefined;
+         throw error;
+      });
    }
 
    await launchState.promise;
@@ -35,6 +32,7 @@ export async function launchDbosWorker(queues: DbosWorkerQueueInput[]) {
 
 export async function shutdownDbosWorker() {
    await DBOS.shutdown();
+   launchState.promise = undefined;
 }
 
 async function launchDbosRuntime(queues: DbosWorkerQueueInput[]) {

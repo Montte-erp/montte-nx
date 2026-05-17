@@ -9,7 +9,6 @@ import {
 } from "vitest";
 import { eq } from "drizzle-orm";
 import { ok, errAsync } from "neverthrow";
-import { Result } from "better-result";
 
 const dbosMocks = vi.hoisted(async () => {
    const mod = await import("@core/dbos/testing/mock-dbos");
@@ -39,6 +38,8 @@ import { categories } from "@core/database/schemas/categories";
 import { makeCategory } from "../helpers/classification-factories";
 import { deriveKeywordsWorkflow } from "../../src/workflows/derive-keywords-workflow";
 import { enqueueDeriveKeywordsWorkflow } from "../../src/workflows/enqueue";
+
+type WorkflowClient = Parameters<typeof enqueueDeriveKeywordsWorkflow>[0];
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -121,8 +122,9 @@ describe("deriveKeywordsWorkflow", () => {
       const categoryId = crypto.randomUUID();
 
       const enqueueCalls: { workflowID?: string }[] = [];
-      const fakeClient = {
-         enqueue: vi.fn(async (args: { workflowID?: string }) => {
+      const fakeClient: WorkflowClient = {
+         registerQueue: vi.fn(async () => undefined),
+         enqueue: vi.fn(async (args) => {
             enqueueCalls.push(args);
             return { workflowID: args.workflowID ?? "derive-keywords-test" };
          }),
@@ -135,19 +137,11 @@ describe("deriveKeywordsWorkflow", () => {
          name: "Whatever",
       };
 
-      // oxlint-ignore no-explicit-any
-      const first = await enqueueDeriveKeywordsWorkflow(
-         fakeClient as any,
-         input,
-      );
-      // oxlint-ignore no-explicit-any
-      const second = await enqueueDeriveKeywordsWorkflow(
-         fakeClient as any,
-         input,
-      );
+      const first = await enqueueDeriveKeywordsWorkflow(fakeClient, input);
+      const second = await enqueueDeriveKeywordsWorkflow(fakeClient, input);
 
-      expect(Result.isOk(first)).toBe(true);
-      expect(Result.isOk(second)).toBe(true);
+      expect(first.isOk()).toBe(true);
+      expect(second.isOk()).toBe(true);
       expect(enqueueCalls).toHaveLength(2);
       expect(enqueueCalls[0]?.workflowID).toBe(`derive-category-${categoryId}`);
       expect(enqueueCalls[1]?.workflowID).toBe(`derive-category-${categoryId}`);

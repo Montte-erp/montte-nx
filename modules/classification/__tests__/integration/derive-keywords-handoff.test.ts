@@ -9,7 +9,6 @@ import {
 } from "vitest";
 import { ok, okAsync } from "neverthrow";
 import { eq } from "drizzle-orm";
-import { Result } from "better-result";
 
 const dbosMocks = vi.hoisted(async () => {
    const mod = await import("@core/dbos/testing/mock-dbos");
@@ -72,6 +71,8 @@ import { deriveKeywordsWorkflow } from "../../src/workflows/derive-keywords-work
 import { enqueueDeriveKeywordsWorkflow } from "../../src/workflows/enqueue";
 import { CLASSIFICATION_WORKFLOW_QUEUES } from "../../src/workflows/constants";
 
+type WorkflowClient = Parameters<typeof enqueueDeriveKeywordsWorkflow>[0];
+
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
 beforeAll(async () => {
@@ -120,13 +121,12 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
       );
 
       const enqueueCalls: { workflowID?: string; queueName?: string }[] = [];
-      const fakeClient = {
-         enqueue: vi.fn(
-            async (args: { workflowID?: string; queueName?: string }) => {
-               enqueueCalls.push(args);
-               return { workflowID: args.workflowID ?? "derive-keywords-test" };
-            },
-         ),
+      const fakeClient: WorkflowClient = {
+         registerQueue: vi.fn(async () => undefined),
+         enqueue: vi.fn(async (args) => {
+            enqueueCalls.push(args);
+            return { workflowID: args.workflowID ?? "derive-keywords-test" };
+         }),
       };
 
       const input = {
@@ -137,13 +137,9 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
          description: null,
       };
 
-      // oxlint-ignore no-explicit-any
-      const queued = await enqueueDeriveKeywordsWorkflow(
-         fakeClient as any,
-         input,
-      );
+      const queued = await enqueueDeriveKeywordsWorkflow(fakeClient, input);
 
-      expect(Result.isOk(queued)).toBe(true);
+      expect(queued.isOk()).toBe(true);
       expect(enqueueCalls).toHaveLength(1);
       expect(enqueueCalls[0]?.workflowID).toBe(
          `derive-category-${category.id}`,

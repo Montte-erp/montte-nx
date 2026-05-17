@@ -1,11 +1,11 @@
 ---
 name: better-result
-description: Use when implementing, refactoring, reviewing, or testing Result-based domain flows with better-result in Minutei AI, especially modules/cases use cases, adapters, async integrations, retries, error mapping, serialization, and oRPC router boundaries.
+description: Use when implementing, refactoring, reviewing, or testing Result-based domain flows with better-result in Montte, especially core wrappers, async integrations, retries, error mapping, serialization, and oRPC router boundaries.
 ---
 
-# Better Result In Minutei AI
+# Better Result In Montte
 
-Use this skill when code uses or should use `better-result`. The main target in this repo is `modules/cases`, but the same boundary rules apply to oRPC routers and background jobs.
+Use this skill when code uses or should use `better-result`. In this repo, prefer it for new shared wrappers and isolated domain flows that are not already standardized on `neverthrow`. Do not mix `better-result` and `neverthrow` inside the same module.
 
 Primary sources:
 
@@ -23,17 +23,16 @@ Primary sources:
 
 ## Repo Workflow
 
-1. Inspect the current domain path before changing patterns:
-   - `modules/cases/src/service.ts`
-   - `modules/cases/src/types.ts`
-   - `modules/cases/src/adapters/adapter-result.ts`
-   - `modules/cases/src/adapters/*`
-   - `modules/cases/src/router.ts`
-   - `core/orpc/src/procedures.ts`
-2. Keep Result usage inside domain/use-case and adapter code. oRPC routers are boundary code: they may call Result-returning use cases, then translate `Err` into `ORPCError` or a serialized result shape intentionally.
-3. Prefer explicit domain error unions with `TaggedError`; do not return strings or raw thrown exceptions from domain/cases code.
+1. Inspect the current domain path before changing patterns. For MON-1076-style DBOS work, start with:
+   - `core/dbos/src/client.ts`
+   - `core/dbos/src/worker.ts`
+   - `modules/classification/src/workflows`
+   - `modules/classification/src/router`
+   - `core/orpc/src/server.ts`
+2. Keep Result usage inside shared wrapper, domain/use-case, and adapter code. oRPC routers are boundary code: they may call Result-returning use cases, then translate `Err` into `WebAppError` or a serialized result shape intentionally.
+3. Prefer explicit domain error unions with `TaggedError`; do not return strings or raw thrown exceptions from expected domain code.
 4. Keep user-facing messages in pt-BR.
-5. Add or update focused tests in the owning package. For `modules/cases`, prefer `bun --filter @modules/cases test` and `bun --filter @modules/cases check-types`.
+5. Add or update focused tests in the owning package. Prefer Nx targets such as `bun nx run @core/dbos:typecheck` and `bun nx run @modules/classification:typecheck`.
 
 ## Core Pattern
 
@@ -131,15 +130,13 @@ Use `matchError` when translating error unions exhaustively:
 
 ```ts
 import { matchError } from "better-result";
-import { ORPCError } from "@orpc/server";
+import { WebAppError } from "@core/logging/errors";
 
 const toRpcError = (error: CaseSearchError) =>
   matchError(error, {
-    CaseValidationError: (e) => new ORPCError("BAD_REQUEST", { message: e.message }),
+    CaseValidationError: (e) => WebAppError.badRequest(e.message),
     CaseAdapterError: (e) =>
-      new ORPCError(e.status === "blocked" ? "FORBIDDEN" : "INTERNAL_SERVER_ERROR", {
-        message: e.message,
-      }),
+      e.status === "blocked" ? WebAppError.forbidden(e.message) : WebAppError.internal(e.message),
   });
 ```
 
@@ -148,7 +145,7 @@ const toRpcError = (error: CaseSearchError) =>
 Do not leak internal `Err` objects by accident. Pick one explicit boundary style per procedure:
 
 - Domain result returned intentionally: return `Result.serialize(result)` and document the client-side handling.
-- Standard RPC behavior: if `Err`, throw a mapped `ORPCError`; if `Ok`, return `value`.
+- Standard RPC behavior: if `Err`, throw a mapped `WebAppError`; if `Ok`, return `value`.
 
 ```ts
 const result = await useCase(input);
@@ -198,7 +195,7 @@ For every non-trivial Result flow, cover:
 - Each `TaggedError` variant or important error branch.
 - Short-circuit behavior in `Result.gen` or adapter loops.
 - `Result.await` async failure path.
-- Boundary translation in oRPC routers: `Err` becomes the expected `ORPCError` or serialized shape.
+- Boundary translation in oRPC routers: `Err` becomes the expected `WebAppError` or serialized shape.
 - Retry attempts and non-retryable errors when retry logic is used.
 - Serialization/deserialization round trip if a Result crosses a JSON/cache boundary.
 

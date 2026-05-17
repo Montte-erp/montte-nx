@@ -21,10 +21,7 @@ import {
    requireResolvedCategoryParent,
    withCategoryDescendants,
 } from "@modules/classification/router/middlewares";
-import {
-   enqueueDeriveKeywordsWorkflow,
-   isClassificationWorkflowQueueFailure,
-} from "@modules/classification/workflows/enqueue";
+import { enqueueCategoryKeywordsDerivation } from "@modules/classification/router/enqueue-keywords";
 
 const idSchema = z.object({ id: z.string().uuid() });
 const subcategoryInputSchema = categorySchema.pick({ name: true });
@@ -108,22 +105,7 @@ export const create = protectedProcedure
       );
       if (result.isErr()) throw result.error;
 
-      const queued = await enqueueDeriveKeywordsWorkflow(
-         context.workflowClient,
-         {
-            categoryId: result.value.id,
-            teamId: context.teamId,
-            organizationId: context.organizationId,
-            userId: context.userId,
-            name: result.value.name,
-            description: result.value.description,
-         },
-      );
-      if (isClassificationWorkflowQueueFailure(queued)) {
-         throw WebAppError.internal(
-            "Falha ao enfileirar derivação de palavras-chave.",
-         );
-      }
+      await enqueueCategoryKeywordsDerivation(context, result.value);
       return result.value;
    });
 
@@ -425,22 +407,7 @@ export const update = protectedProcedure
       if (result.isErr()) throw result.error;
 
       if (data.keywords === undefined) {
-         const queued = await enqueueDeriveKeywordsWorkflow(
-            context.workflowClient,
-            {
-               categoryId: result.value.id,
-               teamId: context.teamId,
-               organizationId: context.organizationId,
-               userId: context.userId,
-               name: result.value.name,
-               description: result.value.description,
-            },
-         );
-         if (isClassificationWorkflowQueueFailure(queued)) {
-            throw WebAppError.internal(
-               "Falha ao enfileirar derivação de palavras-chave.",
-            );
-         }
+         await enqueueCategoryKeywordsDerivation(context, result.value);
       }
       return result.value;
    });
@@ -449,22 +416,7 @@ export const regenerateKeywords = protectedProcedure
    .input(idSchema)
    .use(requireCategory, (input) => input.id)
    .handler(async ({ context }) => {
-      const queued = await enqueueDeriveKeywordsWorkflow(
-         context.workflowClient,
-         {
-            categoryId: context.category.id,
-            teamId: context.teamId,
-            organizationId: context.organizationId,
-            userId: context.userId,
-            name: context.category.name,
-            description: context.category.description,
-         },
-      );
-      if (isClassificationWorkflowQueueFailure(queued)) {
-         throw WebAppError.internal(
-            "Falha ao enfileirar derivação de palavras-chave.",
-         );
-      }
+      await enqueueCategoryKeywordsDerivation(context, context.category);
       return { success: true };
    });
 

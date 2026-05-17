@@ -65,9 +65,11 @@ export function getPostHogOtlpLogsEndpoint(posthogHost: string): string {
 
 export function configurePostHogOtlpHeaders(posthogKey: string): void {
    const authorization = `Authorization=Bearer%20${posthogKey}`;
+   const existing = process.env.OTEL_EXPORTER_OTLP_LOGS_HEADERS;
 
-   process.env.OTEL_EXPORTER_OTLP_HEADERS = authorization;
-   process.env.OTEL_EXPORTER_OTLP_LOGS_HEADERS = authorization;
+   process.env.OTEL_EXPORTER_OTLP_LOGS_HEADERS = existing
+      ? `${existing},${authorization}`
+      : authorization;
 }
 
 export interface OtelConfig {

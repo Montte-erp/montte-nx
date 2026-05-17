@@ -37,7 +37,6 @@
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",
       "@tanstack/store": "catalog:tanstack",
-      "better-result": "catalog:validation",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "drizzle-zod": "catalog:database",

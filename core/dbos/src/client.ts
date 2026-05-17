@@ -7,7 +7,7 @@ export function createWorkflowClient(
    return DBOSClient.create({ systemDatabaseUrl });
 }
 
-export type WorkflowClient = DBOSClient;
+export type WorkflowClient = Pick<DBOSClient, "enqueue" | "registerQueue">;
 
 export type DbosQueueOptions = {
    concurrency?: number;
@@ -38,7 +38,6 @@ export type EnqueueDbosWorkflowInput = {
    client?: WorkflowClient;
    systemDatabaseUrl?: string;
    queueName: string;
-   queueOptions?: DbosQueueOptions;
    workflow: Parameters<WorkflowClient["enqueue"]>[0];
    payload: unknown;
 };
@@ -62,12 +61,17 @@ export async function getDbosClient(
 
    return Result.tryPromise({
       try: () => promise,
-      catch: (cause) =>
-         new DbosQueueError({
+      catch: (cause) => {
+         clientState.promise = undefined;
+         if (clientState.systemDatabaseUrl === systemDatabaseUrl) {
+            clientState.systemDatabaseUrl = undefined;
+         }
+         return new DbosQueueError({
             operation: "create_client",
             message: "Não foi possível criar o cliente DBOS.",
             cause,
-         }),
+         });
+      },
    });
 }
 
@@ -75,7 +79,6 @@ export async function ensureDbosQueue(input: {
    client?: WorkflowClient;
    systemDatabaseUrl?: string;
    queueName: string;
-   queueOptions?: DbosQueueOptions;
 }): Promise<ResultType<WorkflowClient, DbosQueueError>> {
    let client: ResultType<WorkflowClient, DbosQueueError>;
    if (input.client) {
@@ -93,12 +96,10 @@ export async function ensureDbosQueue(input: {
    }
    if (Result.isError(client)) return client;
 
-   const onConflict = input.queueOptions?.onConflict ?? "always_update";
    const registered = await Result.tryPromise({
       try: () =>
          client.value.registerQueue(input.queueName, {
-            ...input.queueOptions,
-            onConflict,
+            onConflict: "never_update",
          }),
       catch: (cause) =>
          new DbosQueueError({
@@ -120,7 +121,6 @@ export async function enqueueDbosWorkflow(
       client: input.client,
       systemDatabaseUrl: input.systemDatabaseUrl,
       queueName: input.queueName,
-      queueOptions: input.queueOptions,
    });
    if (Result.isError(client)) return Result.err(client.error);
 
@@ -142,4 +142,15 @@ export async function enqueueDbosWorkflow(
    if (Result.isError(handle)) return Result.err(handle.error);
 
    return Result.ok({ workflowId: handle.value.workflowID });
+}
+
+export function matchDbosQueueResult<T, R>(
+   result: ResultType<T, DbosQueueError>,
+   branches: {
+      ok: (value: T) => R;
+      err: (error: DbosQueueError) => R;
+   },
+): R {
+   if (Result.isError(result)) return branches.err(result.error);
+   return branches.ok(result.value);
 }

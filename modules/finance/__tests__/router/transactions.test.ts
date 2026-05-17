@@ -29,6 +29,7 @@ const { enqueueClassifyTransactionsBatchWorkflowSpy } = vi.hoisted(() => ({
 vi.mock("@modules/classification/workflows/enqueue", () => ({
    enqueueClassifyTransactionsBatchWorkflow:
       enqueueClassifyTransactionsBatchWorkflowSpy,
+   isClassificationWorkflowQueueFailure: vi.fn(() => false),
 }));
 
 vi.mock("@core/orpc/server", async () =>
