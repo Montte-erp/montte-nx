@@ -19,6 +19,7 @@
       "@core/database": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
+      "@core/utils": "workspace:*",
       "@f-o-t/money": "catalog:fot",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",

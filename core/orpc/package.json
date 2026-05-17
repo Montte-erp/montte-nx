@@ -36,7 +36,6 @@
       "@core/pg-boss": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
-      "@core/utils": "workspace:*",
       "@orpc/contract": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
       "better-result": "catalog:validation",

@@ -8,41 +8,13 @@
    ],
    "type": "module",
    "exports": {
-      "./array": {
-         "types": "./dist/array.d.ts",
-         "default": "./dist/array.js"
-      },
-      "./date": {
-         "types": "./dist/date.d.ts",
-         "default": "./dist/date.js"
-      },
-      "./diff": {
-         "types": "./dist/diff.d.ts",
-         "default": "./dist/diff.js"
-      },
-      "./file": {
-         "types": "./dist/file.d.ts",
-         "default": "./dist/file.js"
+      "./dates": {
+         "types": "./dist/dates.d.ts",
+         "default": "./dist/dates.js"
       },
       "./hash": {
          "types": "./dist/hash.d.ts",
          "default": "./dist/hash.js"
-      },
-      "./number": {
-         "types": "./dist/numbers.d.ts",
-         "default": "./dist/numbers.js"
-      },
-      "./object": {
-         "types": "./dist/object.d.ts",
-         "default": "./dist/object.js"
-      },
-      "./permissions": {
-         "types": "./dist/permissions.d.ts",
-         "default": "./dist/permissions.js"
-      },
-      "./sanitization": {
-         "types": "./dist/sanitization.d.ts",
-         "default": "./dist/sanitization.js"
       },
       "./text": {
          "types": "./dist/text.d.ts",
@@ -58,8 +30,6 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@core/logging": "workspace:*",
-      "better-result": "catalog:validation",
       "dayjs": "catalog:ui"
    },
    "devDependencies": {

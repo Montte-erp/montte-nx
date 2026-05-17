@@ -3,7 +3,7 @@ import {
    AvatarFallback,
    AvatarImage,
 } from "@packages/ui/components/avatar";
-import { formatDate } from "@core/utils/date";
+import { formatDate } from "@/utils/date";
 import { Button } from "@packages/ui/components/button";
 import {
    Dropzone,

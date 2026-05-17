@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { err, ok, type Result } from "neverthrow";
 import type { TransactionRecurrenceFrequency } from "@core/database/schemas/transactions";
+import { isIsoDateString } from "@core/utils/dates";
 
 export type RecurrenceInput = {
    date: string;
@@ -13,14 +14,6 @@ export type RecurrenceOccurrence = {
    date: string;
    dueDate: string | null;
 };
-
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-function isValidIsoDate(value: string) {
-   if (!ISO_DATE_REGEX.test(value)) return false;
-   const parsed = dayjs(value);
-   return parsed.isValid() && parsed.format("YYYY-MM-DD") === value;
-}
 
 export function addRecurrencePeriod(
    date: string,
@@ -41,10 +34,10 @@ export function addRecurrencePeriod(
 export function buildRecurrenceOccurrences(
    input: RecurrenceInput,
 ): Result<RecurrenceOccurrence[], string> {
-   if (!isValidIsoDate(input.date)) {
+   if (!isIsoDateString(input.date)) {
       return err("Data deve estar no formato YYYY-MM-DD.");
    }
-   if (input.dueDate && !isValidIsoDate(input.dueDate)) {
+   if (input.dueDate && !isIsoDateString(input.dueDate)) {
       return err("Vencimento deve estar no formato YYYY-MM-DD.");
    }
 

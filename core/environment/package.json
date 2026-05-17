@@ -30,7 +30,6 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@core/utils": "workspace:*",
       "@t3-oss/env-core": "^0.13.8",
       "zod": "catalog:validation"
    },
