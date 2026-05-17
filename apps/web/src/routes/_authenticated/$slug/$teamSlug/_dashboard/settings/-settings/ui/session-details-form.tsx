@@ -15,8 +15,8 @@ import {
    ItemTitle,
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
-import { formatDate } from "@core/utils/date";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
@@ -92,13 +92,13 @@ export function SessionDetailsForm({
             isCurrent: false,
             showIcon: false,
             title: "Criado em",
-            value: formatDate(session.createdAt),
+            value: dayjs(session.createdAt).format("DD/MM/YYYY"),
          },
          {
             isCurrent: false,
             showIcon: false,
             title: "Último acesso",
-            value: formatDate(session.updatedAt),
+            value: dayjs(session.updatedAt).format("DD/MM/YYYY"),
          },
       ];
    }, [session, currentSessionId]);

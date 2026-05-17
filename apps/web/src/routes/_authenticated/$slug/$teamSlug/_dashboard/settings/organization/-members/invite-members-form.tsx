@@ -14,7 +14,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Spinner } from "@packages/ui/components/spinner";
 import { Textarea } from "@packages/ui/components/textarea";
-import { getInitials } from "@core/utils/text";
+import { getInitials } from "@/lib/initials";
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "@packages/ui/hooks/use-toast";

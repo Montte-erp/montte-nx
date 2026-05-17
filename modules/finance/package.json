@@ -20,6 +20,7 @@
       "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
       "@core/redis": "workspace:*",
+      "@core/utils": "workspace:*",
       "@f-o-t/condition-evaluator": "catalog:fot",
       "@f-o-t/money": "catalog:fot",
       "@modules/classification": "workspace:*",

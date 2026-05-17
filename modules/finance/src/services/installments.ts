@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { err, ok, type Result } from "neverthrow";
+import { isIsoDateString } from "@core/utils/dates";
 
 export type InstallmentInput = {
    amount: string;
@@ -17,7 +18,6 @@ export type InstallmentPreview = {
 };
 
 const DECIMAL_REGEX = /^(\d+)(?:\.(\d+))?$/;
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function parseMoneyToCents(value: string): Result<number, string> {
    const normalized = value.trim();
@@ -46,22 +46,16 @@ function formatCents(cents: number) {
    return `${major}.${minor}`;
 }
 
-function isValidIsoDate(value: string) {
-   if (!ISO_DATE_REGEX.test(value)) return false;
-   const parsed = dayjs(value);
-   return parsed.isValid() && parsed.format("YYYY-MM-DD") === value;
-}
-
 export function buildInstallmentPreview(
    input: InstallmentInput,
 ): Result<InstallmentPreview[], string> {
    if (!Number.isInteger(input.count) || input.count < 2) {
       return err("Número de parcelas deve ser maior que 1.");
    }
-   if (!isValidIsoDate(input.date)) {
+   if (!isIsoDateString(input.date)) {
       return err("Data deve estar no formato YYYY-MM-DD.");
    }
-   if (input.dueDate && !isValidIsoDate(input.dueDate)) {
+   if (input.dueDate && !isIsoDateString(input.dueDate)) {
       return err("Vencimento deve estar no formato YYYY-MM-DD.");
    }
 

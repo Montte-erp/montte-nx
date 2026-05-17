@@ -14,6 +14,7 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
+         "@core/utils/*": ["../../core/utils/src/*"],
          "@modules/classification/*": ["../classification/src/*"]
       }
    },
@@ -27,6 +28,9 @@
       },
       {
          "path": "../../core/database"
+      },
+      {
+         "path": "../../core/utils"
       }
    ]
 }

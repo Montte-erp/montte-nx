@@ -21,7 +21,6 @@
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
          "@core/sse": ["../../core/sse/src/sse.ts"],
-         "@core/utils/*": ["../../core/utils/src/*"],
          "@packages/ui/*": ["../../packages/ui/src/*"],
          "@modules/account/*": ["../../modules/account/src/*"],
          "@modules/agents/*": ["../../modules/agents/src/*"],

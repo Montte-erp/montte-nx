@@ -15,7 +15,7 @@ import {
    EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
-import { getInitials } from "@core/utils/text";
+import { getInitials } from "@/lib/initials";
 import { useSuspenseQueries, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
