@@ -12,9 +12,9 @@
          "types": "./dist/models.d.ts",
          "default": "./dist/models.js"
       },
-      "./middleware": {
-         "types": "./dist/middleware.d.ts",
-         "default": "./dist/middleware.js"
+      "./otel": {
+         "types": "./dist/otel.d.ts",
+         "default": "./dist/otel.js"
       }
    },
    "scripts": {

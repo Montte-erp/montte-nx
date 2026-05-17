@@ -30,6 +30,11 @@ vi.mock("@orpc/otel", () => {
    return { ORPCInstrumentation: MockORPCInstrumentation };
 });
 
+vi.mock("@posthog/ai/otel", () => {
+   class MockPostHogSpanProcessor {}
+   return { PostHogSpanProcessor: MockPostHogSpanProcessor };
+});
+
 describe("initOtel / shutdownOtel", () => {
    beforeEach(async () => {
       vi.clearAllMocks();

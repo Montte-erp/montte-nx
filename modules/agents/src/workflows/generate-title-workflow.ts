@@ -1,13 +1,15 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { chat } from "@tanstack/ai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import { asc, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { flashModel } from "@core/ai/models";
-import { createAiObservabilityMiddleware } from "@core/ai/middleware";
+import { aiTraceAttributes } from "@core/ai/otel";
 import { WorkflowError } from "@core/dbos/errors";
 import { messages } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
+import { getAiTracer } from "@core/logging/otel";
 import { AGENT_PROMPTS, AGENT_QUEUES } from "../constants";
 import { agentsSseEvents } from "../sse";
 import {
@@ -94,18 +96,23 @@ async function generateThreadTitleFn(input: GenerateTitleInput) {
                stream: false,
                conversationId: input.threadId,
                middleware: [
-                  createAiObservabilityMiddleware({
-                     distinctId: input.teamId,
-                     organizationId: input.organizationId,
-                     teamId: input.teamId,
-                     conversationId: input.threadId,
-                     promptName: name,
-                     promptVersion: version,
-                     customProperties: {
-                        agent_role: "workflow",
-                        agent_workflow: "generate-title",
-                        agent_thread_id: input.threadId,
-                     },
+                  otelMiddleware({
+                     tracer: getAiTracer(),
+                     captureContent: false,
+                     attributeEnricher: () =>
+                        aiTraceAttributes({
+                           distinctId: input.teamId,
+                           organizationId: input.organizationId,
+                           teamId: input.teamId,
+                           threadId: input.threadId,
+                           promptName: name,
+                           promptVersion: version,
+                           customProperties: {
+                              agent_role: "workflow",
+                              agent_workflow: "generate-title",
+                              agent_thread_id: input.threadId,
+                           },
+                        }),
                   }),
                ],
             });
