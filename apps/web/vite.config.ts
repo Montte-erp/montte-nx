@@ -2,7 +2,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import evlog from "evlog/nitro/v3";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
@@ -33,39 +32,7 @@ const config = defineConfig({
             autoCodeSplitting: true,
          },
       }),
-      nitro({
-         preset: "bun",
-         experimental: {
-            asyncContext: true,
-         },
-         modules: [
-            evlog({
-               env: {
-                  service: "montte-web",
-               },
-            }),
-            {
-               name: "montte-evlog",
-               setup(nitroApp) {
-                  nitroApp.options.plugins.push(
-                     new URL("./src/integrations/evlog.ts", import.meta.url)
-                        .pathname,
-                  );
-               },
-            },
-         ],
-         rollupConfig: {
-            external: (id: string) =>
-               id === "@dbos-inc/dbos-sdk" ||
-               id.startsWith("@dbos-inc/dbos-sdk/") ||
-               id === "katex" ||
-               id.startsWith("katex/") ||
-               id === "mermaid" ||
-               id.startsWith("mermaid/") ||
-               id === "streamdown" ||
-               id.startsWith("streamdown/"),
-         },
-      }),
+      nitro(),
       viteReact(),
       tailwindcss(),
       devtools(),
