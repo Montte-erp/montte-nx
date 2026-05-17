@@ -5,7 +5,7 @@ import { fromPromise } from "neverthrow";
 import { proModel } from "@core/ai/models";
 import { WebAppError } from "@core/logging/errors";
 import { aiTraceAttributes } from "@core/ai/otel";
-import { getAiTracer } from "@core/logging/otel";
+import { getAiTracer } from "@core/logging";
 import type { Prompts } from "@core/posthog/server";
 import { AGENT_PROMPTS } from "@modules/agents/constants";
 import { SKILLS } from "@modules/agents/skills";

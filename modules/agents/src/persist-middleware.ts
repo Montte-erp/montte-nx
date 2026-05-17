@@ -11,7 +11,7 @@ import { threads } from "@core/database/schemas/threads";
 import type { DatabaseInstance } from "@core/database/client";
 import type { Redis } from "@core/redis/connection";
 import type { DBOSClient } from "@dbos-inc/dbos-sdk";
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { agentsSseEvents } from "@modules/agents/sse";
 import { enqueueGenerateThreadTitle } from "@modules/agents/workflows/generate-title-workflow";
 import { enqueueRefreshSuggestions } from "@modules/agents/workflows/refresh-suggestions-workflow";

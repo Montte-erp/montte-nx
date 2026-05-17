@@ -1,6 +1,6 @@
 import { handleRequest, route, type Router } from "@better-upload/server";
 import { env } from "@core/environment/web";
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { createFileRoute } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
 import { err, fromPromise, ok } from "neverthrow";

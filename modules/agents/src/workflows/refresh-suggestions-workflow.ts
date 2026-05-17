@@ -11,7 +11,7 @@ import { aiTraceAttributes } from "@core/ai/otel";
 import { WorkflowError } from "@core/dbos/errors";
 import { messages } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
-import { getAiTracer } from "@core/logging/otel";
+import { getAiTracer } from "@core/logging";
 import { AGENT_PROMPTS, AGENT_QUEUES } from "../constants";
 import { agentsSseEvents } from "../sse";
 import {

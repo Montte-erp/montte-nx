@@ -20,7 +20,7 @@ import {
 } from "@core/database/schemas/bank-accounts";
 import { transactions } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/finance/router/middlewares";
 import {

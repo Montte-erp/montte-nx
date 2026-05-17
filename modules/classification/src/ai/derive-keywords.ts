@@ -8,7 +8,7 @@ import type { Prompts } from "@core/posthog/server";
 import { CLASSIFICATION_PROMPTS } from "@modules/classification/constants";
 import { proModel } from "@core/ai/models";
 import { aiTraceAttributes, type AiTraceContext } from "@core/ai/otel";
-import { getAiTracer } from "@core/logging/otel";
+import { getAiTracer } from "@core/logging";
 
 const KEYWORDS_MIN = 5;
 const KEYWORDS_MAX = 15;

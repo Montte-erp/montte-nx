@@ -1,7 +1,7 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { env } from "@core/environment/worker";
-import { initLogger, getLogger } from "@core/logging/root";
-import { initOtel, shutdownOtel } from "@core/logging/otel";
+import { initLogger, getLogger } from "@core/logging";
+import { initOtel, shutdownOtel } from "@core/logging";
 import { createDb } from "@core/database/client";
 import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";

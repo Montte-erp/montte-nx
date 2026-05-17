@@ -4,7 +4,7 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { inboxItems } from "@core/database/schemas/inbox";
 import { WebAppError } from "@core/logging/errors";
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { protectedProcedure } from "@core/orpc/server";
 import { sseEnvelopeSchema, type SseScope, subscribeSse } from "@core/sse";
 import {

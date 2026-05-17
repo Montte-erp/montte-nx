@@ -9,8 +9,9 @@ import {
    HeadContent,
    Scripts,
 } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
+import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { evlogErrorHandler } from "evlog/nitro/v3";
 import { GlobalAlertDialog } from "@/hooks/use-alert-dialog";
 import { GlobalCommandDialog } from "@/hooks/use-command-dialog";
 import { GlobalCredenza } from "@/hooks/use-credenza";
@@ -36,6 +37,9 @@ const getThemeFromCookie = createServerFn({ method: "GET" }).handler(() => {
 });
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+   server: {
+      middleware: [createMiddleware().server(evlogErrorHandler)],
+   },
    staleTime: Infinity,
    loader: async ({ context }) => {
       await context.queryClient

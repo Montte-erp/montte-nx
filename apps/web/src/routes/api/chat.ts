@@ -9,9 +9,10 @@ import {
    messagePageContextSchema,
    messages,
 } from "@core/database/schemas/messages";
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { buildWebContext } from "@core/orpc/server";
 import { createAgentChat } from "@modules/agents/agent";
+import { getRequestLog } from "@/integrations/evlog";
 
 const logger = getLogger().child({ module: "api.chat" });
 
@@ -34,7 +35,7 @@ const chatSettingsSchema = z
    .default(() => defaultChatSettings);
 
 async function handlePost({ request }: { request: Request }) {
-   const ctx = await buildWebContext(request);
+   const ctx = await buildWebContext(request, getRequestLog());
    if (!ctx) return new Response("Unauthorized", { status: 401 });
 
    const json = await fromPromise(request.json(), () => null);

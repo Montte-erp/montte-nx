@@ -24,7 +24,7 @@ const {
    };
 });
 
-vi.mock("@core/logging/root", () => ({
+vi.mock("@core/logging", () => ({
    getLogger: () => ({
       child: () => ({
          error: loggerErrorMock,

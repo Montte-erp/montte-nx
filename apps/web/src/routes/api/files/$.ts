@@ -1,5 +1,5 @@
 import { getObjectStream } from "@better-upload/server/helpers";
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import { createFileRoute } from "@tanstack/react-router";
 import { fromPromise } from "neverthrow";
 import { s3Client } from "@/integrations/singletons";

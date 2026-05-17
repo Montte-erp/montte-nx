@@ -48,8 +48,8 @@
       "@opentelemetry/api-logs": "catalog:telemetry",
       "@orpc/contract": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
-      "dayjs": "catalog:ui",
-      "neverthrow": "catalog:validation"
+      "better-result": "catalog:validation",
+      "dayjs": "catalog:ui"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",

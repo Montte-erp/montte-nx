@@ -1,4 +1,4 @@
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 
 const logger = getLogger().child({ module: "utils:sanitize" });
 const SENSITIVE_KEYS = [

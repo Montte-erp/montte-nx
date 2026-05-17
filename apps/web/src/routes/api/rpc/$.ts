@@ -4,22 +4,12 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { BatchHandlerPlugin } from "@orpc/server/plugins";
 import type { ORPCContext } from "@core/orpc/server";
 import { createFileRoute } from "@tanstack/react-router";
-import { useRequest } from "nitro/context";
+import { getRequestLog } from "@/integrations/evlog";
 import router from "@/integrations/orpc/router";
-import { isRequestLogger } from "@/integrations/evlog/request-logger";
 
 const handler = new RPCHandler(router, {
    plugins: [new BatchHandlerPlugin()],
 });
-
-function getRequestLog() {
-   try {
-      const log = useRequest().context?.log;
-      return isRequestLogger(log) ? log : undefined;
-   } catch {
-      return undefined;
-   }
-}
 
 async function handle({ request }: { request: Request }) {
    const context: ORPCContext = {

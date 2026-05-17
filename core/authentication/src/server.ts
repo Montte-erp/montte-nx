@@ -3,7 +3,7 @@ import { apiKey } from "@better-auth/api-key";
 import { i18n } from "@better-auth/i18n";
 import * as schema from "@core/database/schema";
 import { getDomain, isProduction } from "@core/environment/helpers";
-import { getLogger } from "@core/logging/root";
+import { getLogger } from "@core/logging";
 import {
    sendEmailOTP,
    sendMagicLinkEmail,

@@ -20,7 +20,7 @@ Pino-based structured logging with OpenTelemetry integration.
 
 ```typescript
 import { createSafeLogger } from "@core/logging";
-import type { Logger } from "@core/logging/types";
+import type { Logger } from "@core/logging";
 
 const logger = createSafeLogger("my-module");
 logger.info("something happened");
