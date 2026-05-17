@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { orpc } from "@/integrations/orpc/client";
 

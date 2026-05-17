@@ -9,7 +9,7 @@ import {
 } from "better-auth/client/plugins";
 import { createAuthClient as createBetterAuthClient } from "better-auth/react";
 import type { AuthInstance } from "@core/authentication/server";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { invalidateAllQueries } from "./query-bridge";
 
 export const authClient = createBetterAuthClient({

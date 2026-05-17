@@ -10,7 +10,7 @@ import {
 } from "@packages/ui/components/item";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { DefaultHeader } from "../../-layout/default-header";

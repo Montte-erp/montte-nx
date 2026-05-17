@@ -13,7 +13,7 @@ import { Spinner } from "@packages/ui/components/spinner";
 import { cn } from "@packages/ui/lib/utils";
 import { createStore, useStore, shallow } from "@tanstack/react-store";
 import { useTransition } from "react";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 
 interface AlertDialogState {
    isOpen: boolean;

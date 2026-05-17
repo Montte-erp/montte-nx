@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { Copy, KeyRound } from "lucide-react";
 import { Button } from "@packages/ui/components/button";
