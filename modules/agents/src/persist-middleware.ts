@@ -72,21 +72,16 @@ export function createPersistMiddleware(
          const messageCount = processor.getMessages().length;
 
          await deps.db.transaction(async (tx) => {
-            const rows: { id: string }[] = [];
             for (const msg of newAssistantMessages) {
                const metadata: MessageMetadata = messageMetadataSchema.parse({
                   ...(traceId && { traceId }),
                });
-               const [row] = await tx
-                  .insert(messages)
-                  .values({
-                     threadId: deps.threadId,
-                     role: "assistant",
-                     parts: msg.parts,
-                     metadata,
-                  })
-                  .returning({ id: messages.id });
-               if (row) rows.push(row);
+               await tx.insert(messages).values({
+                  threadId: deps.threadId,
+                  role: "assistant",
+                  parts: msg.parts,
+                  metadata,
+               });
             }
             await tx
                .update(threads)
@@ -120,8 +115,6 @@ export function createPersistMiddleware(
                   }
                }
             }
-
-            return rows;
          });
 
          if (

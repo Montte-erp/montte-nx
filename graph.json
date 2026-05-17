@@ -4517,143 +4517,6 @@
                "implicitDependencies": []
             }
          },
-         "@core/sse": {
-            "name": "@core/sse",
-            "type": "lib",
-            "data": {
-               "root": "core/sse",
-               "targets": {
-                  "typecheck": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "typecheck"
-                     },
-                     "metadata": {
-                        "technologies": ["typescript"],
-                        "description": "Runs type-checking for the project.",
-                        "help": {
-                           "command": "bun tsc --build --help",
-                           "example": {
-                              "args": ["--force"]
-                           }
-                        },
-                        "scriptContent": "tsgo",
-                        "runCommand": "bun run typecheck -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true,
-                     "cache": true,
-                     "dependsOn": ["^typecheck"],
-                     "inputs": ["default", "^default"],
-                     "outputs": ["{projectRoot}/.cache/tsbuildinfo.json"]
-                  },
-                  "build": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "build"
-                     },
-                     "metadata": {
-                        "technologies": ["typescript"],
-                        "description": "Builds the project with `tsc`.",
-                        "help": {
-                           "command": "bun tsc --build --help",
-                           "example": {
-                              "args": ["--force"]
-                           }
-                        },
-                        "scriptContent": "tsc --build",
-                        "runCommand": "bun run build -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true,
-                     "cache": true,
-                     "dependsOn": ["^build"],
-                     "inputs": ["production", "^production"],
-                     "outputs": ["{projectRoot}/dist", "{projectRoot}/.cache"]
-                  },
-                  "build-deps": {
-                     "dependsOn": ["^build"],
-                     "configurations": {},
-                     "options": {},
-                     "parallelism": true,
-                     "executor": "nx:noop"
-                  },
-                  "watch-deps": {
-                     "continuous": true,
-                     "dependsOn": ["build-deps"],
-                     "executor": "nx:run-commands",
-                     "options": {
-                        "command": "bun nx watch --projects @core/sse --includeDependentProjects -- bun nx build-deps @core/sse"
-                     },
-                     "configurations": {},
-                     "parallelism": true
-                  },
-                  "check": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "check"
-                     },
-                     "metadata": {
-                        "scriptContent": "oxlint ./src",
-                        "runCommand": "bun run check -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true,
-                     "cache": true,
-                     "inputs": ["default"]
-                  },
-                  "format": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "format"
-                     },
-                     "metadata": {
-                        "scriptContent": "oxfmt --write ./src",
-                        "runCommand": "bun run format -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true
-                  },
-                  "format:check": {
-                     "executor": "nx:run-script",
-                     "options": {
-                        "script": "format:check"
-                     },
-                     "metadata": {
-                        "scriptContent": "oxfmt --check ./src",
-                        "runCommand": "bun run format:check -- undefined"
-                     },
-                     "configurations": {},
-                     "parallelism": true
-                  }
-               },
-               "name": "@core/sse",
-               "tags": ["npm:private"],
-               "metadata": {
-                  "targetGroups": {
-                     "NPM Scripts": [
-                        "build",
-                        "check",
-                        "format",
-                        "format:check",
-                        "typecheck"
-                     ]
-                  },
-                  "js": {
-                     "packageName": "@core/sse",
-                     "packageVersion": "0.1.0",
-                     "packageExports": {
-                        ".": {
-                           "types": "./dist/sse.d.ts",
-                           "default": "./dist/sse.js"
-                        }
-                     },
-                     "isInPackageManagerWorkspaces": true
-                  }
-               },
-               "implicitDependencies": []
-            }
-         },
          "web": {
             "name": "web",
             "type": "app",
@@ -5039,11 +4902,6 @@
                "source": "@modules/classification",
                "target": "@core/redis",
                "type": "static"
-            },
-            {
-               "source": "@modules/classification",
-               "target": "@core/sse",
-               "type": "static"
             }
          ],
          "@core/authentication": [
@@ -5250,11 +5108,6 @@
                "source": "@modules/agents",
                "target": "@core/redis",
                "type": "static"
-            },
-            {
-               "source": "@modules/agents",
-               "target": "@core/sse",
-               "type": "static"
             }
          ],
          "@core/database": [
@@ -5298,11 +5151,6 @@
             {
                "source": "@modules/inbox",
                "target": "@core/orpc",
-               "type": "static"
-            },
-            {
-               "source": "@modules/inbox",
-               "target": "@core/sse",
                "type": "static"
             }
          ],
@@ -5520,18 +5368,6 @@
                "type": "static"
             }
          ],
-         "@core/sse": [
-            {
-               "source": "@core/sse",
-               "target": "@tooling/typescript",
-               "type": "static"
-            },
-            {
-               "source": "@core/sse",
-               "target": "@core/redis",
-               "type": "static"
-            }
-         ],
          "web": [
             {
                "source": "web",
@@ -5576,11 +5412,6 @@
             {
                "source": "web",
                "target": "@core/redis",
-               "type": "static"
-            },
-            {
-               "source": "web",
-               "target": "@core/sse",
                "type": "static"
             },
             {
