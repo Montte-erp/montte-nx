@@ -59,6 +59,7 @@
    },
    "dependencies": {
       "@core/logging": "workspace:*",
+      "better-result": "catalog:validation",
       "dayjs": "catalog:ui"
    },
    "devDependencies": {

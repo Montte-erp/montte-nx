@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+import { Result } from "better-result";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -15,18 +16,20 @@ export function getCurrentDate(tz?: string): { date: string } {
 export type DateLocale = "pt-BR" | "en-US";
 
 export function formatDate(
-   date: Date,
+   date: Date | string,
    format: string = "DD/MM/YYYY",
    options?: { locale?: DateLocale; timezone?: string; useUTC?: boolean },
 ): string {
-   if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-      throw new Error("Invalid date provided");
-   }
+   const parsedDate = dayjs(date);
+   const dateResult = parsedDate.isValid()
+      ? Result.ok(parsedDate)
+      : Result.err("-");
+   if (Result.isError(dateResult)) return dateResult.error;
 
    const useUTC = options?.useUTC ?? true;
    const tz = options?.timezone;
 
-   let d = dayjs(date);
+   let d = dateResult.value;
    if (useUTC) {
       d = d.utc();
    } else if (tz) {
@@ -37,11 +40,11 @@ export function formatDate(
    const monthLong = new Intl.DateTimeFormat(locale, {
       month: "long",
       timeZone: useUTC ? "UTC" : tz,
-   }).format(date);
+   }).format(parsedDate.toDate());
    const monthShort = new Intl.DateTimeFormat(locale, {
       month: "short",
       timeZone: useUTC ? "UTC" : tz,
-   }).format(date);
+   }).format(parsedDate.toDate());
 
    return format
       .replace(/YYYY/g, d.format("YYYY"))

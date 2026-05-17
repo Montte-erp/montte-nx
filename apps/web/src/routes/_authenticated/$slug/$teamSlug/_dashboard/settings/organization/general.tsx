@@ -3,12 +3,19 @@ import {
    AvatarFallback,
    AvatarImage,
 } from "@packages/ui/components/avatar";
+import { formatDate } from "@core/utils/date";
 import { Button } from "@packages/ui/components/button";
 import {
    Dropzone,
    DropzoneContent,
    DropzoneEmptyState,
 } from "@packages/ui/components/dropzone";
+import {
+   Field,
+   FieldError,
+   FieldGroup,
+   FieldLabel,
+} from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import {
    Item,
@@ -20,6 +27,7 @@ import {
 import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
 import { useUploadImage } from "@/hooks/use-upload-image";
+import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useClipboard } from "foxact/use-clipboard";
@@ -32,9 +40,10 @@ import {
    Loader2,
    Users,
 } from "lucide-react";
-import { Suspense, useState, useTransition } from "react";
+import { Suspense } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "sonner";
+import { z } from "zod";
 import { useFileUpload } from "@/features/file-upload/lib/use-file-upload";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
@@ -49,17 +58,11 @@ export const Route = createFileRoute(
    component: OrganizationGeneralPage,
 });
 
-function formatDate(date: Date | string | null): string {
-   if (!date) return "-";
-   const d = new Date(date);
-   return d.toLocaleDateString("pt-BR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-   });
-}
-
 // Display Name Section
+
+const organizationNameSchema = z.object({
+   name: z.string().trim().min(1, "Nome é obrigatório"),
+});
 
 function DisplayNameSection({
    organizationId,
@@ -68,25 +71,28 @@ function DisplayNameSection({
    organizationId: string;
    currentName: string;
 }) {
-   const [name, setName] = useState(currentName);
-   const [isPending, startTransition] = useTransition();
-
-   const hasChanged = name.trim() !== currentName && name.trim().length > 0;
-
-   function handleRename() {
-      if (!hasChanged) return;
-      startTransition(async () => {
-         const { error } = await authClient.organization.update({
-            data: { name },
-            organizationId,
-         });
-         if (error) {
-            toast.error("Erro ao renomear organização");
-            return;
-         }
-         toast.success("Organização renomeada com sucesso!");
-      });
-   }
+   const form = useForm({
+      defaultValues: { name: currentName },
+      onSubmit: async ({ value, formApi }) => {
+         const name = value.name.trim();
+         await authClient.organization.update(
+            {
+               data: { name },
+               organizationId,
+            },
+            {
+               onError: ({ error }) => {
+                  toast.error(error.message ?? "Erro ao renomear organização");
+               },
+               onSuccess: () => {
+                  toast.success("Organização renomeada com sucesso!");
+                  formApi.reset({ name });
+               },
+            },
+         );
+      },
+      validators: { onBlur: organizationNameSchema },
+   });
 
    return (
       <section className="space-y-3">
@@ -96,17 +102,62 @@ function DisplayNameSection({
                O nome público da sua organização. Visível para todos os membros.
             </p>
          </div>
-         <div className="max-w-md space-y-3">
-            <Input
-               onChange={(e) => setName(e.target.value)}
-               placeholder="Nome da organização"
-               value={name}
-            />
-            <Button disabled={!hasChanged || isPending} onClick={handleRename}>
-               {isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
-               Renomear organização
-            </Button>
-         </div>
+         <form
+            className="flex max-w-md flex-col gap-4"
+            onSubmit={(event) => {
+               event.preventDefault();
+               event.stopPropagation();
+               form.handleSubmit();
+            }}
+         >
+            <FieldGroup>
+               <form.Field
+                  name="name"
+                  children={(field) => {
+                     const isInvalid =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
+                     return (
+                        <Field data-invalid={isInvalid}>
+                           <FieldLabel htmlFor={field.name}>Nome</FieldLabel>
+                           <Input
+                              aria-invalid={isInvalid}
+                              id={field.name}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(event) =>
+                                 field.handleChange(event.target.value)
+                              }
+                              placeholder="Nome da organização"
+                              value={field.state.value}
+                           />
+                           {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                           )}
+                        </Field>
+                     );
+                  }}
+               />
+            </FieldGroup>
+            <form.Subscribe
+               selector={(state) => ({
+                  canSubmit: state.canSubmit,
+                  isDirty: state.isDirty,
+                  isSubmitting: state.isSubmitting,
+               })}
+            >
+               {({ canSubmit, isDirty, isSubmitting }) => (
+                  <Button disabled={!isDirty || !canSubmit} type="submit">
+                     <span className="flex items-center gap-2">
+                        {isSubmitting && (
+                           <Loader2 className="size-4 animate-spin" />
+                        )}
+                        Renomear organização
+                     </span>
+                  </Button>
+               )}
+            </form.Subscribe>
+         </form>
       </section>
    );
 }
@@ -230,9 +281,10 @@ function OrganizationDetailsSection({
 }: {
    slug: string;
    memberCount: number;
-   createdAt: Date | string | null;
+   createdAt: Date | string;
 }) {
    const { copied, copy } = useClipboard({ timeout: 2000 });
+   const createdAtLabel = formatDate(createdAt, "DD de MMMM de YYYY");
 
    const handleCopySlug = () => {
       copy(slug);
@@ -292,7 +344,7 @@ function OrganizationDetailsSection({
                </ItemMedia>
                <ItemContent>
                   <ItemTitle>Criada em</ItemTitle>
-                  <ItemDescription>{formatDate(createdAt)}</ItemDescription>
+                  <ItemDescription>{createdAtLabel}</ItemDescription>
                </ItemContent>
             </Item>
          </div>

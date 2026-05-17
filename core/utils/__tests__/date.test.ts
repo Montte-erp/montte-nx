@@ -27,13 +27,17 @@ describe("date utilities", () => {
       it("should format date with default format using UTC", () => {
          const date = new Date("2024-01-15T12:00:00Z");
          const result = formatDate(date);
-         expect(typeof result).toBe("string");
          expect(result).toMatch(/\d{2}\/\d{2}\/\d{4}/);
       });
 
       it("should format date with custom format using UTC by default", () => {
          const date = new Date("2024-01-15T00:00:00Z");
          const result = formatDate(date, "YYYY-MM-DD");
+         expect(result).toBe("2024-01-15");
+      });
+
+      it("should accept string dates", () => {
+         const result = formatDate("2024-01-15T00:00:00Z", "YYYY-MM-DD");
          expect(result).toBe("2024-01-15");
       });
 
@@ -52,9 +56,10 @@ describe("date utilities", () => {
          expect(result2).toBe("2024-02-20");
       });
 
-      it("should throw error for invalid date", () => {
+      it("should return fallback for invalid date", () => {
          const invalidDate = new Date("invalid");
-         expect(() => formatDate(invalidDate)).toThrow("Invalid date provided");
+         const result = formatDate(invalidDate);
+         expect(result).toBe("-");
       });
 
       it("should use UTC by default", () => {
@@ -66,7 +71,6 @@ describe("date utilities", () => {
       it("should allow disabling UTC with useUTC: false", () => {
          const date = new Date("2024-06-15T00:00:00Z");
          const result = formatDate(date, "DD/MM/YYYY", { useUTC: false });
-         expect(typeof result).toBe("string");
          expect(result).toMatch(/\d{2}\/\d{2}\/2024/);
       });
 
