@@ -497,7 +497,7 @@
         "better-result": "catalog:validation",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
-        "neverthrow": "catalog:validation",
+        "evlog": "catalog:logging",
         "pg-boss": "catalog:workers",
         "zod": "catalog:validation",
       },

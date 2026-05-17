@@ -1,180 +1,31 @@
 import "@/polyfill";
 
-import { toHttpResponse, type UIMessage } from "@tanstack/ai";
-import { and, asc, eq, gte, sql } from "drizzle-orm";
-import { fromPromise } from "neverthrow";
+import { toHttpResponse } from "@tanstack/ai";
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
-import {
-   messagePageContextSchema,
-   messages,
-} from "@core/database/schemas/messages";
-import { log } from "@core/logging";
 import { buildWebContext } from "@core/orpc/server";
-import { createAgentChat } from "@modules/agents/agent";
-import { createPersistMiddleware } from "@modules/agents/persist-middleware";
+import {
+   chatInputSchema,
+   createThreadChatStream,
+} from "@modules/agents/router/chat";
 import { getRequestLog } from "@/integrations/evlog";
 
-const bodySchema = z.object({
-   threadId: z.string().uuid(),
-   text: z.string().min(1).max(50_000).optional(),
-   replaceFromMessageId: z.string().uuid().optional(),
-   regenerate: z.boolean().optional(),
-   pageContext: messagePageContextSchema.optional(),
-});
-
-const defaultChatSettings = {
-   reasoningEffort: "high",
-} satisfies { reasoningEffort: "high" | "xhigh" };
-
-const chatSettingsSchema = z
-   .object({
-      reasoningEffort: z.enum(["high", "xhigh"]).default("high"),
-   })
-   .default(() => defaultChatSettings);
-
-async function handlePost({ request }: { request: Request }) {
-   const ctx = await buildWebContext(request, getRequestLog());
-   if (!ctx) return new Response("Unauthorized", { status: 401 });
-
-   const json = await fromPromise(request.json(), () => null);
-   if (json.isErr()) return new Response("Bad request", { status: 400 });
-   const parsed = bodySchema.safeParse(json.value);
-   if (!parsed.success) return new Response("Invalid input", { status: 400 });
-   const input = parsed.data;
-
-   const thread = await ctx.db.query.threads.findFirst({
-      where: (f, { eq: eqFn }) => eqFn(f.id, input.threadId),
-   });
-   if (
-      !thread ||
-      thread.teamId !== ctx.teamId ||
-      thread.organizationId !== ctx.organizationId ||
-      thread.userId !== ctx.userId
-   ) {
-      return new Response("Conversa não encontrada.", { status: 404 });
-   }
-
-   log.info({
-      module: "api.chat",
-      message: "agent chat send start",
-      userId: ctx.userId,
-      threadId: input.threadId,
-   });
-
-   const historyRows = await ctx.db.transaction(async (tx) => {
-      await tx.execute(
-         sql`select pg_advisory_xact_lock(hashtext(${input.threadId}))`,
-      );
-
-      if (input.regenerate) {
-         const userRows = await tx
-            .select({ createdAt: messages.createdAt })
-            .from(messages)
-            .where(
-               and(
-                  eq(messages.threadId, input.threadId),
-                  eq(messages.role, "user"),
-               ),
-            )
-            .orderBy(asc(messages.createdAt));
-         const lastUser = userRows.at(-1);
-         if (!lastUser) return null;
-         await tx
-            .delete(messages)
-            .where(
-               and(
-                  eq(messages.threadId, input.threadId),
-                  gte(messages.createdAt, lastUser.createdAt),
-                  eq(messages.role, "assistant"),
-               ),
-            );
-      } else if (input.replaceFromMessageId) {
-         const target = await tx
-            .select({ createdAt: messages.createdAt })
-            .from(messages)
-            .where(
-               and(
-                  eq(messages.id, input.replaceFromMessageId),
-                  eq(messages.threadId, input.threadId),
-               ),
-            )
-            .limit(1);
-         const row = target[0];
-         if (!row) return null;
-         await tx
-            .delete(messages)
-            .where(
-               and(
-                  eq(messages.threadId, input.threadId),
-                  gte(messages.createdAt, row.createdAt),
-               ),
-            );
-      }
-
-      if (input.text !== undefined) {
-         await tx.insert(messages).values({
-            threadId: input.threadId,
-            role: "user",
-            parts: [{ type: "text", content: input.text }],
-            metadata: input.pageContext
-               ? { pageContext: input.pageContext }
-               : null,
-         });
-      }
-
-      return tx
-         .select({
-            id: messages.id,
-            role: messages.role,
-            parts: messages.parts,
-         })
-         .from(messages)
-         .where(eq(messages.threadId, input.threadId))
-         .orderBy(asc(messages.createdAt));
-   });
-   if (historyRows === null) {
-      return new Response("Mensagem não encontrada.", { status: 404 });
-   }
-   const history: UIMessage[] = historyRows.map((row) => ({
-      id: row.id,
-      role: row.role,
-      parts: row.parts,
-   }));
-
-   const settings = await ctx.db.query.agentSettings.findFirst({
-      where: (f, { eq: eqFn }) => eqFn(f.teamId, ctx.teamId),
-   });
-   const chatSettings = chatSettingsSchema.parse(settings);
-
+async function handle({ request }: { request: Request }) {
+   const body = await request.json();
+   const input = chatInputSchema.parse(body);
    const abortController = new AbortController();
    request.signal.addEventListener("abort", () => abortController.abort(), {
       once: true,
    });
 
-   const stream = await createAgentChat({
-      prompts: ctx.posthogPrompts,
-      userId: ctx.userId,
-      organizationId: ctx.organizationId,
-      teamId: ctx.teamId,
-      headers: ctx.headers,
-      request: ctx.request,
-      threadId: input.threadId,
-      messages: history,
-      pageContext: input.pageContext,
-      reasoningEffort: chatSettings.reasoningEffort,
-      abortSignal: abortController.signal,
-      extraMiddleware: [
-         createPersistMiddleware({
-            db: ctx.db,
-            pgBoss: ctx.pgBoss,
-            workflowClient: ctx.workflowClient,
-            threadId: input.threadId,
-            teamId: ctx.teamId,
-            organizationId: ctx.organizationId,
-            history,
-         }),
-      ],
+   const context = await buildWebContext(request, getRequestLog());
+   if (context === null) {
+      return new Response("Unauthorized", { status: 401 });
+   }
+
+   const stream = await createThreadChatStream({
+      context,
+      input,
+      signal: abortController.signal,
    });
 
    return toHttpResponse(stream, {
@@ -186,7 +37,7 @@ async function handlePost({ request }: { request: Request }) {
 export const Route = createFileRoute("/api/chat")({
    server: {
       handlers: {
-         POST: handlePost,
+         POST: handle,
       },
    },
 });

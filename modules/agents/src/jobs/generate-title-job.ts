@@ -1,5 +1,6 @@
-import { chat } from "@tanstack/ai";
+import { chat, convertMessagesToModelMessages } from "@tanstack/ai";
 import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
+import { defineErrorCatalog } from "evlog";
 import { Result, TaggedError } from "better-result";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import {
@@ -17,11 +18,7 @@ import { threads } from "@core/database/schemas/threads";
 import { getAiTracer, log } from "@core/logging";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Prompts } from "@core/posthog/server";
-import { AGENT_PROMPTS, AGENT_QUEUES } from "../constants";
-import {
-   conversationTranscript,
-   hasUserAndAssistantText,
-} from "../workflows/conversation-transcript";
+import { AGENT_JOB_QUEUES, AGENT_PROMPTS } from "../constants";
 
 export const generateThreadTitleJobInputSchema = z.object({
    threadId: z.string().uuid(),
@@ -33,26 +30,70 @@ export type GenerateThreadTitleJobInput = z.infer<
    typeof generateThreadTitleJobInputSchema
 >;
 
+const generateTitleJobErrors = defineErrorCatalog("agents.job.title", {
+   ENQUEUE_FAILED: {
+      status: 500,
+      message: "Falha ao enfileirar geração de título.",
+      tags: ["agents", "pg-boss", "title"],
+   },
+   JOB_ID_MISSING: {
+      status: 500,
+      message: "Pg-boss não retornou o ID do job de geração de título.",
+      tags: ["agents", "pg-boss", "title"],
+   },
+   INVALID_PAYLOAD: {
+      status: 400,
+      message: "Payload inválido para geração de título.",
+      tags: ["agents", "pg-boss", "title"],
+   },
+   MESSAGES_LOAD_FAILED: {
+      status: 500,
+      message: "Falha ao carregar mensagens recentes para título.",
+      tags: ["agents", "pg-boss", "title"],
+   },
+   PROMPT_LOAD_FAILED: {
+      status: 500,
+      message: "Falha ao carregar prompt de geração de título.",
+      tags: ["agents", "pg-boss", "title"],
+   },
+   AI_FAILED: {
+      status: 500,
+      message: "Falha ao gerar título da conversa.",
+      tags: ["agents", "pg-boss", "title"],
+   },
+   WRITE_FAILED: {
+      status: 500,
+      message: "Falha ao salvar título gerado.",
+      tags: ["agents", "pg-boss", "title"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "agents.job.title": typeof generateTitleJobErrors;
+   }
+}
+
+type GenerateThreadTitleJobCatalogError =
+   | ReturnType<typeof generateTitleJobErrors.ENQUEUE_FAILED>
+   | ReturnType<typeof generateTitleJobErrors.JOB_ID_MISSING>
+   | ReturnType<typeof generateTitleJobErrors.INVALID_PAYLOAD>
+   | ReturnType<typeof generateTitleJobErrors.MESSAGES_LOAD_FAILED>
+   | ReturnType<typeof generateTitleJobErrors.PROMPT_LOAD_FAILED>
+   | ReturnType<typeof generateTitleJobErrors.AI_FAILED>
+   | ReturnType<typeof generateTitleJobErrors.WRITE_FAILED>;
+
 export class GenerateThreadTitleJobError extends TaggedError(
    "GenerateThreadTitleJobError",
 )<{
-   operation:
-      | "enqueue"
-      | "ensure_queue"
-      | "parse_input"
-      | "load_recent_messages"
-      | "load_prompt"
-      | "generate_title"
-      | "write_title";
-   message: string;
+   error: GenerateThreadTitleJobCatalogError;
    threadId?: string;
-   cause?: unknown;
 }>() {}
 
-const MIN_TITLE_TRANSCRIPT_LENGTH = 24;
+const TITLE_DEBOUNCE_SECONDS = 30;
 
 export const generateThreadTitleDeadLetterQueue = {
-   name: AGENT_QUEUES.generateTitleDeadLetter,
+   name: AGENT_JOB_QUEUES.generateTitleDeadLetter,
    retryLimit: 0,
    expireInSeconds: 60,
    retentionSeconds: 2_592_000,
@@ -61,7 +102,7 @@ export const generateThreadTitleDeadLetterQueue = {
 };
 
 export const generateThreadTitleQueue = {
-   name: AGENT_QUEUES.generateTitle,
+   name: AGENT_JOB_QUEUES.generateTitle,
    policy: "key_strict_fifo",
    retryLimit: 3,
    retryDelay: 5,
@@ -72,7 +113,7 @@ export const generateThreadTitleQueue = {
    deleteAfterSeconds: 604_800,
    heartbeatSeconds: 30,
    warningQueueSize: 25,
-   deadLetter: AGENT_QUEUES.generateTitleDeadLetter,
+   deadLetter: AGENT_JOB_QUEUES.generateTitleDeadLetter,
 };
 
 export async function enqueueGenerateThreadTitleJob(options: {
@@ -80,22 +121,10 @@ export async function enqueueGenerateThreadTitleJob(options: {
    input: GenerateThreadTitleJobInput;
    tx?: DrizzleTransactionLike;
 }) {
-   const queue = await Result.tryPromise({
-      try: () => ensureGenerateThreadTitleQueues(options.boss),
-      catch: (cause) =>
-         new GenerateThreadTitleJobError({
-            operation: "ensure_queue",
-            message: "Falha ao preparar fila de geração de título.",
-            threadId: options.input.threadId,
-            cause,
-         }),
-   });
-   if (Result.isError(queue)) {
-      return Result.err(queue.error);
-   }
-
    const sendOptions: SendOptions = {
       singletonKey: options.input.threadId,
+      singletonSeconds: TITLE_DEBOUNCE_SECONDS,
+      singletonNextSlot: true,
       retryLimit: generateThreadTitleQueue.retryLimit,
       retryDelay: generateThreadTitleQueue.retryDelay,
       retryBackoff: generateThreadTitleQueue.retryBackoff,
@@ -112,16 +141,16 @@ export async function enqueueGenerateThreadTitleJob(options: {
    const jobId = await Result.tryPromise({
       try: () =>
          options.boss.send(
-            AGENT_QUEUES.generateTitle,
+            AGENT_JOB_QUEUES.generateTitle,
             options.input,
             sendOptions,
          ),
-      catch: (cause) =>
+      catch: () =>
          new GenerateThreadTitleJobError({
-            operation: "enqueue",
-            message: "Falha ao enfileirar geração de título.",
+            error: generateTitleJobErrors.ENQUEUE_FAILED({
+               internal: { threadId: options.input.threadId },
+            }),
             threadId: options.input.threadId,
-            cause,
          }),
    });
 
@@ -131,30 +160,14 @@ export async function enqueueGenerateThreadTitleJob(options: {
    if (!jobId.value) {
       return Result.err(
          new GenerateThreadTitleJobError({
-            operation: "enqueue",
-            message: "Pg-boss não retornou o ID do job de geração de título.",
+            error: generateTitleJobErrors.JOB_ID_MISSING({
+               internal: { threadId: options.input.threadId },
+            }),
             threadId: options.input.threadId,
          }),
       );
    }
    return Result.ok(jobId.value);
-}
-
-async function ensureGenerateThreadTitleQueues(boss: PgBossClient) {
-   const { name: deadLetterQueueName, ...deadLetterQueueOptions } =
-      generateThreadTitleDeadLetterQueue;
-   await boss.createQueue(deadLetterQueueName, deadLetterQueueOptions);
-   await boss.updateQueue(deadLetterQueueName, deadLetterQueueOptions);
-   const {
-      name: generateTitleQueueName,
-      policy,
-      ...generateTitleQueueOptions
-   } = generateThreadTitleQueue;
-   await boss.createQueue(generateTitleQueueName, {
-      ...generateTitleQueueOptions,
-      policy,
-   });
-   await boss.updateQueue(generateTitleQueueName, generateTitleQueueOptions);
 }
 
 export async function handleGenerateThreadTitleJob(options: {
@@ -168,9 +181,9 @@ export async function handleGenerateThreadTitleJob(options: {
    if (!parsedInput.success) {
       return Result.err(
          new GenerateThreadTitleJobError({
-            operation: "parse_input",
-            message: "Payload inválido para geração de título.",
-            cause: parsedInput.error,
+            error: generateTitleJobErrors.INVALID_PAYLOAD({
+               internal: { jobId: options.job.id },
+            }),
          }),
       );
    }
@@ -199,7 +212,11 @@ export async function handleGenerateThreadTitleJob(options: {
             if (!thread) return null;
             if (thread.title) return { title: thread.title, recent: null };
             const recent = await tx
-               .select({ role: messages.role, parts: messages.parts })
+               .select({
+                  id: messages.id,
+                  role: messages.role,
+                  parts: messages.parts,
+               })
                .from(messages)
                .innerJoin(threads, eq(threads.id, messages.threadId))
                .where(
@@ -213,12 +230,15 @@ export async function handleGenerateThreadTitleJob(options: {
                .limit(6);
             return { title: null, recent };
          }),
-      catch: (cause) =>
+      catch: () =>
          new GenerateThreadTitleJobError({
-            operation: "load_recent_messages",
-            message: "Falha ao carregar mensagens recentes para título.",
+            error: generateTitleJobErrors.MESSAGES_LOAD_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }),
             threadId: input.threadId,
-            cause,
          }),
    });
 
@@ -253,11 +273,10 @@ export async function handleGenerateThreadTitleJob(options: {
       return Result.ok(undefined);
    }
 
-   const transcript = conversationTranscript(loaded.value.recent);
-   if (
-      transcript.length < MIN_TITLE_TRANSCRIPT_LENGTH ||
-      !hasUserAndAssistantText(loaded.value.recent)
-   ) {
+   const recent = loaded.value.recent;
+   const hasUser = recent.some((row) => row.role === "user");
+   const hasAssistant = recent.some((row) => row.role === "assistant");
+   if (!hasUser || !hasAssistant) {
       log.info({
          module: "agents.generate-title-job",
          message: "skipping: conversation too shallow",
@@ -272,12 +291,15 @@ export async function handleGenerateThreadTitleJob(options: {
          options.prompts.get(AGENT_PROMPTS.generateTitle, {
             withMetadata: true,
          }),
-      catch: (cause) =>
+      catch: () =>
          new GenerateThreadTitleJobError({
-            operation: "load_prompt",
-            message: "Falha ao carregar prompt de geração de título.",
+            error: generateTitleJobErrors.PROMPT_LOAD_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }),
             threadId: input.threadId,
-            cause,
          }),
    });
 
@@ -289,19 +311,22 @@ export async function handleGenerateThreadTitleJob(options: {
       try: () =>
          chat({
             adapter: flashModel,
-            messages: [
+            messages: convertMessagesToModelMessages([
+               ...recent,
                {
+                  id: `${options.job.id}-title-request`,
                   role: "user",
-                  content: [
+                  parts: [
                      {
                         type: "text",
                         content: options.prompts.compile(prompt.value.prompt, {
-                           transcript,
+                           transcript:
+                              "A conversa recente está disponível nas mensagens anteriores.",
                         }),
                      },
                   ],
                },
-            ],
+            ]),
             stream: false,
             conversationId: input.threadId,
             middleware: [
@@ -326,12 +351,15 @@ export async function handleGenerateThreadTitleJob(options: {
                }),
             ],
          }),
-      catch: (cause) =>
+      catch: () =>
          new GenerateThreadTitleJobError({
-            operation: "generate_title",
-            message: "Falha ao gerar título da conversa.",
+            error: generateTitleJobErrors.AI_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }),
             threadId: input.threadId,
-            cause,
          }),
    });
 
@@ -366,12 +394,15 @@ export async function handleGenerateThreadTitleJob(options: {
                )
                .returning({ title: threads.title });
          }),
-      catch: (cause) =>
+      catch: () =>
          new GenerateThreadTitleJobError({
-            operation: "write_title",
-            message: "Falha ao salvar título gerado.",
+            error: generateTitleJobErrors.WRITE_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }),
             threadId: input.threadId,
-            cause,
          }),
    });
 

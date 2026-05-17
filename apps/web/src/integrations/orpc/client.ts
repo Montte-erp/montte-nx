@@ -42,6 +42,10 @@ const getORPCClient = createIsomorphicFn()
                         !(
                            options.path[0] === "notifications" &&
                            options.path[1] === "subscribe"
+                        ) &&
+                        !(
+                           options.path[0] === "threads" &&
+                           options.path[1] === "chat"
                         ),
                      context: {},
                   },
