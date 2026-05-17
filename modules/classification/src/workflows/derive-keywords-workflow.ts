@@ -5,23 +5,16 @@ import { categories } from "@core/database/schemas/categories";
 import { WorkflowError } from "@core/dbos/errors";
 import { deriveKeywords } from "@modules/classification/ai/derive-keywords";
 import { classificationSseEvents } from "@modules/classification/sse";
-import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
+import {
+   CLASSIFICATION_WORKFLOWS,
+   type DeriveKeywordsWorkflowInput,
+} from "@modules/classification/workflows/constants";
 import {
    classificationDataSource,
-   createEnqueuer,
    getClassificationPrompts,
    getClassificationRedis,
    registerWorkflowOnce,
 } from "./context";
-
-export type DeriveKeywordsWorkflowInput = {
-   categoryId: string;
-   teamId: string;
-   organizationId: string;
-   name: string;
-   description?: string | null;
-   userId?: string;
-};
 
 async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
    const ctx = `[derive-keywords] category=${input.categoryId} team=${input.teamId}`;
@@ -149,11 +142,5 @@ async function deriveKeywordsWorkflowFn(input: DeriveKeywordsWorkflowInput) {
 
 export const deriveKeywordsWorkflow = registerWorkflowOnce(
    deriveKeywordsWorkflowFn,
+   { name: CLASSIFICATION_WORKFLOWS.deriveKeywords },
 );
-
-export const enqueueDeriveKeywordsWorkflow =
-   createEnqueuer<DeriveKeywordsWorkflowInput>(
-      deriveKeywordsWorkflowFn.name,
-      CLASSIFICATION_QUEUES.deriveKeywords,
-      (i) => `derive-category-${i.categoryId}`,
-   );

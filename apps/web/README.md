@@ -7,7 +7,7 @@ Aplicação principal do Montte — ERP com dashboard, rotas SSR via TanStack St
 Esta aplicação **não executa workflows DBOS**. Enfileira jobs via `DBOSClient` (durável, PostgreSQL-backed):
 
 ```ts
-import { enqueueClassifyTransactionsBatchWorkflow } from "@modules/classification/workflows/classification-workflow";
+import { enqueueClassifyTransactionsBatchWorkflow } from "@modules/classification/workflows/enqueue";
 await enqueueClassifyTransactionsBatchWorkflow(context.workflowClient, input);
 ```
 

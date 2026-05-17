@@ -41,6 +41,7 @@ export function initLogger(config: LoggerConfig): void {
       drain: loggerDrain,
       pretty: process.env.NODE_ENV !== "production",
       redact: {
+         builtins: false,
          paths: [
             "headers.authorization",
             "headers.cookie",
@@ -57,6 +58,19 @@ export function initLogger(config: LoggerConfig): void {
 
 export function flushLogger(): Promise<void> {
    return loggerDrain.flush();
+}
+
+export function getPostHogOtlpLogsEndpoint(posthogHost: string): string {
+   return new URL("/i/v1/logs", posthogHost).toString();
+}
+
+export function configurePostHogOtlpHeaders(posthogKey: string): void {
+   const authorization = `Authorization=Bearer%20${posthogKey}`;
+   const existing = process.env.OTEL_EXPORTER_OTLP_LOGS_HEADERS;
+
+   process.env.OTEL_EXPORTER_OTLP_LOGS_HEADERS = existing
+      ? `${existing},${authorization}`
+      : authorization;
 }
 
 export interface OtelConfig {

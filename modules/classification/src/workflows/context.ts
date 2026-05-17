@@ -1,14 +1,14 @@
 import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
-import { WorkflowQueue } from "@dbos-inc/dbos-sdk";
 import { createStore } from "@tanstack/store";
 import type { DatabaseInstance } from "@core/database/client";
+import type { DbosWorkerQueue } from "@core/dbos/worker";
 import * as schema from "@core/database/schema";
 import { env } from "@core/environment/worker";
 import type { Redis } from "@core/redis/connection";
 import type { PostHog, Prompts } from "@core/posthog/server";
-import { CLASSIFICATION_QUEUES } from "@modules/classification/constants";
+import { CLASSIFICATION_WORKFLOW_QUEUES } from "@modules/classification/workflows/constants";
 
-export { createEnqueuer, registerWorkflowOnce } from "@core/dbos/factory";
+export { registerWorkflowOnce } from "@core/dbos/factory";
 
 export const classificationDataSource = new DrizzleDataSource<DatabaseInstance>(
    "classification",
@@ -63,8 +63,9 @@ export function getClassificationRedis(): Redis {
 
 export function createClassificationQueues(options: {
    workerConcurrency: number;
-}) {
-   return Object.values(CLASSIFICATION_QUEUES).map(
-      (name) => new WorkflowQueue(`workflow:${name}`, options),
-   );
+}): DbosWorkerQueue[] {
+   return Object.values(CLASSIFICATION_WORKFLOW_QUEUES).map((name) => ({
+      name,
+      options,
+   }));
 }

@@ -5,6 +5,8 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
+const dbosSdkPackage = ["@dbos-inc", "dbos-sdk"].join("/");
+
 const config = defineConfig({
    resolve: {
       tsconfigPaths: true,
@@ -32,7 +34,20 @@ const config = defineConfig({
             autoCodeSplitting: true,
          },
       }),
-      nitro({ preset: "bun" }),
+      nitro({
+         preset: "bun",
+         rollupConfig: {
+            external: (id: string) =>
+               id === dbosSdkPackage ||
+               id.startsWith(`${dbosSdkPackage}/`) ||
+               id === "katex" ||
+               id.startsWith("katex/") ||
+               id === "mermaid" ||
+               id.startsWith("mermaid/") ||
+               id === "streamdown" ||
+               id.startsWith("streamdown/"),
+         },
+      }),
       viteReact(),
       tailwindcss(),
       devtools(),

@@ -36,7 +36,6 @@
       "@core/redis": "workspace:*",
       "@core/transactional": "workspace:*",
       "@core/utils": "workspace:*",
-      "@dbos-inc/dbos-sdk": "catalog:workers",
       "@orpc/contract": "catalog:orpc",
       "@orpc/server": "catalog:orpc",
       "better-result": "catalog:validation",

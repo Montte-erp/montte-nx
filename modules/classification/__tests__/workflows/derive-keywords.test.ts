@@ -36,10 +36,10 @@ import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { categories } from "@core/database/schemas/categories";
 import { makeCategory } from "../helpers/classification-factories";
-import {
-   deriveKeywordsWorkflow,
-   enqueueDeriveKeywordsWorkflow,
-} from "../../src/workflows/derive-keywords-workflow";
+import { deriveKeywordsWorkflow } from "../../src/workflows/derive-keywords-workflow";
+import { enqueueDeriveKeywordsWorkflow } from "../../src/workflows/enqueue";
+
+type WorkflowClient = Parameters<typeof enqueueDeriveKeywordsWorkflow>[0];
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -122,10 +122,11 @@ describe("deriveKeywordsWorkflow", () => {
       const categoryId = crypto.randomUUID();
 
       const enqueueCalls: { workflowID?: string }[] = [];
-      const fakeClient = {
-         enqueue: vi.fn(async (args: { workflowID?: string }) => {
+      const fakeClient: WorkflowClient = {
+         registerQueue: vi.fn(async () => undefined),
+         enqueue: vi.fn(async (args) => {
             enqueueCalls.push(args);
-            return undefined;
+            return { workflowID: args.workflowID ?? "derive-keywords-test" };
          }),
       };
 
@@ -136,11 +137,11 @@ describe("deriveKeywordsWorkflow", () => {
          name: "Whatever",
       };
 
-      // oxlint-ignore no-explicit-any
-      await enqueueDeriveKeywordsWorkflow(fakeClient as any, input);
-      // oxlint-ignore no-explicit-any
-      await enqueueDeriveKeywordsWorkflow(fakeClient as any, input);
+      const first = await enqueueDeriveKeywordsWorkflow(fakeClient, input);
+      const second = await enqueueDeriveKeywordsWorkflow(fakeClient, input);
 
+      expect(first.isOk()).toBe(true);
+      expect(second.isOk()).toBe(true);
       expect(enqueueCalls).toHaveLength(2);
       expect(enqueueCalls[0]?.workflowID).toBe(`derive-category-${categoryId}`);
       expect(enqueueCalls[1]?.workflowID).toBe(`derive-category-${categoryId}`);

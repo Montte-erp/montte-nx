@@ -12,6 +12,10 @@
          "types": "./dist/client.d.ts",
          "default": "./dist/client.js"
       },
+      "./worker": {
+         "types": "./dist/worker.d.ts",
+         "default": "./dist/worker.js"
+      },
       "./factory": {
          "types": "./dist/factory.d.ts",
          "default": "./dist/factory.js"
@@ -35,7 +39,12 @@
    },
    "dependencies": {
       "@core/database": "workspace:*",
-      "@dbos-inc/dbos-sdk": "catalog:workers"
+      "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
+      "better-result": "catalog:validation",
+      "winston": "^3.19.0",
+      "winston-transport": "^4.9.0"
    },
    "devDependencies": {
       "@tooling/typescript": "workspace:*",
