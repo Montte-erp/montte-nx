@@ -1,11 +1,11 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { chat } from "@tanstack/ai";
 import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import { asc, eq } from "drizzle-orm";
 import { fromPromise } from "neverthrow";
 import { flashModel } from "@core/ai/models";
 import { aiTraceAttributes } from "@core/ai/otel";
+import type { WorkflowClient } from "@core/dbos/client";
 import { WorkflowError } from "@core/dbos/errors";
 import { messages } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
@@ -170,13 +170,14 @@ export const generateThreadTitleWorkflow = registerWorkflowOnce(
    generateThreadTitleFn,
 );
 
-export const enqueueGenerateThreadTitle = createEnqueuer<GenerateTitleInput>(
-   generateThreadTitleFn.name,
-   AGENT_QUEUES.generateTitle,
-   (i) => `agents:title:${i.threadId}`,
-);
-
 export type EnqueueGenerateThreadTitle = (
-   client: DBOSClient,
+   client: WorkflowClient,
    input: GenerateTitleInput,
 ) => Promise<unknown>;
+
+export const enqueueGenerateThreadTitle: EnqueueGenerateThreadTitle =
+   createEnqueuer<GenerateTitleInput>(
+      generateThreadTitleFn.name,
+      AGENT_QUEUES.generateTitle,
+      (i) => `agents:title:${i.threadId}`,
+   );

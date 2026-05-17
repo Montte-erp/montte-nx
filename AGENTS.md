@@ -205,6 +205,14 @@ Config: `core/authentication/src/server.ts`. Plugins: Magic Link, Email OTP, 2FA
 
 DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.workflowClient` (`DBOSClient`, PostgreSQL-backed). Each workflow file declares its own `WorkflowQueue`; DBOS processes them automatically.
 
+**DBOS vs pg-boss:**
+
+- Use DBOS for durable/crítico workflows: billing, ledger, entitlement, invoice period closing, multi-step state machines, deterministic self-rescheduling, DBOS transactions/steps, and anything where replay/observability of a business workflow is part of the correctness model.
+- Use pg-boss for simple operational jobs: one-shot background work, retries, DLQ, singleton/debounce behavior, queueing from a Drizzle transaction, and non-critical side effects that can be retried or manually inspected. Current default candidate: `agent-title`.
+- pg-boss consumers run only in `apps/worker`. Web may enqueue through the oRPC context `pgBoss` promise and the package helper, but must not run workers/consumers.
+- pg-boss jobs log through `@core/logging` (`evlog`) with structured fields (`module`, `message`, ids, tenant scope). Do not use DBOS.logger in pg-boss jobs.
+- If a job needs DBOS steps, workflow replay, deterministic scheduling, or is financially/security critical, keep it in DBOS instead of porting it to pg-boss.
+
 **Workflow rules:**
 
 - Use `<module>DataSource = new DrizzleDataSource<DatabaseInstance>(...)` per module. Inside steps: `dataSource.runTransaction(async () => { const tx = <module>DataSource.client; … }, { name })`. Generic gives a typed `client` — never cast. Never use plain `db` or repositories.

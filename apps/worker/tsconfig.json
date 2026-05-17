@@ -26,6 +26,9 @@
          "path": "../../core/posthog"
       },
       {
+         "path": "../../core/pg-boss"
+      },
+      {
          "path": "../../core/logging"
       },
       {

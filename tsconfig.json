@@ -40,6 +40,9 @@
       "path": "./core/dbos"
     },
     {
+      "path": "./core/pg-boss"
+    },
+    {
       "path": "./apps/web-e2e"
     }
   ]

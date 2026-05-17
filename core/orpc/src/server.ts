@@ -16,6 +16,7 @@ import { createNotificationsClient } from "@core/notifications/client";
 import { createRedis } from "@core/redis/connection";
 import { AppError, WebAppError } from "@core/logging/errors";
 import { createWorkflowClient } from "@core/dbos/client";
+import { startPgBossClient } from "@core/pg-boss/client";
 import type {
    ORPCContext,
    ORPCContextAuthenticated,
@@ -42,6 +43,11 @@ const auth = createAuth({
    env,
 });
 const workflowClient = createWorkflowClient(env.DATABASE_URL);
+const pgBoss = startPgBossClient({
+   connectionString: env.DATABASE_URL,
+   applicationName: "montte-web-pg-boss",
+   supervise: false,
+});
 const s3Client = createS3Client({
    endpointUrl: env.AWS_ENDPOINT_URL,
    accessKeyId: env.AWS_ACCESS_KEY_ID,
@@ -71,6 +77,7 @@ export async function buildWebContext(
       posthog,
       posthogPrompts,
       redis,
+      pgBoss,
       workflowClient: await workflowClient,
       s3Client,
    };
@@ -151,6 +158,7 @@ const withDeps = base.use(async ({ context, next }) => {
             posthog,
             posthogPrompts,
             redis,
+            pgBoss,
             workflowClient: await workflowClient,
             s3Client,
          },
@@ -172,6 +180,7 @@ const withDeps = base.use(async ({ context, next }) => {
          posthog,
          posthogPrompts,
          redis,
+         pgBoss,
          workflowClient: await workflowClient,
          s3Client,
       },

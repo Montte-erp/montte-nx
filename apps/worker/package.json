@@ -13,6 +13,7 @@
       "@core/dbos": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
+      "@core/pg-boss": "workspace:*",
       "@core/posthog": "workspace:*",
       "@core/redis": "workspace:*",
       "@dbos-inc/dbos-sdk": "catalog:workers",

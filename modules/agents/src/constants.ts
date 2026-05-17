@@ -9,6 +9,7 @@ export type AgentPromptKey = keyof typeof AGENT_PROMPTS;
 
 export const AGENT_QUEUES = {
    generateTitle: "agent-title",
+   generateTitleDeadLetter: "agent-title-dlq",
    refreshSuggestions: "agent-suggestions",
 } as const;
 

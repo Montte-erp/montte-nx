@@ -22,12 +22,6 @@
    },
    "references": [
       {
-         "path": "../notifications"
-      },
-      {
-         "path": "../files"
-      },
-      {
          "path": "../utils"
       },
       {
@@ -37,7 +31,16 @@
          "path": "../posthog"
       },
       {
+         "path": "../pg-boss"
+      },
+      {
+         "path": "../notifications"
+      },
+      {
          "path": "../logging"
+      },
+      {
+         "path": "../files"
       },
       {
          "path": "../environment"

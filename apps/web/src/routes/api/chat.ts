@@ -12,6 +12,7 @@ import {
 import { log } from "@core/logging";
 import { buildWebContext } from "@core/orpc/server";
 import { createAgentChat } from "@modules/agents/agent";
+import { createPersistMiddleware } from "@modules/agents/persist-middleware";
 import { getRequestLog } from "@/integrations/evlog";
 
 const bodySchema = z.object({
@@ -163,6 +164,18 @@ async function handlePost({ request }: { request: Request }) {
       pageContext: input.pageContext,
       reasoningEffort: chatSettings.reasoningEffort,
       abortSignal: abortController.signal,
+      extraMiddleware: [
+         createPersistMiddleware({
+            db: ctx.db,
+            pgBoss: ctx.pgBoss,
+            redis: ctx.redis,
+            workflowClient: ctx.workflowClient,
+            threadId: input.threadId,
+            teamId: ctx.teamId,
+            organizationId: ctx.organizationId,
+            history,
+         }),
+      ],
    });
 
    return toHttpResponse(stream, {
