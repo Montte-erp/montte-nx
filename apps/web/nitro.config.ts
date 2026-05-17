@@ -1,6 +1,8 @@
 import { defineConfig } from "nitro";
 import evlog from "evlog/nitro/v3";
 
+const dbosSdkPackage = ["@dbos-inc", "dbos-sdk"].join("/");
+
 export default defineConfig({
    preset: "bun",
    experimental: {
@@ -27,8 +29,8 @@ export default defineConfig({
    plugins: ["./src/integrations/evlog"],
    rollupConfig: {
       external: (id: string) =>
-         id === "@dbos-inc/dbos-sdk" ||
-         id.startsWith("@dbos-inc/dbos-sdk/") ||
+         id === dbosSdkPackage ||
+         id.startsWith(`${dbosSdkPackage}/`) ||
          id === "katex" ||
          id.startsWith("katex/") ||
          id === "mermaid" ||

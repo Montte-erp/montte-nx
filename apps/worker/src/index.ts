@@ -1,18 +1,23 @@
-import { DBOS } from "@dbos-inc/dbos-sdk";
-import { Result, TaggedError } from "better-result";
-import { env } from "@core/environment/worker";
-import { flushLogger, initLogger, log } from "@core/logging";
-import { initOtel, shutdownOtel } from "@core/logging";
 import { createDb } from "@core/database/client";
+import { launchDbosWorker, shutdownDbosWorker } from "@core/dbos/worker";
+import { env } from "@core/environment/worker";
+import {
+   flushLogger,
+   initLogger,
+   initOtel,
+   log,
+   shutdownOtel,
+} from "@core/logging";
 import { startPgBossWorker } from "@core/pg-boss/worker";
-import { createRedis } from "@core/redis/connection";
 import { createPostHog, createPromptsClient } from "@core/posthog/server";
+import { createRedis } from "@core/redis/connection";
 import {
    agentPgBossQueues,
    registerAgentPgBossJobs,
 } from "@modules/agents/jobs/setup";
 import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
+import { Result, TaggedError } from "better-result";
 
 class WorkerInitError extends TaggedError("WorkerInitError")<{
    message: string;
@@ -46,27 +51,23 @@ async function initWorker() {
 
          log.info("worker", "Starting worker");
 
-         await setupClassificationWorkflows({
+         const classificationWorkflows = await setupClassificationWorkflows({
             redis,
             posthog,
             prompts: promptsClient,
             workerConcurrency: 10,
          });
-         await setupAgentsWorkflows({
+         const agentsQueues = await setupAgentsWorkflows({
             redis,
             posthog,
             prompts: promptsClient,
             workerConcurrency: 10,
          });
 
-         DBOS.setConfig({
-            name: "montte-worker",
-            systemDatabaseUrl: env.DATABASE_URL,
-            logLevel: env.LOG_LEVEL,
-            runAdminServer: false,
-         });
-
-         await DBOS.launch();
+         await launchDbosWorker([
+            ...classificationWorkflows.queues,
+            ...agentsQueues,
+         ]);
          log.info("worker", "DBOS runtime started");
 
          const pgBossWorker = await startPgBossWorker({
@@ -109,7 +110,7 @@ async function gracefulShutdown(signal: string) {
    log.info("worker", `${signal} received — shutting down`);
    const shutdowns: { name: string; promise: Promise<unknown> }[] = [
       { name: "pg-boss", promise: workerDeps.pgBossWorker.stop() },
-      { name: "dbos", promise: DBOS.shutdown() },
+      { name: "dbos", promise: shutdownDbosWorker() },
       { name: "posthog", promise: workerDeps.posthog.shutdown() },
       {
          name: "redis",

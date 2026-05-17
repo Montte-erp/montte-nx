@@ -12,7 +12,10 @@ import {
 } from "@core/database/schemas/transactions";
 import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
-import { enqueueClassifyTransactionsBatchWorkflow } from "@modules/classification/workflows/classification-workflow";
+import {
+   enqueueClassifyTransactionsBatchWorkflow,
+   isClassificationWorkflowQueueFailure,
+} from "@modules/classification/workflows/enqueue";
 import {
    enforceCostCenterPolicy,
    requireTransactionRecurrence,
@@ -292,7 +295,7 @@ export const create = protectedProcedure
             }
             return [created.value.id];
          })();
-         await enqueueClassifyTransactionsBatchWorkflow(
+         const queued = await enqueueClassifyTransactionsBatchWorkflow(
             context.workflowClient,
             {
                organizationId: context.organizationId,
@@ -300,6 +303,11 @@ export const create = protectedProcedure
                transactionIds,
             },
          );
+         if (isClassificationWorkflowQueueFailure(queued)) {
+            throw WebAppError.internal(
+               "Falha ao enfileirar classificação de lançamentos.",
+            );
+         }
       }
 
       return created.value;

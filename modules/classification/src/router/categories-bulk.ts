@@ -14,7 +14,7 @@ import {
    requireOwnedCategoryIds,
    withExpandedCategoryIds,
 } from "@modules/classification/router/middlewares";
-import { enqueueDeriveKeywordsWorkflow } from "@modules/classification/workflows/derive-keywords-workflow";
+import { enqueueCategoryKeywordsDerivations } from "@modules/classification/router/enqueue-keywords";
 
 const idsSchema = z.object({ ids: z.array(z.string().uuid()).min(1) });
 
@@ -89,18 +89,7 @@ export const importBatch = protectedProcedure
       if (result.isErr()) throw result.error;
 
       const { all, parents } = result.value;
-      await Promise.all(
-         parents.map((p) =>
-            enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-               categoryId: p.id,
-               teamId: context.teamId,
-               organizationId: context.organizationId,
-               userId: context.userId,
-               name: p.name,
-               description: p.description,
-            }),
-         ),
-      );
+      await enqueueCategoryKeywordsDerivations(context, parents);
       return all;
    });
 

@@ -10,9 +10,9 @@ import {
 } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
 import type { DatabaseInstance } from "@core/database/client";
+import type { WorkflowClient } from "@core/dbos/client";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Redis } from "@core/redis/connection";
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { log } from "@core/logging";
 import { agentsSseEvents } from "@modules/agents/sse";
 import { enqueueGenerateThreadTitleJob } from "@modules/agents/jobs/generate-title-job";
@@ -35,7 +35,7 @@ export interface PersistMiddlewareDeps {
    db: DatabaseInstance;
    pgBoss: Promise<PgBossClient>;
    redis: Redis;
-   workflowClient: DBOSClient;
+   workflowClient: WorkflowClient;
    threadId: string;
    teamId: string;
    organizationId: string;

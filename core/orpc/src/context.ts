@@ -5,7 +5,7 @@ import type { RequestLogger } from "@core/logging";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { PostHog, Prompts } from "@core/posthog/server";
 import type { Redis } from "@core/redis/connection";
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
+import type { WorkflowClient } from "@core/dbos/client";
 
 export interface ORPCContext {
    headers: Headers;
@@ -21,7 +21,7 @@ export interface ORPCContextWithAuth extends ORPCContext {
    posthogPrompts: Prompts;
    redis: Redis;
    pgBoss: Promise<PgBossClient>;
-   workflowClient: DBOSClient;
+   workflowClient: WorkflowClient;
    s3Client: S3Client;
 }
 

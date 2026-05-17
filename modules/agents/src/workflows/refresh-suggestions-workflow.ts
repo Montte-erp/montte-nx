@@ -1,5 +1,4 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import type { DBOSClient } from "@dbos-inc/dbos-sdk";
 import { chat } from "@tanstack/ai";
 import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import { desc, eq } from "drizzle-orm";
@@ -8,6 +7,7 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { flashModel } from "@core/ai/models";
 import { aiTraceAttributes } from "@core/ai/otel";
+import type { WorkflowClient } from "@core/dbos/client";
 import { WorkflowError } from "@core/dbos/errors";
 import { messages } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
@@ -178,14 +178,14 @@ async function refreshSuggestionsFn(input: RefreshSuggestionsInput) {
 export const refreshSuggestionsWorkflow =
    registerWorkflowOnce(refreshSuggestionsFn);
 
-export const enqueueRefreshSuggestions =
+export type EnqueueRefreshSuggestions = (
+   client: WorkflowClient,
+   input: RefreshSuggestionsInput,
+) => Promise<unknown>;
+
+export const enqueueRefreshSuggestions: EnqueueRefreshSuggestions =
    createEnqueuer<RefreshSuggestionsInput>(
       refreshSuggestionsFn.name,
       AGENT_QUEUES.refreshSuggestions,
       (i) => `agents:suggestions:${i.threadId}:${i.messageCount}`,
    );
-
-export type EnqueueRefreshSuggestions = (
-   client: DBOSClient,
-   input: RefreshSuggestionsInput,
-) => Promise<unknown>;

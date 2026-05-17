@@ -67,11 +67,11 @@ import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { categories } from "@core/database/schemas/categories";
 import { makeCategory } from "../helpers/classification-factories";
-import {
-   deriveKeywordsWorkflow,
-   enqueueDeriveKeywordsWorkflow,
-} from "../../src/workflows/derive-keywords-workflow";
-import { CLASSIFICATION_QUEUES } from "../../src/constants";
+import { deriveKeywordsWorkflow } from "../../src/workflows/derive-keywords-workflow";
+import { enqueueDeriveKeywordsWorkflow } from "../../src/workflows/enqueue";
+import { CLASSIFICATION_WORKFLOW_QUEUES } from "../../src/workflows/constants";
+
+type WorkflowClient = Parameters<typeof enqueueDeriveKeywordsWorkflow>[0];
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -121,13 +121,12 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
       );
 
       const enqueueCalls: { workflowID?: string; queueName?: string }[] = [];
-      const fakeClient = {
-         enqueue: vi.fn(
-            async (args: { workflowID?: string; queueName?: string }) => {
-               enqueueCalls.push(args);
-               return undefined;
-            },
-         ),
+      const fakeClient: WorkflowClient = {
+         registerQueue: vi.fn(async () => undefined),
+         enqueue: vi.fn(async (args) => {
+            enqueueCalls.push(args);
+            return { workflowID: args.workflowID ?? "derive-keywords-test" };
+         }),
       };
 
       const input = {
@@ -138,15 +137,15 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
          description: null,
       };
 
-      // oxlint-ignore no-explicit-any
-      await enqueueDeriveKeywordsWorkflow(fakeClient as any, input);
+      const queued = await enqueueDeriveKeywordsWorkflow(fakeClient, input);
 
+      expect(queued.isOk()).toBe(true);
       expect(enqueueCalls).toHaveLength(1);
       expect(enqueueCalls[0]?.workflowID).toBe(
          `derive-category-${category.id}`,
       );
       expect(enqueueCalls[0]?.queueName).toBe(
-         `workflow:${CLASSIFICATION_QUEUES.deriveKeywords}`,
+         CLASSIFICATION_WORKFLOW_QUEUES.deriveKeywords,
       );
 
       const before = await testDb.db

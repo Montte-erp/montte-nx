@@ -10,6 +10,7 @@ Shared utility functions used across the entire monorepo.
 | `./date`         | Date formatting, relative time, timezone support           |
 | `./diff`         | Diff and change detection                                  |
 | `./file`         | File utilities                                             |
+| `./hash`         | Stable hashes for workflow and job identifiers             |
 | `./number`       | Number formatting and manipulation                         |
 | `./object`       | Object utilities                                           |
 | `./permissions`  | Permission checking                                        |
