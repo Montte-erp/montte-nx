@@ -103,6 +103,7 @@
         "@modules/classification": "workspace:*",
         "@modules/finance": "workspace:*",
         "@modules/inbox": "workspace:*",
+        "@modules/insights": "workspace:*",
         "@orpc/client": "catalog:orpc",
         "@orpc/json-schema": "catalog:orpc",
         "@orpc/openapi": "catalog:orpc",
@@ -586,6 +587,25 @@
         "vitest": "catalog:testing",
       },
     },
+    "modules/insights": {
+      "name": "@modules/insights",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@f-o-t/money": "catalog:fot",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
     "packages/ui": {
       "name": "@packages/ui",
       "version": "0.12.0",
@@ -880,6 +900,7 @@
       "vaul": "^1.1.2",
     },
     "validation": {
+      "better-result": "^2.9.2",
       "neverthrow": "^8.1.1",
       "zod": "4.3.6",
     },
@@ -1631,6 +1652,8 @@
     "@modules/finance": ["@modules/finance@workspace:modules/finance"],
 
     "@modules/inbox": ["@modules/inbox@workspace:modules/inbox"],
+
+    "@modules/insights": ["@modules/insights@workspace:modules/insights"],
 
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.6", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-y+x3H1xBZd38n10NZF/rEBlvDOOMQ6LKUTHqr8R9VkJ+mmQOYtJFxIlkkK8fZrtOiL6VixbOBWMbZGBdal3Z1g=="],
 

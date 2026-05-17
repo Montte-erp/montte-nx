@@ -4,6 +4,7 @@ import {
    Building2,
    CreditCard,
    Inbox,
+   ChartNoAxesCombined,
    Tag,
    Tags,
 } from "lucide-react";
@@ -68,6 +69,14 @@ export const navGroups: NavGroupDef[] = [
             icon: CreditCard,
             iconColor: "text-pink-500",
             route: "/$slug/$teamSlug/credit-cards",
+            configurable: true,
+         },
+         {
+            id: "reports",
+            label: "Relatórios",
+            icon: ChartNoAxesCombined,
+            iconColor: "text-emerald-500",
+            route: "/$slug/$teamSlug/reports",
             configurable: true,
          },
          {
