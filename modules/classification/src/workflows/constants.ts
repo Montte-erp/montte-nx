@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { sha256Hash } from "@core/utils/hash";
 
 export const CLASSIFICATION_WORKFLOW_QUEUES = {
    classify: "workflow:classify",
@@ -29,10 +29,7 @@ export function buildClassifyTransactionsBatchWorkflowId(
    input: ClassifyTransactionsBatchInput,
 ) {
    const sorted = [...input.transactionIds].sort();
-   const hash = createHash("sha256")
-      .update(sorted.join(","))
-      .digest("hex")
-      .slice(0, 12);
+   const hash = sha256Hash(sorted.join(",")).slice(0, 12);
    return `classify-batch-${input.teamId}-${hash}`;
 }
 
