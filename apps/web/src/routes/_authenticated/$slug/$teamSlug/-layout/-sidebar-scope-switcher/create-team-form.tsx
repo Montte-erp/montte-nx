@@ -14,7 +14,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { Spinner } from "@packages/ui/components/spinner";
-import { getInitials } from "@/lib/initials";
+import { getInitials } from "@/utils/text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";

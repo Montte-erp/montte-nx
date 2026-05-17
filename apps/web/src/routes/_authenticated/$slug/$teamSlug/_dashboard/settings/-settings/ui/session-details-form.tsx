@@ -16,13 +16,13 @@ import {
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import dayjs from "dayjs";
 import { ArrowRight, CheckCircle2, Monitor, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc } from "@/integrations/orpc/client";
+import { formatDate } from "@/utils/date";
 
 interface SessionDetailsFormProps {
    session: {
@@ -92,13 +92,13 @@ export function SessionDetailsForm({
             isCurrent: false,
             showIcon: false,
             title: "Criado em",
-            value: dayjs(session.createdAt).format("DD/MM/YYYY"),
+            value: formatDate(session.createdAt),
          },
          {
             isCurrent: false,
             showIcon: false,
             title: "Último acesso",
-            value: dayjs(session.updatedAt).format("DD/MM/YYYY"),
+            value: formatDate(session.updatedAt),
          },
       ];
    }, [session, currentSessionId]);
