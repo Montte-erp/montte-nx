@@ -1,6 +1,12 @@
 import { chat } from "@tanstack/ai";
-import { asc, eq } from "drizzle-orm";
-import type { DrizzleTransactionLike, Job, SendOptions } from "pg-boss";
+import { Result, TaggedError } from "better-result";
+import { asc, eq, sql } from "drizzle-orm";
+import {
+   fromDrizzle,
+   type DrizzleTransactionLike,
+   type Job,
+   type SendOptions,
+} from "pg-boss";
 import { z } from "zod";
 import { flashModel } from "@core/ai/models";
 import { createAiObservabilityMiddleware } from "@core/ai/middleware";
@@ -9,12 +15,8 @@ import { messages } from "@core/database/schemas/messages";
 import { threads } from "@core/database/schemas/threads";
 import { getLogger } from "@core/logging/root";
 import type { PgBossClient } from "@core/pg-boss/client";
-import { PgBossJobError } from "@core/pg-boss/client";
-import { fromDrizzleTransaction } from "@core/pg-boss/drizzle";
 import type { Prompts } from "@core/posthog/server";
-import type { Redis } from "@core/redis/connection";
 import { AGENT_PROMPTS, AGENT_QUEUES } from "../constants";
-import { agentsSseEvents } from "../sse";
 import {
    conversationTranscript,
    hasUserAndAssistantText,
@@ -31,6 +33,22 @@ export const generateThreadTitleJobInputSchema = z.object({
 export type GenerateThreadTitleJobInput = z.infer<
    typeof generateThreadTitleJobInputSchema
 >;
+
+export class GenerateThreadTitleJobError extends TaggedError(
+   "GenerateThreadTitleJobError",
+)<{
+   operation:
+      | "enqueue"
+      | "ensure_queue"
+      | "parse_input"
+      | "load_recent_messages"
+      | "load_prompt"
+      | "generate_title"
+      | "write_title";
+   message: string;
+   threadId?: string;
+   cause?: unknown;
+}>() {}
 
 const MIN_TITLE_TRANSCRIPT_LENGTH = 24;
 
@@ -49,10 +67,23 @@ export async function enqueueGenerateThreadTitleJob(options: {
    input: GenerateThreadTitleJobInput;
    tx?: DrizzleTransactionLike;
 }) {
-   await options.boss.createQueue(
-      generateThreadTitleQueue.name,
-      generateThreadTitleQueue,
-   );
+   const queue = await Result.tryPromise({
+      try: () =>
+         options.boss.createQueue(
+            generateThreadTitleQueue.name,
+            generateThreadTitleQueue,
+         ),
+      catch: (cause) =>
+         new GenerateThreadTitleJobError({
+            operation: "ensure_queue",
+            message: "Falha ao preparar fila de geração de título.",
+            threadId: options.input.threadId,
+            cause,
+         }),
+   });
+   if (Result.isError(queue)) {
+      return Result.err(queue.error);
+   }
 
    const sendOptions: SendOptions = {
       singletonKey: options.input.threadId,
@@ -63,118 +94,194 @@ export async function enqueueGenerateThreadTitleJob(options: {
       retentionSeconds: generateThreadTitleQueue.retentionSeconds,
       deleteAfterSeconds: generateThreadTitleQueue.deleteAfterSeconds,
    };
-   if (options.tx) sendOptions.db = fromDrizzleTransaction(options.tx);
+   if (options.tx) sendOptions.db = fromDrizzle(options.tx, sql);
 
-   const jobId = await options.boss.send(
-      AGENT_QUEUES.generateTitle,
-      options.input,
-      sendOptions,
-   );
-   if (!jobId) {
-      throw new PgBossJobError("Falha ao enfileirar geração de título.");
+   const jobId = await Result.tryPromise({
+      try: () =>
+         options.boss.send(
+            AGENT_QUEUES.generateTitle,
+            options.input,
+            sendOptions,
+         ),
+      catch: (cause) =>
+         new GenerateThreadTitleJobError({
+            operation: "enqueue",
+            message: "Falha ao enfileirar geração de título.",
+            threadId: options.input.threadId,
+            cause,
+         }),
+   });
+
+   if (Result.isError(jobId)) {
+      return Result.err(jobId.error);
    }
-   return jobId;
+   if (!jobId.value) {
+      return Result.err(
+         new GenerateThreadTitleJobError({
+            operation: "enqueue",
+            message: "Pg-boss não retornou o ID do job de geração de título.",
+            threadId: options.input.threadId,
+         }),
+      );
+   }
+   return Result.ok(jobId.value);
 }
 
 export async function handleGenerateThreadTitleJob(options: {
    db: DatabaseInstance;
    prompts: Prompts;
-   redis: Redis;
    job: Job<GenerateThreadTitleJobInput>;
 }) {
-   const input = generateThreadTitleJobInputSchema.parse(options.job.data);
+   const parsedInput = generateThreadTitleJobInputSchema.safeParse(
+      options.job.data,
+   );
+   if (!parsedInput.success) {
+      return Result.err(
+         new GenerateThreadTitleJobError({
+            operation: "parse_input",
+            message: "Payload inválido para geração de título.",
+            cause: parsedInput.error,
+         }),
+      );
+   }
+
+   const input = parsedInput.data;
    const ctx = `[pg-boss generate-title] thread=${input.threadId}`;
    logger.info({ jobId: options.job.id, threadId: input.threadId }, "running");
 
-   const recent = await options.db.transaction(async (tx) => {
-      const thread = await tx.query.threads.findFirst({
-         where: (f, { eq: eqFn }) => eqFn(f.id, input.threadId),
-      });
-      if (!thread || thread.title) return null;
-      return tx
-         .select({ role: messages.role, parts: messages.parts })
-         .from(messages)
-         .where(eq(messages.threadId, input.threadId))
-         .orderBy(asc(messages.createdAt))
-         .limit(6);
+   const recent = await Result.tryPromise({
+      try: () =>
+         options.db.transaction(async (tx) => {
+            const thread = await tx.query.threads.findFirst({
+               where: (f, { eq: eqFn }) => eqFn(f.id, input.threadId),
+            });
+            if (!thread || thread.title) return null;
+            return tx
+               .select({ role: messages.role, parts: messages.parts })
+               .from(messages)
+               .where(eq(messages.threadId, input.threadId))
+               .orderBy(asc(messages.createdAt))
+               .limit(6);
+         }),
+      catch: (cause) =>
+         new GenerateThreadTitleJobError({
+            operation: "load_recent_messages",
+            message: "Falha ao carregar mensagens recentes para título.",
+            threadId: input.threadId,
+            cause,
+         }),
    });
 
-   if (!recent || recent.length === 0) {
+   if (Result.isError(recent)) {
+      return Result.err(recent.error);
+   }
+   if (!recent.value || recent.value.length === 0) {
       logger.info(`${ctx} skipping: no messages or title already set`);
-      return;
+      return Result.ok(undefined);
    }
 
-   const transcript = conversationTranscript(recent);
+   const transcript = conversationTranscript(recent.value);
    if (
       transcript.length < MIN_TITLE_TRANSCRIPT_LENGTH ||
-      !hasUserAndAssistantText(recent)
+      !hasUserAndAssistantText(recent.value)
    ) {
       logger.info(`${ctx} skipping: conversation too shallow`);
-      return;
+      return Result.ok(undefined);
    }
 
-   const { prompt, name, version } = await options.prompts.get(
-      AGENT_PROMPTS.generateTitle,
-      { withMetadata: true },
-   );
-   const titleResult = await chat({
-      adapter: flashModel,
-      messages: [
-         {
-            role: "user",
-            content: [
+   const prompt = await Result.tryPromise({
+      try: () =>
+         options.prompts.get(AGENT_PROMPTS.generateTitle, {
+            withMetadata: true,
+         }),
+      catch: (cause) =>
+         new GenerateThreadTitleJobError({
+            operation: "load_prompt",
+            message: "Falha ao carregar prompt de geração de título.",
+            threadId: input.threadId,
+            cause,
+         }),
+   });
+
+   if (Result.isError(prompt)) {
+      return Result.err(prompt.error);
+   }
+
+   const titleResult = await Result.tryPromise({
+      try: () =>
+         chat({
+            adapter: flashModel,
+            messages: [
                {
-                  type: "text",
-                  content: options.prompts.compile(prompt, { transcript }),
+                  role: "user",
+                  content: [
+                     {
+                        type: "text",
+                        content: options.prompts.compile(prompt.value.prompt, {
+                           transcript,
+                        }),
+                     },
+                  ],
                },
             ],
-         },
-      ],
-      stream: false,
-      conversationId: input.threadId,
-      middleware: [
-         createAiObservabilityMiddleware({
-            distinctId: input.teamId,
-            organizationId: input.organizationId,
-            teamId: input.teamId,
+            stream: false,
             conversationId: input.threadId,
-            promptName: name,
-            promptVersion: version,
-            customProperties: {
-               agent_role: "job",
-               agent_workflow: "generate-title",
-               agent_thread_id: input.threadId,
-            },
+            middleware: [
+               createAiObservabilityMiddleware({
+                  distinctId: input.teamId,
+                  organizationId: input.organizationId,
+                  teamId: input.teamId,
+                  conversationId: input.threadId,
+                  promptName: prompt.value.name,
+                  promptVersion: prompt.value.version,
+                  customProperties: {
+                     agent_role: "job",
+                     agent_workflow: "generate-title",
+                     agent_thread_id: input.threadId,
+                  },
+               }),
+            ],
          }),
-      ],
+      catch: (cause) =>
+         new GenerateThreadTitleJobError({
+            operation: "generate_title",
+            message: "Falha ao gerar título da conversa.",
+            threadId: input.threadId,
+            cause,
+         }),
    });
 
-   const title = titleResult.trim().slice(0, 80);
-   if (title.length === 0) {
-      logger.warn(`${ctx} empty title generated: skipping`);
-      return;
+   if (Result.isError(titleResult)) {
+      return Result.err(titleResult.error);
    }
 
-   await options.db.transaction(async (tx) => {
-      await tx
-         .update(threads)
-         .set({ title })
-         .where(eq(threads.id, input.threadId));
+   const title = titleResult.value.trim().slice(0, 80);
+   if (title.length === 0) {
+      logger.warn(`${ctx} empty title generated: skipping`);
+      return Result.ok(undefined);
+   }
+
+   const write = await Result.tryPromise({
+      try: () =>
+         options.db.transaction(async (tx) => {
+            await tx
+               .update(threads)
+               .set({ title })
+               .where(eq(threads.id, input.threadId));
+         }),
+      catch: (cause) =>
+         new GenerateThreadTitleJobError({
+            operation: "write_title",
+            message: "Falha ao salvar título gerado.",
+            threadId: input.threadId,
+            cause,
+         }),
    });
 
-   const publish = await agentsSseEvents.publish(
-      options.redis,
-      { kind: "team", id: input.teamId },
-      {
-         type: "agent.thread.title_updated",
-         payload: { threadId: input.threadId, title },
-      },
-   );
-   if (publish.isErr()) {
-      throw new PgBossJobError("Falha ao publicar atualização de título.", {
-         cause: publish.error,
-      });
+   if (Result.isError(write)) {
+      return Result.err(write.error);
    }
 
    logger.info({ threadId: input.threadId, title }, "completed");
+   return Result.ok(undefined);
 }

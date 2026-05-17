@@ -14,13 +14,6 @@ export type CreatePgBossClientOptions = {
    supervise?: boolean;
 };
 
-export class PgBossJobError extends Error {
-   constructor(message: string, options?: ErrorOptions) {
-      super(message, options);
-      this.name = "PgBossJobError";
-   }
-}
-
 export function createPgBossClient(options: CreatePgBossClientOptions) {
    const constructorOptions: ConstructorOptions = {
       connectionString: options.connectionString,

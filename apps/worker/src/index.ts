@@ -53,7 +53,6 @@ const pgBossWorker = await startPgBossWorker({
       registerAgentPgBossJobs({
          boss,
          db,
-         redis,
          prompts: promptsClient,
       }),
 });

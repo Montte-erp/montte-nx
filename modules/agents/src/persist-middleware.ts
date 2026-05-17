@@ -1,5 +1,6 @@
 import { StreamProcessor, type UIMessage } from "@tanstack/ai";
 import type { ChatMiddleware } from "@tanstack/ai";
+import { Result } from "better-result";
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
 import {
@@ -91,7 +92,7 @@ export function createPersistMiddleware(
                !deps.threadHasTitle &&
                messageCount >= MIN_TITLE_MESSAGE_COUNT
             ) {
-               await enqueueGenerateThreadTitleJob({
+               const enqueueTitle = await enqueueGenerateThreadTitleJob({
                   boss: deps.pgBoss,
                   tx,
                   input: {
@@ -100,6 +101,12 @@ export function createPersistMiddleware(
                      organizationId: deps.organizationId,
                   },
                });
+               if (Result.isError(enqueueTitle)) {
+                  logger.error(
+                     { err: enqueueTitle.error },
+                     "failed enqueue generate-title",
+                  );
+               }
             }
 
             return rows;
