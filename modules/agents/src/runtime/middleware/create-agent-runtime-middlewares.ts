@@ -70,35 +70,6 @@ class AgentRuntimeError extends TaggedError("AgentRuntimeError")<{
    jobErrorMessage?: string;
 }>() {}
 
-function mapJobErrorPayload(error: unknown) {
-   if (error instanceof Error) {
-      return {
-         jobErrorName: error.name,
-         jobErrorMessage: error.message,
-      };
-   }
-
-   if (typeof error === "object" && error !== null) {
-      const name =
-         typeof Reflect.get(error, "name") === "string"
-            ? Reflect.get(error, "name")
-            : undefined;
-      const message =
-         typeof Reflect.get(error, "message") === "string"
-            ? Reflect.get(error, "message")
-            : undefined;
-
-      return {
-         jobErrorName: name,
-         jobErrorMessage: message,
-      };
-   }
-
-   return {
-      jobErrorMessage: typeof error === "string" ? error : undefined,
-   };
-}
-
 const MIN_TITLE_MESSAGE_COUNT = 2;
 const MIN_SUGGESTION_MESSAGE_COUNT = 4;
 const SUGGESTION_MESSAGE_INTERVAL = 4;
@@ -338,7 +309,10 @@ async function enqueueThreadTitle(options: {
 
    return result.mapError((error) => {
       if (error instanceof AgentRuntimeError) return error;
-      const jobError = mapJobErrorPayload(error);
+
+      const jobErrorName = error instanceof Error ? error.name : undefined;
+      const jobErrorMessage =
+         error instanceof Error ? error.message : undefined;
 
       log.error({
          module: "agents.runtime",
@@ -346,8 +320,8 @@ async function enqueueThreadTitle(options: {
          threadId: options.threadId,
          teamId: options.teamId,
          organizationId: options.organizationId,
-         jobErrorName: jobError.jobErrorName,
-         jobErrorMessage: jobError.jobErrorMessage,
+         jobErrorName,
+         jobErrorMessage,
          err: error,
       });
 
@@ -369,7 +343,8 @@ async function enqueueThreadTitle(options: {
          threadId: options.threadId,
          teamId: options.teamId,
          organizationId: options.organizationId,
-         ...jobError,
+         jobErrorName,
+         jobErrorMessage,
       });
    });
 }
@@ -439,7 +414,10 @@ async function enqueueThreadSuggestions(options: {
 
    return result.mapError((error) => {
       if (error instanceof AgentRuntimeError) return error;
-      const jobError = mapJobErrorPayload(error);
+
+      const jobErrorName = error instanceof Error ? error.name : undefined;
+      const jobErrorMessage =
+         error instanceof Error ? error.message : undefined;
 
       log.error({
          module: "agents.runtime",
@@ -448,8 +426,8 @@ async function enqueueThreadSuggestions(options: {
          teamId: options.teamId,
          organizationId: options.organizationId,
          messageCount: options.messageCount,
-         jobErrorName: jobError.jobErrorName,
-         jobErrorMessage: jobError.jobErrorMessage,
+         jobErrorName,
+         jobErrorMessage,
          err: error,
       });
 
@@ -474,7 +452,8 @@ async function enqueueThreadSuggestions(options: {
          teamId: options.teamId,
          organizationId: options.organizationId,
          messageCount: options.messageCount,
-         ...jobError,
+         jobErrorName,
+         jobErrorMessage,
       });
    });
 }
