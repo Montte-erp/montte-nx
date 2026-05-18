@@ -1,7 +1,7 @@
 import type { ChatMiddleware, UIMessage } from "@tanstack/ai";
 import dayjs from "dayjs";
 import { defineErrorCatalog } from "evlog";
-import { Result, TaggedError, type Result as ResultType } from "better-result";
+import { Result, TaggedError } from "better-result";
 import { and, eq, isNull } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import {
@@ -151,7 +151,7 @@ async function persistAssistantMessages(options: {
    teamId: string;
    organizationId: string;
    streamState: ReturnType<typeof createAssistantStreamState>;
-}): Promise<ResultType<void, AgentRuntimeError>> {
+}): Promise<Result<void, AgentRuntimeError>> {
    return Result.gen(async function* () {
       const newAssistantMessages = options.streamState.newAssistantMessages();
 
@@ -216,7 +216,7 @@ async function enqueueThreadTitle(options: {
    threadId: string;
    teamId: string;
    organizationId: string;
-}): Promise<ResultType<string | undefined, AgentRuntimeError>> {
+}): Promise<Result<string | undefined, AgentRuntimeError>> {
    const result = await Result.gen(async function* () {
       const thread = yield* Result.await(
          Result.tryPromise({
@@ -294,59 +294,56 @@ async function enqueueThreadTitle(options: {
       );
 
       const jobId = yield* Result.await(
-         enqueueGenerateThreadTitleJob({
-            boss,
-            input: {
-               threadId: options.threadId,
-               teamId: options.teamId,
-               organizationId: options.organizationId,
-            },
-         }),
+         (async () => {
+            const enqueueResult = await enqueueGenerateThreadTitleJob({
+               boss,
+               input: {
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+               },
+            });
+
+            return Result.mapError(
+               enqueueResult,
+               (jobError: { name: string; message: string }) => {
+                  const error = runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
+                     internal: {
+                        threadId: options.threadId,
+                        teamId: options.teamId,
+                        organizationId: options.organizationId,
+                     },
+                  });
+
+                  log.error({
+                     module: "agents.runtime",
+                     message: "failed enqueue generate-title",
+                     threadId: options.threadId,
+                     teamId: options.teamId,
+                     organizationId: options.organizationId,
+                     jobErrorName: jobError.name,
+                     jobErrorMessage: jobError.message,
+                     err: jobError,
+                  });
+
+                  return new AgentRuntimeError({
+                     error,
+                     message: error.message,
+                     threadId: options.threadId,
+                     teamId: options.teamId,
+                     organizationId: options.organizationId,
+                     jobErrorName: jobError.name,
+                     jobErrorMessage: jobError.message,
+                  });
+               },
+            );
+         })(),
       );
 
       return Result.ok(jobId);
    });
 
-   return result.mapError((error) => {
-      if (error instanceof AgentRuntimeError) return error;
-
-      const jobErrorName = error instanceof Error ? error.name : undefined;
-      const jobErrorMessage =
-         error instanceof Error ? error.message : undefined;
-
-      log.error({
-         module: "agents.runtime",
-         message: "failed enqueue generate-title",
-         threadId: options.threadId,
-         teamId: options.teamId,
-         organizationId: options.organizationId,
-         jobErrorName,
-         jobErrorMessage,
-         err: error,
-      });
-
-      return new AgentRuntimeError({
-         error: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
-            internal: {
-               threadId: options.threadId,
-               teamId: options.teamId,
-               organizationId: options.organizationId,
-            },
-         }),
-         message: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
-            internal: {
-               threadId: options.threadId,
-               teamId: options.teamId,
-               organizationId: options.organizationId,
-            },
-         }).message,
-         threadId: options.threadId,
-         teamId: options.teamId,
-         organizationId: options.organizationId,
-         jobErrorName,
-         jobErrorMessage,
-      });
-   });
+   return result;
 }
 
 async function enqueueThreadSuggestions(options: {
@@ -355,7 +352,7 @@ async function enqueueThreadSuggestions(options: {
    teamId: string;
    organizationId: string;
    messageCount: number;
-}): Promise<ResultType<string, AgentRuntimeError>> {
+}): Promise<Result<string, AgentRuntimeError>> {
    const result = await Result.gen(async function* () {
       const boss = yield* Result.await(
          Result.tryPromise({
@@ -398,62 +395,60 @@ async function enqueueThreadSuggestions(options: {
       );
 
       const jobId = yield* Result.await(
-         enqueueRefreshThreadSuggestionsJob({
-            boss,
-            input: {
-               threadId: options.threadId,
-               teamId: options.teamId,
-               organizationId: options.organizationId,
-               messageCount: options.messageCount,
-            },
-         }),
+         (async () => {
+            const enqueueResult = await enqueueRefreshThreadSuggestionsJob({
+               boss,
+               input: {
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+                  messageCount: options.messageCount,
+               },
+            });
+
+            return Result.mapError(
+               enqueueResult,
+               (jobError: { name: string; message: string }) => {
+                  const error = runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED(
+                     {
+                        internal: {
+                           threadId: options.threadId,
+                           teamId: options.teamId,
+                           organizationId: options.organizationId,
+                           messageCount: options.messageCount,
+                        },
+                     },
+                  );
+
+                  log.error({
+                     module: "agents.runtime",
+                     message: "failed enqueue refresh-suggestions",
+                     threadId: options.threadId,
+                     teamId: options.teamId,
+                     organizationId: options.organizationId,
+                     messageCount: options.messageCount,
+                     jobErrorName: jobError.name,
+                     jobErrorMessage: jobError.message,
+                     err: jobError,
+                  });
+
+                  return new AgentRuntimeError({
+                     error,
+                     message: error.message,
+                     threadId: options.threadId,
+                     teamId: options.teamId,
+                     organizationId: options.organizationId,
+                     messageCount: options.messageCount,
+                     jobErrorName: jobError.name,
+                     jobErrorMessage: jobError.message,
+                  });
+               },
+            );
+         })(),
       );
 
       return Result.ok(jobId);
    });
 
-   return result.mapError((error) => {
-      if (error instanceof AgentRuntimeError) return error;
-
-      const jobErrorName = error instanceof Error ? error.name : undefined;
-      const jobErrorMessage =
-         error instanceof Error ? error.message : undefined;
-
-      log.error({
-         module: "agents.runtime",
-         message: "failed enqueue refresh-suggestions",
-         threadId: options.threadId,
-         teamId: options.teamId,
-         organizationId: options.organizationId,
-         messageCount: options.messageCount,
-         jobErrorName,
-         jobErrorMessage,
-         err: error,
-      });
-
-      return new AgentRuntimeError({
-         error: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
-            internal: {
-               threadId: options.threadId,
-               teamId: options.teamId,
-               organizationId: options.organizationId,
-               messageCount: options.messageCount,
-            },
-         }),
-         message: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
-            internal: {
-               threadId: options.threadId,
-               teamId: options.teamId,
-               organizationId: options.organizationId,
-               messageCount: options.messageCount,
-            },
-         }).message,
-         threadId: options.threadId,
-         teamId: options.teamId,
-         organizationId: options.organizationId,
-         messageCount: options.messageCount,
-         jobErrorName,
-         jobErrorMessage,
-      });
-   });
+   return result;
 }
