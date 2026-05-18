@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { Result, isTaggedError } from "better-result";
 import { z } from "zod";
-import { ORPCError, os } from "@orpc/server";
+import { os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
@@ -84,14 +84,27 @@ export async function buildWebContext(
 
 export type BillableMeta = { billableEvent?: string };
 
-const base = os.$context<ORPCContext>().$meta<BillableMeta>({});
+const errorDataSchema = z.object({ tag: z.string() }).optional();
+
+const base = os
+   .errors({
+      BAD_REQUEST: { data: errorDataSchema },
+      UNAUTHORIZED: { data: errorDataSchema },
+      FORBIDDEN: { data: errorDataSchema },
+      NOT_FOUND: { data: errorDataSchema },
+      CONFLICT: { data: errorDataSchema },
+      TOO_MANY_REQUESTS: { data: errorDataSchema },
+      INTERNAL_SERVER_ERROR: { data: errorDataSchema },
+   })
+   .$context<ORPCContext>()
+   .$meta<BillableMeta>({});
 
 const apiKeyMetadataSchema = z.object({
    organizationId: z.string().min(1),
    teamId: z.string().min(1).nullish(),
 });
 
-const withDeps = base.use(async ({ context, next }) => {
+const withDeps = base.use(async ({ context, next, errors }) => {
    const apiKeyValue =
       context.headers.get("x-api-key") ?? context.headers.get("sdk-api-key");
 
@@ -101,14 +114,14 @@ const withDeps = base.use(async ({ context, next }) => {
             Result.tryPromise({
                try: () => auth.api.verifyApiKey({ body: { key: apiKeyValue } }),
                catch: () =>
-                  new ORPCError("UNAUTHORIZED", {
+                  errors.UNAUTHORIZED({
                      message: "API key inválida.",
                   }),
             }),
          );
          if (!verified?.valid || !verified.key) {
             return Result.err(
-               new ORPCError("UNAUTHORIZED", {
+               errors.UNAUTHORIZED({
                   message: "API key inválida.",
                }),
             );
@@ -117,7 +130,7 @@ const withDeps = base.use(async ({ context, next }) => {
          const parsed = apiKeyMetadataSchema.safeParse(verified.key.metadata);
          if (!parsed.success) {
             return Result.err(
-               new ORPCError("BAD_REQUEST", {
+               errors.BAD_REQUEST({
                   message: "Metadata da API key inválida.",
                }),
             );
@@ -130,21 +143,21 @@ const withDeps = base.use(async ({ context, next }) => {
             Result.tryPromise({
                try: () => auth.api.getSession({ headers: apiKeyHeaders }),
                catch: () =>
-                  new ORPCError("UNAUTHORIZED", {
+                  errors.UNAUTHORIZED({
                      message: "Falha ao resolver sessão da API key.",
                   }),
             }),
          );
          if (!session?.user) {
             return Result.err(
-               new ORPCError("UNAUTHORIZED", {
+               errors.UNAUTHORIZED({
                   message: "API key sem sessão associada.",
                }),
             );
          }
          if (session.user.id !== verified.key.referenceId) {
             return Result.err(
-               new ORPCError("UNAUTHORIZED", {
+               errors.UNAUTHORIZED({
                   message: "API key não pertence à sessão.",
                }),
             );
@@ -182,7 +195,7 @@ const withDeps = base.use(async ({ context, next }) => {
          Result.tryPromise({
             try: () => auth.api.getSession({ headers: context.headers }),
             catch: () =>
-               new ORPCError("INTERNAL_SERVER_ERROR", {
+               errors.INTERNAL_SERVER_ERROR({
                   message: "Falha ao resolver sessão.",
                }),
          }),
@@ -208,12 +221,12 @@ const withDeps = base.use(async ({ context, next }) => {
    });
 });
 
-const withAuth = withDeps.use(({ context, next }) => {
+const withAuth = withDeps.use(({ context, next, errors }) => {
    const result = Result.gen(function* () {
       const { session } = context;
       if (!session?.user) {
          return Result.err(
-            new ORPCError("UNAUTHORIZED", {
+            errors.UNAUTHORIZED({
                message:
                   "Você precisa estar autenticado para acessar este recurso.",
             }),
@@ -238,21 +251,21 @@ const withAuth = withDeps.use(({ context, next }) => {
    });
 });
 
-const withOrganization = withAuth.use(({ context, next }) => {
+const withOrganization = withAuth.use(({ context, next, errors }) => {
    const result = Result.gen(function* () {
       const organizationId = context.session.session.activeOrganizationId;
       const teamId = context.session.session.activeTeamId;
 
       if (!organizationId) {
          return Result.err(
-            new ORPCError("FORBIDDEN", {
+            errors.FORBIDDEN({
                message: "Nenhuma organização ativa selecionada.",
             }),
          );
       }
       if (!teamId) {
          return Result.err(
-            new ORPCError("FORBIDDEN", {
+            errors.FORBIDDEN({
                message: "Nenhum time ativo selecionado.",
             }),
          );
@@ -273,15 +286,6 @@ const withOrganization = withAuth.use(({ context, next }) => {
    });
 });
 
-const orpcCodeByStatus = new Map([
-   [400, "BAD_REQUEST"],
-   [401, "UNAUTHORIZED"],
-   [403, "FORBIDDEN"],
-   [404, "NOT_FOUND"],
-   [409, "CONFLICT"],
-   [429, "TOO_MANY_REQUESTS"],
-]);
-
 function getErrorMessage(error: unknown) {
    if (isTaggedError(error)) return error.message;
    if (typeof error !== "object") return String(error);
@@ -300,7 +304,7 @@ function getErrorName(error: unknown) {
    return error.name;
 }
 
-const withORPCErrors = withOrganization.use(async ({ next }) => {
+const withORPCErrors = withOrganization.use(async ({ next, errors }) => {
    const result = await Result.gen(async function* () {
       const output = yield* Result.await(
          Result.tryPromise({
@@ -325,15 +329,21 @@ const withORPCErrors = withOrganization.use(async ({ next }) => {
       throw result.error;
    }
 
-   throw new ORPCError(
-      orpcCodeByStatus.get(result.error.error.status) ??
-         "INTERNAL_SERVER_ERROR",
-      {
-         message: result.error.message,
-         cause: result.error,
-         data: { tag: result.error._tag },
-      },
-   );
+   const options = {
+      message: result.error.message,
+      cause: result.error,
+      data: { tag: result.error._tag },
+   };
+
+   if (result.error.error.status === 400) throw errors.BAD_REQUEST(options);
+   if (result.error.error.status === 401) throw errors.UNAUTHORIZED(options);
+   if (result.error.error.status === 403) throw errors.FORBIDDEN(options);
+   if (result.error.error.status === 404) throw errors.NOT_FOUND(options);
+   if (result.error.error.status === 409) throw errors.CONFLICT(options);
+   if (result.error.error.status === 429)
+      throw errors.TOO_MANY_REQUESTS(options);
+
+   throw errors.INTERNAL_SERVER_ERROR(options);
 });
 
 const withLogger = withORPCErrors.use(
