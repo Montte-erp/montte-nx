@@ -99,6 +99,7 @@ type TransactionInput = {
    ignored?: boolean;
    creditCardId?: string | null;
    bankAccountId?: string | null;
+   statementPeriod?: string | null;
 };
 
 async function makeTransaction(db: DatabaseInstance, input: TransactionInput) {
@@ -114,6 +115,7 @@ async function makeTransaction(db: DatabaseInstance, input: TransactionInput) {
          ignored: input.ignored ?? false,
          creditCardId: input.creditCardId,
          bankAccountId: input.bankAccountId,
+         statementPeriod: input.statementPeriod,
       })
       .returning({ id: transactions.id });
    return requireRow(transaction, "Transação");
@@ -371,6 +373,69 @@ describe("statements router", () => {
          ),
          404,
       );
+   });
+
+   it("close fecha fatura por competência e é idempotente", async () => {
+      const seeded = await seedCard(testDb.db);
+      const period = "2026-09";
+      await makeTransaction(testDb.db, {
+         teamId: seeded.teamId,
+         creditCardId: seeded.card.id,
+         statementPeriod: period,
+      });
+      const ctx = createTestContext(testDb.db, seeded);
+
+      const first = await call(
+         statementsRouter.close,
+         {
+            creditCardId: seeded.card.id,
+            statementPeriod: period,
+         },
+         { context: ctx },
+      );
+      const second = await call(
+         statementsRouter.close,
+         {
+            creditCardId: seeded.card.id,
+            statementPeriod: period,
+         },
+         { context: ctx },
+      );
+
+      expect(first.status).toBe("closed");
+      expect(second.status).toBe("closed");
+   });
+
+   it("close mantém fatura em paid sem alterar status", async () => {
+      const seeded = await seedCard(testDb.db);
+      const period = "2026-10";
+      await makeTransaction(testDb.db, {
+         teamId: seeded.teamId,
+         creditCardId: seeded.card.id,
+         statementPeriod: period,
+      });
+      await makeStatement(testDb.db, seeded.card.id, period, "paid");
+      const ctx = createTestContext(testDb.db, seeded);
+
+      const first = await call(
+         statementsRouter.close,
+         {
+            creditCardId: seeded.card.id,
+            statementPeriod: period,
+         },
+         { context: ctx },
+      );
+      const second = await call(
+         statementsRouter.close,
+         {
+            creditCardId: seeded.card.id,
+            statementPeriod: period,
+         },
+         { context: ctx },
+      );
+
+      expect(first.status).toBe("paid");
+      expect(second.status).toBe("paid");
    });
 
    it("markAsPaid vincula transação válida do mesmo time", async () => {

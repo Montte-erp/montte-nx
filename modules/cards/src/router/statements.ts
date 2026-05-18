@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { Result } from "better-result";
 import { and, desc, eq, sql } from "drizzle-orm";
+import { closeStatement } from "../statements";
 import { z } from "zod";
 import {
    createStatementSchema,
@@ -20,19 +21,25 @@ import {
 
 const idSchema = z.object({ id: z.string().uuid() });
 
+const statementPeriodSchema = z
+   .string()
+   .regex(/^\d{4}-(0[1-9]|1[0-2])$/u, "Competência inválida.");
+
 const listStatementsSchema = z.object({
    page: z.number().int().positive().catch(1).default(1),
    pageSize: z.number().int().positive().max(1000).catch(20).default(20),
    creditCardId: z.string().uuid().optional(),
-   statementPeriod: z
-      .string()
-      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Competência inválida.")
-      .optional(),
-   status: z.enum(["open", "paid"]).optional(),
+   statementPeriod: statementPeriodSchema.optional(),
+   status: z.enum(["open", "closed", "paid"]).optional(),
 });
 
 const statusInputSchema = idSchema.extend({
    paymentTransactionId: z.string().uuid().nullable().optional(),
+});
+
+const closeStatementInputSchema = z.object({
+   creditCardId: z.string().uuid(),
+   statementPeriod: statementPeriodSchema,
 });
 
 async function validatePaymentTransaction(
@@ -227,6 +234,20 @@ export const getById = protectedProcedure
    .input(idSchema)
    .use(requireStatement, (input) => input.id)
    .handler(async ({ context }) => context.statement);
+
+export const close = protectedProcedure
+   .input(closeStatementInputSchema)
+   .use(requireCreditCard, (input) => input.creditCardId)
+   .handler(async ({ context, input }) => {
+      const result = await closeStatement({
+         db: context.db,
+         creditCardId: input.creditCardId,
+         statementPeriod: input.statementPeriod,
+         teamId: context.teamId,
+      });
+      if (Result.isError(result)) throw result.error;
+      return result.value;
+   });
 
 export const markAsPaid = protectedProcedure
    .input(statusInputSchema)
