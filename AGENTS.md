@@ -76,10 +76,10 @@ Routers live in `modules/<module>/src/router/<name>.ts` and are aggregated in `a
 
 **Rules:**
 
-- Errors: only `WebAppError` (factories: `notFound`, `forbidden`, `unauthorized`, `badRequest`, `conflict`, `tooManyRequests`, `internal`, `database`, `validation`, `fromAppError`). Never `ORPCError` / raw `Error` / strings. **Messages always pt-BR** — they render directly in toasts.
+- Errors: expected domain/router failures use `better-result` with owner-local `TaggedError` carrying an evlog catalog error with `status`. Handlers may throw those tagged errors directly; the global oRPC middleware maps them to the typed `.errors(...)` constructors. Do not use `WebAppError`, `AppError`, direct `ORPCError`, raw `Error`, strings, or wrapper factories. **Messages always pt-BR** — they render directly in toasts.
 - **No repository layer.** Routers query `context.db` directly; workflows use `<module>DataSource.runTransaction`.
 - All writes inside `db.transaction(async (tx) => …)`. Single reads exempt.
-- Business-rule checks (conflict/notFound) **outside** the transaction. `mapErr` always to `WebAppError.internal`. Empty `returning()` → throw `WebAppError.internal` (specific) outside the tx.
+- Business-rule checks (conflict/notFound) **outside** the transaction. Empty `returning()` → return/throw the local tagged catalog error outside the tx.
 - Ownership via middleware: fetch entity, check `teamId`, pass via `next({ context: { entity } })`. Handler never re-queries.
 - Bulk ops: dedicated procedure + `Promise.allSettled` server-side. Never loop `mutateAsync` on the client.
 - Cost-incurring procedures: use `billableProcedure` + `.meta({ billableEvent: "<name>" })`. Pure CRUD stays on `protectedProcedure`.
@@ -90,17 +90,31 @@ Canonical pattern:
 const itemByIdProcedure = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .use(async ({ context, input, next }) => {
-      const result = await fromPromise(
-         context.db.query.items.findFirst({
-            where: (f, { eq }) => eq(f.id, input.id),
-         }),
-         () => WebAppError.internal("Falha ao verificar permissão."),
-      ).andThen((item) =>
-         !item || item.teamId !== context.teamId
-            ? err(WebAppError.notFound("Item não encontrado."))
-            : ok(item),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.gen(async function* () {
+         const item = yield* Result.await(
+            Result.tryPromise({
+               try: () =>
+                  context.db.query.items.findFirst({
+                     where: (f, { eq }) => eq(f.id, input.id),
+                  }),
+               catch: () =>
+                  new ItemRouterError({
+                     error: itemRouterErrors.PERMISSION_CHECK_FAILED(),
+                     message: "Falha ao verificar permissão.",
+                  }),
+            }),
+         );
+
+         if (!item || item.teamId !== context.teamId) {
+            yield* new ItemRouterError({
+               error: itemRouterErrors.NOT_FOUND(),
+               message: "Item não encontrado.",
+            });
+         }
+
+         return Result.ok(item);
+      });
+      if (Result.isError(result)) throw result.error;
       return next({ context: { item: result.value } });
    });
 ```
@@ -240,7 +254,7 @@ Request telemetry belongs in the evlog wide event and leaves through the PostHog
 
 No standalone health heartbeat/logger in `@core/logging`: Railway health stays on `/api/ping`, and service/request telemetry belongs to evlog or OTEL/TanStack AI. Do not keep unused SDK oRPC procedure layers; API key auth should live in the active oRPC middleware path when needed.
 
-Error direction: keep `WebAppError` only as the current oRPC/HTTP transport adapter. New domain errors belong to the owning module, not `@core/logging`: define a local `defineErrorCatalog("<bounded-context>", ...)` in the file/bounded context that owns the failure, register it through `declare module "evlog"`, and when recoverable errors need to flow through `Result`, use one `TaggedError("<Context>Error")<{ error: ReturnType<typeof catalog.SOME_ERROR>; ...payload }>` per bounded context. Do not add wrapper classes or factories around `TaggedError`: no `makeXError`, `xInternal`, `xNotFound`, `dbError`, or similar shortcuts that hide the concrete catalog code. Instantiate `new TaggedErrorClass({ error: catalog.CODE(), message, ...typedPayload })` directly at the failure owner. Do not create module-wide `errors.ts` files just to centralize errors; colocate the catalog with the router/job/runtime/tool that owns the contract. As modules are touched, migrate them away from direct `WebAppError` domain usage at the module boundary.
+Error direction: domain errors belong to the owning module, not `@core/logging` or transport helpers. Define a local `defineErrorCatalog("<bounded-context>", ...)` in the file/bounded context that owns the failure, register it through `declare module "evlog"`, and when recoverable errors need to flow through `Result`, use one `TaggedError("<Context>Error")<{ error: ReturnType<typeof catalog.SOME_ERROR>; ...payload }>` per bounded context. Do not add wrapper classes or factories around `TaggedError`: no `makeXError`, `xInternal`, `xNotFound`, `dbError`, or similar shortcuts that hide the concrete catalog code. Instantiate `new TaggedErrorClass({ error: catalog.CODE(), message, ...typedPayload })` directly at the failure owner. Do not create module-wide `errors.ts` files just to centralize errors; colocate the catalog with the router/job/runtime/tool that owns the contract. oRPC transport mapping is global in `@core/orpc` through typed `.errors(...)`; modules should not translate expected failures to transport errors.
 
 Audit logs are not part of the current migration. Do not wire `auditEnricher`, `auditOnly`, signed filesystem journals, MinIO journals, or `log.audit()` until the audit phase is explicitly reopened.
 

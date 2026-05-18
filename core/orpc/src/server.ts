@@ -286,24 +286,6 @@ const withOrganization = withAuth.use(({ context, next, errors }) => {
    });
 });
 
-function getErrorMessage(error: unknown) {
-   if (isTaggedError(error)) return error.message;
-   if (typeof error !== "object") return String(error);
-   if (!error) return String(error);
-   if (!("message" in error)) return String(error);
-   if (typeof error.message !== "string") return String(error);
-   return error.message;
-}
-
-function getErrorName(error: unknown) {
-   if (isTaggedError(error)) return error.name;
-   if (typeof error !== "object") return "Unknown";
-   if (!error) return "Unknown";
-   if (!("name" in error)) return "Unknown";
-   if (typeof error.name !== "string") return "Unknown";
-   return error.name;
-}
-
 const withORPCErrors = withOrganization.use(async ({ next, errors }) => {
    const result = await Result.gen(async function* () {
       const output = yield* Result.await(
@@ -319,31 +301,35 @@ const withORPCErrors = withOrganization.use(async ({ next, errors }) => {
    if (Result.isOk(result)) return result.value;
 
    if (!isTaggedError(result.error)) throw result.error;
-   if (
-      !("error" in result.error) ||
-      !result.error.error ||
-      typeof result.error.error !== "object" ||
-      !("status" in result.error.error) ||
-      typeof result.error.error.status !== "number"
-   ) {
-      throw result.error;
-   }
+   if (!("error" in result.error)) throw result.error;
+   const catalogError = result.error.error;
+   if (typeof catalogError !== "object") throw result.error;
+   if (!catalogError) throw result.error;
+   if (!("status" in catalogError)) throw result.error;
+   const { status } = catalogError;
+   if (typeof status !== "number") throw result.error;
 
    const options = {
       message: result.error.message,
       cause: result.error,
       data: { tag: result.error._tag },
    };
-
-   if (result.error.error.status === 400) throw errors.BAD_REQUEST(options);
-   if (result.error.error.status === 401) throw errors.UNAUTHORIZED(options);
-   if (result.error.error.status === 403) throw errors.FORBIDDEN(options);
-   if (result.error.error.status === 404) throw errors.NOT_FOUND(options);
-   if (result.error.error.status === 409) throw errors.CONFLICT(options);
-   if (result.error.error.status === 429)
-      throw errors.TOO_MANY_REQUESTS(options);
-
-   throw errors.INTERNAL_SERVER_ERROR(options);
+   switch (status) {
+      case 400:
+         throw errors.BAD_REQUEST(options);
+      case 401:
+         throw errors.UNAUTHORIZED(options);
+      case 403:
+         throw errors.FORBIDDEN(options);
+      case 404:
+         throw errors.NOT_FOUND(options);
+      case 409:
+         throw errors.CONFLICT(options);
+      case 429:
+         throw errors.TOO_MANY_REQUESTS(options);
+      default:
+         throw errors.INTERNAL_SERVER_ERROR(options);
+   }
 });
 
 const withLogger = withORPCErrors.use(
@@ -408,9 +394,9 @@ const withLogger = withORPCErrors.use(
          success: isSuccess,
          input,
       };
-      if (Result.isError(result)) {
-         orpcLog.errorName = getErrorName(result.error);
-         orpcLog.errorMessage = getErrorMessage(result.error);
+      if (Result.isError(result) && isTaggedError(result.error)) {
+         orpcLog.errorName = result.error.name;
+         orpcLog.errorMessage = result.error.message;
       }
 
       context.log.set({
@@ -457,8 +443,8 @@ const withTelemetry = withLogger.use(async ({ context, next }) => {
    if (telemetry.isErr()) {
       context.log.warn("PostHog telemetry failed", {
          posthog: {
-            errorName: getErrorName(telemetry.error),
-            errorMessage: getErrorMessage(telemetry.error),
+            errorName: "PostHogTelemetryError",
+            errorMessage: "Falha ao registrar telemetria no PostHog.",
          },
       });
    }
