@@ -1,7 +1,17 @@
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "nitro";
 import evlog from "evlog/nitro/v3";
 
 const dbosSdkPackage = ["@dbos-inc", "dbos-sdk"].join("/");
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const montteEvlogPlugin = {
+   name: "montte-evlog-plugin",
+   setup(nitro) {
+      nitro.options.plugins = nitro.options.plugins ?? [];
+      nitro.options.plugins.push(resolve(currentDir, "src/integrations/evlog"));
+   },
+};
 
 export default defineConfig({
    preset: "bun",
@@ -25,8 +35,8 @@ export default defineConfig({
             ],
          },
       }),
+      montteEvlogPlugin,
    ],
-   plugins: ["./src/integrations/evlog"],
    rollupConfig: {
       external: (id: string) =>
          id === dbosSdkPackage ||

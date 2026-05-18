@@ -1,6 +1,11 @@
 import { auth } from "@/integrations/singletons";
 import { env } from "@core/environment/web";
-import type { DrainContext, EnrichContext, RequestLogger } from "evlog";
+import {
+   createRequestLogger,
+   type DrainContext,
+   type EnrichContext,
+   type RequestLogger,
+} from "evlog";
 import { createAuthIdentifier } from "evlog/better-auth";
 import {
    createGeoEnricher,
@@ -28,7 +33,18 @@ export function getRequestLog(): RequestLogger {
    const request = useRequest();
    const requestLog = request.context?.log;
    if (isRequestLogger(requestLog)) return requestLog;
-   throw new Error("evlog request logger missing from Nitro context.");
+
+   const url = new URL(request.url, "http://localhost");
+   const log = createRequestLogger({
+      method: request.method,
+      path: url.pathname,
+   });
+   log.set({
+      evlog: {
+         contextMissing: true,
+      },
+   });
+   return log;
 }
 
 function enrichCloudflare(ctx: EnrichContext): void {
@@ -94,9 +110,7 @@ export default definePlugin((nitroApp) => {
    nitroApp.hooks.hook("close", () => drain.flush());
    nitroApp.hooks.hook("request", async (event) => {
       const log = event.req.context?.log;
-      if (!isRequestLogger(log)) {
-         throw new Error("evlog request logger missing from Nitro context.");
-      }
+      if (!isRequestLogger(log)) return;
 
       await identify({
          path: new URL(event.req.url, "http://localhost").pathname,
