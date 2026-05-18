@@ -306,11 +306,12 @@ export const remove = protectedProcedure
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
    .handler(async ({ context, input }) => {
+      const uniqueIds = [...new Set(input.ids)];
       const cardsResult = await Result.tryPromise({
          try: () =>
             context.db.query.creditCards.findMany({
                where: (f, { and }) =>
-                  and(inArray(f.id, input.ids), eq(f.teamId, context.teamId)),
+                  and(inArray(f.id, uniqueIds), eq(f.teamId, context.teamId)),
             }),
          catch: () =>
             new CardsRouterError({
@@ -319,7 +320,7 @@ export const bulkRemove = protectedProcedure
             }),
       });
       if (Result.isError(cardsResult)) throw cardsResult.error;
-      if (cardsResult.value.length !== input.ids.length) {
+      if (cardsResult.value.length !== uniqueIds.length) {
          throw new CardsRouterError({
             error: cardsRouterErrors.NOT_FOUND(),
             message: "Um ou mais cartões não encontrados.",
@@ -328,7 +329,7 @@ export const bulkRemove = protectedProcedure
 
       const open = await findBlockingOpenStatement(
          context.db,
-         input.ids,
+         uniqueIds,
          context.teamId,
       );
       if (Result.isError(open)) throw open.error;
@@ -344,7 +345,7 @@ export const bulkRemove = protectedProcedure
             context.db.transaction(async (tx) =>
                tx
                   .delete(creditCards)
-                  .where(inArray(creditCards.id, input.ids))
+                  .where(inArray(creditCards.id, uniqueIds))
                   .returning({ id: creditCards.id }),
             ),
          catch: () =>
