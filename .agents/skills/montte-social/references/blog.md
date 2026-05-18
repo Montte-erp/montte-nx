@@ -1,11 +1,6 @@
----
-name: montte-blog
-description: Write blog posts for the Montte landing site (apps/landing). Zed-inspired voice, confident, concrete, founder-led, pt-BR. Use when drafting release notes, feature launches, postmortems, opinion pieces, technical deep dives, community posts. Enforces humanization (anti AI-tells), pt-BR purity (anti anglicismo), frontmatter for SEO/AEO/GEO, and JSON-LD-ready metadata.
----
+# Blog — escrita, distribuição, voz canônica Montte
 
-# Montte Blog, Writing Skill
-
-Voz Montte segue Zed: direta, fundadora, com substância técnica. Nunca marketing genérico. Sempre pt-BR. "Montte é masculino" implica "no Montte" e "do Montte", nunca "na Montte".
+Esta reference é a **fonte canônica de voz Montte** para todos os canais. LinkedIn, X e blog herdam voz, regras de humanização e regras de pt-BR daqui. Quando `linkedin.md` ou `x.md` silenciarem sobre voz, vale a regra deste arquivo.
 
 Posts vivem em `apps/landing/src/content/blog/<slug>.md` (Astro content collection definida em `apps/landing/src/content.config.ts`). Renderização em `apps/landing/src/pages/blog/[...slug].astro`.
 
@@ -13,7 +8,7 @@ A regra de ouro: **o texto tem que soar como se um humano cansado tivesse escrit
 
 ---
 
-## Quick start
+## Quick start (blog post novo)
 
 1. Identifique o tipo: **release**, **feature-launch**, **postmortem**, **opinião**, **deep-tech**, **community**.
 2. Escolha template (abaixo). Não misture.
@@ -24,7 +19,8 @@ A regra de ouro: **o texto tem que soar como se um humano cansado tivesse escrit
 7. Parágrafos de 2 a 4 frases. Uma ideia por parágrafo.
 8. CTA final em 1 linha, atalho, link, waitlist.
 9. Preencha frontmatter completo (ver "Frontmatter" abaixo).
-10. Rode o checklist final + o **teste do humano** (final do arquivo).
+10. Rode o checklist final + o **teste do humano** (final deste arquivo).
+11. **Planeje a distribuição** antes de publicar (seção "Cadeia de distribuição" no final).
 
 ---
 
@@ -53,7 +49,7 @@ LLMs deixam pegadas. Detectores como GPTZero, Originality.ai e Copyleaks atrás 
 
 ### 1. Travessão (`—`) está banido
 
-O travessão longo `—` (em dash, U+2014) virou marca registrada de texto gerado por IA. Em pt-BR brasileiro, ele é raro fora de literatura e diálogos. **Não use em post de blog do Montte.** Substitua por uma destas quatro opções, na ordem de preferência:
+O travessão longo `—` (em dash, U+2014) virou marca registrada de texto gerado por IA. Em pt-BR brasileiro, ele é raro fora de literatura e diálogos. **Não use em nenhum canal Montte (blog, LinkedIn, X).** Substitua por uma destas quatro opções, na ordem de preferência:
 
 1. **Vírgula**: "A tabela virou um extrato, agora com subtotal inline."
 2. **Ponto** (quebrar em duas frases): "A tabela virou um extrato. Subtotal aparece inline."
@@ -309,6 +305,7 @@ canonicalUrl: ""                              # só se canonical externo
 - Densidade de fato alta, números, nomes de features, verbos concretos.
 - Sem "neste post você vai aprender". Vá direto.
 - Sem travessão.
+- **Dupla função:** essa string também vira `og:description` no preview do LinkedIn/X. Escreva pensando em preview social além de SERP.
 
 ### Slug do arquivo
 - `montte-YYYY-MM-DD.md` pra release.
@@ -397,6 +394,7 @@ canonicalUrl: ""                              # só se canonical externo
 - [ ] Bullets com bold no termo
 - [ ] CTA final em 1 linha
 - [ ] `bun run landing:build` passa local
+- [ ] **Plano de distribuição definido** (LinkedIn + X — ver seção abaixo)
 
 ### Teste do humano (passe os 8)
 
@@ -444,10 +442,131 @@ canonicalUrl: ""                              # só se canonical externo
 6. **Roda checklist + teste do humano**.
 7. **Roda `bun run landing:build`** pra validar schema.
 8. **Commita** com mensagem curta.
+9. **Planeja a distribuição** (próxima seção).
 
 ---
 
-## Referências
+## Blog como canônico (distribuição)
+
+LinkedIn e X são canais **derivados**. O conteúdo de verdade vive em `apps/landing/src/content/blog/<slug>.md`. Razões:
+
+- **SEO/AEO/GEO ficam no blog.** LinkedIn não indexa pra Google; X bloqueia indexação parcial. Tráfego orgânico de longo prazo é do blog.
+- **Permanência.** Post no LinkedIn some do feed em 48h. Post no blog tem URL estável, citável, linkável.
+- **Edição.** Reescrever o blog é commit + redeploy. Reescrever post no X = deletar e republicar (custa reach).
+- **Atribuição.** Blog post = traffic source mensurável no PostHog. LinkedIn/X = referrer perdido depois de 24h.
+
+Regra prática: **escreve no blog primeiro, depois repurpose**. Nunca o inverso. Se a ideia vai virar thread X, ainda vale escrever blog post primeiro, o esforço de estruturar argumento longo melhora a thread.
+
+Exceção: tweet atômico ou observação curta (<300 chars). Esses ficam só no X, virar blog post curto é fricção sem upside.
+
+---
+
+## Tipos de post que distribuem bem
+
+Os 4 pillars do `SKILL.md` mapeiam pros 6 tipos de template acima. Nem todo tipo de blog post distribui bem em social:
+
+| Tipo de blog post | Distribuição LinkedIn | Distribuição X | Por quê |
+|---|---|---|---|
+| **Opinião contrária** ("Removemos o CRM") | Excelente | Excelente | Hook claro, tese controversa, fácil reduzir pra 1 hook line |
+| **Postmortem** ("Quebramos a release de sexta") | Bom | Excelente | Vulnerabilidade engaja em ambos; X gosta de timeline de incidente |
+| **Build log** ("Como reduzimos 30% do bundle") | Excelente | Bom | LinkedIn ama número específico; X bom só se tiver visual/code |
+| **Release notes** ("v2026.05.15") | Médio | Médio | Distribui só se UMA feature dominar a release; senão, é changelog |
+| **Feature launch** ("Lançamos X") | Médio | Médio | Risco de soar pitch. Salva se o post foca em PROBLEMA que a feature resolve |
+| **Deep tech** ("Por que escolhemos oRPC") | Médio | Bom | LinkedIn aceita se virar carrossel; X funciona em thread densa |
+| **Community / users** ("Caso João da Padaria") | Bom | Médio | Nome real engaja LinkedIn; X precisa de twist pra não soar promocional |
+
+Antes de escrever, decide o **par** blog + canal alvo. Se a ideia não renderiza em pelo menos 1 canal social, **provavelmente o blog post também é fraco**, reconsidera a tese.
+
+---
+
+## Cadeia de distribuição (blog → LinkedIn → X)
+
+Fluxo padrão pra um post Montte:
+
+```
+1. Blog post canônico       (apps/landing/src/content/blog/<slug>.md)
+        ↓
+2. LinkedIn texto longo     (re-narração, 900-1.300 chars, hook ≠ do blog)
+        ↓ mesmo dia, 30min depois
+3. Repost LinkedIn page     (post pessoal + repost no perfil Montte)
+        ↓ próximo dia
+4. Thread X                 (5-9 tweets, link blog na 1ª reply)
+        ↓ 3-5 dias depois
+5. Atomic X de followup     (1-2 tweets extraindo o ponto mais polêmico, citando o thread)
+        ↓ semana seguinte
+6. Comentário em post relacionado de outra pessoa  (linkar blog org. quando fizer sentido)
+```
+
+**Regras de timing:**
+- Não publique blog + LinkedIn + X **no mesmo minuto**. Os bots de algoritmo penalizam padrão sincronizado.
+- LinkedIn ~30min após blog ir no ar, X ~24h depois. Diferença força conteúdo a ter pegada própria em cada canal, não copy-paste.
+- Atomic followup só se o blog post viralizou, sem dado de tração, esperar.
+
+**Regra de adaptação:**
+O hook do LinkedIn NÃO é igual ao H1 do blog. O hook do X NÃO é igual ao do LinkedIn. Razão: público overlap mas não 100%. Quem viu o LinkedIn não precisa abrir o X. Quem leu o blog não precisa abrir o LinkedIn. Cada canal precisa entregar **algo a mais ou diferente**.
+
+Exemplo, post "Removemos o CRM":
+- **Blog H1:** "Removemos o CRM do Montte. Veja por quê."
+- **LinkedIn hook (F2 R.I.P.):** "R.I.P. módulo CRM dentro de ERP. Causa da morte: ninguém usava."
+- **X hook tweet:** "Todo ERP brasileiro tem CRM nativo. Deletei o nosso. 3.081 linhas, 0 reclamação."
+
+Mesma tese, 3 ângulos.
+
+---
+
+## OG image e preview social
+
+**OG image é decisiva.** Preview cinza de LinkedIn/X mata o clique. Toda blog post pra distribuir precisa de hero image gerada (ferramenta interna de OG do landing já cuida disso: `apps/landing/src/og.ts`).
+
+`description` no frontmatter ≠ lede do post. `description` é meta tag, máximo 320 chars, **escrito pra preview social** além de SERP. Boa description tem 1 stat + 1 promise. Exemplo:
+
+```yaml
+description: "Deletamos 3.081 linhas. Aqui está por que removemos o módulo de Contatos."
+```
+
+Ruim:
+```yaml
+description: "Reflexões sobre como o Montte está evoluindo seu approach a CRM."
+```
+
+---
+
+## URL e canonical
+
+URL do blog vira link de referência em todos os canais. Regras:
+
+- Slug curto: `removemos-o-crm`, não `removemos-modulo-de-contatos-do-montte-erp`
+- Sem data no path (URL precisa sobreviver a edição)
+- Canonical sempre `https://montte.com.br/blog/<slug>`, nunca shortener
+- UTM em link postado: `?utm_source=linkedin` / `?utm_source=x` (PostHog usa pra atribuição)
+
+---
+
+## Quando o blog NÃO é a origem
+
+Casos onde social vem primeiro e blog segue (ou não existe):
+
+- **Hot take reativo:** comentário sobre release de concorrente, evento da indústria que precisa post no mesmo dia. Vai pro X direto. Se virar thread densa, depois consolida em blog post.
+- **Observação atômica:** frase de 1 linha que só funciona como tweet. Não vira blog.
+- **Resposta a cliente / comunidade:** pergunta específica respondida em LinkedIn ou X. Pode virar blog FAQ depois se repetir.
+
+Nesses casos, ainda vale registrar a ideia em `apps/landing/content/blog/_drafts/` se tiver potencial de blog post longo no futuro.
+
+---
+
+## Anti-padrões de distribuição
+
+- Blog post publicado SEM repurpose social (perdeu reach de 0 esforço extra)
+- Repurpose copy-paste idêntico em todos os canais
+- Linkar blog post sem OG image (preview cinza = morte)
+- Publicar blog + LinkedIn + X no mesmo minuto (algo penaliza padrão)
+- Mais de 1 link no corpo do post LinkedIn (vai pro 1º comentário)
+- Repurpose de release notes inteira em formato thread (chato, vira changelog visual)
+- Tradução literal do hook entre canais (cada canal tem ritmo próprio)
+
+---
+
+## Referências externas
 
 - Estilo base: blog do Zed (`zed.dev/blog`), confiança calma, número-pesado, autor real
 - GEO 2026: Search Engine Land guide a [mastering generative engine optimization](https://searchengineland.com/mastering-generative-engine-optimization-in-2026-full-guide-469142)
