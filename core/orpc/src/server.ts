@@ -14,7 +14,6 @@ import {
 } from "@core/posthog/server";
 import { createNotificationsClient } from "@core/notifications/client";
 import { createRedis } from "@core/redis/connection";
-import { AppError, WebAppError } from "@core/logging/errors";
 import { createWorkflowClient } from "@core/dbos/client";
 import { startPgBossClient } from "@core/pg-boss/client";
 import type {
@@ -101,17 +100,26 @@ const withDeps = base.use(async ({ context, next }) => {
          const verified = yield* Result.await(
             Result.tryPromise({
                try: () => auth.api.verifyApiKey({ body: { key: apiKeyValue } }),
-               catch: () => WebAppError.unauthorized("API key inválida."),
+               catch: () =>
+                  new ORPCError("UNAUTHORIZED", {
+                     message: "API key inválida.",
+                  }),
             }),
          );
          if (!verified?.valid || !verified.key) {
-            return Result.err(WebAppError.unauthorized("API key inválida."));
+            return Result.err(
+               new ORPCError("UNAUTHORIZED", {
+                  message: "API key inválida.",
+               }),
+            );
          }
 
          const parsed = apiKeyMetadataSchema.safeParse(verified.key.metadata);
          if (!parsed.success) {
             return Result.err(
-               WebAppError.badRequest("Metadata da API key inválida."),
+               new ORPCError("BAD_REQUEST", {
+                  message: "Metadata da API key inválida.",
+               }),
             );
          }
 
@@ -122,19 +130,23 @@ const withDeps = base.use(async ({ context, next }) => {
             Result.tryPromise({
                try: () => auth.api.getSession({ headers: apiKeyHeaders }),
                catch: () =>
-                  WebAppError.unauthorized(
-                     "Falha ao resolver sessão da API key.",
-                  ),
+                  new ORPCError("UNAUTHORIZED", {
+                     message: "Falha ao resolver sessão da API key.",
+                  }),
             }),
          );
          if (!session?.user) {
             return Result.err(
-               WebAppError.unauthorized("API key sem sessão associada."),
+               new ORPCError("UNAUTHORIZED", {
+                  message: "API key sem sessão associada.",
+               }),
             );
          }
          if (session.user.id !== verified.key.referenceId) {
             return Result.err(
-               WebAppError.unauthorized("API key não pertence à sessão."),
+               new ORPCError("UNAUTHORIZED", {
+                  message: "API key não pertence à sessão.",
+               }),
             );
          }
 
@@ -165,9 +177,18 @@ const withDeps = base.use(async ({ context, next }) => {
       });
    }
 
-   const cookieSession = await Result.tryPromise({
-      try: () => auth.api.getSession({ headers: context.headers }),
-      catch: () => WebAppError.internal("Falha ao resolver sessão."),
+   const cookieSession = await Result.gen(async function* () {
+      const session = yield* Result.await(
+         Result.tryPromise({
+            try: () => auth.api.getSession({ headers: context.headers }),
+            catch: () =>
+               new ORPCError("INTERNAL_SERVER_ERROR", {
+                  message: "Falha ao resolver sessão.",
+               }),
+         }),
+      );
+
+      return Result.ok(session);
    });
    if (Result.isError(cookieSession)) throw cookieSession.error;
 
@@ -188,33 +209,69 @@ const withDeps = base.use(async ({ context, next }) => {
 });
 
 const withAuth = withDeps.use(({ context, next }) => {
-   const { session } = context;
-   if (!session?.user) {
-      throw WebAppError.unauthorized(
-         "Você precisa estar autenticado para acessar este recurso.",
-      );
-   }
+   const result = Result.gen(function* () {
+      const { session } = context;
+      if (!session?.user) {
+         return Result.err(
+            new ORPCError("UNAUTHORIZED", {
+               message:
+                  "Você precisa estar autenticado para acessar este recurso.",
+            }),
+         );
+      }
+
+      const authContext = yield* Result.ok({
+         session,
+         userId: session.user.id,
+      });
+
+      return Result.ok(authContext);
+   });
+   if (Result.isError(result)) throw result.error;
+
    return next({
-      context: { ...context, session, userId: session.user.id },
+      context: {
+         ...context,
+         session: result.value.session,
+         userId: result.value.userId,
+      },
    });
 });
 
 const withOrganization = withAuth.use(({ context, next }) => {
-   const { session } = context;
-   const organizationId = session.session.activeOrganizationId;
-   const teamId = session.session.activeTeamId;
-   if (!organizationId) {
-      throw WebAppError.forbidden("Nenhuma organização ativa selecionada.");
-   }
-   if (!teamId) {
-      throw WebAppError.forbidden("Nenhum time ativo selecionado.");
-   }
-   return next({ context: { ...context, organizationId, teamId } });
-});
+   const result = Result.gen(function* () {
+      const organizationId = context.session.session.activeOrganizationId;
+      const teamId = context.session.session.activeTeamId;
 
-function toError(error: unknown): Error {
-   return error instanceof Error ? error : new Error(String(error));
-}
+      if (!organizationId) {
+         return Result.err(
+            new ORPCError("FORBIDDEN", {
+               message: "Nenhuma organização ativa selecionada.",
+            }),
+         );
+      }
+      if (!teamId) {
+         return Result.err(
+            new ORPCError("FORBIDDEN", {
+               message: "Nenhum time ativo selecionado.",
+            }),
+         );
+      }
+
+      const organizationContext = yield* Result.ok({ organizationId, teamId });
+
+      return Result.ok(organizationContext);
+   });
+   if (Result.isError(result)) throw result.error;
+
+   return next({
+      context: {
+         ...context,
+         organizationId: result.value.organizationId,
+         teamId: result.value.teamId,
+      },
+   });
+});
 
 const orpcCodeByStatus = new Map([
    [400, "BAD_REQUEST"],
@@ -225,24 +282,37 @@ const orpcCodeByStatus = new Map([
    [429, "TOO_MANY_REQUESTS"],
 ]);
 
+function getErrorMessage(error: unknown) {
+   if (isTaggedError(error)) return error.message;
+   if (typeof error !== "object") return String(error);
+   if (!error) return String(error);
+   if (!("message" in error)) return String(error);
+   if (typeof error.message !== "string") return String(error);
+   return error.message;
+}
+
+function getErrorName(error: unknown) {
+   if (isTaggedError(error)) return error.name;
+   if (typeof error !== "object") return "Unknown";
+   if (!error) return "Unknown";
+   if (!("name" in error)) return "Unknown";
+   if (typeof error.name !== "string") return "Unknown";
+   return error.name;
+}
+
 const withORPCErrors = withOrganization.use(async ({ next }) => {
-   const result = await Result.tryPromise({
-      try: async () => next(),
-      catch: toError,
+   const result = await Result.gen(async function* () {
+      const output = yield* Result.await(
+         Result.tryPromise({
+            try: async () => next(),
+            catch: (error) => error,
+         }),
+      );
+
+      return Result.ok(output);
    });
 
    if (Result.isOk(result)) return result.value;
-
-   if (result.error instanceof AppError) {
-      throw new ORPCError(
-         orpcCodeByStatus.get(result.error.status) ?? "INTERNAL_SERVER_ERROR",
-         {
-            message: result.error.message,
-            cause: result.error,
-            data: result.error.data,
-         },
-      );
-   }
 
    if (!isTaggedError(result.error)) throw result.error;
    if (
@@ -275,13 +345,19 @@ const withLogger = withORPCErrors.use(
       const sessionId = context.headers.get("x-posthog-session-id");
       const orpcPath = path.join(".");
 
-      const eventIdentity = {
+      const eventIdentity: {
+         posthogDistinctId: string;
+         sessionId?: string;
+         organizationId: string;
+         teamId: string;
+         path: string;
+      } = {
          posthogDistinctId: userId ?? "anonymous",
-         ...(sessionId ? { sessionId } : {}),
          organizationId,
          teamId,
          path: orpcPath,
       };
+      if (sessionId) eventIdentity.sessionId = sessionId;
 
       context.log.set({
          orpc: {
@@ -292,27 +368,43 @@ const withLogger = withORPCErrors.use(
          ...eventIdentity,
       });
 
-      const result = await Result.tryPromise({
-         try: async () => next(),
-         catch: toError,
+      const result = await Result.gen(async function* () {
+         const output = yield* Result.await(
+            Result.tryPromise({
+               try: async () => next(),
+               catch: (error) => error,
+            }),
+         );
+
+         return Result.ok(output);
       });
 
       const durationMs = Date.now() - startDate.getTime();
       const isSuccess = Result.isOk(result);
-      const error = Result.isError(result) ? result.error : null;
+      const orpcLog: {
+         path: string;
+         rootPath: string | undefined;
+         durationMs: number;
+         endAt: string;
+         success: boolean;
+         input: unknown;
+         errorName?: string;
+         errorMessage?: string;
+      } = {
+         path: orpcPath,
+         rootPath: path[0],
+         durationMs,
+         endAt: dayjs().toISOString(),
+         success: isSuccess,
+         input,
+      };
+      if (Result.isError(result)) {
+         orpcLog.errorName = getErrorName(result.error);
+         orpcLog.errorMessage = getErrorMessage(result.error);
+      }
 
       context.log.set({
-         orpc: {
-            path: orpcPath,
-            rootPath: path[0],
-            durationMs,
-            endAt: dayjs().toISOString(),
-            success: isSuccess,
-            input,
-            ...(error
-               ? { errorName: error.name, errorMessage: error.message }
-               : {}),
-         },
+         orpc: orpcLog,
       });
       context.log.emit();
 
@@ -330,29 +422,33 @@ const withTelemetry = withLogger.use(async ({ context, next }) => {
    const userName = context.session.user.name;
    const organizationId = context.organizationId;
 
-   const telemetry = Result.try({
-      try: () => {
-         identifyUser(context.posthog, userId, {
-            email: userEmail,
-            name: userName,
-         });
-         setGroup(context.posthog, organizationId, {});
+   const telemetry = Result.gen(function* () {
+      yield* Result.try({
+         try: () => {
+            identifyUser(context.posthog, userId, {
+               email: userEmail,
+               name: userName,
+            });
+            setGroup(context.posthog, organizationId, {});
 
-         context.log.set({
-            posthog: {
-               distinctId: userId,
-               group: { organization: organizationId },
-            },
-         });
-      },
-      catch: toError,
+            context.log.set({
+               posthog: {
+                  distinctId: userId,
+                  group: { organization: organizationId },
+               },
+            });
+         },
+         catch: (error) => error,
+      });
+
+      return Result.ok();
    });
 
    if (telemetry.isErr()) {
       context.log.warn("PostHog telemetry failed", {
          posthog: {
-            errorName: telemetry.error.name,
-            errorMessage: telemetry.error.message,
+            errorName: getErrorName(telemetry.error),
+            errorMessage: getErrorMessage(telemetry.error),
          },
       });
    }
