@@ -51,6 +51,63 @@ async function requireStatement(
    return Result.ok(statement.value);
 }
 
+async function validatePaymentTransaction(
+   db: Parameters<typeof findCreditCardStatement>[0],
+   paymentTransactionId: string | null,
+   statement: {
+      creditCardId: string;
+   },
+   teamId: string,
+) {
+   if (!paymentTransactionId) return Result.ok();
+
+   const transaction = await Result.tryPromise({
+      try: () =>
+         db.query.transactions.findFirst({
+            where: (f, { eq }) => eq(f.id, paymentTransactionId),
+         }),
+      catch: () =>
+         new CardsRouterError({
+            error: cardsRouterErrors.INTERNAL(),
+            message: "Falha ao verificar transação de pagamento.",
+         }),
+   });
+   if (Result.isError(transaction)) return Result.err(transaction.error);
+   if (!transaction.value || transaction.value.teamId !== teamId) {
+      return Result.err(
+         new CardsRouterError({
+            error: cardsRouterErrors.NOT_FOUND(),
+            message: "Transação de pagamento não encontrada.",
+         }),
+      );
+   }
+   if (
+      transaction.value.type !== "expense" ||
+      transaction.value.status !== "paid" ||
+      transaction.value.ignored
+   ) {
+      return Result.err(
+         new CardsRouterError({
+            error: cardsRouterErrors.BAD_REQUEST(),
+            message: "Transação de pagamento inválida para esta fatura.",
+         }),
+      );
+   }
+   if (
+      transaction.value.creditCardId &&
+      transaction.value.creditCardId !== statement.creditCardId
+   ) {
+      return Result.err(
+         new CardsRouterError({
+            error: cardsRouterErrors.BAD_REQUEST(),
+            message: "Transação de pagamento pertence a outro cartão.",
+         }),
+      );
+   }
+
+   return Result.ok();
+}
+
 export const create = protectedProcedure
    .input(createStatementSchema)
    .use(requireCreditCard, (input) => input.creditCardId)
@@ -205,6 +262,14 @@ export const markAsPaid = protectedProcedure
          context.teamId,
       );
       if (Result.isError(statement)) throw statement.error;
+      const paymentTransactionId = input.paymentTransactionId ?? null;
+      const paymentTransaction = await validatePaymentTransaction(
+         context.db,
+         paymentTransactionId,
+         statement.value,
+         context.teamId,
+      );
+      if (Result.isError(paymentTransaction)) throw paymentTransaction.error;
 
       const updated = await Result.tryPromise({
          try: () =>
@@ -213,7 +278,7 @@ export const markAsPaid = protectedProcedure
                   .update(creditCardStatements)
                   .set({
                      status: "paid",
-                     paymentTransactionId: input.paymentTransactionId,
+                     paymentTransactionId,
                      updatedAt: dayjs().toDate(),
                   })
                   .where(eq(creditCardStatements.id, input.id))
