@@ -1,6 +1,7 @@
 import {
    AnimatePresence,
    motion,
+   useReducedMotion,
    useMotionValue,
    useTransform,
    animate,
@@ -20,14 +21,16 @@ const EASE = [0.32, 0.72, 0, 1] as const;
 
 export function HeroCarousel() {
    const [index, setIndex] = useState(0);
+   const shouldReduceMotion = useReducedMotion();
 
    useEffect(() => {
+      if (shouldReduceMotion) return;
       const id = window.setTimeout(
          () => setIndex((v) => (v + 1) % TOPICS.length),
          CYCLE_MS,
       );
       return () => window.clearTimeout(id);
-   }, [index]);
+   }, [index, shouldReduceMotion]);
 
    const current = TOPICS[index];
    const SLOT_PCT = 50;
@@ -37,6 +40,10 @@ export function HeroCarousel() {
 
    return (
       <div className="flex w-full flex-col items-center gap-8">
+         <h1 className="max-w-4xl text-center text-4xl font-semibold leading-none text-foreground text-balance sm:text-5xl md:text-6xl lg:text-7xl">
+            Montte organiza finanças, contatos e cobranças recorrentes.
+         </h1>
+
          <div
             className="w-full py-2"
             style={{ overflowX: "clip", overflowY: "visible" }}
@@ -62,7 +69,7 @@ export function HeroCarousel() {
                         transition={{ duration: 0.7, ease: EASE }}
                      >
                         <span
-                           className={`text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl ${isCenter ? "text-foreground" : "text-muted-foreground"}`}
+                           className={`text-4xl font-semibold sm:text-5xl md:text-6xl lg:text-7xl ${isCenter ? "text-primary" : "text-muted-foreground"}`}
                         >
                            {t.label}
                         </span>
@@ -72,19 +79,17 @@ export function HeroCarousel() {
             </motion.div>
          </div>
 
-         <h1 className="sr-only">
-            Montte — plataforma para SaaS:{" "}
-            {TOPICS.map((t) => t.label).join(", ")}.
-         </h1>
-
          <div className="relative w-full max-w-3xl overflow-hidden">
             <AnimatePresence mode="wait">
                <motion.div
                   key={current.key}
-                  initial={{ opacity: 0, x: 60 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: 60 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -60 }}
-                  transition={{ duration: 0.5, ease: EASE }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0, x: -60 }}
+                  transition={{
+                     duration: shouldReduceMotion ? 0 : 0.5,
+                     ease: EASE,
+                  }}
                >
                   <TopicMock topic={current.key} />
                </motion.div>
@@ -110,8 +115,8 @@ function AppFrame({
    children: React.ReactNode;
 }) {
    return (
-      <figure className="overflow-hidden rounded-2xl border border-border/40 bg-card/85 shadow-2xl shadow-background/70 backdrop-blur">
-         <header className="flex items-center gap-4 border-b border-border/40 bg-background/40 px-4 py-2">
+      <figure className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-2xl shadow-background/70">
+         <header className="flex items-center gap-4 border-b border-border/60 bg-secondary/30 px-4 py-2">
             <div className="flex items-center gap-2">
                <span className="size-2 rounded-full bg-destructive/60" />
                <span className="size-2 rounded-full bg-chart-3/60" />
@@ -124,7 +129,7 @@ function AppFrame({
                {chips.map((c) => (
                   <span
                      key={c}
-                     className="rounded-full border border-border/60 bg-background/40 px-2 py-1 text-xs text-muted-foreground"
+                     className="rounded-full border border-border/70 bg-background/70 px-2 py-1 text-xs text-muted-foreground"
                   >
                      {c}
                   </span>
@@ -138,6 +143,7 @@ function AppFrame({
 
 function CounterValue({ to, prefix = "R$ " }: { to: number; prefix?: string }) {
    const mv = useMotionValue(0);
+   const shouldReduceMotion = useReducedMotion();
    const rounded = useTransform(
       mv,
       (v) =>
@@ -145,9 +151,13 @@ function CounterValue({ to, prefix = "R$ " }: { to: number; prefix?: string }) {
    );
 
    useEffect(() => {
+      if (shouldReduceMotion) {
+         mv.set(to);
+         return;
+      }
       const controls = animate(mv, to, { duration: 1.2, ease: EASE });
       return controls.stop;
-   }, [mv, to]);
+   }, [mv, shouldReduceMotion, to]);
 
    return <motion.span>{rounded}</motion.span>;
 }
@@ -159,6 +169,7 @@ function Sparkline({
    points: number[];
    positive?: boolean;
 }) {
+   const shouldReduceMotion = useReducedMotion();
    const max = Math.max(...points);
    const min = Math.min(...points);
    const range = max - min || 1;
@@ -181,9 +192,13 @@ function Sparkline({
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
-            initial={{ pathLength: 0, opacity: 0 }}
+            initial={shouldReduceMotion ? false : { pathLength: 0, opacity: 0 }}
             animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 1, ease: EASE, delay: 0.2 }}
+            transition={{
+               duration: shouldReduceMotion ? 0 : 1,
+               ease: EASE,
+               delay: shouldReduceMotion ? 0 : 0.2,
+            }}
          />
       </svg>
    );
@@ -268,11 +283,15 @@ function Row({
    children: React.ReactNode;
    delay: number;
 }) {
+   const shouldReduceMotion = useReducedMotion();
    return (
       <motion.tr
-         initial={{ opacity: 0, x: -8 }}
+         initial={shouldReduceMotion ? false : { opacity: 0, x: -8 }}
          animate={{ opacity: 1, x: 0 }}
-         transition={{ duration: 0.25, delay: delay * 0.3 }}
+         transition={{
+            duration: shouldReduceMotion ? 0 : 0.25,
+            delay: shouldReduceMotion ? 0 : delay * 0.3,
+         }}
          className="border-t border-border/30"
       >
          {children}
@@ -576,6 +595,7 @@ const BILLING_STATUS_TONE: Record<BillingStatus, "ok" | "warn" | "muted"> = {
 };
 
 function MiniBar({ points, color }: { points: number[]; color: string }) {
+   const shouldReduceMotion = useReducedMotion();
    const max = Math.max(...points) || 1;
    const w = 64;
    const h = 18;
@@ -592,12 +612,16 @@ function MiniBar({ points, color }: { points: number[]; color: string }) {
                   key={`${i}-${v}`}
                   x={x}
                   width={bw}
-                  initial={{ y: h, height: 0, opacity: 0 }}
+                  initial={
+                     shouldReduceMotion
+                        ? false
+                        : { y: h, height: 0, opacity: 0 }
+                  }
                   animate={{ y, height: bh, opacity: 1 }}
                   transition={{
-                     duration: 0.5,
+                     duration: shouldReduceMotion ? 0 : 0.5,
                      ease: EASE,
-                     delay: 0.2 + i * 0.03,
+                     delay: shouldReduceMotion ? 0 : 0.2 + i * 0.03,
                   }}
                   fill={color}
                   rx={1}
