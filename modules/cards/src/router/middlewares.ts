@@ -1,6 +1,9 @@
 import { os } from "@orpc/server";
 import { Result, TaggedError } from "better-result";
+import { and, eq } from "drizzle-orm";
 import { defineErrorCatalog } from "evlog";
+import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
+import { creditCards } from "@core/database/schemas/credit-cards";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 
 const base = os.$context<ORPCContextWithOrganization>();
@@ -66,5 +69,43 @@ export const requireCreditCard = base.middleware(
          });
       }
       return next({ context: { creditCard: card.value } });
+   },
+);
+
+export const requireStatement = base.middleware(
+   async ({ context, next }, id: string) => {
+      const statement = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({ statement: creditCardStatements })
+               .from(creditCardStatements)
+               .innerJoin(
+                  creditCards,
+                  eq(creditCardStatements.creditCardId, creditCards.id),
+               )
+               .where(
+                  and(
+                     eq(creditCardStatements.id, id),
+                     eq(creditCards.teamId, context.teamId),
+                  ),
+               )
+               .limit(1),
+         catch: () =>
+            new CardsRouterError({
+               error: cardsRouterErrors.INTERNAL(),
+               message: "Falha ao verificar fatura.",
+            }),
+      });
+      if (Result.isError(statement)) throw statement.error;
+
+      const row = statement.value[0]?.statement;
+      if (!row) {
+         throw new CardsRouterError({
+            error: cardsRouterErrors.NOT_FOUND(),
+            message: "Fatura não encontrada.",
+         });
+      }
+
+      return next({ context: { statement: row } });
    },
 );

@@ -5,41 +5,10 @@ import { creditCards } from "@core/database/schemas/credit-cards";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { CardsRouterError, cardsRouterErrors } from "./middlewares";
 
-export async function findCreditCardStatement(
-   db: ORPCContextWithOrganization["db"],
-   id: string,
-   teamId: string,
-) {
-   const statement = await Result.tryPromise({
-      try: () =>
-         db
-            .select({ statement: creditCardStatements })
-            .from(creditCardStatements)
-            .innerJoin(
-               creditCards,
-               eq(creditCardStatements.creditCardId, creditCards.id),
-            )
-            .where(
-               and(
-                  eq(creditCardStatements.id, id),
-                  eq(creditCards.teamId, teamId),
-               ),
-            )
-            .limit(1),
-      catch: () =>
-         new CardsRouterError({
-            error: cardsRouterErrors.INTERNAL(),
-            message: "Falha ao verificar fatura.",
-         }),
-   });
-
-   if (Result.isError(statement)) return Result.err(statement.error);
-   return Result.ok(statement.value[0]?.statement);
-}
-
 export async function findBlockingOpenStatement(
    db: ORPCContextWithOrganization["db"],
    creditCardIds: string[],
+   teamId: string,
 ) {
    if (!creditCardIds.length) return Result.ok(undefined);
 
@@ -59,6 +28,7 @@ export async function findBlockingOpenStatement(
                and(
                   inArray(creditCardStatements.creditCardId, creditCardIds),
                   eq(creditCardStatements.status, "open"),
+                  eq(creditCards.teamId, teamId),
                ),
             )
             .limit(1),

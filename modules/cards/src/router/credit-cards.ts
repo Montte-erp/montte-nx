@@ -48,7 +48,7 @@ const bulkCreateSchema = z.object({
       .array(
          z.object({
             name: z.string().min(2).max(80),
-            creditLimit: z.string(),
+            creditLimit: createCreditCardSchema.shape.creditLimit,
             last4: z
                .string()
                .regex(/^\d{4}$/)
@@ -74,6 +74,38 @@ const bulkCreateSchema = z.object({
       .min(1)
       .max(500),
 });
+
+async function validateBankAccount(
+   db: Parameters<typeof findBlockingOpenStatement>[0],
+   teamId: string,
+   bankAccountId: string,
+) {
+   const account = await Result.tryPromise({
+      try: () =>
+         db.query.bankAccounts.findFirst({
+            where: (f, { eq }) => eq(f.id, bankAccountId),
+         }),
+      catch: () =>
+         new CardsRouterError({
+            error: cardsRouterErrors.INTERNAL(),
+            message: "Falha ao validar conta bancária.",
+         }),
+   });
+   if (Result.isError(account)) return Result.err(account.error);
+   if (!account.value || account.value.teamId !== teamId) {
+      return Result.err(
+         new CardsRouterError({
+            error: cardsRouterErrors.BAD_REQUEST(),
+            message: "Conta bancária inválida para este time.",
+         }),
+      );
+   }
+   return Result.ok();
+}
+
+function escapeIlikeSearch(search: string) {
+   return search.replace(/([%_\\])/g, "\\$1");
+}
 
 function buildCreditCardOrderBy(
    sorting: z.infer<typeof listCreditCardsSchema>["sorting"],
@@ -115,6 +147,13 @@ function buildCreditCardOrderBy(
 export const create = protectedProcedure
    .input(createCreditCardSchema)
    .handler(async ({ context, input }) => {
+      const account = await validateBankAccount(
+         context.db,
+         context.teamId,
+         input.bankAccountId,
+      );
+      if (Result.isError(account)) throw account.error;
+
       const created = await Result.tryPromise({
          try: () =>
             context.db.transaction(async (tx) =>
@@ -145,10 +184,13 @@ export const getAll = protectedProcedure
    .handler(async ({ context, input }) => {
       const { page, pageSize, search, sorting, status } = input;
       const offset = (page - 1) * pageSize;
+      const escapedSearch = search ? escapeIlikeSearch(search) : undefined;
       const where = and(
          eq(creditCards.teamId, context.teamId),
          status ? eq(creditCards.status, status) : undefined,
-         search ? ilike(creditCards.name, `%${search}%`) : undefined,
+         escapedSearch
+            ? ilike(creditCards.name, `%${escapedSearch}%`)
+            : undefined,
       );
 
       const listed = await Result.tryPromise({
@@ -194,6 +236,15 @@ export const update = protectedProcedure
    .use(requireCreditCard, (input) => input.id)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
+      if (data.bankAccountId !== undefined) {
+         const account = await validateBankAccount(
+            context.db,
+            context.teamId,
+            data.bankAccountId,
+         );
+         if (Result.isError(account)) throw account.error;
+      }
+
       const updatedResult = await Result.tryPromise({
          try: () =>
             context.db.transaction(async (tx) =>
@@ -224,7 +275,11 @@ export const remove = protectedProcedure
    .input(idSchema)
    .use(requireCreditCard, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const open = await findBlockingOpenStatement(context.db, [input.id]);
+      const open = await findBlockingOpenStatement(
+         context.db,
+         [input.id],
+         context.teamId,
+      );
       if (Result.isError(open)) throw open.error;
       if (open.value) {
          throw new CardsRouterError({
@@ -271,7 +326,11 @@ export const bulkRemove = protectedProcedure
          });
       }
 
-      const open = await findBlockingOpenStatement(context.db, input.ids);
+      const open = await findBlockingOpenStatement(
+         context.db,
+         input.ids,
+         context.teamId,
+      );
       if (Result.isError(open)) throw open.error;
       if (open.value) {
          throw new CardsRouterError({
@@ -283,7 +342,10 @@ export const bulkRemove = protectedProcedure
       const deleted = await Result.tryPromise({
          try: () =>
             context.db.transaction(async (tx) =>
-               tx.delete(creditCards).where(inArray(creditCards.id, input.ids)),
+               tx
+                  .delete(creditCards)
+                  .where(inArray(creditCards.id, input.ids))
+                  .returning({ id: creditCards.id }),
             ),
          catch: () =>
             new CardsRouterError({
@@ -292,7 +354,7 @@ export const bulkRemove = protectedProcedure
             }),
       });
       if (Result.isError(deleted)) throw deleted.error;
-      return { deleted: input.ids.length };
+      return { deleted: deleted.value.length };
    });
 
 export const bulkCreate = protectedProcedure

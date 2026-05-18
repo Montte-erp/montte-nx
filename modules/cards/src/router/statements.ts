@@ -4,17 +4,19 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
    createStatementSchema,
+   type CreditCardStatement,
    creditCardStatements,
 } from "@core/database/schemas/credit-card-statements";
 import { creditCardStatementTotals } from "@core/database/schemas/credit-card-statement-totals";
 import { creditCards } from "@core/database/schemas/credit-cards";
+import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import {
    CardsRouterError,
    cardsRouterErrors,
    requireCreditCard,
+   requireStatement,
 } from "@modules/cards/router/middlewares";
-import { findCreditCardStatement } from "@modules/cards/router/utils";
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -33,30 +35,10 @@ const statusInputSchema = idSchema.extend({
    paymentTransactionId: z.string().uuid().nullable().optional(),
 });
 
-async function requireStatement(
-   db: Parameters<typeof findCreditCardStatement>[0],
-   id: string,
-   teamId: string,
-) {
-   const statement = await findCreditCardStatement(db, id, teamId);
-   if (Result.isError(statement)) return Result.err(statement.error);
-   if (!statement.value) {
-      return Result.err(
-         new CardsRouterError({
-            error: cardsRouterErrors.NOT_FOUND(),
-            message: "Fatura não encontrada.",
-         }),
-      );
-   }
-   return Result.ok(statement.value);
-}
-
 async function validatePaymentTransaction(
-   db: Parameters<typeof findCreditCardStatement>[0],
+   db: ORPCContextWithOrganization["db"],
    paymentTransactionId: string | null,
-   statement: {
-      creditCardId: string;
-   },
+   statement: Pick<CreditCardStatement, "creditCardId">,
    teamId: string,
 ) {
    if (!paymentTransactionId) return Result.ok();
@@ -243,30 +225,18 @@ export const getAll = protectedProcedure
 
 export const getById = protectedProcedure
    .input(idSchema)
-   .handler(async ({ context, input }) => {
-      const statement = await requireStatement(
-         context.db,
-         input.id,
-         context.teamId,
-      );
-      if (Result.isError(statement)) throw statement.error;
-      return statement.value;
-   });
+   .use(requireStatement, (input) => input.id)
+   .handler(async ({ context }) => context.statement);
 
 export const markAsPaid = protectedProcedure
    .input(statusInputSchema)
+   .use(requireStatement, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const statement = await requireStatement(
-         context.db,
-         input.id,
-         context.teamId,
-      );
-      if (Result.isError(statement)) throw statement.error;
       const paymentTransactionId = input.paymentTransactionId ?? null;
       const paymentTransaction = await validatePaymentTransaction(
          context.db,
          paymentTransactionId,
-         statement.value,
+         context.statement,
          context.teamId,
       );
       if (Result.isError(paymentTransaction)) throw paymentTransaction.error;
@@ -303,14 +273,8 @@ export const markAsPaid = protectedProcedure
 
 export const markAsOpen = protectedProcedure
    .input(idSchema)
+   .use(requireStatement, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const statement = await requireStatement(
-         context.db,
-         input.id,
-         context.teamId,
-      );
-      if (Result.isError(statement)) throw statement.error;
-
       const updated = await Result.tryPromise({
          try: () =>
             context.db.transaction(async (tx) =>
