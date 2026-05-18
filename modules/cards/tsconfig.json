@@ -11,13 +11,23 @@
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@core/utils/*": ["../../core/utils/src/*"],
          "@modules/cards/*": ["./src/*"]
       }
    },
    "include": ["src"],
    "references": [
       {
+         "path": "../../core/logging"
+      },
+      {
+         "path": "../../core/pg-boss"
+      },
+      {
          "path": "../../core/database"
+      },
+      {
+         "path": "../../core/utils"
       }
    ]
 }
