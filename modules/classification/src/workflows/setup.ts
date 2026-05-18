@@ -1,5 +1,4 @@
 import "@modules/classification/workflows/classification-workflow";
-import "@modules/classification/workflows/derive-keywords-workflow";
 import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { env } from "@core/environment/worker";
 import type { PostHog, Prompts } from "@core/posthog/server";

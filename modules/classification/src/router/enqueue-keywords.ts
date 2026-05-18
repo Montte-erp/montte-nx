@@ -1,9 +1,7 @@
+import { Result } from "better-result";
 import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
-import {
-   enqueueDeriveKeywordsWorkflow,
-   isClassificationWorkflowQueueFailure,
-} from "@modules/classification/workflows/enqueue";
+import { enqueueDeriveKeywordsJob } from "@modules/classification/jobs/derive-keywords-job";
 
 type CategoryKeywordsSource = {
    id: string;
@@ -14,20 +12,23 @@ type CategoryKeywordsSource = {
 export async function enqueueCategoryKeywordsDerivation(
    context: Pick<
       ORPCContextWithOrganization,
-      "organizationId" | "teamId" | "userId" | "workflowClient"
+      "organizationId" | "teamId" | "userId" | "pgBoss"
    >,
    category: CategoryKeywordsSource,
 ) {
-   const queued = await enqueueDeriveKeywordsWorkflow(context.workflowClient, {
-      categoryId: category.id,
-      teamId: context.teamId,
-      organizationId: context.organizationId,
-      userId: context.userId,
-      name: category.name,
-      description: category.description,
+   const queued = await enqueueDeriveKeywordsJob({
+      boss: await context.pgBoss,
+      input: {
+         categoryId: category.id,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+         userId: context.userId,
+         name: category.name,
+         description: category.description,
+      },
    });
 
-   if (isClassificationWorkflowQueueFailure(queued)) {
+   if (Result.isError(queued)) {
       throw WebAppError.internal(
          "Falha ao enfileirar derivação de palavras-chave.",
       );
@@ -37,7 +38,7 @@ export async function enqueueCategoryKeywordsDerivation(
 export async function enqueueCategoryKeywordsDerivations(
    context: Pick<
       ORPCContextWithOrganization,
-      "organizationId" | "teamId" | "userId" | "workflowClient"
+      "organizationId" | "teamId" | "userId" | "pgBoss"
    >,
    categories: CategoryKeywordsSource[],
 ) {

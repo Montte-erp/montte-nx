@@ -1,0 +1,307 @@
+import { defineErrorCatalog } from "evlog";
+import { Result, TaggedError } from "better-result";
+import dayjs from "dayjs";
+import { and, eq, sql } from "drizzle-orm";
+import {
+   fromDrizzle,
+   type DrizzleTransactionLike,
+   type Job,
+   type SendOptions,
+} from "pg-boss";
+import { z } from "zod";
+import type { DatabaseInstance } from "@core/database/client";
+import { categories } from "@core/database/schemas/categories";
+import { log } from "@core/logging";
+import type { PgBossClient } from "@core/pg-boss/client";
+import type { Prompts } from "@core/posthog/server";
+import {
+   CLASSIFICATION_JOB_QUEUES,
+   CLASSIFICATION_PROMPTS,
+} from "@modules/classification/constants";
+import { deriveKeywords } from "@modules/classification/ai/derive-keywords";
+
+export const deriveKeywordsJobInputSchema = z.object({
+   categoryId: z.string().uuid(),
+   teamId: z.string().uuid(),
+   organizationId: z.string().uuid(),
+   name: z.string().min(1),
+   description: z.string().nullable().optional(),
+   userId: z.string().uuid().optional(),
+});
+
+export type DeriveKeywordsJobInput = z.infer<
+   typeof deriveKeywordsJobInputSchema
+>;
+
+const deriveKeywordsJobErrors = defineErrorCatalog(
+   "classification.job.keywords",
+   {
+      ENQUEUE_FAILED: {
+         status: 500,
+         message: "Falha ao enfileirar derivação de palavras-chave.",
+         tags: ["classification", "pg-boss", "keywords"],
+      },
+      JOB_ID_MISSING: {
+         status: 500,
+         message:
+            "Pg-boss não retornou o ID do job de derivação de palavras-chave.",
+         tags: ["classification", "pg-boss", "keywords"],
+      },
+      INVALID_PAYLOAD: {
+         status: 400,
+         message: "Payload inválido para derivação de palavras-chave.",
+         tags: ["classification", "pg-boss", "keywords"],
+      },
+      SIBLINGS_LOAD_FAILED: {
+         status: 500,
+         message: "Falha ao carregar palavras-chave das categorias irmãs.",
+         tags: ["classification", "pg-boss", "keywords"],
+      },
+      AI_FAILED: {
+         status: 500,
+         message: "Falha ao derivar palavras-chave por IA.",
+         tags: ["classification", "pg-boss", "keywords"],
+      },
+      WRITE_FAILED: {
+         status: 500,
+         message: "Falha ao gravar palavras-chave da categoria.",
+         tags: ["classification", "pg-boss", "keywords"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "classification.job.keywords": typeof deriveKeywordsJobErrors;
+   }
+}
+
+type DeriveKeywordsJobCatalogError =
+   | ReturnType<typeof deriveKeywordsJobErrors.ENQUEUE_FAILED>
+   | ReturnType<typeof deriveKeywordsJobErrors.JOB_ID_MISSING>
+   | ReturnType<typeof deriveKeywordsJobErrors.INVALID_PAYLOAD>
+   | ReturnType<typeof deriveKeywordsJobErrors.SIBLINGS_LOAD_FAILED>
+   | ReturnType<typeof deriveKeywordsJobErrors.AI_FAILED>
+   | ReturnType<typeof deriveKeywordsJobErrors.WRITE_FAILED>;
+
+export class DeriveKeywordsJobError extends TaggedError(
+   "DeriveKeywordsJobError",
+)<{
+   error: DeriveKeywordsJobCatalogError;
+   categoryId?: string;
+}>() {}
+
+const DERIVE_KEYWORDS_DEBOUNCE_SECONDS = 20;
+
+export const deriveKeywordsDeadLetterQueue = {
+   name: CLASSIFICATION_JOB_QUEUES.deriveKeywordsDeadLetter,
+   retryLimit: 0,
+   expireInSeconds: 60,
+   retentionSeconds: 2_592_000,
+   deleteAfterSeconds: 2_592_000,
+   warningQueueSize: 1,
+};
+
+export const deriveKeywordsQueue = {
+   name: CLASSIFICATION_JOB_QUEUES.deriveKeywords,
+   policy: "key_strict_fifo",
+   retryLimit: 3,
+   retryDelay: 5,
+   retryBackoff: true,
+   retryDelayMax: 300,
+   expireInSeconds: 300,
+   retentionSeconds: 2_592_000,
+   deleteAfterSeconds: 604_800,
+   heartbeatSeconds: 30,
+   warningQueueSize: 25,
+   deadLetter: CLASSIFICATION_JOB_QUEUES.deriveKeywordsDeadLetter,
+};
+
+export async function enqueueDeriveKeywordsJob(options: {
+   boss: PgBossClient;
+   input: DeriveKeywordsJobInput;
+   tx?: DrizzleTransactionLike;
+}) {
+   const sendOptions: SendOptions = {
+      singletonKey: options.input.categoryId,
+      retryLimit: deriveKeywordsQueue.retryLimit,
+      retryDelay: deriveKeywordsQueue.retryDelay,
+      retryBackoff: deriveKeywordsQueue.retryBackoff,
+      retryDelayMax: deriveKeywordsQueue.retryDelayMax,
+      expireInSeconds: deriveKeywordsQueue.expireInSeconds,
+      retentionSeconds: deriveKeywordsQueue.retentionSeconds,
+      deleteAfterSeconds: deriveKeywordsQueue.deleteAfterSeconds,
+      heartbeatSeconds: deriveKeywordsQueue.heartbeatSeconds,
+      deadLetter: deriveKeywordsQueue.deadLetter,
+      group: { id: options.input.teamId },
+   };
+   if (options.tx) sendOptions.db = fromDrizzle(options.tx, sql);
+
+   const jobId = await Result.tryPromise({
+      try: () =>
+         options.boss.sendDebounced(
+            CLASSIFICATION_JOB_QUEUES.deriveKeywords,
+            options.input,
+            sendOptions,
+            DERIVE_KEYWORDS_DEBOUNCE_SECONDS,
+            options.input.categoryId,
+         ),
+      catch: () =>
+         new DeriveKeywordsJobError({
+            error: deriveKeywordsJobErrors.ENQUEUE_FAILED({
+               internal: { categoryId: options.input.categoryId },
+            }),
+            categoryId: options.input.categoryId,
+         }),
+   });
+
+   if (Result.isError(jobId)) return Result.err(jobId.error);
+   if (!jobId.value) {
+      return Result.err(
+         new DeriveKeywordsJobError({
+            error: deriveKeywordsJobErrors.JOB_ID_MISSING({
+               internal: { categoryId: options.input.categoryId },
+            }),
+            categoryId: options.input.categoryId,
+         }),
+      );
+   }
+   return Result.ok(jobId.value);
+}
+
+export async function handleDeriveKeywordsJob(options: {
+   db: DatabaseInstance;
+   prompts: Prompts;
+   job: Job<DeriveKeywordsJobInput>;
+}) {
+   const parsedInput = deriveKeywordsJobInputSchema.safeParse(options.job.data);
+   if (!parsedInput.success) {
+      return Result.err(
+         new DeriveKeywordsJobError({
+            error: deriveKeywordsJobErrors.INVALID_PAYLOAD({
+               internal: { jobId: options.job.id },
+            }),
+         }),
+      );
+   }
+
+   const input = parsedInput.data;
+   log.info({
+      module: "classification.derive-keywords-job",
+      message: "running",
+      jobId: options.job.id,
+      categoryId: input.categoryId,
+      teamId: input.teamId,
+      organizationId: input.organizationId,
+      promptName: CLASSIFICATION_PROMPTS.deriveKeywords,
+   });
+
+   const siblingKeywords = await Result.tryPromise({
+      try: async () => {
+         const rows = await options.db.query.categories.findMany({
+            where: (f, { and, eq: eqFn, ne, isNotNull }) =>
+               and(
+                  eqFn(f.teamId, input.teamId),
+                  ne(f.id, input.categoryId),
+                  isNotNull(f.keywords),
+               ),
+            columns: { keywords: true },
+         });
+         return [...new Set(rows.flatMap((row) => row.keywords ?? []))].sort();
+      },
+      catch: () =>
+         new DeriveKeywordsJobError({
+            error: deriveKeywordsJobErrors.SIBLINGS_LOAD_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  categoryId: input.categoryId,
+               },
+            }),
+            categoryId: input.categoryId,
+         }),
+   });
+   if (Result.isError(siblingKeywords))
+      return Result.err(siblingKeywords.error);
+
+   const derived = await deriveKeywords(
+      options.prompts,
+      {
+         name: input.name,
+         description: input.description ?? null,
+         siblingKeywords: siblingKeywords.value,
+      },
+      {
+         distinctId: input.userId ?? input.teamId,
+         organizationId: input.organizationId,
+         teamId: input.teamId,
+      },
+   );
+   if (Result.isError(derived)) {
+      return Result.err(
+         new DeriveKeywordsJobError({
+            error: deriveKeywordsJobErrors.AI_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  categoryId: input.categoryId,
+               },
+            }),
+            categoryId: input.categoryId,
+         }),
+      );
+   }
+
+   const used = new Set(
+      siblingKeywords.value.map((keyword) => keyword.toLowerCase()),
+   );
+   const keywords = derived.value.filter(
+      (keyword) => !used.has(keyword.toLowerCase()),
+   );
+
+   if (keywords.length === 0) {
+      log.warn({
+         module: "classification.derive-keywords-job",
+         message: "skipping: all derived keywords collide with siblings",
+         jobId: options.job.id,
+         categoryId: input.categoryId,
+      });
+      return Result.ok(undefined);
+   }
+
+   const write = await Result.tryPromise({
+      try: () =>
+         options.db.transaction(async (tx) => {
+            await tx
+               .update(categories)
+               .set({
+                  keywords,
+                  keywordsUpdatedAt: dayjs().toDate(),
+               })
+               .where(
+                  and(
+                     eq(categories.id, input.categoryId),
+                     eq(categories.teamId, input.teamId),
+                  ),
+               );
+         }),
+      catch: () =>
+         new DeriveKeywordsJobError({
+            error: deriveKeywordsJobErrors.WRITE_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  categoryId: input.categoryId,
+               },
+            }),
+            categoryId: input.categoryId,
+         }),
+   });
+   if (Result.isError(write)) return Result.err(write.error);
+
+   log.info({
+      module: "classification.derive-keywords-job",
+      message: "completed",
+      jobId: options.job.id,
+      categoryId: input.categoryId,
+      keywordsCount: keywords.length,
+   });
+   return Result.ok(undefined);
+}

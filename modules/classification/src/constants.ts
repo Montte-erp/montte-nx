@@ -12,3 +12,8 @@ export const CLASSIFICATION_PROMPTS = {
 } as const;
 
 export type ClassificationPromptKey = keyof typeof CLASSIFICATION_PROMPTS;
+
+export const CLASSIFICATION_JOB_QUEUES = {
+   deriveKeywords: "classification:derive-keywords",
+   deriveKeywordsDeadLetter: "classification:derive-keywords:dead-letter",
+} as const;

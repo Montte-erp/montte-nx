@@ -18,16 +18,12 @@ import { makeCategory } from "../helpers/classification-factories";
 const { enqueueDeriveKeywordsSpy } = vi.hoisted(() => ({
    enqueueDeriveKeywordsSpy: vi.fn().mockResolvedValue({
       ok: true,
-      value: { workflowId: "derive-keywords-test" },
+      value: "derive-keywords-test",
    }),
 }));
 
-vi.mock("../../src/workflows/enqueue", () => ({
-   enqueueDeriveKeywordsWorkflow: enqueueDeriveKeywordsSpy,
-   isClassificationWorkflowQueueFailure: (result: {
-      ok?: boolean;
-      error?: unknown;
-   }) => result.ok === false || result.error !== undefined,
+vi.mock("../../src/jobs/derive-keywords-job", () => ({
+   enqueueDeriveKeywordsJob: enqueueDeriveKeywordsSpy,
 }));
 
 vi.mock("@core/orpc/server", async () =>
@@ -80,12 +76,14 @@ describe("categories router", () => {
       expect(persisted?.icon).toBe("briefcase");
 
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-      const [, payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
+      const [payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
       expect(payload).toMatchObject({
-         categoryId: result.id,
-         teamId,
-         organizationId,
-         name: "Marketing",
+         input: {
+            categoryId: result.id,
+            teamId,
+            organizationId,
+            name: "Marketing",
+         },
       });
    });
 
@@ -576,9 +574,11 @@ describe("categories router", () => {
       expect(result).toEqual({ success: true });
 
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-      const [, payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
+      const [payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
       expect(payload).toMatchObject({
-         categoryId: cat.id,
+         input: {
+            categoryId: cat.id,
+         },
       });
    });
 

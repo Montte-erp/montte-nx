@@ -7,58 +7,52 @@ import {
    it,
    vi,
 } from "vitest";
+import { Result } from "better-result";
 import { eq } from "drizzle-orm";
-import { ok, errAsync } from "neverthrow";
-import "../helpers/mock-classification-context";
-
-const dbosMocks = vi.hoisted(async () => {
-   const mod = await import("@core/dbos/testing/mock-dbos");
-   return mod.createDbosMocks();
-});
-
-vi.mock("@dbos-inc/dbos-sdk", async () => {
-   const mod = await import("@core/dbos/testing/mock-dbos");
-   return mod.dbosSdkMockFactory(await dbosMocks);
-});
-
-vi.mock("@dbos-inc/drizzle-datasource", async () => {
-   const mod = await import("@core/dbos/testing/mock-dbos");
-   return mod.drizzleDataSourceMockFactory(await dbosMocks);
-});
+import type { Job } from "pg-boss";
+import { setupTestDb } from "@core/database/testing/setup-test-db";
+import { seedTeam } from "@core/database/testing/factories";
+import { categories } from "@core/database/schemas/categories";
+import type { PgBossClient } from "@core/pg-boss/client";
+import { makeCategory } from "../helpers/classification-factories";
 
 vi.mock("../../src/ai/derive-keywords", () => ({
    deriveKeywords: vi.fn(),
 }));
 
 import { deriveKeywords } from "../../src/ai/derive-keywords";
-import { setupTestDb } from "@core/database/testing/setup-test-db";
-import { seedTeam } from "@core/database/testing/factories";
-import { categories } from "@core/database/schemas/categories";
-import { makeCategory } from "../helpers/classification-factories";
-import { deriveKeywordsWorkflow } from "../../src/workflows/derive-keywords-workflow";
-import { enqueueDeriveKeywordsWorkflow } from "../../src/workflows/enqueue";
-
-type WorkflowClient = Parameters<typeof enqueueDeriveKeywordsWorkflow>[0];
+import {
+   deriveKeywordsQueue,
+   enqueueDeriveKeywordsJob,
+   handleDeriveKeywordsJob,
+   type DeriveKeywordsJobInput,
+} from "../../src/jobs/derive-keywords-job";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
 beforeAll(async () => {
    testDb = await setupTestDb();
-   const mocks = await dbosMocks;
-   mocks.setActiveDb(testDb.db);
 }, 30_000);
 
 afterAll(async () => {
    await testDb.cleanup();
 });
 
-beforeEach(async () => {
+beforeEach(() => {
    vi.clearAllMocks();
-   const mocks = await dbosMocks;
-   mocks.setActiveDb(testDb.db);
 });
 
 const KEYWORDS = ["fast food", "restaurant", "burger", "delivery", "cafe"];
+
+const prompts = {
+   get: vi.fn().mockResolvedValue({
+      source: "active",
+      prompt: "derive keywords",
+      name: "montte-derive-keywords",
+      version: 1,
+   }),
+   compile: vi.fn((prompt: string) => prompt),
+};
 
 async function getCategory(id: string) {
    const [row] = await testDb.db
@@ -68,25 +62,33 @@ async function getCategory(id: string) {
    return row;
 }
 
-describe("deriveKeywordsWorkflow", () => {
+describe("derive keywords job", () => {
    it("category success — derives keywords and writes keywords + keywordsUpdatedAt", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
       vi.mocked(deriveKeywords).mockReturnValue(
-         Promise.resolve(ok(KEYWORDS)) as unknown as ReturnType<
+         Promise.resolve(Result.ok(KEYWORDS)) as ReturnType<
             typeof deriveKeywords
          >,
       );
 
-      await deriveKeywordsWorkflow({
-         categoryId: category.id,
-         teamId,
-         organizationId,
-         name: "Food",
-         description: null,
+      const result = await handleDeriveKeywordsJob({
+         db: testDb.db,
+         prompts,
+         job: {
+            id: "derive-keywords-test",
+            data: {
+               categoryId: category.id,
+               teamId,
+               organizationId,
+               name: "Food",
+               description: null,
+            },
+         } as Job<DeriveKeywordsJobInput>,
       });
 
+      expect(Result.isOk(result)).toBe(true);
       expect(deriveKeywords).toHaveBeenCalledTimes(1);
       const [, aiInput, observability] =
          vi.mocked(deriveKeywords).mock.calls[0]!;
@@ -101,19 +103,12 @@ describe("deriveKeywordsWorkflow", () => {
       expect(after?.keywordsUpdatedAt).toBeInstanceOf(Date);
    });
 
-   it("workflow ID dedup — same categoryId produces same workflowID across enqueues", async () => {
+   it("enqueue dedup — same categoryId uses the same debounced key", async () => {
       const teamId = crypto.randomUUID();
       const organizationId = crypto.randomUUID();
       const categoryId = crypto.randomUUID();
-
-      const enqueueCalls: { workflowID?: string }[] = [];
-      const fakeClient: WorkflowClient = {
-         registerQueue: vi.fn(async () => undefined),
-         enqueue: vi.fn(async (args) => {
-            enqueueCalls.push(args);
-            return { workflowID: args.workflowID ?? "derive-keywords-test" };
-         }),
-      };
+      const sendDebounced = vi.fn().mockResolvedValue("derive-keywords-test");
+      const boss = { sendDebounced } as unknown as PgBossClient;
 
       const input = {
          categoryId,
@@ -122,42 +117,61 @@ describe("deriveKeywordsWorkflow", () => {
          name: "Whatever",
       };
 
-      const first = await enqueueDeriveKeywordsWorkflow(fakeClient, input);
-      const second = await enqueueDeriveKeywordsWorkflow(fakeClient, input);
+      const first = await enqueueDeriveKeywordsJob({ boss, input });
+      const second = await enqueueDeriveKeywordsJob({ boss, input });
 
-      expect(first.isOk()).toBe(true);
-      expect(second.isOk()).toBe(true);
-      expect(enqueueCalls).toHaveLength(2);
-      expect(enqueueCalls[0]?.workflowID).toBe(`derive-category-${categoryId}`);
-      expect(enqueueCalls[1]?.workflowID).toBe(`derive-category-${categoryId}`);
+      expect(Result.isOk(first)).toBe(true);
+      expect(Result.isOk(second)).toBe(true);
+      expect(sendDebounced).toHaveBeenCalledTimes(2);
+      expect(sendDebounced).toHaveBeenNthCalledWith(
+         1,
+         deriveKeywordsQueue.name,
+         input,
+         expect.any(Object),
+         expect.any(Number),
+         categoryId,
+      );
+      expect(sendDebounced).toHaveBeenNthCalledWith(
+         2,
+         deriveKeywordsQueue.name,
+         input,
+         expect.any(Object),
+         expect.any(Number),
+         categoryId,
+      );
    });
 
-   it("AI failure — workflow throws and does not write", async () => {
+   it("AI failure — job returns error and does not write", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
       vi.mocked(deriveKeywords).mockReturnValue(
-         errAsync(new Error("AI failed")) as unknown as ReturnType<
+         Promise.resolve(Result.err(new Error("AI failed"))) as ReturnType<
             typeof deriveKeywords
          >,
       );
 
-      await expect(
-         deriveKeywordsWorkflow({
-            categoryId: category.id,
-            teamId,
-            organizationId,
-            name: "Food",
-         }),
-      ).rejects.toThrow();
+      const result = await handleDeriveKeywordsJob({
+         db: testDb.db,
+         prompts,
+         job: {
+            id: "derive-keywords-test",
+            data: {
+               categoryId: category.id,
+               teamId,
+               organizationId,
+               name: "Food",
+            },
+         } as Job<DeriveKeywordsJobInput>,
+      });
 
+      expect(Result.isError(result)).toBe(true);
       const after = await getCategory(category.id);
       expect(after?.keywords).toBeNull();
    });
 
    it("dedupes derived keywords against sibling categories", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
-      // Sibling already owns "burger"
       await makeCategory(testDb.db, teamId, {
          name: "Sibling",
          keywords: ["burger"],
@@ -165,16 +179,23 @@ describe("deriveKeywordsWorkflow", () => {
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
       vi.mocked(deriveKeywords).mockReturnValue(
-         Promise.resolve(ok(KEYWORDS)) as unknown as ReturnType<
+         Promise.resolve(Result.ok(KEYWORDS)) as ReturnType<
             typeof deriveKeywords
          >,
       );
 
-      await deriveKeywordsWorkflow({
-         categoryId: category.id,
-         teamId,
-         organizationId,
-         name: "Food",
+      await handleDeriveKeywordsJob({
+         db: testDb.db,
+         prompts,
+         job: {
+            id: "derive-keywords-test",
+            data: {
+               categoryId: category.id,
+               teamId,
+               organizationId,
+               name: "Food",
+            },
+         } as Job<DeriveKeywordsJobInput>,
       });
 
       const after = await getCategory(category.id);

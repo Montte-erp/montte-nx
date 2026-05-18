@@ -16,6 +16,13 @@ export function createWorkflowClientMock() {
    return { enqueue: vi.fn().mockResolvedValue(undefined) };
 }
 
+export function createPgBossMock() {
+   return {
+      send: vi.fn().mockResolvedValue("test-job-id"),
+      sendDebounced: vi.fn().mockResolvedValue("test-job-id"),
+   };
+}
+
 export type TestContextOverrides = {
    teamId?: string;
    organizationId?: string;
@@ -54,6 +61,7 @@ export function createTestContext(
       auth: {} as never,
       posthog: createPosthogMock(),
       redis: {} as never,
+      pgBoss: Promise.resolve(createPgBossMock()),
       workflowClient: createWorkflowClientMock(),
       ...overrides.extras,
    };

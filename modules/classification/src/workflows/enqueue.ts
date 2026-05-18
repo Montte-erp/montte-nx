@@ -8,19 +8,17 @@ import {
 } from "@core/dbos/client";
 import {
    buildClassifyTransactionsBatchWorkflowId,
-   buildDeriveKeywordsWorkflowId,
    CLASSIFICATION_WORKFLOW_QUEUES,
    CLASSIFICATION_WORKFLOWS,
    type ClassifyTransactionsBatchInput,
-   type DeriveKeywordsWorkflowInput,
 } from "@modules/classification/workflows/constants";
 
 export class ClassificationWorkflowQueueError extends Error {
-   readonly operation: "classify_transactions" | "derive_keywords";
+   readonly operation: "classify_transactions";
    readonly cause: DbosQueueError;
 
    constructor(input: {
-      operation: "classify_transactions" | "derive_keywords";
+      operation: "classify_transactions";
       message: string;
       cause: DbosQueueError;
    }) {
@@ -60,39 +58,6 @@ export async function enqueueClassifyTransactionsBatchWorkflow(
                operation: "classify_transactions",
                message:
                   "Não foi possível enfileirar a classificação de lançamentos.",
-               cause,
-            }),
-         ),
-      ok: (
-         value,
-      ): Result<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
-         ok(value),
-   });
-}
-
-export async function enqueueDeriveKeywordsWorkflow(
-   client: WorkflowClient,
-   input: DeriveKeywordsWorkflowInput,
-): Promise<Result<DbosWorkflowHandle, ClassificationWorkflowQueueError>> {
-   const queued = await enqueueDbosWorkflow({
-      client,
-      queueName: CLASSIFICATION_WORKFLOW_QUEUES.deriveKeywords,
-      workflow: {
-         queueName: CLASSIFICATION_WORKFLOW_QUEUES.deriveKeywords,
-         workflowName: CLASSIFICATION_WORKFLOWS.deriveKeywords,
-         workflowID: buildDeriveKeywordsWorkflowId(input),
-      },
-      payload: input,
-   });
-   return matchDbosQueueResult(queued, {
-      err: (
-         cause,
-      ): Result<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
-         err(
-            new ClassificationWorkflowQueueError({
-               operation: "derive_keywords",
-               message:
-                  "Não foi possível enfileirar a derivação de palavras-chave.",
                cause,
             }),
          ),
