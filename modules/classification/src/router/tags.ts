@@ -10,10 +10,8 @@ import {
 } from "@core/database/schemas/tags";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   classificationConflict,
-   classificationForbidden,
-   classificationInternal,
-   classificationNotFound,
+   ClassificationRouterError,
+   classificationRouterErrors,
    requireTag,
 } from "@modules/classification/router/middlewares";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
@@ -22,7 +20,14 @@ const idSchema = z.object({ id: z.string().uuid() });
 const idsSchema = z.object({ ids: z.array(z.string().uuid()).min(1) });
 
 const ensureRow = <T>(row: T | undefined, msg: string) =>
-   row ? Result.ok(row) : Result.err(classificationInternal(msg));
+   row
+      ? Result.ok(row)
+      : Result.err(
+           new ClassificationRouterError({
+              error: classificationRouterErrors.INTERNAL(),
+              message: msg,
+           }),
+        );
 
 export const create = protectedProcedure
    .input(createTagSchema)
@@ -36,7 +41,11 @@ export const create = protectedProcedure
                   .returning();
                return row;
             }),
-         catch: () => classificationInternal("Falha ao criar centro de custo."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao criar centro de custo.",
+            }),
       });
       if (Result.isError(created)) throw created.error;
       const result = ensureRow(
@@ -136,7 +145,10 @@ export const getAll = protectedProcedure
             return { data, total: countResult?.total ?? 0 };
          },
          catch: () =>
-            classificationInternal("Falha ao listar centros de custo."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao listar centros de custo.",
+            }),
       });
       if (Result.isError(result)) throw result.error;
       return result.value;
@@ -158,7 +170,10 @@ export const update = protectedProcedure
                return row;
             }),
          catch: () =>
-            classificationInternal("Falha ao atualizar centro de custo."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao atualizar centro de custo.",
+            }),
       });
       if (Result.isError(updated)) throw updated.error;
       const result = ensureRow(
@@ -174,9 +189,10 @@ export const remove = protectedProcedure
    .use(requireTag, (input) => input.id)
    .handler(async ({ context, input }) => {
       if (context.tag.isDefault) {
-         throw classificationForbidden(
-            "Centro de custo padrão não pode ser excluído.",
-         );
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.FORBIDDEN(),
+            message: "Centro de custo padrão não pode ser excluído.",
+         });
       }
 
       const hasTx = await Result.tryPromise({
@@ -185,13 +201,19 @@ export const remove = protectedProcedure
                where: (f, { eq }) => eq(f.tagId, input.id),
                columns: { id: true },
             }),
-         catch: () => classificationInternal("Falha ao verificar lançamentos."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos.",
+            }),
       });
       if (Result.isError(hasTx)) throw hasTx.error;
       if (hasTx.value) {
-         throw classificationConflict(
-            "Centro de custo com lançamentos não pode ser excluído. Use arquivamento.",
-         );
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message:
+               "Centro de custo com lançamentos não pode ser excluído. Use arquivamento.",
+         });
       }
 
       const removed = await Result.tryPromise({
@@ -200,7 +222,10 @@ export const remove = protectedProcedure
                await tx.delete(tags).where(eq(tags.id, input.id));
             }),
          catch: () =>
-            classificationInternal("Falha ao excluir centro de custo."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao excluir centro de custo.",
+            }),
       });
       if (Result.isError(removed)) throw removed.error;
       return { success: true };
@@ -221,7 +246,10 @@ export const archive = protectedProcedure
                return row;
             }),
          catch: () =>
-            classificationInternal("Falha ao arquivar centro de custo."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao arquivar centro de custo.",
+            }),
       });
       if (Result.isError(archived)) throw archived.error;
       const result = ensureRow(
@@ -247,7 +275,10 @@ export const bulkArchive = protectedProcedure
                   .where(inArray(tags.id, input.ids));
             }),
          catch: () =>
-            classificationInternal("Falha ao arquivar centros de custo."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao arquivar centros de custo.",
+            }),
       });
       if (Result.isError(archived)) throw archived.error;
       return { archived: existing.value.length };
@@ -268,7 +299,10 @@ export const unarchive = protectedProcedure
                return row;
             }),
          catch: () =>
-            classificationInternal("Falha ao reativar centro de custo."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao reativar centro de custo.",
+            }),
       });
       if (Result.isError(unarchived)) throw unarchived.error;
       const result = ensureRow(
@@ -294,9 +328,10 @@ export const getStats = protectedProcedure.handler(async ({ context }) => {
                archived: Number(row?.archived ?? 0),
             })),
       catch: () =>
-         classificationInternal(
-            "Falha ao buscar estatísticas de centros de custo.",
-         ),
+         new ClassificationRouterError({
+            error: classificationRouterErrors.INTERNAL(),
+            message: "Falha ao buscar estatísticas de centros de custo.",
+         }),
    });
    if (Result.isError(result)) throw result.error;
    return result.value;
@@ -319,7 +354,10 @@ export const bulkCreate = protectedProcedure
                   .returning(),
             ),
          catch: () =>
-            classificationInternal("Falha ao importar centros de custo."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao importar centros de custo.",
+            }),
       });
       if (Result.isError(result)) throw result.error;
       return result.value;
@@ -331,9 +369,10 @@ export const bulkRemove = protectedProcedure
       const existing = await loadOwnedTags(context, input.ids);
       if (Result.isError(existing)) throw existing.error;
       if (existing.value.some((t) => t.isDefault)) {
-         throw classificationForbidden(
-            "Centros de custo padrão não podem ser excluídos.",
-         );
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.FORBIDDEN(),
+            message: "Centros de custo padrão não podem ser excluídos.",
+         });
       }
 
       const hasTx = await Result.tryPromise({
@@ -342,13 +381,19 @@ export const bulkRemove = protectedProcedure
                where: (f, { inArray }) => inArray(f.tagId, input.ids),
                columns: { id: true },
             }),
-         catch: () => classificationInternal("Falha ao verificar lançamentos."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos.",
+            }),
       });
       if (Result.isError(hasTx)) throw hasTx.error;
       if (hasTx.value) {
-         throw classificationConflict(
-            "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
-         );
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message:
+               "Centros de custo com lançamentos não podem ser excluídos. Use arquivamento.",
+         });
       }
 
       const removed = await Result.tryPromise({
@@ -357,7 +402,10 @@ export const bulkRemove = protectedProcedure
                await tx.delete(tags).where(inArray(tags.id, input.ids));
             }),
          catch: () =>
-            classificationInternal("Falha ao excluir centros de custo."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao excluir centros de custo.",
+            }),
       });
       if (Result.isError(removed)) throw removed.error;
       return { deleted: input.ids.length };
@@ -374,13 +422,17 @@ async function loadOwnedTags(
                and(inArray(f.id, ids), eq(f.teamId, context.teamId)),
          }),
       catch: () =>
-         classificationInternal("Falha ao verificar centros de custo."),
+         new ClassificationRouterError({
+            error: classificationRouterErrors.INTERNAL(),
+            message: "Falha ao verificar centros de custo.",
+         }),
    });
    if (Result.isError(existing)) return existing;
    if (existing.value.length === ids.length) return Result.ok(existing.value);
    return Result.err(
-      classificationNotFound(
-         "Um ou mais centros de custo não foram encontrados.",
-      ),
+      new ClassificationRouterError({
+         error: classificationRouterErrors.NOT_FOUND(),
+         message: "Um ou mais centros de custo não foram encontrados.",
+      }),
    );
 }

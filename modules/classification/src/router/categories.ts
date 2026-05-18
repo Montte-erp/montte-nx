@@ -17,8 +17,8 @@ import {
    enqueueDeriveKeywordsJob,
 } from "@modules/classification/jobs/derive-keywords-job";
 import {
-   classificationConflict,
-   classificationInternal,
+   ClassificationRouterError,
+   classificationRouterErrors,
    requireCategory,
    requireEmptyCategoryTree,
    requireKeywordsUnique,
@@ -37,7 +37,14 @@ type CategoryUniqueCandidate = {
 };
 
 const ensureRow = <T>(row: T | undefined, msg: string) =>
-   row ? Result.ok(row) : Result.err(classificationInternal(msg));
+   row
+      ? Result.ok(row)
+      : Result.err(
+           new ClassificationRouterError({
+              error: classificationRouterErrors.INTERNAL(),
+              message: msg,
+           }),
+        );
 
 type CategoryKeywordsSource = {
    id: string;
@@ -133,7 +140,11 @@ export const create = protectedProcedure
                }
                return parent;
             }),
-         catch: () => classificationInternal("Falha ao criar categoria."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao criar categoria.",
+            }),
       });
       if (Result.isError(created)) throw created.error;
       const result = ensureRow(
@@ -173,7 +184,11 @@ export const getAll = protectedProcedure
                },
                orderBy: (f, { asc }) => [asc(f.name)],
             }),
-         catch: () => classificationInternal("Falha ao listar categorias."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao listar categorias.",
+            }),
       });
       if (Result.isError(result)) throw result.error;
       const all = result.value;
@@ -312,7 +327,11 @@ export const getPaginated = protectedProcedure
 
             return { data: [...rootRows, ...childRows], total };
          },
-         catch: () => classificationInternal("Falha ao listar categorias."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao listar categorias.",
+            }),
       });
       if (Result.isError(result)) throw result.error;
       return result.value;
@@ -395,11 +414,17 @@ export const update = protectedProcedure
             return false;
          },
          catch: () =>
-            classificationInternal("Falha ao validar categoria duplicada."),
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao validar categoria duplicada.",
+            }),
       });
       if (Result.isError(conflictResult)) throw conflictResult.error;
       if (conflictResult.value)
-         throw classificationConflict("Categoria já existe nesse nível.");
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message: "Categoria já existe nesse nível.",
+         });
 
       const updated = await Result.tryPromise({
          try: () =>
@@ -445,7 +470,11 @@ export const update = protectedProcedure
 
                return row;
             }),
-         catch: () => classificationInternal("Falha ao atualizar categoria."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao atualizar categoria.",
+            }),
       });
       if (Result.isError(updated)) throw updated.error;
       const result = ensureRow(
@@ -487,7 +516,11 @@ export const remove = protectedProcedure
                .delete(categories)
                .where(eq(categories.id, input.id))
                .then(() => undefined),
-         catch: () => classificationInternal("Falha ao excluir categoria."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao excluir categoria.",
+            }),
       });
       if (Result.isError(result)) throw result.error;
       return { success: true };
@@ -509,7 +542,11 @@ export const archive = protectedProcedure
                where: (f, { eq }) => eq(f.id, input.id),
             });
          },
-         catch: () => classificationInternal("Falha ao arquivar categoria."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao arquivar categoria.",
+            }),
       });
       if (Result.isError(archived)) throw archived.error;
       const result = ensureRow(
@@ -532,7 +569,11 @@ export const unarchive = protectedProcedure
                .where(eq(categories.id, input.id))
                .returning()
                .then((rows) => rows[0]),
-         catch: () => classificationInternal("Falha ao reativar categoria."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao reativar categoria.",
+            }),
       });
       if (Result.isError(unarchived)) throw unarchived.error;
       const result = ensureRow(

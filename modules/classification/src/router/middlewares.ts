@@ -8,33 +8,36 @@ import type { ORPCContextWithOrganization } from "@core/orpc/context";
 
 const base = os.$context<ORPCContextWithOrganization>();
 
-const classificationRouterErrors = defineErrorCatalog("classification.router", {
-   BAD_REQUEST: {
-      status: 400,
-      message: "Requisição inválida em classificação.",
-      tags: ["classification", "router"],
+export const classificationRouterErrors = defineErrorCatalog(
+   "classification.router",
+   {
+      BAD_REQUEST: {
+         status: 400,
+         message: "Requisição inválida em classificação.",
+         tags: ["classification", "router"],
+      },
+      CONFLICT: {
+         status: 409,
+         message: "Conflito em classificação.",
+         tags: ["classification", "router"],
+      },
+      FORBIDDEN: {
+         status: 403,
+         message: "Ação não permitida em classificação.",
+         tags: ["classification", "router"],
+      },
+      INTERNAL: {
+         status: 500,
+         message: "Falha interna em classificação.",
+         tags: ["classification", "router"],
+      },
+      NOT_FOUND: {
+         status: 404,
+         message: "Registro de classificação não encontrado.",
+         tags: ["classification", "router"],
+      },
    },
-   CONFLICT: {
-      status: 409,
-      message: "Conflito em classificação.",
-      tags: ["classification", "router"],
-   },
-   FORBIDDEN: {
-      status: 403,
-      message: "Ação não permitida em classificação.",
-      tags: ["classification", "router"],
-   },
-   INTERNAL: {
-      status: 500,
-      message: "Falha interna em classificação.",
-      tags: ["classification", "router"],
-   },
-   NOT_FOUND: {
-      status: 404,
-      message: "Registro de classificação não encontrado.",
-      tags: ["classification", "router"],
-   },
-});
+);
 
 declare module "evlog" {
    interface RegisteredErrorCatalogs {
@@ -56,34 +59,12 @@ export class ClassificationRouterError extends TaggedError(
    message: string;
 }>() {}
 
-const makeRouterError = (
-   error: ClassificationRouterCatalogError,
-   message: string,
-) => new ClassificationRouterError({ error, message });
-
-export const classificationBadRequest = (message: string) =>
-   makeRouterError(classificationRouterErrors.BAD_REQUEST(), message);
-
-export const classificationConflict = (message: string) =>
-   makeRouterError(classificationRouterErrors.CONFLICT(), message);
-
-export const classificationForbidden = (message: string) =>
-   makeRouterError(classificationRouterErrors.FORBIDDEN(), message);
-
-export const classificationInternal = (message: string) =>
-   makeRouterError(classificationRouterErrors.INTERNAL(), message);
-
-export const classificationNotFound = (message: string) =>
-   makeRouterError(classificationRouterErrors.NOT_FOUND(), message);
-
 type ResolvedCategoryUpdateParent = {
    updateParent: boolean;
    level: number;
    type: Category["type"];
    descendantCategoryIds: string[];
 };
-
-const dbError = (message: string) => () => classificationInternal(message);
 
 export const requireCategory = base.middleware(
    async ({ context, next }, id: string) => {
@@ -92,11 +73,18 @@ export const requireCategory = base.middleware(
             context.db.query.categories.findFirst({
                where: (f, { eq }) => eq(f.id, id),
             }),
-         catch: dbError("Falha ao verificar permissão."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar permissão.",
+            }),
       });
       if (Result.isError(category)) throw category.error;
       if (!category.value || category.value.teamId !== context.teamId) {
-         throw classificationNotFound("Categoria não encontrada.");
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.NOT_FOUND(),
+            message: "Categoria não encontrada.",
+         });
       }
       return next({ context: { category: category.value } });
    },
@@ -109,11 +97,18 @@ export const requireTag = base.middleware(
             context.db.query.tags.findFirst({
                where: (f, { eq }) => eq(f.id, id),
             }),
-         catch: dbError("Falha ao verificar permissão."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar permissão.",
+            }),
       });
       if (Result.isError(tag)) throw tag.error;
       if (!tag.value || tag.value.teamId !== context.teamId) {
-         throw classificationNotFound("Centro de custo não encontrado.");
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.NOT_FOUND(),
+            message: "Centro de custo não encontrado.",
+         });
       }
       return next({ context: { tag: tag.value } });
    },
@@ -127,13 +122,18 @@ export const requireOwnedCategoryIds = base.middleware(
                where: (f, { and, inArray, eq }) =>
                   and(inArray(f.id, ids), eq(f.teamId, context.teamId)),
             }),
-         catch: dbError("Falha ao verificar categorias."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar categorias.",
+            }),
       });
       if (Result.isError(rows)) throw rows.error;
       if (rows.value.length !== ids.length) {
-         throw classificationNotFound(
-            "Uma ou mais categorias não foram encontradas.",
-         );
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.NOT_FOUND(),
+            message: "Uma ou mais categorias não foram encontradas.",
+         });
       }
       return next({ context: { ownedCategories: rows.value } });
    },
@@ -147,7 +147,10 @@ export const blockDefaultCategories = os
    >()
    .middleware(async ({ context, next }, message: string) => {
       if (context.ownedCategories.some((c) => c.isDefault)) {
-         throw classificationConflict(message);
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message,
+         });
       }
       return next();
    });
@@ -177,13 +180,18 @@ export const requireKeywordsUnique = base.middleware(
                .from(categories)
                .where(and(...conds))
                .then((rows) => rows[0]?.count ?? 0),
-         catch: dbError("Falha ao validar palavras-chave."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao validar palavras-chave.",
+            }),
       });
       if (Result.isError(countResult)) throw countResult.error;
       if (countResult.value > 0) {
-         throw classificationConflict(
-            "Palavras-chave já utilizadas em outra categoria ativa.",
-         );
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message: "Palavras-chave já utilizadas em outra categoria ativa.",
+         });
       }
       return next();
    },
@@ -206,14 +214,24 @@ export const requireResolvedCategoryParent = base.middleware(
             context.db.query.categories.findFirst({
                where: (f, { eq }) => eq(f.id, parentId),
             }),
-         catch: dbError("Falha ao verificar categoria pai."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar categoria pai.",
+            }),
       });
       if (Result.isError(parent)) throw parent.error;
       if (!parent.value || parent.value.teamId !== context.teamId) {
-         throw classificationNotFound("Categoria pai não encontrada.");
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.NOT_FOUND(),
+            message: "Categoria pai não encontrada.",
+         });
       }
       if (parent.value.level >= 3) {
-         throw classificationBadRequest("Limite de 3 níveis atingido.");
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.BAD_REQUEST(),
+            message: "Limite de 3 níveis atingido.",
+         });
       }
       return next({
          context: {
@@ -261,7 +279,10 @@ export const requireResolvedCategoryUpdateParent = os
 
          if (!parentId) {
             if (maxDepth > 3)
-               throw classificationBadRequest("Limite de 3 níveis atingido.");
+               throw new ClassificationRouterError({
+                  error: classificationRouterErrors.BAD_REQUEST(),
+                  message: "Limite de 3 níveis atingido.",
+               });
             const resolvedParent: ResolvedCategoryUpdateParent = {
                updateParent: true,
                level: 1,
@@ -272,14 +293,17 @@ export const requireResolvedCategoryUpdateParent = os
          }
 
          if (parentId === context.category.id) {
-            throw classificationBadRequest(
-               "Categoria pai não pode ser a própria categoria.",
-            );
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.BAD_REQUEST(),
+               message: "Categoria pai não pode ser a própria categoria.",
+            });
          }
          if (descendantCategoryIds.includes(parentId)) {
-            throw classificationBadRequest(
-               "Categoria pai não pode ser uma subcategoria da categoria editada.",
-            );
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.BAD_REQUEST(),
+               message:
+                  "Categoria pai não pode ser uma subcategoria da categoria editada.",
+            });
          }
 
          const parent = await Result.tryPromise({
@@ -287,19 +311,32 @@ export const requireResolvedCategoryUpdateParent = os
                context.db.query.categories.findFirst({
                   where: (f, { eq }) => eq(f.id, parentId),
                }),
-            catch: dbError("Falha ao verificar categoria pai."),
+            catch: () =>
+               new ClassificationRouterError({
+                  error: classificationRouterErrors.INTERNAL(),
+                  message: "Falha ao verificar categoria pai.",
+               }),
          });
          if (Result.isError(parent)) throw parent.error;
          if (!parent.value || parent.value.teamId !== context.teamId) {
-            throw classificationNotFound("Categoria pai não encontrada.");
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.NOT_FOUND(),
+               message: "Categoria pai não encontrada.",
+            });
          }
          if (parent.value.isArchived) {
-            throw classificationBadRequest("Categoria pai arquivada.");
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.BAD_REQUEST(),
+               message: "Categoria pai arquivada.",
+            });
          }
 
          const nextLevel = parent.value.level + 1;
          if (nextLevel + maxDepth - 1 > 3) {
-            throw classificationBadRequest("Limite de 3 níveis atingido.");
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.BAD_REQUEST(),
+               message: "Limite de 3 níveis atingido.",
+            });
          }
 
          const resolvedParent: ResolvedCategoryUpdateParent = {
@@ -330,7 +367,11 @@ function fetchDescendantRows(
             .where(inArray(categories.parentId, level2Ids));
          return [...level2, ...level3];
       },
-      catch: dbError("Falha ao verificar descendentes."),
+      catch: () =>
+         new ClassificationRouterError({
+            error: classificationRouterErrors.INTERNAL(),
+            message: "Falha ao verificar descendentes.",
+         }),
    });
 }
 
@@ -355,13 +396,19 @@ export const requireEmptyCategoryTree = base.middleware(
                .from(transactions)
                .where(inArray(transactions.categoryId, allIds))
                .then((rows) => rows[0]?.count ?? 0),
-         catch: dbError("Falha ao verificar lançamentos."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos.",
+            }),
       });
       if (Result.isError(countResult)) throw countResult.error;
       if (countResult.value > 0) {
-         throw classificationConflict(
-            "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
-         );
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message:
+               "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
+         });
       }
       return next();
    },
@@ -395,13 +442,19 @@ export const requireNoTransactionsForExpandedIds = os
                   inArray(transactions.categoryId, context.expandedCategoryIds),
                )
                .then((rows) => rows[0]?.count ?? 0),
-         catch: dbError("Falha ao verificar lançamentos."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos.",
+            }),
       });
       if (Result.isError(countResult)) throw countResult.error;
       if (countResult.value > 0) {
-         throw classificationConflict(
-            "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
-         );
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message:
+               "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
+         });
       }
       return next();
    });

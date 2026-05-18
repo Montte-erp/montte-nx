@@ -14,7 +14,8 @@ import {
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   classificationInternal,
+   ClassificationRouterError,
+   classificationRouterErrors,
    requireNoTransactionsForExpandedIds,
    requireOwnedCategoryIds,
    withExpandedCategoryIds,
@@ -70,7 +71,11 @@ export const exportAll = protectedProcedure.handler(async ({ context }) => {
             where: (f, { eq }) => eq(f.teamId, context.teamId),
             orderBy: (f, { asc }) => [asc(f.name)],
          }),
-      catch: () => classificationInternal("Falha ao exportar categorias."),
+      catch: () =>
+         new ClassificationRouterError({
+            error: classificationRouterErrors.INTERNAL(),
+            message: "Falha ao exportar categorias.",
+         }),
    });
    if (Result.isError(result)) throw result.error;
    return result.value;
@@ -105,7 +110,7 @@ export const importBatch = protectedProcedure
                         type: data.type,
                      })
                      .returning();
-                  if (!parent) throw classificationInternal("Insert vazio.");
+                  if (!parent) return undefined;
                   parents.push(parent);
                   all.push(parent);
                   for (const sub of subcategories ?? []) {
@@ -121,15 +126,25 @@ export const importBatch = protectedProcedure
                            keywords: sub.keywords ?? null,
                         })
                         .returning();
-                     if (!child) throw classificationInternal("Insert vazio.");
+                     if (!child) return undefined;
                      all.push(child);
                   }
                }
                return { all, parents };
             }),
-         catch: () => classificationInternal("Falha ao importar categorias."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao importar categorias.",
+            }),
       });
       if (Result.isError(result)) throw result.error;
+      if (!result.value) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.INTERNAL(),
+            message: "Falha ao importar categorias: insert vazio.",
+         });
+      }
 
       const { all, parents } = result.value;
       const queued = await enqueueCategoryKeywordsDerivations(context, parents);
@@ -149,7 +164,11 @@ export const bulkRemove = protectedProcedure
                .delete(categories)
                .where(inArray(categories.id, input.ids))
                .then(() => undefined),
-         catch: () => classificationInternal("Falha ao excluir categorias."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao excluir categorias.",
+            }),
       });
       if (Result.isError(result)) throw result.error;
       return { deleted: input.ids.length };
@@ -172,7 +191,11 @@ export const bulkArchive = protectedProcedure
                   ),
                )
                .then(() => undefined),
-         catch: () => classificationInternal("Falha ao arquivar categorias."),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao arquivar categorias.",
+            }),
       });
       if (Result.isError(result)) throw result.error;
       return { archived: context.ownedCategories.length };
