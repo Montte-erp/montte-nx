@@ -140,6 +140,44 @@ describe("derive keywords job", () => {
       );
    });
 
+   it("enqueue failure — missing pg-boss job id returns tagged error", async () => {
+      const teamId = crypto.randomUUID();
+      const organizationId = crypto.randomUUID();
+      const categoryId = crypto.randomUUID();
+      const sendDebounced = vi.fn().mockResolvedValue(null);
+      const boss = { sendDebounced } as unknown as PgBossClient;
+
+      const result = await deriveKeywordsJob.enqueueDeriveKeywordsJob({
+         boss,
+         input: {
+            categoryId,
+            teamId,
+            organizationId,
+            name: "Whatever",
+         },
+      });
+
+      expect(Result.isError(result)).toBe(true);
+      if (!Result.isError(result)) return;
+      expect(deriveKeywordsJob.DeriveKeywordsJobError.is(result.error)).toBe(
+         true,
+      );
+      expect(result.error.message).toBe(
+         "Pg-boss não retornou o ID do job de derivação de palavras-chave.",
+      );
+      expect(result.error.categoryId).toBe(categoryId);
+      expect(result.error.error.status).toBe(500);
+
+      const roundTrip = Result.deserialize<void, unknown>(
+         Result.serialize(result),
+      );
+      expect(Result.isError(roundTrip)).toBe(true);
+      if (!Result.isError(roundTrip)) return;
+      expect(deriveKeywordsJob.DeriveKeywordsJobError.is(roundTrip.error)).toBe(
+         true,
+      );
+   });
+
    it("AI failure — job returns error and does not write", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
@@ -159,6 +197,15 @@ describe("derive keywords job", () => {
       });
 
       expect(Result.isError(result)).toBe(true);
+      if (!Result.isError(result)) return;
+      expect(deriveKeywordsJob.DeriveKeywordsJobError.is(result.error)).toBe(
+         true,
+      );
+      expect(result.error.message).toBe(
+         "Falha ao derivar palavras-chave por IA.",
+      );
+      expect(result.error.categoryId).toBe(category.id);
+      expect(result.error.error.status).toBe(500);
       const after = await getCategory(category.id);
       expect(after?.keywords).toBeNull();
    });

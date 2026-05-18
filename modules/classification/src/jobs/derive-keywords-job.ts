@@ -99,6 +99,7 @@ export class DeriveKeywordsJobError extends TaggedError(
    "DeriveKeywordsJobError",
 )<{
    error: DeriveKeywordsJobCatalogError;
+   message: string;
    categoryId?: string;
 }>() {}
 
@@ -145,6 +146,7 @@ export async function deriveKeywords(options: {
             catch: () =>
                new DeriveKeywordsJobError({
                   error: deriveKeywordsJobErrors.PROMPT_LOAD_FAILED(),
+                  message: "Falha ao carregar prompt de palavras-chave.",
                }),
          }),
       );
@@ -191,6 +193,7 @@ export async function deriveKeywords(options: {
             catch: () =>
                new DeriveKeywordsJobError({
                   error: deriveKeywordsJobErrors.AI_FAILED(),
+                  message: "Falha ao derivar palavras-chave por IA.",
                }),
          }),
       );
@@ -257,6 +260,7 @@ export async function enqueueDeriveKeywordsJob(options: {
             error: deriveKeywordsJobErrors.ENQUEUE_FAILED({
                internal: { categoryId: options.input.categoryId },
             }),
+            message: "Falha ao enfileirar derivação de palavras-chave.",
             categoryId: options.input.categoryId,
          }),
    });
@@ -268,6 +272,8 @@ export async function enqueueDeriveKeywordsJob(options: {
             error: deriveKeywordsJobErrors.JOB_ID_MISSING({
                internal: { categoryId: options.input.categoryId },
             }),
+            message:
+               "Pg-boss não retornou o ID do job de derivação de palavras-chave.",
             categoryId: options.input.categoryId,
          }),
       );
@@ -287,6 +293,7 @@ export async function handleDeriveKeywordsJob(options: {
             error: deriveKeywordsJobErrors.INVALID_PAYLOAD({
                internal: { jobId: options.job.id },
             }),
+            message: "Payload inválido para derivação de palavras-chave.",
          }),
       );
    }
@@ -323,6 +330,7 @@ export async function handleDeriveKeywordsJob(options: {
                   categoryId: input.categoryId,
                },
             }),
+            message: "Falha ao carregar palavras-chave das categorias irmãs.",
             categoryId: input.categoryId,
          }),
    });
@@ -351,6 +359,7 @@ export async function handleDeriveKeywordsJob(options: {
                   categoryId: input.categoryId,
                },
             }),
+            message: "Falha ao derivar palavras-chave por IA.",
             categoryId: input.categoryId,
          }),
       );
@@ -397,6 +406,7 @@ export async function handleDeriveKeywordsJob(options: {
                   categoryId: input.categoryId,
                },
             }),
+            message: "Falha ao gravar palavras-chave da categoria.",
             categoryId: input.categoryId,
          }),
    });

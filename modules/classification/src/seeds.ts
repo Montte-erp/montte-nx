@@ -1,8 +1,14 @@
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
+import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
+
+const throwableCauseSchema = z.object({
+   name: z.string().optional(),
+   message: z.string().optional(),
+});
 
 const classificationSeedErrors = defineErrorCatalog("classification.seed", {
    EMPTY_CATEGORY_INSERT: {
@@ -40,10 +46,21 @@ const emptyCategoryInsertError = () =>
       message: "Falha ao criar categoria padrão.",
    });
 
+const serializeUnknownCause = (cause: unknown) => {
+   const parsed = throwableCauseSchema.safeParse(cause);
+   if (parsed.success) {
+      return {
+         name: parsed.data.name ?? "UnknownError",
+         message: parsed.data.message ?? "Falha sem mensagem.",
+      };
+   }
+   return { type: typeof cause };
+};
+
 const seedFailedError = (cause: unknown) =>
    new ClassificationSeedError({
       error: classificationSeedErrors.SEED_FAILED({
-         internal: { cause },
+         internal: { cause: serializeUnknownCause(cause) },
       }),
       message: "Falha ao semear classificação padrão.",
    });

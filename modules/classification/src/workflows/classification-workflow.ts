@@ -11,7 +11,6 @@ import { flashModel } from "@core/ai/models";
 import { aiTraceAttributes, type AiTraceContext } from "@core/ai/otel";
 import type { DatabaseInstance } from "@core/database/client";
 import * as schema from "@core/database/schema";
-import { WorkflowError } from "@core/dbos/errors";
 import { registerWorkflowOnce } from "@core/dbos/factory";
 import type { DbosWorkerQueue } from "@core/dbos/worker";
 import { env } from "@core/environment/worker";
@@ -35,6 +34,11 @@ const CLASSIFY_TRANSACTION_PROMPT = "montte-classify-transaction";
 const AI_CHUNK_SIZE = 20;
 const MAX_BATCH_SIZE = 20;
 
+const throwableCauseSchema = z.object({
+   name: z.string().optional(),
+   message: z.string().optional(),
+});
+
 export const classificationDataSource = new DrizzleDataSource<DatabaseInstance>(
    "classification",
    { connectionString: env.DATABASE_URL },
@@ -53,13 +57,6 @@ export function initClassificationWorkflowContext(prompts: Prompts) {
    store.setState(() => ({
       prompts,
    }));
-}
-
-function getClassificationPrompts(): Prompts {
-   const { prompts } = store.state;
-   if (!prompts)
-      throw new Error("Classification workflow context not initialized");
-   return prompts;
 }
 
 export function createClassificationQueues(options: {
@@ -89,6 +86,16 @@ const classifyBatchWorkflowErrors = defineErrorCatalog(
          message: "Falha na classificação por IA em lote.",
          tags: ["classification", "workflow", "ai"],
       },
+      INPUT_LOAD_FAILED: {
+         status: 500,
+         message: "Falha ao carregar dados de classificação.",
+         tags: ["classification", "workflow"],
+      },
+      WRITE_FAILED: {
+         status: 500,
+         message: "Falha ao gravar classificações.",
+         tags: ["classification", "workflow"],
+      },
    },
 );
 
@@ -101,13 +108,41 @@ declare module "evlog" {
 type ClassifyBatchWorkflowCatalogError =
    | ReturnType<typeof classifyBatchWorkflowErrors.BATCH_TOO_LARGE>
    | ReturnType<typeof classifyBatchWorkflowErrors.PROMPT_LOAD_FAILED>
-   | ReturnType<typeof classifyBatchWorkflowErrors.AI_FAILED>;
+   | ReturnType<typeof classifyBatchWorkflowErrors.AI_FAILED>
+   | ReturnType<typeof classifyBatchWorkflowErrors.INPUT_LOAD_FAILED>
+   | ReturnType<typeof classifyBatchWorkflowErrors.WRITE_FAILED>;
 
 class ClassifyBatchWorkflowError extends TaggedError(
    "ClassifyBatchWorkflowError",
 )<{
    error: ClassifyBatchWorkflowCatalogError;
+   message: string;
+   batchId?: string;
+   teamId?: string;
+   organizationId?: string;
 }>() {}
+
+const serializeUnknownCause = (cause: unknown) => {
+   const parsed = throwableCauseSchema.safeParse(cause);
+   if (parsed.success) {
+      return {
+         name: parsed.data.name ?? "UnknownError",
+         message: parsed.data.message ?? "Falha sem mensagem.",
+      };
+   }
+   return { type: typeof cause };
+};
+
+function getClassificationPrompts(): Prompts {
+   const { prompts } = store.state;
+   if (prompts) return prompts;
+   throw new ClassifyBatchWorkflowError({
+      error: classifyBatchWorkflowErrors.PROMPT_LOAD_FAILED({
+         internal: { reason: "context_not_initialized" },
+      }),
+      message: "Contexto do workflow de classificação não inicializado.",
+   });
+}
 
 const classifyBatchInputSchema = z.object({
    id: z.string(),
@@ -224,6 +259,7 @@ async function classifyTransactionsBatch(options: {
       return Result.err(
          new ClassifyBatchWorkflowError({
             error: classifyBatchWorkflowErrors.BATCH_TOO_LARGE(),
+            message: "Batch maior que 20. Faça chunk antes de chamar.",
          }),
       );
    }
@@ -238,6 +274,7 @@ async function classifyTransactionsBatch(options: {
             catch: () =>
                new ClassifyBatchWorkflowError({
                   error: classifyBatchWorkflowErrors.PROMPT_LOAD_FAILED(),
+                  message: "Falha ao carregar prompt de classificação.",
                }),
          }),
       );
@@ -285,6 +322,7 @@ async function classifyTransactionsBatch(options: {
             catch: () =>
                new ClassifyBatchWorkflowError({
                   error: classifyBatchWorkflowErrors.AI_FAILED(),
+                  message: "Falha na classificação por IA em lote.",
                }),
          }),
       );
@@ -429,9 +467,15 @@ async function classifyTransactionsBatchWorkflowFn(
 
    const loadResult = await Result.tryPromise({
       try: () => stepLoadInputs(input),
-      catch: (e) =>
-         WorkflowError.database("Falha ao carregar dados de classificação.", {
-            cause: e,
+      catch: (cause) =>
+         new ClassifyBatchWorkflowError({
+            error: classifyBatchWorkflowErrors.INPUT_LOAD_FAILED({
+               internal: { cause: serializeUnknownCause(cause) },
+            }),
+            message: "Falha ao carregar dados de classificação.",
+            batchId,
+            teamId: input.teamId,
+            organizationId: input.organizationId,
          }),
    });
    if (Result.isError(loadResult)) throw loadResult.error;
@@ -480,13 +524,16 @@ async function classifyTransactionsBatchWorkflowFn(
                   input.organizationId,
                   i,
                ),
-            catch: (e) =>
-               WorkflowError.internal(
-                  "Falha ao classificar transações com IA.",
-                  {
-                     cause: e,
-                  },
-               ),
+            catch: (cause) =>
+               new ClassifyBatchWorkflowError({
+                  error: classifyBatchWorkflowErrors.AI_FAILED({
+                     internal: { cause: serializeUnknownCause(cause) },
+                  }),
+                  message: "Falha ao classificar transações com IA.",
+                  batchId,
+                  teamId: input.teamId,
+                  organizationId: input.organizationId,
+               }),
          });
          if (Result.isError(ai)) throw ai.error;
          aiResults.push(...ai.value);
@@ -517,9 +564,15 @@ async function classifyTransactionsBatchWorkflowFn(
 
    const writeResult = await Result.tryPromise({
       try: () => stepWrite(writes, input.teamId),
-      catch: (e) =>
-         WorkflowError.database("Falha ao gravar classificações.", {
-            cause: e,
+      catch: (cause) =>
+         new ClassifyBatchWorkflowError({
+            error: classifyBatchWorkflowErrors.WRITE_FAILED({
+               internal: { cause: serializeUnknownCause(cause) },
+            }),
+            message: "Falha ao gravar classificações.",
+            batchId,
+            teamId: input.teamId,
+            organizationId: input.organizationId,
          }),
    });
    if (Result.isError(writeResult)) throw writeResult.error;

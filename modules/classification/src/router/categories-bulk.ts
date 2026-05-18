@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Result } from "better-result";
+import { Result, type Result as ResultType } from "better-result";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -7,6 +7,11 @@ import {
    categorySchema,
    createCategorySchema,
 } from "@core/database/schemas/categories";
+import {
+   DeriveKeywordsJobError,
+   enqueueDeriveKeywordsJob,
+} from "@modules/classification/jobs/derive-keywords-job";
+import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import {
    classificationInternal,
@@ -14,13 +19,49 @@ import {
    requireOwnedCategoryIds,
    withExpandedCategoryIds,
 } from "@modules/classification/router/middlewares";
-import { enqueueCategoryKeywordsDerivations } from "@modules/classification/router/enqueue-keywords";
 
 const idsSchema = z.object({ ids: z.array(z.string().uuid()).min(1) });
 
 const importSubcategoryInputSchema = categorySchema
    .pick({ name: true })
    .extend({ keywords: z.array(z.string()).optional() });
+
+type CategoryKeywordsSource = {
+   id: string;
+   name: string;
+   description: string | null;
+};
+
+async function enqueueCategoryKeywordsDerivations(
+   context: Pick<
+      ORPCContextWithOrganization,
+      "organizationId" | "teamId" | "userId" | "pgBoss"
+   >,
+   rows: CategoryKeywordsSource[],
+): Promise<ResultType<void, DeriveKeywordsJobError>> {
+   const boss = await context.pgBoss;
+   const queued = await Promise.all(
+      rows.map((row) =>
+         enqueueDeriveKeywordsJob({
+            boss,
+            input: {
+               categoryId: row.id,
+               teamId: context.teamId,
+               organizationId: context.organizationId,
+               userId: context.userId,
+               name: row.name,
+               description: row.description,
+            },
+         }),
+      ),
+   );
+
+   for (const result of queued) {
+      if (Result.isError(result)) return Result.err(result.error);
+   }
+
+   return Result.ok(undefined);
+}
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
    const result = await Result.tryPromise({
@@ -64,7 +105,7 @@ export const importBatch = protectedProcedure
                         type: data.type,
                      })
                      .returning();
-                  if (!parent) throw new Error("empty insert");
+                  if (!parent) throw classificationInternal("Insert vazio.");
                   parents.push(parent);
                   all.push(parent);
                   for (const sub of subcategories ?? []) {
@@ -80,7 +121,7 @@ export const importBatch = protectedProcedure
                            keywords: sub.keywords ?? null,
                         })
                         .returning();
-                     if (!child) throw new Error("empty insert");
+                     if (!child) throw classificationInternal("Insert vazio.");
                      all.push(child);
                   }
                }
@@ -91,7 +132,8 @@ export const importBatch = protectedProcedure
       if (Result.isError(result)) throw result.error;
 
       const { all, parents } = result.value;
-      await enqueueCategoryKeywordsDerivations(context, parents);
+      const queued = await enqueueCategoryKeywordsDerivations(context, parents);
+      if (Result.isError(queued)) throw queued.error;
       return all;
    });
 

@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Result } from "better-result";
+import { Result, type Result as ResultType } from "better-result";
 import { and, asc, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
@@ -13,6 +13,10 @@ import {
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import {
+   DeriveKeywordsJobError,
+   enqueueDeriveKeywordsJob,
+} from "@modules/classification/jobs/derive-keywords-job";
+import {
    classificationConflict,
    classificationInternal,
    requireCategory,
@@ -22,7 +26,6 @@ import {
    requireResolvedCategoryParent,
    withCategoryDescendants,
 } from "@modules/classification/router/middlewares";
-import { enqueueCategoryKeywordsDerivation } from "@modules/classification/router/enqueue-keywords";
 
 const idSchema = z.object({ id: z.string().uuid() });
 const subcategoryInputSchema = categorySchema.pick({ name: true });
@@ -35,6 +38,35 @@ type CategoryUniqueCandidate = {
 
 const ensureRow = <T>(row: T | undefined, msg: string) =>
    row ? Result.ok(row) : Result.err(classificationInternal(msg));
+
+type CategoryKeywordsSource = {
+   id: string;
+   name: string;
+   description: string | null;
+};
+
+async function enqueueCategoryKeywordsDerivation(
+   context: Pick<
+      ORPCContextWithOrganization,
+      "organizationId" | "teamId" | "userId" | "pgBoss"
+   >,
+   category: CategoryKeywordsSource,
+): Promise<ResultType<void, DeriveKeywordsJobError>> {
+   const queued = await enqueueDeriveKeywordsJob({
+      boss: await context.pgBoss,
+      input: {
+         categoryId: category.id,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+         userId: context.userId,
+         name: category.name,
+         description: category.description,
+      },
+   });
+
+   if (Result.isError(queued)) return Result.err(queued.error);
+   return Result.ok(undefined);
+}
 
 async function checkCategoryUniqueConflict(
    db: ORPCContextWithOrganization["db"],
@@ -110,7 +142,11 @@ export const create = protectedProcedure
       );
       if (Result.isError(result)) throw result.error;
 
-      await enqueueCategoryKeywordsDerivation(context, result.value);
+      const queued = await enqueueCategoryKeywordsDerivation(
+         context,
+         result.value,
+      );
+      if (Result.isError(queued)) throw queued.error;
       return result.value;
    });
 
@@ -419,7 +455,11 @@ export const update = protectedProcedure
       if (Result.isError(result)) throw result.error;
 
       if (data.keywords === undefined) {
-         await enqueueCategoryKeywordsDerivation(context, result.value);
+         const queued = await enqueueCategoryKeywordsDerivation(
+            context,
+            result.value,
+         );
+         if (Result.isError(queued)) throw queued.error;
       }
       return result.value;
    });
@@ -428,7 +468,11 @@ export const regenerateKeywords = protectedProcedure
    .input(idSchema)
    .use(requireCategory, (input) => input.id)
    .handler(async ({ context }) => {
-      await enqueueCategoryKeywordsDerivation(context, context.category);
+      const queued = await enqueueCategoryKeywordsDerivation(
+         context,
+         context.category,
+      );
+      if (Result.isError(queued)) throw queued.error;
       return { success: true };
    });
 

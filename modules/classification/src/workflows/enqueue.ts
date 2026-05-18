@@ -1,12 +1,29 @@
 import { Result, TaggedError, type Result as ResultType } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { sha256Hash } from "@core/utils/hash";
 import {
    enqueueDbosWorkflow,
-   type DbosQueueError,
    type DbosWorkflowHandle,
    matchDbosQueueResult,
    type WorkflowClient,
 } from "@core/dbos/client";
+
+const classificationWorkflowQueueErrors = defineErrorCatalog(
+   "classification.workflow.queue",
+   {
+      ENQUEUE_FAILED: {
+         status: 500,
+         message: "Falha ao enfileirar workflow de classificação.",
+         tags: ["classification", "workflow"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "classification.workflow.queue": typeof classificationWorkflowQueueErrors;
+   }
+}
 
 export const CLASSIFICATION_WORKFLOW_QUEUES = {
    classify: "workflow:classify",
@@ -33,9 +50,11 @@ export function buildClassifyTransactionsBatchWorkflowId(
 export class ClassificationWorkflowQueueError extends TaggedError(
    "ClassificationWorkflowQueueError",
 )<{
-   operation: "classify_transactions";
+   error: ReturnType<typeof classificationWorkflowQueueErrors.ENQUEUE_FAILED>;
    message: string;
-   cause: DbosQueueError;
+   teamId: string;
+   organizationId: string;
+   transactionCount: number;
 }>() {}
 
 export function isClassificationWorkflowQueueFailure<T>(
@@ -64,10 +83,14 @@ export async function enqueueClassifyTransactionsBatchWorkflow(
       ): ResultType<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
          Result.err(
             new ClassificationWorkflowQueueError({
-               operation: "classify_transactions",
+               error: classificationWorkflowQueueErrors.ENQUEUE_FAILED({
+                  internal: { operation: cause.operation },
+               }),
                message:
                   "Não foi possível enfileirar a classificação de lançamentos.",
-               cause,
+               teamId: input.teamId,
+               organizationId: input.organizationId,
+               transactionCount: input.transactionIds.length,
             }),
          ),
       ok: (
