@@ -1,35 +1,75 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
+import { DrizzleDataSource } from "@dbos-inc/drizzle-datasource";
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
 import { chat } from "@tanstack/ai";
 import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
+import { createStore } from "@tanstack/store";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { flashModel } from "@core/ai/models";
 import { aiTraceAttributes, type AiTraceContext } from "@core/ai/otel";
+import type { DatabaseInstance } from "@core/database/client";
+import * as schema from "@core/database/schema";
 import { WorkflowError } from "@core/dbos/errors";
+import { registerWorkflowOnce } from "@core/dbos/factory";
+import type { DbosWorkerQueue } from "@core/dbos/worker";
+import { env } from "@core/environment/worker";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
 import { getAiTracer } from "@core/logging";
-import { CLASSIFICATION_PROMPTS } from "@modules/classification/constants";
+import type { Prompts } from "@core/posthog/server";
 import {
    matchByKeywords,
    type KeywordMatchResult,
 } from "@modules/classification/utils";
 import {
    buildClassifyTransactionsBatchWorkflowId,
+   CLASSIFICATION_WORKFLOW_QUEUES,
    CLASSIFICATION_WORKFLOWS,
    type ClassifyTransactionsBatchInput,
-} from "@modules/classification/workflows/constants";
-import {
-   classificationDataSource,
-   getClassificationPrompts,
-   registerWorkflowOnce,
-} from "@modules/classification/workflows/context";
+} from "@modules/classification/workflows/enqueue";
 
+const CLASSIFY_TRANSACTION_PROMPT = "montte-classify-transaction";
 const AI_CHUNK_SIZE = 20;
 const MAX_BATCH_SIZE = 20;
+
+export const classificationDataSource = new DrizzleDataSource<DatabaseInstance>(
+   "classification",
+   { connectionString: env.DATABASE_URL },
+   schema,
+);
+
+type ClassificationWorkflowContext = {
+   prompts: Prompts | null;
+};
+
+const store = createStore<ClassificationWorkflowContext>({
+   prompts: null,
+});
+
+export function initClassificationWorkflowContext(prompts: Prompts) {
+   store.setState(() => ({
+      prompts,
+   }));
+}
+
+function getClassificationPrompts(): Prompts {
+   const { prompts } = store.state;
+   if (!prompts)
+      throw new Error("Classification workflow context not initialized");
+   return prompts;
+}
+
+export function createClassificationQueues(options: {
+   workerConcurrency: number;
+}): DbosWorkerQueue[] {
+   return Object.values(CLASSIFICATION_WORKFLOW_QUEUES).map((name) => ({
+      name,
+      options,
+   }));
+}
 
 const classifyBatchWorkflowErrors = defineErrorCatalog(
    "classification.workflow.classify",
@@ -192,10 +232,9 @@ async function classifyTransactionsBatch(options: {
       const { prompt, name, version } = yield* Result.await(
          Result.tryPromise({
             try: () =>
-               getClassificationPrompts().get(
-                  CLASSIFICATION_PROMPTS.classifyTransaction,
-                  { withMetadata: true },
-               ),
+               getClassificationPrompts().get(CLASSIFY_TRANSACTION_PROMPT, {
+                  withMetadata: true,
+               }),
             catch: () =>
                new ClassifyBatchWorkflowError({
                   error: classifyBatchWorkflowErrors.PROMPT_LOAD_FAILED(),

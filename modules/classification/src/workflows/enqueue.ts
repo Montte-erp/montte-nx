@@ -1,4 +1,5 @@
 import { Result, TaggedError, type Result as ResultType } from "better-result";
+import { sha256Hash } from "@core/utils/hash";
 import {
    enqueueDbosWorkflow,
    type DbosQueueError,
@@ -6,12 +7,28 @@ import {
    matchDbosQueueResult,
    type WorkflowClient,
 } from "@core/dbos/client";
-import {
-   buildClassifyTransactionsBatchWorkflowId,
-   CLASSIFICATION_WORKFLOW_QUEUES,
-   CLASSIFICATION_WORKFLOWS,
-   type ClassifyTransactionsBatchInput,
-} from "@modules/classification/workflows/constants";
+
+export const CLASSIFICATION_WORKFLOW_QUEUES = {
+   classify: "workflow:classify",
+};
+
+export const CLASSIFICATION_WORKFLOWS = {
+   classifyTransactionsBatch: "classifyTransactionsBatchWorkflowFn",
+};
+
+export type ClassifyTransactionsBatchInput = {
+   organizationId: string;
+   teamId: string;
+   transactionIds: string[];
+};
+
+export function buildClassifyTransactionsBatchWorkflowId(
+   input: ClassifyTransactionsBatchInput,
+) {
+   const sorted = [...input.transactionIds].sort();
+   const hash = sha256Hash(sorted.join(",")).slice(0, 12);
+   return `classify-batch-${input.teamId}-${hash}`;
+}
 
 export class ClassificationWorkflowQueueError extends TaggedError(
    "ClassificationWorkflowQueueError",

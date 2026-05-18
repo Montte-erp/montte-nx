@@ -17,7 +17,7 @@ import {
 import {
    classificationPgBossQueues,
    registerClassificationPgBossJobs,
-} from "@modules/classification/jobs/setup";
+} from "@modules/classification/jobs/derive-keywords-job";
 import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 import { Result, TaggedError } from "better-result";
@@ -54,7 +54,6 @@ async function initWorker() {
          log.info("worker", "Starting worker");
 
          const classificationWorkflows = await setupClassificationWorkflows({
-            posthog,
             prompts: promptsClient,
             workerConcurrency: 10,
          });

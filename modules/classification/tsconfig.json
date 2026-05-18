@@ -17,17 +17,13 @@
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
-         "@core/posthog/*": ["../../core/posthog/src/*"],
-         "@core/redis/*": ["../../core/redis/src/*"]
+         "@core/posthog/*": ["../../core/posthog/src/*"]
       }
    },
    "include": ["src"],
    "references": [
       {
          "path": "../../core/utils"
-      },
-      {
-         "path": "../../core/redis"
       },
       {
          "path": "../../core/posthog"

@@ -14,14 +14,16 @@ import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
 import { categories, categorySchema } from "@core/database/schemas/categories";
 import { getAiTracer, log } from "@core/logging";
+import { defaultPgBossWorkOptions } from "@core/pg-boss/worker";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Prompts } from "@core/posthog/server";
 import { proModel } from "@core/ai/models";
 import { aiTraceAttributes, type AiTraceContext } from "@core/ai/otel";
-import {
-   CLASSIFICATION_JOB_QUEUES,
-   CLASSIFICATION_PROMPTS,
-} from "@modules/classification/constants";
+
+const DERIVE_KEYWORDS_PROMPT = "montte-derive-keywords";
+const DERIVE_KEYWORDS_QUEUE = "classification:derive-keywords";
+const DERIVE_KEYWORDS_DEAD_LETTER_QUEUE =
+   "classification:derive-keywords:dead-letter";
 
 export const deriveKeywordsJobInputSchema = z.object({
    categoryId: z.string().uuid(),
@@ -137,7 +139,7 @@ export async function deriveKeywords(options: {
       const { prompt, name, version } = yield* Result.await(
          Result.tryPromise({
             try: () =>
-               options.prompts.get(CLASSIFICATION_PROMPTS.deriveKeywords, {
+               options.prompts.get(DERIVE_KEYWORDS_PROMPT, {
                   withMetadata: true,
                }),
             catch: () =>
@@ -198,7 +200,7 @@ export async function deriveKeywords(options: {
 }
 
 export const deriveKeywordsDeadLetterQueue = {
-   name: CLASSIFICATION_JOB_QUEUES.deriveKeywordsDeadLetter,
+   name: DERIVE_KEYWORDS_DEAD_LETTER_QUEUE,
    retryLimit: 0,
    expireInSeconds: 60,
    retentionSeconds: 2_592_000,
@@ -207,7 +209,7 @@ export const deriveKeywordsDeadLetterQueue = {
 };
 
 export const deriveKeywordsQueue = {
-   name: CLASSIFICATION_JOB_QUEUES.deriveKeywords,
+   name: DERIVE_KEYWORDS_QUEUE,
    policy: "key_strict_fifo",
    retryLimit: 3,
    retryDelay: 5,
@@ -218,7 +220,7 @@ export const deriveKeywordsQueue = {
    deleteAfterSeconds: 604_800,
    heartbeatSeconds: 30,
    warningQueueSize: 25,
-   deadLetter: CLASSIFICATION_JOB_QUEUES.deriveKeywordsDeadLetter,
+   deadLetter: DERIVE_KEYWORDS_DEAD_LETTER_QUEUE,
 };
 
 export async function enqueueDeriveKeywordsJob(options: {
@@ -244,7 +246,7 @@ export async function enqueueDeriveKeywordsJob(options: {
    const jobId = await Result.tryPromise({
       try: () =>
          options.boss.sendDebounced(
-            CLASSIFICATION_JOB_QUEUES.deriveKeywords,
+            DERIVE_KEYWORDS_QUEUE,
             options.input,
             sendOptions,
             DERIVE_KEYWORDS_DEBOUNCE_SECONDS,
@@ -297,7 +299,7 @@ export async function handleDeriveKeywordsJob(options: {
       categoryId: input.categoryId,
       teamId: input.teamId,
       organizationId: input.organizationId,
-      promptName: CLASSIFICATION_PROMPTS.deriveKeywords,
+      promptName: DERIVE_KEYWORDS_PROMPT,
    });
 
    const siblingKeywords = await Result.tryPromise({
@@ -408,4 +410,34 @@ export async function handleDeriveKeywordsJob(options: {
       keywordsCount: keywords.length,
    });
    return Result.ok(undefined);
+}
+
+export const classificationPgBossQueues = [
+   deriveKeywordsDeadLetterQueue,
+   deriveKeywordsQueue,
+];
+
+export async function registerClassificationPgBossJobs(options: {
+   boss: PgBossClient;
+   db: DatabaseInstance;
+   prompts: Prompts;
+}) {
+   await options.boss.work<DeriveKeywordsJobInput>(
+      deriveKeywordsQueue.name,
+      defaultPgBossWorkOptions,
+      async (jobs) => {
+         const errors: Error[] = [];
+         for (const job of jobs) {
+            const result = await handleDeriveKeywordsJob({
+               db: options.db,
+               prompts: options.prompts,
+               job,
+            });
+            if (Result.isError(result)) errors.push(result.error);
+         }
+         if (errors.length > 0) {
+            throw new AggregateError(errors);
+         }
+      },
+   );
 }
