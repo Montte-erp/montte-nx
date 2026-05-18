@@ -33,6 +33,10 @@ vi.mock("@core/orpc/server", async () =>
 import * as categoriesRouter from "../../src/router/categories";
 import * as categoriesBulkRouter from "../../src/router/categories-bulk";
 
+const isClassificationStatus =
+   (status: number) => (e: { _tag?: string; error?: { status?: number } }) =>
+      e._tag === "ClassificationRouterError" && e.error?.status === status;
+
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
 beforeAll(async () => {
@@ -188,9 +192,7 @@ describe("categories router", () => {
             { id: cat.id, name: "Hack", participatesDre: false },
             { context: ctx },
          ),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "NOT_FOUND",
-      );
+      ).rejects.toSatisfy(isClassificationStatus(404));
    });
 
    it("update allows default category", async () => {
@@ -314,9 +316,7 @@ describe("categories router", () => {
             { id: cat.id, parentId: cat.id, participatesDre: false },
             { context: ctx },
          ),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "BAD_REQUEST",
-      );
+      ).rejects.toSatisfy(isClassificationStatus(400));
    });
 
    it("getPaginated returns parents before children", async () => {

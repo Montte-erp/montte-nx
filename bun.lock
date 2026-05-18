@@ -533,7 +533,6 @@
         "drizzle-orm": "catalog:database",
         "drizzle-zod": "catalog:database",
         "evlog": "catalog:logging",
-        "neverthrow": "catalog:validation",
         "pg-boss": "catalog:workers",
         "zod": "catalog:validation",
       },

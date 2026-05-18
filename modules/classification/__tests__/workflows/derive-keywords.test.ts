@@ -7,6 +7,7 @@ import {
    it,
    vi,
 } from "vitest";
+import { LLMock } from "@copilotkit/aimock";
 import { Result } from "better-result";
 import { eq } from "drizzle-orm";
 import type { Job } from "pg-boss";
@@ -15,31 +16,31 @@ import { seedTeam } from "@core/database/testing/factories";
 import { categories } from "@core/database/schemas/categories";
 import type { PgBossClient } from "@core/pg-boss/client";
 import { makeCategory } from "../helpers/classification-factories";
+import type { DeriveKeywordsJobInput } from "../../src/jobs/derive-keywords-job";
 
-vi.mock("../../src/ai/derive-keywords", () => ({
-   deriveKeywords: vi.fn(),
-}));
+type DeriveKeywordsJobModule =
+   typeof import("../../src/jobs/derive-keywords-job");
 
-import { deriveKeywords } from "../../src/ai/derive-keywords";
-import {
-   deriveKeywordsQueue,
-   enqueueDeriveKeywordsJob,
-   handleDeriveKeywordsJob,
-   type DeriveKeywordsJobInput,
-} from "../../src/jobs/derive-keywords-job";
-
+const llmMock = new LLMock({ port: 0 });
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
+let deriveKeywordsJob: DeriveKeywordsJobModule;
 
 beforeAll(async () => {
+   const url = await llmMock.start();
+   process.env.OPENROUTER_BASE_URL = `${url}/v1`;
+   deriveKeywordsJob = await import("../../src/jobs/derive-keywords-job");
    testDb = await setupTestDb();
 }, 30_000);
 
 afterAll(async () => {
+   await llmMock.stop();
    await testDb.cleanup();
 });
 
 beforeEach(() => {
    vi.clearAllMocks();
+   llmMock.clearFixtures();
+   llmMock.clearRequests();
 });
 
 const KEYWORDS = ["fast food", "restaurant", "burger", "delivery", "cafe"];
@@ -67,13 +68,12 @@ describe("derive keywords job", () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
-      vi.mocked(deriveKeywords).mockReturnValue(
-         Promise.resolve(Result.ok(KEYWORDS)) as ReturnType<
-            typeof deriveKeywords
-         >,
-      );
+      llmMock.onMessage(/Categoria: Food/, {
+         content: JSON.stringify({ keywords: KEYWORDS }),
+         systemFingerprint: "fp_test",
+      });
 
-      const result = await handleDeriveKeywordsJob({
+      const result = await deriveKeywordsJob.handleDeriveKeywordsJob({
          db: testDb.db,
          prompts,
          job: {
@@ -89,14 +89,7 @@ describe("derive keywords job", () => {
       });
 
       expect(Result.isOk(result)).toBe(true);
-      expect(deriveKeywords).toHaveBeenCalledTimes(1);
-      const [, aiInput, observability] =
-         vi.mocked(deriveKeywords).mock.calls[0]!;
-      expect(aiInput).toMatchObject({
-         name: "Food",
-         description: null,
-      });
-      expect(observability).toMatchObject({ distinctId: teamId });
+      expect(llmMock.getRequests().length).toBeGreaterThan(0);
 
       const after = await getCategory(category.id);
       expect(after?.keywords).toEqual(KEYWORDS);
@@ -117,15 +110,21 @@ describe("derive keywords job", () => {
          name: "Whatever",
       };
 
-      const first = await enqueueDeriveKeywordsJob({ boss, input });
-      const second = await enqueueDeriveKeywordsJob({ boss, input });
+      const first = await deriveKeywordsJob.enqueueDeriveKeywordsJob({
+         boss,
+         input,
+      });
+      const second = await deriveKeywordsJob.enqueueDeriveKeywordsJob({
+         boss,
+         input,
+      });
 
       expect(Result.isOk(first)).toBe(true);
       expect(Result.isOk(second)).toBe(true);
       expect(sendDebounced).toHaveBeenCalledTimes(2);
       expect(sendDebounced).toHaveBeenNthCalledWith(
          1,
-         deriveKeywordsQueue.name,
+         deriveKeywordsJob.deriveKeywordsQueue.name,
          input,
          expect.any(Object),
          expect.any(Number),
@@ -133,7 +132,7 @@ describe("derive keywords job", () => {
       );
       expect(sendDebounced).toHaveBeenNthCalledWith(
          2,
-         deriveKeywordsQueue.name,
+         deriveKeywordsJob.deriveKeywordsQueue.name,
          input,
          expect.any(Object),
          expect.any(Number),
@@ -145,13 +144,7 @@ describe("derive keywords job", () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
-      vi.mocked(deriveKeywords).mockReturnValue(
-         Promise.resolve(Result.err(new Error("AI failed"))) as ReturnType<
-            typeof deriveKeywords
-         >,
-      );
-
-      const result = await handleDeriveKeywordsJob({
+      const result = await deriveKeywordsJob.handleDeriveKeywordsJob({
          db: testDb.db,
          prompts,
          job: {
@@ -178,13 +171,12 @@ describe("derive keywords job", () => {
       });
       const category = await makeCategory(testDb.db, teamId, { name: "Food" });
 
-      vi.mocked(deriveKeywords).mockReturnValue(
-         Promise.resolve(Result.ok(KEYWORDS)) as ReturnType<
-            typeof deriveKeywords
-         >,
-      );
+      llmMock.onMessage(/Categoria: Food/, {
+         content: JSON.stringify({ keywords: KEYWORDS }),
+         systemFingerprint: "fp_test",
+      });
 
-      await handleDeriveKeywordsJob({
+      await deriveKeywordsJob.handleDeriveKeywordsJob({
          db: testDb.db,
          prompts,
          job: {

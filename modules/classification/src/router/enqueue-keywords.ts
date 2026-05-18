@@ -1,7 +1,7 @@
 import { Result } from "better-result";
-import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { enqueueDeriveKeywordsJob } from "@modules/classification/jobs/derive-keywords-job";
+import { classificationInternal } from "@modules/classification/router/middlewares";
 
 type CategoryKeywordsSource = {
    id: string;
@@ -29,7 +29,7 @@ export async function enqueueCategoryKeywordsDerivation(
    });
 
    if (Result.isError(queued)) {
-      throw WebAppError.internal(
+      throw classificationInternal(
          "Falha ao enfileirar derivação de palavras-chave.",
       );
    }
@@ -49,7 +49,7 @@ export async function enqueueCategoryKeywordsDerivations(
    );
 
    if (queued.some((result) => result.status === "rejected")) {
-      throw WebAppError.internal(
+      throw classificationInternal(
          "Falha ao enfileirar derivação de palavras-chave.",
       );
    }

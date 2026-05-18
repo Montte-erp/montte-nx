@@ -8,7 +8,6 @@
       "./router/*": "./src/router/*.ts",
       "./contracts/*": "./src/contracts/*.ts",
       "./workflows/*": "./src/workflows/*.ts",
-      "./ai/*": "./src/ai/*.ts",
       "./*": "./src/*.ts"
    },
    "scripts": {
@@ -41,7 +40,6 @@
       "drizzle-orm": "catalog:database",
       "drizzle-zod": "catalog:database",
       "evlog": "catalog:logging",
-      "neverthrow": "catalog:validation",
       "pg-boss": "catalog:workers",
       "zod": "catalog:validation"
    },

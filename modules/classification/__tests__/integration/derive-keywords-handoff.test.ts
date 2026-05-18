@@ -7,6 +7,7 @@ import {
    it,
    vi,
 } from "vitest";
+import { LLMock } from "@copilotkit/aimock";
 import { Result } from "better-result";
 import { eq } from "drizzle-orm";
 import type { Job } from "pg-boss";
@@ -15,31 +16,31 @@ import { seedTeam } from "@core/database/testing/factories";
 import { categories } from "@core/database/schemas/categories";
 import type { PgBossClient } from "@core/pg-boss/client";
 import { makeCategory } from "../helpers/classification-factories";
+import type { DeriveKeywordsJobInput } from "../../src/jobs/derive-keywords-job";
 
-vi.mock("../../src/ai/derive-keywords", () => ({
-   deriveKeywords: vi.fn(),
-}));
+type DeriveKeywordsJobModule =
+   typeof import("../../src/jobs/derive-keywords-job");
 
-import { deriveKeywords } from "../../src/ai/derive-keywords";
-import {
-   deriveKeywordsQueue,
-   enqueueDeriveKeywordsJob,
-   handleDeriveKeywordsJob,
-   type DeriveKeywordsJobInput,
-} from "../../src/jobs/derive-keywords-job";
-
+const llmMock = new LLMock({ port: 0 });
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
+let deriveKeywordsJob: DeriveKeywordsJobModule;
 
 beforeAll(async () => {
+   const url = await llmMock.start();
+   process.env.OPENROUTER_BASE_URL = `${url}/v1`;
+   deriveKeywordsJob = await import("../../src/jobs/derive-keywords-job");
    testDb = await setupTestDb();
 }, 30_000);
 
 afterAll(async () => {
+   await llmMock.stop();
    await testDb.cleanup();
 });
 
 beforeEach(() => {
    vi.clearAllMocks();
+   llmMock.clearFixtures();
+   llmMock.clearRequests();
 });
 
 const KEYWORDS = ["fast food", "restaurant", "burger", "delivery", "cafe"];
@@ -61,11 +62,10 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
          name: "Alimentação",
       });
 
-      vi.mocked(deriveKeywords).mockReturnValue(
-         Promise.resolve(Result.ok(KEYWORDS)) as ReturnType<
-            typeof deriveKeywords
-         >,
-      );
+      llmMock.onMessage(/Categoria: Alimentação/, {
+         content: JSON.stringify({ keywords: KEYWORDS }),
+         systemFingerprint: "fp_test",
+      });
 
       const sendDebounced = vi.fn().mockResolvedValue("derive-keywords-test");
       const boss = { sendDebounced } as unknown as PgBossClient;
@@ -78,12 +78,15 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
          description: null,
       };
 
-      const queued = await enqueueDeriveKeywordsJob({ boss, input });
+      const queued = await deriveKeywordsJob.enqueueDeriveKeywordsJob({
+         boss,
+         input,
+      });
 
       expect(Result.isOk(queued)).toBe(true);
       expect(sendDebounced).toHaveBeenCalledTimes(1);
       expect(sendDebounced).toHaveBeenCalledWith(
-         deriveKeywordsQueue.name,
+         deriveKeywordsJob.deriveKeywordsQueue.name,
          input,
          expect.any(Object),
          expect.any(Number),
@@ -96,7 +99,7 @@ describe("deriveKeywords handoff (pglite-backed integration)", () => {
          .where(eq(categories.id, category.id));
       expect(before[0]?.keywords).toBeNull();
 
-      const handled = await handleDeriveKeywordsJob({
+      const handled = await deriveKeywordsJob.handleDeriveKeywordsJob({
          db: testDb.db,
          prompts,
          job: {

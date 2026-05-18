@@ -1,8 +1,38 @@
-import { fromPromise } from "neverthrow";
+import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import type { DatabaseInstance } from "@core/database/client";
 import { categories } from "@core/database/schemas/categories";
 import { tags } from "@core/database/schemas/tags";
-import { WebAppError } from "@core/logging/errors";
+
+const classificationSeedErrors = defineErrorCatalog("classification.seed", {
+   EMPTY_CATEGORY_INSERT: {
+      status: 500,
+      message: "Falha ao criar categoria padrão.",
+      tags: ["classification", "seed"],
+   },
+   SEED_FAILED: {
+      status: 500,
+      message: "Falha ao semear classificação padrão.",
+      tags: ["classification", "seed"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "classification.seed": typeof classificationSeedErrors;
+   }
+}
+
+type ClassificationSeedCatalogError =
+   | ReturnType<typeof classificationSeedErrors.EMPTY_CATEGORY_INSERT>
+   | ReturnType<typeof classificationSeedErrors.SEED_FAILED>;
+
+export class ClassificationSeedError extends TaggedError(
+   "ClassificationSeedError",
+)<{
+   error: ClassificationSeedCatalogError;
+   message: string;
+}>() {}
 
 type CategoryType = "income" | "expense";
 
@@ -742,62 +772,69 @@ export function seedClassificationDefaults(
    db: DatabaseInstance,
    teamId: string,
 ) {
-   return fromPromise(
-      db.transaction(async (tx) => {
-         await tx.insert(tags).values(
-            TAGS.map((t) => ({
-               teamId,
-               name: t.name,
-               color: t.color,
-               description: t.description,
-               dreType: t.dreType,
-               dreOrder: t.dreOrder,
-               isDefault: true,
-            })),
-         );
-
-         for (const root of CATEGORIES) {
-            const [parent] = await tx
-               .insert(categories)
-               .values({
+   return Result.tryPromise({
+      try: () =>
+         db.transaction(async (tx) => {
+            await tx.insert(tags).values(
+               TAGS.map((t) => ({
                   teamId,
-                  name: root.name,
-                  type: root.type,
-                  icon: root.icon,
-                  color: root.color,
-                  description: root.description,
-                  level: 1,
+                  name: t.name,
+                  color: t.color,
+                  description: t.description,
+                  dreType: t.dreType,
+                  dreOrder: t.dreOrder,
                   isDefault: true,
-                  participatesDre: root.participatesDre,
-                  dreGroupId: root.dreGroupId,
-               })
-               .returning();
-            if (!parent) {
-               throw WebAppError.internal("Falha ao criar categoria padrão.");
-            }
-            if (root.children.length > 0) {
-               await tx.insert(categories).values(
-                  root.children.map((child) => ({
+               })),
+            );
+
+            for (const root of CATEGORIES) {
+               const [parent] = await tx
+                  .insert(categories)
+                  .values({
                      teamId,
-                     name: child.name,
+                     name: root.name,
                      type: root.type,
-                     description: child.description ?? null,
-                     keywords: child.keywords,
-                     parentId: parent.id,
-                     level: 2,
+                     icon: root.icon,
+                     color: root.color,
+                     description: root.description,
+                     level: 1,
                      isDefault: true,
                      participatesDre: root.participatesDre,
                      dreGroupId: root.dreGroupId,
-                  })),
-               );
+                  })
+                  .returning();
+               if (!parent) {
+                  throw new ClassificationSeedError({
+                     error: classificationSeedErrors.EMPTY_CATEGORY_INSERT(),
+                     message: "Falha ao criar categoria padrão.",
+                  });
+               }
+               if (root.children.length > 0) {
+                  await tx.insert(categories).values(
+                     root.children.map((child) => ({
+                        teamId,
+                        name: child.name,
+                        type: root.type,
+                        description: child.description ?? null,
+                        keywords: child.keywords,
+                        parentId: parent.id,
+                        level: 2,
+                        isDefault: true,
+                        participatesDre: root.participatesDre,
+                        dreGroupId: root.dreGroupId,
+                     })),
+                  );
+               }
             }
-         }
-      }),
-      (e) =>
-         e instanceof WebAppError
-            ? e
-            : WebAppError.internal("Falha ao semear classificação padrão.", {
-                 cause: e,
+         }),
+      catch: (cause) =>
+         cause instanceof ClassificationSeedError
+            ? cause
+            : new ClassificationSeedError({
+                 error: classificationSeedErrors.SEED_FAILED({
+                    internal: { cause },
+                 }),
+                 message: "Falha ao semear classificação padrão.",
               }),
-   );
+   });
 }

@@ -435,6 +435,8 @@ npx vitest run <file>
 
 Tests live in `core/*` and `packages/*` — non-trivial logic only (Zod transforms, date/math, analytics, credits, repository queries). **No unit/integration tests in `apps/*`** — never test routers/components/hooks/singletons/file existence.
 
+Tests that exercise AI behavior must use `@copilotkit/aimock`/`LLMock` fixtures against the real TanStack AI call path. Do not mock local AI action functions just to bypass model calls; only mock surrounding queue/workflow boundaries when the AI behavior itself is not under test.
+
 E2E tests live in `apps/web-e2e/tests/` (Playwright). Auth fixture in `fixtures.ts` injects authenticated `storageState`. For pages that require an unauthenticated session (e.g. `/auth/*`), use raw `import { test } from "@playwright/test"` + `test.use({ storageState: { cookies: [], origins: [] } })`.
 
 E2E flow guidelines:

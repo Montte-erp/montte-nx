@@ -1,5 +1,7 @@
 import { defineErrorCatalog } from "evlog";
 import { Result, TaggedError } from "better-result";
+import { chat } from "@tanstack/ai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import dayjs from "dayjs";
 import { and, eq, sql } from "drizzle-orm";
 import {
@@ -10,15 +12,16 @@ import {
 } from "pg-boss";
 import { z } from "zod";
 import type { DatabaseInstance } from "@core/database/client";
-import { categories } from "@core/database/schemas/categories";
-import { log } from "@core/logging";
+import { categories, categorySchema } from "@core/database/schemas/categories";
+import { getAiTracer, log } from "@core/logging";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { Prompts } from "@core/posthog/server";
+import { proModel } from "@core/ai/models";
+import { aiTraceAttributes, type AiTraceContext } from "@core/ai/otel";
 import {
    CLASSIFICATION_JOB_QUEUES,
    CLASSIFICATION_PROMPTS,
 } from "@modules/classification/constants";
-import { deriveKeywords } from "@modules/classification/ai/derive-keywords";
 
 export const deriveKeywordsJobInputSchema = z.object({
    categoryId: z.string().uuid(),
@@ -36,6 +39,11 @@ export type DeriveKeywordsJobInput = z.infer<
 const deriveKeywordsJobErrors = defineErrorCatalog(
    "classification.job.keywords",
    {
+      PROMPT_LOAD_FAILED: {
+         status: 500,
+         message: "Falha ao carregar prompt de palavras-chave.",
+         tags: ["classification", "pg-boss", "keywords", "ai"],
+      },
       ENQUEUE_FAILED: {
          status: 500,
          message: "Falha ao enfileirar derivação de palavras-chave.",
@@ -77,6 +85,7 @@ declare module "evlog" {
 }
 
 type DeriveKeywordsJobCatalogError =
+   | ReturnType<typeof deriveKeywordsJobErrors.PROMPT_LOAD_FAILED>
    | ReturnType<typeof deriveKeywordsJobErrors.ENQUEUE_FAILED>
    | ReturnType<typeof deriveKeywordsJobErrors.JOB_ID_MISSING>
    | ReturnType<typeof deriveKeywordsJobErrors.INVALID_PAYLOAD>
@@ -92,6 +101,101 @@ export class DeriveKeywordsJobError extends TaggedError(
 }>() {}
 
 const DERIVE_KEYWORDS_DEBOUNCE_SECONDS = 20;
+const KEYWORDS_MIN = 5;
+const KEYWORDS_MAX = 15;
+
+export const deriveKeywordsInputSchema = categorySchema
+   .pick({ name: true, description: true })
+   .extend({ siblingKeywords: z.array(z.string()).optional() });
+
+export type DeriveKeywordsInput = z.infer<typeof deriveKeywordsInputSchema>;
+
+const deriveKeywordsOutputSchema = z.object({
+   keywords: z
+      .array(z.string().min(1).max(60))
+      .min(KEYWORDS_MIN)
+      .max(KEYWORDS_MAX),
+});
+
+function buildDeriveKeywordsUserMessage(input: DeriveKeywordsInput) {
+   const lines = [`Categoria: ${input.name}`];
+   if (input.description) lines.push(`Descrição: ${input.description}`);
+   if (input.siblingKeywords?.length) {
+      lines.push(
+         `Palavras-chave já usadas por outras categorias do time (NÃO repetir): ${input.siblingKeywords.join(", ")}`,
+      );
+   }
+   return lines.join("\n");
+}
+
+export async function deriveKeywords(options: {
+   prompts: Prompts;
+   input: DeriveKeywordsInput;
+   observability: AiTraceContext;
+}) {
+   return Result.gen(async function* () {
+      const { prompt, name, version } = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               options.prompts.get(CLASSIFICATION_PROMPTS.deriveKeywords, {
+                  withMetadata: true,
+               }),
+            catch: () =>
+               new DeriveKeywordsJobError({
+                  error: deriveKeywordsJobErrors.PROMPT_LOAD_FAILED(),
+               }),
+         }),
+      );
+
+      const result = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               chat({
+                  adapter: proModel,
+                  systemPrompts: [
+                     options.prompts.compile(prompt, {
+                        min_keywords: KEYWORDS_MIN,
+                        max_keywords: KEYWORDS_MAX,
+                     }),
+                  ],
+                  messages: [
+                     {
+                        role: "user",
+                        content: [
+                           {
+                              type: "text",
+                              content: buildDeriveKeywordsUserMessage(
+                                 options.input,
+                              ),
+                           },
+                        ],
+                     },
+                  ],
+                  outputSchema: deriveKeywordsOutputSchema,
+                  stream: false,
+                  middleware: [
+                     otelMiddleware({
+                        tracer: getAiTracer(),
+                        captureContent: false,
+                        attributeEnricher: () =>
+                           aiTraceAttributes({
+                              ...options.observability,
+                              promptName: name,
+                              promptVersion: version,
+                           }),
+                     }),
+                  ],
+               }),
+            catch: () =>
+               new DeriveKeywordsJobError({
+                  error: deriveKeywordsJobErrors.AI_FAILED(),
+               }),
+         }),
+      );
+
+      return Result.ok(result.keywords);
+   });
+}
 
 export const deriveKeywordsDeadLetterQueue = {
    name: CLASSIFICATION_JOB_QUEUES.deriveKeywordsDeadLetter,
@@ -223,19 +327,19 @@ export async function handleDeriveKeywordsJob(options: {
    if (Result.isError(siblingKeywords))
       return Result.err(siblingKeywords.error);
 
-   const derived = await deriveKeywords(
-      options.prompts,
-      {
+   const derived = await deriveKeywords({
+      prompts: options.prompts,
+      input: {
          name: input.name,
          description: input.description ?? null,
          siblingKeywords: siblingKeywords.value,
       },
-      {
+      observability: {
          distinctId: input.userId ?? input.teamId,
          organizationId: input.organizationId,
          teamId: input.teamId,
       },
-   );
+   });
    if (Result.isError(derived)) {
       return Result.err(
          new DeriveKeywordsJobError({

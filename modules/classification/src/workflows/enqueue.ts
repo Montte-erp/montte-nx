@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "neverthrow";
+import { Result, TaggedError, type Result as ResultType } from "better-result";
 import {
    enqueueDbosWorkflow,
    type DbosQueueError,
@@ -13,32 +13,24 @@ import {
    type ClassifyTransactionsBatchInput,
 } from "@modules/classification/workflows/constants";
 
-export class ClassificationWorkflowQueueError extends Error {
-   readonly operation: "classify_transactions";
-   readonly cause: DbosQueueError;
-
-   constructor(input: {
-      operation: "classify_transactions";
-      message: string;
-      cause: DbosQueueError;
-   }) {
-      super(input.message);
-      this.name = "ClassificationWorkflowQueueError";
-      this.operation = input.operation;
-      this.cause = input.cause;
-   }
-}
+export class ClassificationWorkflowQueueError extends TaggedError(
+   "ClassificationWorkflowQueueError",
+)<{
+   operation: "classify_transactions";
+   message: string;
+   cause: DbosQueueError;
+}>() {}
 
 export function isClassificationWorkflowQueueFailure<T>(
-   result: Result<T, ClassificationWorkflowQueueError>,
+   result: ResultType<T, ClassificationWorkflowQueueError>,
 ) {
-   return result.isErr();
+   return Result.isError(result);
 }
 
 export async function enqueueClassifyTransactionsBatchWorkflow(
    client: WorkflowClient,
    input: ClassifyTransactionsBatchInput,
-): Promise<Result<DbosWorkflowHandle, ClassificationWorkflowQueueError>> {
+): Promise<ResultType<DbosWorkflowHandle, ClassificationWorkflowQueueError>> {
    const queued = await enqueueDbosWorkflow({
       client,
       queueName: CLASSIFICATION_WORKFLOW_QUEUES.classify,
@@ -52,8 +44,8 @@ export async function enqueueClassifyTransactionsBatchWorkflow(
    return matchDbosQueueResult(queued, {
       err: (
          cause,
-      ): Result<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
-         err(
+      ): ResultType<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
+         Result.err(
             new ClassificationWorkflowQueueError({
                operation: "classify_transactions",
                message:
@@ -63,7 +55,7 @@ export async function enqueueClassifyTransactionsBatchWorkflow(
          ),
       ok: (
          value,
-      ): Result<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
-         ok(value),
+      ): ResultType<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
+         Result.ok(value),
    });
 }
