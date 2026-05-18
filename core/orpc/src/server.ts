@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { Result } from "better-result";
 import { z } from "zod";
-import { ORPCError, os } from "@orpc/server";
+import { os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
@@ -216,43 +216,6 @@ function toError(error: unknown): Error {
    return error instanceof Error ? error : new Error(String(error));
 }
 
-const taggedOrpcErrorSchema = z
-   .object({
-      _tag: z.string(),
-      message: z.string(),
-      error: z.object({ status: z.number().int() }).passthrough(),
-   })
-   .passthrough();
-
-function toOrpcCode(status: number) {
-   switch (status) {
-      case 400:
-         return "BAD_REQUEST";
-      case 401:
-         return "UNAUTHORIZED";
-      case 403:
-         return "FORBIDDEN";
-      case 404:
-         return "NOT_FOUND";
-      case 409:
-         return "CONFLICT";
-      case 429:
-         return "TOO_MANY_REQUESTS";
-      default:
-         return "INTERNAL_SERVER_ERROR";
-   }
-}
-
-function toSerializedTaggedOrpcError(error: unknown) {
-   const parsed = taggedOrpcErrorSchema.safeParse(error);
-   if (!parsed.success) return null;
-
-   return new ORPCError(toOrpcCode(parsed.data.error.status), {
-      message: parsed.data.message,
-      data: Result.serialize(Result.err(parsed.data)),
-   });
-}
-
 const withLogger = withOrganization.use(
    async ({ context, path, next }, input) => {
       const startDate = dayjs().toDate();
@@ -304,9 +267,6 @@ const withLogger = withOrganization.use(
       context.log.emit();
 
       if (Result.isError(result)) {
-         const taggedError = toSerializedTaggedOrpcError(result.error);
-         if (taggedError) throw taggedError;
-
          throw result.error instanceof AppError
             ? WebAppError.fromAppError(result.error)
             : result.error;
