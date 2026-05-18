@@ -10,7 +10,6 @@ import {
 } from "@core/database/schemas/tags";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   ClassificationRouterError,
    classificationConflict,
    classificationForbidden,
    classificationInternal,
@@ -364,23 +363,24 @@ export const bulkRemove = protectedProcedure
       return { deleted: input.ids.length };
    });
 
-function loadOwnedTags(context: ORPCContextWithOrganization, ids: string[]) {
-   return Result.tryPromise({
-      try: async () => {
-         const existing = await context.db.query.tags.findMany({
+async function loadOwnedTags(
+   context: ORPCContextWithOrganization,
+   ids: string[],
+) {
+   const existing = await Result.tryPromise({
+      try: () =>
+         context.db.query.tags.findMany({
             where: (f, { and, inArray, eq }) =>
                and(inArray(f.id, ids), eq(f.teamId, context.teamId)),
-         });
-         if (existing.length !== ids.length) {
-            throw classificationNotFound(
-               "Um ou mais centros de custo não foram encontrados.",
-            );
-         }
-         return existing;
-      },
-      catch: (cause) =>
-         cause instanceof ClassificationRouterError
-            ? cause
-            : classificationInternal("Falha ao verificar centros de custo."),
+         }),
+      catch: () =>
+         classificationInternal("Falha ao verificar centros de custo."),
    });
+   if (Result.isError(existing)) return existing;
+   if (existing.value.length === ids.length) return Result.ok(existing.value);
+   return Result.err(
+      classificationNotFound(
+         "Um ou mais centros de custo não foram encontrados.",
+      ),
+   );
 }

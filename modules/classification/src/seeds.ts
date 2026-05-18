@@ -34,6 +34,31 @@ export class ClassificationSeedError extends TaggedError(
    message: string;
 }>() {}
 
+const emptyCategoryInsertError = () =>
+   new ClassificationSeedError({
+      error: classificationSeedErrors.EMPTY_CATEGORY_INSERT(),
+      message: "Falha ao criar categoria padrão.",
+   });
+
+const seedFailedError = (cause: unknown) =>
+   new ClassificationSeedError({
+      error: classificationSeedErrors.SEED_FAILED({
+         internal: { cause },
+      }),
+      message: "Falha ao semear classificação padrão.",
+   });
+
+const serializeSeedFailure = (error: ClassificationSeedError) =>
+   Result.serialize(Result.err<void, ClassificationSeedError>(error));
+
+const deserializeSeedFailure = (cause: unknown) => {
+   const result = Result.deserialize<void, ClassificationSeedError>(cause);
+   if (Result.isError(result) && ClassificationSeedError.is(result.error)) {
+      return Result.ok(result.error);
+   }
+   return Result.err(seedFailedError(cause));
+};
+
 type CategoryType = "income" | "expense";
 
 type TagSeed = {
@@ -804,10 +829,7 @@ export function seedClassificationDefaults(
                   })
                   .returning();
                if (!parent) {
-                  throw new ClassificationSeedError({
-                     error: classificationSeedErrors.EMPTY_CATEGORY_INSERT(),
-                     message: "Falha ao criar categoria padrão.",
-                  });
+                  throw serializeSeedFailure(emptyCategoryInsertError());
                }
                if (root.children.length > 0) {
                   await tx.insert(categories).values(
@@ -828,13 +850,6 @@ export function seedClassificationDefaults(
             }
          }),
       catch: (cause) =>
-         cause instanceof ClassificationSeedError
-            ? cause
-            : new ClassificationSeedError({
-                 error: classificationSeedErrors.SEED_FAILED({
-                    internal: { cause },
-                 }),
-                 message: "Falha ao semear classificação padrão.",
-              }),
+         Result.unwrapOr(deserializeSeedFailure(cause), seedFailedError(cause)),
    });
 }
