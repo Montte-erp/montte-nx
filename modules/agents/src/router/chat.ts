@@ -336,6 +336,97 @@ const chatSettingsSchema = z
    })
    .default(() => defaultChatSettings);
 
+type LockedChatHistoryResult =
+   | {
+        reason: "regenerate_no_user";
+     }
+   | {
+        reason: "target_not_found";
+     }
+   | {
+        id: string;
+        role: UIMessage["role"];
+        parts: UIMessage["parts"];
+     }[];
+
+const prepareChatHistoryWithThreadAdvisoryLock = (
+   context: ORPCContextWithOrganization,
+   input: ChatInput,
+): Promise<LockedChatHistoryResult> =>
+   context.db.transaction(async (tx) => {
+      await tx.execute(
+         sql`select pg_advisory_xact_lock(hashtext(${input.threadId}))`,
+      );
+
+      if (input.regenerate) {
+         const userRows = await tx
+            .select({ createdAt: messages.createdAt })
+            .from(messages)
+            .where(
+               and(
+                  eq(messages.threadId, input.threadId),
+                  eq(messages.role, "user"),
+               ),
+            )
+            .orderBy(asc(messages.createdAt));
+         const lastUser = userRows.at(-1);
+         if (!lastUser) return { reason: "regenerate_no_user" };
+         await tx
+            .delete(messages)
+            .where(
+               and(
+                  eq(messages.threadId, input.threadId),
+                  gte(messages.createdAt, lastUser.createdAt),
+                  eq(messages.role, "assistant"),
+               ),
+            );
+      }
+
+      if (!input.regenerate && input.replaceFromMessageId) {
+         const target = await tx
+            .select({ createdAt: messages.createdAt })
+            .from(messages)
+            .where(
+               and(
+                  eq(messages.id, input.replaceFromMessageId),
+                  eq(messages.threadId, input.threadId),
+               ),
+            )
+            .limit(1);
+         const row = target[0];
+         if (!row) return { reason: "target_not_found" };
+         await tx
+            .delete(messages)
+            .where(
+               and(
+                  eq(messages.threadId, input.threadId),
+                  gte(messages.createdAt, row.createdAt),
+               ),
+            );
+      }
+
+      if (input.text !== undefined) {
+         await tx.insert(messages).values({
+            threadId: input.threadId,
+            role: "user",
+            parts: [{ type: "text", content: input.text }],
+            metadata: input.pageContext
+               ? { pageContext: input.pageContext }
+               : null,
+         });
+      }
+
+      return tx
+         .select({
+            id: messages.id,
+            role: messages.role,
+            parts: messages.parts,
+         })
+         .from(messages)
+         .where(eq(messages.threadId, input.threadId))
+         .orderBy(asc(messages.createdAt));
+   });
+
 export const list = protectedProcedure
    .input(listThreadsInputSchema)
    .handler(async ({ context, input }) => {
@@ -662,78 +753,7 @@ export async function createThreadChatStream(options: {
    });
 
    const historyResult = await Result.tryPromise({
-      try: () =>
-         context.db.transaction(async (tx) => {
-            await tx.execute(
-               sql`select pg_advisory_xact_lock(hashtext(${input.threadId}))`,
-            );
-
-            if (input.regenerate) {
-               const userRows = await tx
-                  .select({ createdAt: messages.createdAt })
-                  .from(messages)
-                  .where(
-                     and(
-                        eq(messages.threadId, input.threadId),
-                        eq(messages.role, "user"),
-                     ),
-                  )
-                  .orderBy(asc(messages.createdAt));
-               const lastUser = userRows.at(-1);
-               if (!lastUser) return { reason: "regenerate_no_user" };
-               await tx
-                  .delete(messages)
-                  .where(
-                     and(
-                        eq(messages.threadId, input.threadId),
-                        gte(messages.createdAt, lastUser.createdAt),
-                        eq(messages.role, "assistant"),
-                     ),
-                  );
-            } else if (input.replaceFromMessageId) {
-               const target = await tx
-                  .select({ createdAt: messages.createdAt })
-                  .from(messages)
-                  .where(
-                     and(
-                        eq(messages.id, input.replaceFromMessageId),
-                        eq(messages.threadId, input.threadId),
-                     ),
-                  )
-                  .limit(1);
-               const row = target[0];
-               if (!row) return { reason: "target_not_found" };
-               await tx
-                  .delete(messages)
-                  .where(
-                     and(
-                        eq(messages.threadId, input.threadId),
-                        gte(messages.createdAt, row.createdAt),
-                     ),
-                  );
-            }
-
-            if (input.text !== undefined) {
-               await tx.insert(messages).values({
-                  threadId: input.threadId,
-                  role: "user",
-                  parts: [{ type: "text", content: input.text }],
-                  metadata: input.pageContext
-                     ? { pageContext: input.pageContext }
-                     : null,
-               });
-            }
-
-            return tx
-               .select({
-                  id: messages.id,
-                  role: messages.role,
-                  parts: messages.parts,
-               })
-               .from(messages)
-               .where(eq(messages.threadId, input.threadId))
-               .orderBy(asc(messages.createdAt));
-         }),
+      try: () => prepareChatHistoryWithThreadAdvisoryLock(context, input),
       catch: () =>
          new AgentThreadError({
             error: threadErrors.CHAT_HISTORY_LOAD_FAILED({
