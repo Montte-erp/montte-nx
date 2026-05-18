@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
-import { Result } from "better-result";
+import { Result, isTaggedError } from "better-result";
 import { z } from "zod";
-import { os } from "@orpc/server";
+import { ORPCError, os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
 import { createDb } from "@core/database/client";
 import { env } from "@core/environment/web";
@@ -216,7 +216,73 @@ function toError(error: unknown): Error {
    return error instanceof Error ? error : new Error(String(error));
 }
 
-const withLogger = withOrganization.use(
+const taggedStatusErrorSchema = z.object({
+   error: z.object({
+      status: z.number().int(),
+   }),
+   message: z.string(),
+});
+
+type ORPCTransportCode =
+   | "BAD_REQUEST"
+   | "UNAUTHORIZED"
+   | "FORBIDDEN"
+   | "NOT_FOUND"
+   | "CONFLICT"
+   | "TOO_MANY_REQUESTS"
+   | "INTERNAL_SERVER_ERROR";
+
+const withORPCErrors = withOrganization.use(async ({ next }) => {
+   const result = await Result.tryPromise({
+      try: async () => next(),
+      catch: toError,
+   });
+
+   if (Result.isOk(result)) return result.value;
+
+   let status = 500;
+   let message = result.error.message;
+   let data: unknown;
+
+   if (result.error instanceof AppError) {
+      status = result.error.status;
+      data = result.error.data;
+   } else if (isTaggedError(result.error)) {
+      const parsed = taggedStatusErrorSchema.safeParse(result.error);
+      if (!parsed.success) throw result.error;
+      status = parsed.data.error.status;
+      message = parsed.data.message;
+      data = { tag: result.error._tag };
+   } else {
+      throw result.error;
+   }
+
+   let code: ORPCTransportCode = "INTERNAL_SERVER_ERROR";
+   switch (status) {
+      case 400:
+         code = "BAD_REQUEST";
+         break;
+      case 401:
+         code = "UNAUTHORIZED";
+         break;
+      case 403:
+         code = "FORBIDDEN";
+         break;
+      case 404:
+         code = "NOT_FOUND";
+         break;
+      case 409:
+         code = "CONFLICT";
+         break;
+      case 429:
+         code = "TOO_MANY_REQUESTS";
+         break;
+   }
+
+   throw new ORPCError(code, { message, cause: result.error, data });
+});
+
+const withLogger = withORPCErrors.use(
    async ({ context, path, next }, input) => {
       const startDate = dayjs().toDate();
       const userId = context.session?.user?.id;
@@ -267,9 +333,7 @@ const withLogger = withOrganization.use(
       context.log.emit();
 
       if (Result.isError(result)) {
-         throw result.error instanceof AppError
-            ? WebAppError.fromAppError(result.error)
-            : result.error;
+         throw result.error;
       }
 
       return result.value;
