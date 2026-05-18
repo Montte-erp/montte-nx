@@ -12,14 +12,8 @@ import {
 import { threads } from "@core/database/schemas/threads";
 import { log } from "@core/logging";
 import type { PgBossClient } from "@core/pg-boss/client";
-import {
-   enqueueGenerateThreadTitleJob,
-   GenerateThreadTitleJobError,
-} from "@modules/agents/jobs/generate-title-job";
-import {
-   enqueueRefreshThreadSuggestionsJob,
-   RefreshThreadSuggestionsJobError,
-} from "@modules/agents/jobs/refresh-suggestions-job";
+import { enqueueGenerateThreadTitleJob } from "@modules/agents/jobs/generate-title-job";
+import { enqueueRefreshThreadSuggestionsJob } from "@modules/agents/jobs/refresh-suggestions-job";
 import { createAssistantStreamState } from "./assistant-stream-state";
 
 const runtimeErrors = defineErrorCatalog("agents.runtime", {
@@ -72,8 +66,38 @@ class AgentRuntimeError extends TaggedError("AgentRuntimeError")<{
    teamId?: string;
    organizationId?: string;
    messageCount?: number;
-   jobError?: GenerateThreadTitleJobError | RefreshThreadSuggestionsJobError;
+   jobErrorName?: string;
+   jobErrorMessage?: string;
 }>() {}
+
+function mapJobErrorPayload(error: unknown) {
+   if (error instanceof Error) {
+      return {
+         jobErrorName: error.name,
+         jobErrorMessage: error.message,
+      };
+   }
+
+   if (typeof error === "object" && error !== null) {
+      const name =
+         typeof Reflect.get(error, "name") === "string"
+            ? Reflect.get(error, "name")
+            : undefined;
+      const message =
+         typeof Reflect.get(error, "message") === "string"
+            ? Reflect.get(error, "message")
+            : undefined;
+
+      return {
+         jobErrorName: name,
+         jobErrorMessage: message,
+      };
+   }
+
+   return {
+      jobErrorMessage: typeof error === "string" ? error : undefined,
+   };
+}
 
 const MIN_TITLE_MESSAGE_COUNT = 2;
 const MIN_SUGGESTION_MESSAGE_COUNT = 4;
@@ -124,12 +148,7 @@ export function createAgentRuntimeMiddlewares(
                      teamId: deps.teamId,
                      organizationId: deps.organizationId,
                   }).then((result) => {
-                     if (!Result.isError(result)) return;
-                     log.error({
-                        module: "agents.runtime",
-                        message: "failed enqueue generate-title",
-                        err: result.error,
-                     });
+                     if (Result.isError(result)) throw result.error;
                   }),
                );
             }
@@ -146,12 +165,7 @@ export function createAgentRuntimeMiddlewares(
                      organizationId: deps.organizationId,
                      messageCount,
                   }).then((result) => {
-                     if (!Result.isError(result)) return;
-                     log.error({
-                        module: "agents.runtime",
-                        message: "failed enqueue refresh-suggestions",
-                        err: result.error,
-                     });
+                     if (Result.isError(result)) throw result.error;
                   }),
                );
             }
@@ -275,8 +289,17 @@ async function enqueueThreadTitle(options: {
       const boss = yield* Result.await(
          Result.tryPromise({
             try: () => options.pgBoss,
-            catch: () =>
-               new AgentRuntimeError({
+            catch: (error) => {
+               log.error({
+                  module: "agents.runtime",
+                  message: "failed resolve pg-boss for thread title",
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+                  err: error,
+               });
+
+               return new AgentRuntimeError({
                   error: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
                      internal: {
                         threadId: options.threadId,
@@ -294,7 +317,8 @@ async function enqueueThreadTitle(options: {
                   threadId: options.threadId,
                   teamId: options.teamId,
                   organizationId: options.organizationId,
-               }),
+               });
+            },
          }),
       );
 
@@ -313,29 +337,40 @@ async function enqueueThreadTitle(options: {
    });
 
    return result.mapError((error) => {
-      if (error instanceof GenerateThreadTitleJobError) {
-         return new AgentRuntimeError({
-            error: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
-               internal: {
-                  threadId: options.threadId,
-                  teamId: options.teamId,
-                  organizationId: options.organizationId,
-               },
-            }),
-            message: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
-               internal: {
-                  threadId: options.threadId,
-                  teamId: options.teamId,
-                  organizationId: options.organizationId,
-               },
-            }).message,
-            threadId: options.threadId,
-            teamId: options.teamId,
-            organizationId: options.organizationId,
-            jobError: error,
-         });
-      }
-      return error;
+      if (error instanceof AgentRuntimeError) return error;
+      const jobError = mapJobErrorPayload(error);
+
+      log.error({
+         module: "agents.runtime",
+         message: "failed enqueue generate-title",
+         threadId: options.threadId,
+         teamId: options.teamId,
+         organizationId: options.organizationId,
+         jobErrorName: jobError.jobErrorName,
+         jobErrorMessage: jobError.jobErrorMessage,
+         err: error,
+      });
+
+      return new AgentRuntimeError({
+         error: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
+            internal: {
+               threadId: options.threadId,
+               teamId: options.teamId,
+               organizationId: options.organizationId,
+            },
+         }),
+         message: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
+            internal: {
+               threadId: options.threadId,
+               teamId: options.teamId,
+               organizationId: options.organizationId,
+            },
+         }).message,
+         threadId: options.threadId,
+         teamId: options.teamId,
+         organizationId: options.organizationId,
+         ...jobError,
+      });
    });
 }
 
@@ -350,8 +385,18 @@ async function enqueueThreadSuggestions(options: {
       const boss = yield* Result.await(
          Result.tryPromise({
             try: () => options.pgBoss,
-            catch: () =>
-               new AgentRuntimeError({
+            catch: (error) => {
+               log.error({
+                  module: "agents.runtime",
+                  message: "failed resolve pg-boss for thread suggestions",
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+                  messageCount: options.messageCount,
+                  err: error,
+               });
+
+               return new AgentRuntimeError({
                   error: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
                      internal: {
                         threadId: options.threadId,
@@ -372,7 +417,8 @@ async function enqueueThreadSuggestions(options: {
                   teamId: options.teamId,
                   organizationId: options.organizationId,
                   messageCount: options.messageCount,
-               }),
+               });
+            },
          }),
       );
 
@@ -392,31 +438,43 @@ async function enqueueThreadSuggestions(options: {
    });
 
    return result.mapError((error) => {
-      if (error instanceof RefreshThreadSuggestionsJobError) {
-         return new AgentRuntimeError({
-            error: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
-               internal: {
-                  threadId: options.threadId,
-                  teamId: options.teamId,
-                  organizationId: options.organizationId,
-                  messageCount: options.messageCount,
-               },
-            }),
-            message: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
-               internal: {
-                  threadId: options.threadId,
-                  teamId: options.teamId,
-                  organizationId: options.organizationId,
-                  messageCount: options.messageCount,
-               },
-            }).message,
-            threadId: options.threadId,
-            teamId: options.teamId,
-            organizationId: options.organizationId,
-            messageCount: options.messageCount,
-            jobError: error,
-         });
-      }
-      return error;
+      if (error instanceof AgentRuntimeError) return error;
+      const jobError = mapJobErrorPayload(error);
+
+      log.error({
+         module: "agents.runtime",
+         message: "failed enqueue refresh-suggestions",
+         threadId: options.threadId,
+         teamId: options.teamId,
+         organizationId: options.organizationId,
+         messageCount: options.messageCount,
+         jobErrorName: jobError.jobErrorName,
+         jobErrorMessage: jobError.jobErrorMessage,
+         err: error,
+      });
+
+      return new AgentRuntimeError({
+         error: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
+            internal: {
+               threadId: options.threadId,
+               teamId: options.teamId,
+               organizationId: options.organizationId,
+               messageCount: options.messageCount,
+            },
+         }),
+         message: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
+            internal: {
+               threadId: options.threadId,
+               teamId: options.teamId,
+               organizationId: options.organizationId,
+               messageCount: options.messageCount,
+            },
+         }).message,
+         threadId: options.threadId,
+         teamId: options.teamId,
+         organizationId: options.organizationId,
+         messageCount: options.messageCount,
+         ...jobError,
+      });
    });
 }
