@@ -161,6 +161,7 @@ type ThreadCatalogError =
 
 class AgentThreadError extends TaggedError("AgentThreadError")<{
    error: ThreadCatalogError;
+   message: string;
    threadId?: string;
    threadIds?: string[];
    messageId?: string;
@@ -175,36 +176,48 @@ const requireThread = base.middleware(async ({ context, next }, id: string) => {
             where: (f, { eq: eqFn }) => eqFn(f.id, id),
          }),
       catch: () =>
-         new AgentThreadError({
-            error: threadErrors.THREAD_LOOKUP_FAILED({
+         (() => {
+            const error = threadErrors.THREAD_LOOKUP_FAILED({
                internal: { threadId: id },
-            }),
-            threadId: id,
-         }),
+            });
+            return new AgentThreadError({
+               error,
+               message: error.message,
+               threadId: id,
+            });
+         })(),
    });
    if (Result.isError(result)) throw result.error;
    const thread = result.value;
    if (thread === undefined) {
       throw new AgentThreadError({
          error: threadErrors.THREAD_NOT_FOUND({ internal: { threadId: id } }),
+         message: threadErrors.THREAD_NOT_FOUND({ internal: { threadId: id } })
+            .message,
          threadId: id,
       });
    }
    if (thread.teamId !== context.teamId) {
       throw new AgentThreadError({
          error: threadErrors.THREAD_NOT_FOUND({ internal: { threadId: id } }),
+         message: threadErrors.THREAD_NOT_FOUND({ internal: { threadId: id } })
+            .message,
          threadId: id,
       });
    }
    if (thread.organizationId !== context.organizationId) {
       throw new AgentThreadError({
          error: threadErrors.THREAD_NOT_FOUND({ internal: { threadId: id } }),
+         message: threadErrors.THREAD_NOT_FOUND({ internal: { threadId: id } })
+            .message,
          threadId: id,
       });
    }
    if (thread.userId !== context.userId) {
       throw new AgentThreadError({
          error: threadErrors.THREAD_NOT_FOUND({ internal: { threadId: id } }),
+         message: threadErrors.THREAD_NOT_FOUND({ internal: { threadId: id } })
+            .message,
          threadId: id,
       });
    }
@@ -395,6 +408,7 @@ export const create = protectedProcedure
          catch: () =>
             new AgentThreadError({
                error: threadErrors.THREAD_CREATE_FAILED(),
+               message: threadErrors.THREAD_CREATE_FAILED().message,
             }),
       });
       if (Result.isError(result)) throw result.error;
@@ -402,6 +416,7 @@ export const create = protectedProcedure
       if (row === undefined) {
          throw new AgentThreadError({
             error: threadErrors.THREAD_CREATE_EMPTY_RESULT(),
+            message: threadErrors.THREAD_CREATE_EMPTY_RESULT().message,
          });
       }
       return row;
@@ -425,6 +440,9 @@ export const update = protectedProcedure
                error: threadErrors.THREAD_UPDATE_FAILED({
                   internal: { threadId: input.threadId },
                }),
+               message: threadErrors.THREAD_UPDATE_FAILED({
+                  internal: { threadId: input.threadId },
+               }).message,
                threadId: input.threadId,
             }),
       });
@@ -435,6 +453,9 @@ export const update = protectedProcedure
             error: threadErrors.THREAD_UPDATE_EMPTY_RESULT({
                internal: { threadId: input.threadId },
             }),
+            message: threadErrors.THREAD_UPDATE_EMPTY_RESULT({
+               internal: { threadId: input.threadId },
+            }).message,
             threadId: input.threadId,
          });
       }
@@ -455,6 +476,9 @@ export const remove = protectedProcedure
                error: threadErrors.THREAD_DELETE_FAILED({
                   internal: { threadId: input.threadId },
                }),
+               message: threadErrors.THREAD_DELETE_FAILED({
+                  internal: { threadId: input.threadId },
+               }).message,
                threadId: input.threadId,
             }),
       });
@@ -491,6 +515,12 @@ export const removeMessage = protectedProcedure
                      messageId: input.messageId,
                   },
                }),
+               message: threadErrors.MESSAGE_DELETE_FAILED({
+                  internal: {
+                     threadId: input.threadId,
+                     messageId: input.messageId,
+                  },
+               }).message,
                threadId: input.threadId,
                messageId: input.messageId,
             }),
@@ -525,6 +555,9 @@ export const saveAssistantMessage = protectedProcedure
                error: threadErrors.ASSISTANT_MESSAGE_SAVE_FAILED({
                   internal: { threadId: input.threadId },
                }),
+               message: threadErrors.ASSISTANT_MESSAGE_SAVE_FAILED({
+                  internal: { threadId: input.threadId },
+               }).message,
                threadId: input.threadId,
             }),
       });
@@ -535,6 +568,9 @@ export const saveAssistantMessage = protectedProcedure
             error: threadErrors.ASSISTANT_MESSAGE_SAVE_EMPTY_RESULT({
                internal: { threadId: input.threadId },
             }),
+            message: threadErrors.ASSISTANT_MESSAGE_SAVE_EMPTY_RESULT({
+               internal: { threadId: input.threadId },
+            }).message,
             threadId: input.threadId,
          });
       }
@@ -567,6 +603,9 @@ export const removeBulk = protectedProcedure
                error: threadErrors.THREADS_DELETE_FAILED({
                   internal: { threadIds: input.threadIds },
                }),
+               message: threadErrors.THREADS_DELETE_FAILED({
+                  internal: { threadIds: input.threadIds },
+               }).message,
                threadIds: input.threadIds,
             }),
       });
@@ -590,6 +629,9 @@ export async function createThreadChatStream(options: {
             error: threadErrors.THREAD_LOOKUP_FAILED({
                internal: { threadId: input.threadId },
             }),
+            message: threadErrors.THREAD_LOOKUP_FAILED({
+               internal: { threadId: input.threadId },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -605,6 +647,9 @@ export async function createThreadChatStream(options: {
          error: threadErrors.THREAD_NOT_FOUND({
             internal: { threadId: input.threadId },
          }),
+         message: threadErrors.THREAD_NOT_FOUND({
+            internal: { threadId: input.threadId },
+         }).message,
          threadId: input.threadId,
       });
    }
@@ -694,6 +739,9 @@ export async function createThreadChatStream(options: {
             error: threadErrors.CHAT_HISTORY_LOAD_FAILED({
                internal: { threadId: input.threadId },
             }),
+            message: threadErrors.CHAT_HISTORY_LOAD_FAILED({
+               internal: { threadId: input.threadId },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -704,6 +752,9 @@ export async function createThreadChatStream(options: {
             error: threadErrors.CHAT_REGENERATE_NO_USER_MESSAGE({
                internal: { threadId: input.threadId },
             }),
+            message: threadErrors.CHAT_REGENERATE_NO_USER_MESSAGE({
+               internal: { threadId: input.threadId },
+            }).message,
             threadId: input.threadId,
          });
       }
@@ -714,6 +765,12 @@ export async function createThreadChatStream(options: {
                messageId: input.replaceFromMessageId,
             },
          }),
+         message: threadErrors.CHAT_TARGET_MESSAGE_NOT_FOUND({
+            internal: {
+               threadId: input.threadId,
+               messageId: input.replaceFromMessageId,
+            },
+         }).message,
          threadId: input.threadId,
          messageId: input.replaceFromMessageId,
       });
@@ -735,6 +792,9 @@ export async function createThreadChatStream(options: {
             error: threadErrors.CHAT_SETTINGS_LOAD_FAILED({
                internal: { threadId: input.threadId },
             }),
+            message: threadErrors.CHAT_SETTINGS_LOAD_FAILED({
+               internal: { threadId: input.threadId },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -774,6 +834,9 @@ export async function createThreadChatStream(options: {
             error: threadErrors.CHAT_STREAM_CREATE_FAILED({
                internal: { threadId: input.threadId },
             }),
+            message: threadErrors.CHAT_STREAM_CREATE_FAILED({
+               internal: { threadId: input.threadId },
+            }).message,
             threadId: input.threadId,
          }),
    });

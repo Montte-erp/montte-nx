@@ -92,6 +92,7 @@ export class RefreshThreadSuggestionsJobError extends TaggedError(
    "RefreshThreadSuggestionsJobError",
 )<{
    error: RefreshThreadSuggestionsJobCatalogError;
+   message: string;
    threadId?: string;
    messageCount?: number;
 }>() {}
@@ -159,6 +160,12 @@ export async function enqueueRefreshThreadSuggestionsJob(options: {
                   messageCount: options.input.messageCount,
                },
             }),
+            message: refreshSuggestionsJobErrors.ENQUEUE_FAILED({
+               internal: {
+                  threadId: options.input.threadId,
+                  messageCount: options.input.messageCount,
+               },
+            }).message,
             threadId: options.input.threadId,
             messageCount: options.input.messageCount,
          }),
@@ -171,6 +178,9 @@ export async function enqueueRefreshThreadSuggestionsJob(options: {
             error: refreshSuggestionsJobErrors.JOB_ID_MISSING({
                internal: { threadId: options.input.threadId },
             }),
+            message: refreshSuggestionsJobErrors.JOB_ID_MISSING({
+               internal: { threadId: options.input.threadId },
+            }).message,
             threadId: options.input.threadId,
          }),
       );
@@ -192,6 +202,9 @@ export async function handleRefreshThreadSuggestionsJob(options: {
             error: refreshSuggestionsJobErrors.INVALID_PAYLOAD({
                internal: { jobId: options.job.id },
             }),
+            message: refreshSuggestionsJobErrors.INVALID_PAYLOAD({
+               internal: { jobId: options.job.id },
+            }).message,
          }),
       );
    }
@@ -237,6 +250,12 @@ export async function handleRefreshThreadSuggestionsJob(options: {
                   threadId: input.threadId,
                },
             }),
+            message: refreshSuggestionsJobErrors.MESSAGES_LOAD_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -278,6 +297,12 @@ export async function handleRefreshThreadSuggestionsJob(options: {
                   threadId: input.threadId,
                },
             }),
+            message: refreshSuggestionsJobErrors.PROMPT_LOAD_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -336,6 +361,12 @@ export async function handleRefreshThreadSuggestionsJob(options: {
                   threadId: input.threadId,
                },
             }),
+            message: refreshSuggestionsJobErrors.AI_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -369,6 +400,12 @@ export async function handleRefreshThreadSuggestionsJob(options: {
                   threadId: input.threadId,
                },
             }),
+            message: refreshSuggestionsJobErrors.WRITE_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }).message,
             threadId: input.threadId,
          }),
    });

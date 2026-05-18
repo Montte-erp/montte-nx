@@ -87,6 +87,7 @@ export class GenerateThreadTitleJobError extends TaggedError(
    "GenerateThreadTitleJobError",
 )<{
    error: GenerateThreadTitleJobCatalogError;
+   message: string;
    threadId?: string;
 }>() {}
 
@@ -150,6 +151,9 @@ export async function enqueueGenerateThreadTitleJob(options: {
             error: generateTitleJobErrors.ENQUEUE_FAILED({
                internal: { threadId: options.input.threadId },
             }),
+            message: generateTitleJobErrors.ENQUEUE_FAILED({
+               internal: { threadId: options.input.threadId },
+            }).message,
             threadId: options.input.threadId,
          }),
    });
@@ -163,6 +167,9 @@ export async function enqueueGenerateThreadTitleJob(options: {
             error: generateTitleJobErrors.JOB_ID_MISSING({
                internal: { threadId: options.input.threadId },
             }),
+            message: generateTitleJobErrors.JOB_ID_MISSING({
+               internal: { threadId: options.input.threadId },
+            }).message,
             threadId: options.input.threadId,
          }),
       );
@@ -184,6 +191,9 @@ export async function handleGenerateThreadTitleJob(options: {
             error: generateTitleJobErrors.INVALID_PAYLOAD({
                internal: { jobId: options.job.id },
             }),
+            message: generateTitleJobErrors.INVALID_PAYLOAD({
+               internal: { jobId: options.job.id },
+            }).message,
          }),
       );
    }
@@ -238,6 +248,12 @@ export async function handleGenerateThreadTitleJob(options: {
                   threadId: input.threadId,
                },
             }),
+            message: generateTitleJobErrors.MESSAGES_LOAD_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -299,6 +315,12 @@ export async function handleGenerateThreadTitleJob(options: {
                   threadId: input.threadId,
                },
             }),
+            message: generateTitleJobErrors.PROMPT_LOAD_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -359,6 +381,12 @@ export async function handleGenerateThreadTitleJob(options: {
                   threadId: input.threadId,
                },
             }),
+            message: generateTitleJobErrors.AI_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }).message,
             threadId: input.threadId,
          }),
    });
@@ -402,6 +430,12 @@ export async function handleGenerateThreadTitleJob(options: {
                   threadId: input.threadId,
                },
             }),
+            message: generateTitleJobErrors.WRITE_FAILED({
+               internal: {
+                  jobId: options.job.id,
+                  threadId: input.threadId,
+               },
+            }).message,
             threadId: input.threadId,
          }),
    });
