@@ -13,8 +13,8 @@ import {
    CardsRouterError,
    cardsRouterErrors,
    requireCreditCard,
-} from "@modules/cards/credit-cards";
-import { findCreditCardStatement } from "@modules/cards/statements";
+} from "@modules/cards/router/middlewares";
+import { findCreditCardStatement } from "@modules/cards/router/utils";
 
 const idSchema = z.object({ id: z.string().uuid() });
 

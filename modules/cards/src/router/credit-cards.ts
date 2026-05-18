@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { Result } from "better-result";
-import { and, eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import {
@@ -10,12 +11,11 @@ import {
 } from "@core/database/schemas/credit-cards";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   buildCreditCardOrderBy,
    CardsRouterError,
    cardsRouterErrors,
    requireCreditCard,
-} from "@modules/cards/credit-cards";
-import { findBlockingOpenStatement } from "@modules/cards/statements";
+} from "@modules/cards/router/middlewares";
+import { findBlockingOpenStatement } from "@modules/cards/router/utils";
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -74,6 +74,43 @@ const bulkCreateSchema = z.object({
       .min(1)
       .max(500),
 });
+
+function buildCreditCardOrderBy(
+   sorting: z.infer<typeof listCreditCardsSchema>["sorting"],
+) {
+   if (!sorting?.length)
+      return [asc(creditCards.name), desc(creditCards.createdAt)];
+   const orderBy: SQL[] = [];
+
+   for (const sort of sorting) {
+      const direction = sort.desc ? desc : asc;
+      switch (sort.id) {
+         case "bankAccountId":
+            orderBy.push(direction(creditCards.bankAccountId));
+            break;
+         case "brand":
+            orderBy.push(direction(creditCards.brand));
+            break;
+         case "closingDay":
+            orderBy.push(direction(creditCards.closingDay));
+            break;
+         case "creditLimit":
+            orderBy.push(direction(creditCards.creditLimit));
+            break;
+         case "dueDay":
+            orderBy.push(direction(creditCards.dueDay));
+            break;
+         case "name":
+            orderBy.push(direction(creditCards.name));
+            break;
+         case "status":
+            orderBy.push(direction(creditCards.status));
+            break;
+      }
+   }
+
+   return [...orderBy, desc(creditCards.createdAt)];
+}
 
 export const create = protectedProcedure
    .input(createCreditCardSchema)

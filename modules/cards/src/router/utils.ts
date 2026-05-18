@@ -3,10 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
-import {
-   CardsRouterError,
-   cardsRouterErrors,
-} from "@modules/cards/credit-cards";
+import { CardsRouterError, cardsRouterErrors } from "./middlewares";
 
 export async function findCreditCardStatement(
    db: ORPCContextWithOrganization["db"],

@@ -1,9 +1,6 @@
 import { os } from "@orpc/server";
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
-import { asc, desc } from "drizzle-orm";
-import type { SQL } from "drizzle-orm";
-import { creditCards } from "@core/database/schemas/credit-cards";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 
 const base = os.$context<ORPCContextWithOrganization>();
@@ -47,55 +44,6 @@ export class CardsRouterError extends TaggedError("CardsRouterError")<{
    error: CardsRouterCatalogError;
    message: string;
 }>() {}
-
-export type CreditCardSortingRule = {
-   id:
-      | "bankAccountId"
-      | "brand"
-      | "closingDay"
-      | "creditLimit"
-      | "dueDay"
-      | "name"
-      | "status";
-   desc: boolean;
-};
-
-export function buildCreditCardOrderBy(
-   sorting: CreditCardSortingRule[] | undefined,
-) {
-   if (!sorting?.length)
-      return [asc(creditCards.name), desc(creditCards.createdAt)];
-   const orderBy: SQL[] = [];
-
-   for (const sort of sorting) {
-      const direction = sort.desc ? desc : asc;
-      switch (sort.id) {
-         case "bankAccountId":
-            orderBy.push(direction(creditCards.bankAccountId));
-            break;
-         case "brand":
-            orderBy.push(direction(creditCards.brand));
-            break;
-         case "closingDay":
-            orderBy.push(direction(creditCards.closingDay));
-            break;
-         case "creditLimit":
-            orderBy.push(direction(creditCards.creditLimit));
-            break;
-         case "dueDay":
-            orderBy.push(direction(creditCards.dueDay));
-            break;
-         case "name":
-            orderBy.push(direction(creditCards.name));
-            break;
-         case "status":
-            orderBy.push(direction(creditCards.status));
-            break;
-      }
-   }
-
-   return [...orderBy, desc(creditCards.createdAt)];
-}
 
 export const requireCreditCard = base.middleware(
    async ({ context, next }, id: string) => {
