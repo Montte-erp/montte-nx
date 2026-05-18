@@ -22,6 +22,13 @@ import type {
    ORPCContextWithAuth,
    ORPCContextWithOrganization,
 } from "./context";
+import { getLogger } from "./context";
+
+declare module "@orpc/server" {
+   interface Registry {
+      throwableError: Error;
+   }
+}
 
 const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
@@ -336,75 +343,48 @@ const withORPCErrors = withOrganization.use(async ({ next, errors }) => {
 
 const withLogger = withORPCErrors.use(
    async ({ context, path, next }, input) => {
-      const startDate = dayjs().toDate();
+      const startMs = Date.now();
+      const log = getLogger(context);
       const userId = context.session?.user?.id;
-      const organizationId = context.organizationId;
-      const teamId = context.teamId;
       const sessionId = context.headers.get("x-posthog-session-id");
       const orpcPath = path.join(".");
 
-      const eventIdentity: {
-         posthogDistinctId: string;
-         sessionId?: string;
-         organizationId: string;
-         teamId: string;
-         path: string;
-      } = {
-         posthogDistinctId: userId ?? "anonymous",
-         organizationId,
-         teamId,
-         path: orpcPath,
-      };
-      if (sessionId) eventIdentity.sessionId = sessionId;
-
-      context.log.set({
+      const logContext = {
          orpc: {
             path: orpcPath,
             rootPath: path[0],
          },
          userId,
-         ...eventIdentity,
+         posthogDistinctId: userId ?? "anonymous",
+         organizationId: context.organizationId,
+         teamId: context.teamId,
+         path: orpcPath,
+      };
+      if (sessionId) Object.assign(logContext, { sessionId });
+      log.set(logContext);
+
+      const result = await Result.tryPromise({
+         try: async () => next(),
+         catch: (error) => error,
       });
 
-      const result = await Result.gen(async function* () {
-         const output = yield* Result.await(
-            Result.tryPromise({
-               try: async () => next(),
-               catch: (error) => error,
-            }),
-         );
-
-         return Result.ok(output);
-      });
-
-      const durationMs = Date.now() - startDate.getTime();
-      const isSuccess = Result.isOk(result);
-      const orpcLog: {
-         path: string;
-         rootPath: string | undefined;
-         durationMs: number;
-         endAt: string;
-         success: boolean;
-         input: unknown;
-         errorName?: string;
-         errorMessage?: string;
-      } = {
+      const orpcLog = {
          path: orpcPath,
          rootPath: path[0],
-         durationMs,
+         durationMs: Date.now() - startMs,
          endAt: dayjs().toISOString(),
-         success: isSuccess,
+         success: Result.isOk(result),
          input,
       };
       if (Result.isError(result) && isTaggedError(result.error)) {
-         orpcLog.errorName = result.error.name;
-         orpcLog.errorMessage = result.error.message;
+         Object.assign(orpcLog, {
+            errorName: result.error.name,
+            errorMessage: result.error.message,
+         });
       }
 
-      context.log.set({
-         orpc: orpcLog,
-      });
-      context.log.emit();
+      log.set({ orpc: orpcLog });
+      log.emit();
 
       if (Result.isError(result)) {
          throw result.error;
@@ -429,7 +409,7 @@ const withTelemetry = withLogger.use(async ({ context, next }) => {
             });
             setGroup(context.posthog, organizationId, {});
 
-            context.log.set({
+            getLogger(context).set({
                posthog: {
                   distinctId: userId,
                   group: { organization: organizationId },
@@ -443,7 +423,7 @@ const withTelemetry = withLogger.use(async ({ context, next }) => {
    });
 
    if (telemetry.isErr()) {
-      context.log.warn("PostHog telemetry failed", {
+      getLogger(context).warn("PostHog telemetry failed", {
          posthog: {
             errorName: "PostHogTelemetryError",
             errorMessage: "Falha ao registrar telemetria no PostHog.",

@@ -76,7 +76,7 @@ Routers live in `modules/<module>/src/router/<name>.ts` and are aggregated in `a
 
 **Rules:**
 
-- Errors: expected domain/router failures use `better-result` with owner-local `TaggedError` carrying an evlog catalog error with `status`. Handlers may throw those tagged errors directly; the global oRPC middleware maps them to the typed `.errors(...)` constructors. Do not use `WebAppError`, `AppError`, direct `ORPCError`, raw `Error`, strings, or wrapper factories. **Messages always pt-BR** — they render directly in toasts.
+- Errors: expected domain/router failures use `better-result` with owner-local `TaggedError` carrying an evlog catalog error with `status`. Handlers may throw those tagged errors directly; the global oRPC middleware maps them to the typed `.errors(...)` constructors. `@core/orpc` configures `Registry.throwableError = Error` following oRPC's no-throw-literal best practice, so never throw literals, raw strings, or plain objects. Do not use `WebAppError`, `AppError`, direct `ORPCError`, raw `Error`, strings, or wrapper factories. **Messages always pt-BR** — they render directly in toasts.
 - **No repository layer.** Routers query `context.db` directly; workflows use `<module>DataSource.runTransaction`.
 - All writes inside `db.transaction(async (tx) => …)`. Single reads exempt.
 - Business-rule checks (conflict/notFound) **outside** the transaction. Empty `returning()` → return/throw the local tagged catalog error outside the tx.
