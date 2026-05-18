@@ -1,133 +1,120 @@
 ---
-title: "Removemos o CRM do Montte. E foi uma decisão deliberada."
-description: "Todo ERP brasileiro tem CRM nativo ou algo equivalente para relacionamento. O Montte decidiu remover o módulo de Contatos/CRM para focar em finanças e em uma operação mais simples, conversacional e orientada por IA."
+title: "Todo ERP brasileiro tem CRM. Nós removemos o nosso."
+description: "No recorte dos principais ERPs de PME no Brasil, CRM nativo virou padrão. O Montte removeu o módulo de Contatos/CRM para reduzir superfície, focar no core financeiro e seguir para uma experiência mais orientada por conversa com o Montte AI."
 publishedAt: 2026-05-18
 author: "Manoel Neto"
-tags: ["produto", "crm", "erp", "montte-ai", "operacao"]
+tags: ["produto", "crm", "erp", "montte-ai", "release"]
 category: "Produto"
 coverImage: "../../assets/blog/montte-2026-05-15.jpg"
 featured: false
 readingMinutes: 4
 keyTakeaways:
-  - "Removemos o módulo de Contatos/CRM para reduzir atrito e focar no core financeiro do Montte."
-  - "A mudança veio no commit `019ce11b`, com 3.081 linhas removidas em 37 arquivos."
-  - "O recorte foi validado com benchmark de mercado e segue padrão de produto orientado a chat-first."
-  - "Clientes atuais são tratados no alinhamento de continuidade via `MON-1106`."
-  - "A decisão não elimina relacionamento, mas muda onde cada ferramenta faz sentido."
+  - "O Montte removeu o módulo de Contatos/CRM do produto principal."
+  - "O commit `019ce11b` tirou 3.081 linhas em 37 arquivos."
+  - "A decisão corta manutenção paralela e limpa o foco do core financeiro."
+  - "O mercado brasileiro de ERP PME já trata CRM nativo como padrão."
+  - "Clientes atuais entram em acompanhamento via `MON-1106`."
 faq:
-  - question: "O Montte não terá mais nenhum relacionamento com clientes?"
-    answer: "O produto deixou de carregar um módulo nativo de CRM dentro do fluxo financeiro. O objetivo é ser claro: finanças no Montte e relacionamento no melhor stack do time comercial."
-  - question: "Por que remover um módulo que parecia essencial?"
-    answer: "Porque ele não era mais um diferencial técnico do Montte, e sim uma área que consumia capacidade de evolução no core onde o produto precisava concentrar energia."
-  - question: "Essa decisão afeta quem já usa contatos hoje?"
-    answer: "Sim, essa jornada precisa ser comunicada com cuidado. O impacto para usuários atuais está sendo acompanhado no alinhamento de execução (`MON-1106`)."
+  - question: "O que saiu do Montte?"
+    answer: "Saiu o módulo de Contatos/CRM do fluxo principal: router, form sheet, properties panel, listagem, colunas, settings, onboarding e a aba em transações."
+  - question: "Isso significa que o Montte não atende mais relacionamento?"
+    answer: "Não. Significa que o relacionamento deixou de morar dentro do produto principal. O Montte segue no financeiro e na operação; o CRM fica fora da superfície principal."
+  - question: "Quem era usuário do módulo vai ficar sem resposta?"
+    answer: "Não. Esse grupo entra no alinhamento de continuidade registrado em `MON-1106`, com comunicação e acompanhamento específicos."
 ---
 
-Todo ERP brasileiro tem CRM nativo — ou algum equivalente no pacote. O Montte também tinha.
+Todo ERP brasileiro tem CRM. O Montte também tinha.
 
-E hoje o Montte foi contraintuitivo: decidiu remover o próprio módulo de Contatos/CRM.
+Agora não tem mais.
 
-Essa não é uma frase para marketing. É uma decisão de produto.
+O commit `019ce11b` — **Remove contacts module** — tirou o módulo de Contatos/CRM do produto principal. Foram **3.081 linhas removidas** em **37 arquivos**. Não foi ajuste de UI. Foi remoção de superfície.
 
-## O que tinha lá
+## O que saiu
 
-Até agora, o módulo de Contatos/CRM no Montte tinha um fluxo completo: cadastro e edição de contatos, propriedades, colunas personalizadas, listagem, settings, onboarding próprio e vínculo com transações.
+Saiu o que deixava o módulo vivo no dia a dia:
 
-No Git, a mudança não foi cosmética:
+- router de contatos;
+- form sheet;
+- properties panel;
+- listagem;
+- colunas;
+- settings;
+- onboarding;
+- aba de contatos nas transações.
 
-- **hash:** `019ce11b`
-- **mensagem:** `Remove contacts module`
-- **3.081 linhas removidas**
-- **37 arquivos removidos**
-
-Retiramos o router de contatos, form sheet, properties panel, listagens e colunas, além da aba de contatos em transações.
-
-Em outras palavras, removemos uma superfície de produto que já estava no legado e que parecia, até certo ponto, natural de manter.
+Na prática, o Montte deixou de carregar uma área inteira que já não era o melhor lugar para o valor que queríamos concentrar.
 
 ## A pergunta que não respondemos antes
 
-A pergunta é direta: **"Se todo ERP tem CRM, por que remover o nosso?"**
+A pergunta é simples: por que mexer nisso se quase todo ERP de PME no Brasil tem CRM nativo?
 
-A resposta é menos sobre negar CRM e mais sobre reconhecer escopo.
+Porque, no nosso recorte, CRM deixou de ser diferencial e virou obrigação de pacote.
 
-No Montte, CRM deixava de ser uma vantagem prática e virava uma sobreposição de responsabilidades. O time de produto teve de dividir atenção entre:
+A gente conferiu o mercado: Bling, Omie, Conta Azul e Tiny tratam relacionamento como parte da experiência central. No resto do mercado, a lógica segue parecida: NetSuite e Odoo têm CRM nativo; SAP B1 depende de add-on; Zoho separa CRM como produto próprio.
 
-- evolução financeira de baixa latência;
-- correção de fluxo de dados transacionais;
-- e manutenção de uma área de relacionamento que já não era o melhor lugar para o valor que pretendíamos entregar.
+Ou seja: a pergunta não era mais "dá para ter CRM?". Era "vale o custo de manter isso aqui dentro?".
 
-Não era sobre CRM funcionar mal. Era sobre o produto competir pelo foco errado.
+## Por que quebrar o padrão
 
-## Verificação: mercado e evidência
+### 1) O core do Montte é financeiro
 
-Não tomamos decisão por opinião interna. Fizemos pesquisa direta.
+O Montte existe para dar clareza de operação financeira.
 
-### ERPs e CRM — verificação pública
+Quando o módulo de contatos ficou grande, ele passou a competir por prioridade com o que mais importa: fluxos, dados, consistência e velocidade de decisão no financeiro. Não fazia sentido continuar esticando a plataforma numa direção que não era a nossa melhor vantagem.
 
-| ERP | Tem CRM nativo? | Evidência |
-|---|---|---|
-| Bling | Sim | Módulo CRM/Relacionamento |
-| Omie | Sim | CRM nativo com funil |
-| Conta Azul | Sim | Gestão de clientes + integrações |
-| Tiny | Sim | CRM com kanban e WhatsApp |
-| NetSuite | Sim | CRM nativo |
-| Odoo | Sim | App CRM nativo |
+### 2) O custo de manutenção já não compensava
 
-Também analisamos casos com abordagem diferente:
+Cada ajuste no CRM carregava efeito colateral em outras partes do produto:
 
-- **SAP B1:** sem CRM nativo, usa add-on/integração.
-- **Zoho:** CRM como produto separado.
+- mais regra;
+- mais migração;
+- mais suporte;
+- mais tela para revisar;
+- mais chance de desalinhamento entre fluxos.
 
-A leitura do benchmark ficou clara: em muitos ERPs o CRM é padrão esperado do pacote, não o ponto de diferenciação para este tipo de produto.
+O produto ficava maior, mas não ficava melhor na mesma proporção.
 
-## Por que quebramos esse padrão (3 razões)
+### 3) O próximo passo é chat-first
 
-Não foi uma ruptura por estilo. Foi uma decisão de execução.
+A direção do Montte agora é menos menu, mais contexto.
 
-### 1) Foco no core que realmente importa
-
-O Montte é, primeiro, uma solução financeira. Queremos ser ótimos em controle, previsibilidade e clareza operacional.
-
-Enquanto o CRM cresce, o time de produto também cresce, mas não no mesmo ritmo. Esse desalinhamento não é visível no dia 1, mas aparece depois em prioridades atrasadas e features de menor retorno.
-
-### 2) Custo de manutenção estava alto para o retorno
-
-Cada ajuste no módulo de contatos impactava consistência de dados, fluxo de interface, onboarding e suporte.
-
-Em contexto real, esse custo começou a atrapalhar a entrega de capacidades centrais. Isso não significa que o CRM seja ruim; significa que, para o Montte, ele já não carregava o peso de prioridade que deveria carregar.
-
-### 3) O próximo passo do produto é conversa, não menu
-
-Estamos migrando a operação para um produto mais simples de usar, com menos páginas e mais contexto.
-
-A direção é **chat-first**: menos navegação por abas, mais continuidade por intenção. Isso casa melhor com uma rotina onde o usuário quer saber “o que fazer agora?” em vez de “onde eu clico para achar esse dado?”.
+Em vez de abrir mais uma área para gerenciar relacionamento, a experiência vai ficar mais próxima de conversa: o usuário chega, pergunta, encontra, decide e segue. Isso reduz o ruído de navegação e aponta para o tipo de operação que queremos consolidar com o Montte AI.
 
 ## O que veio no lugar
 
-A remoção foi acompanhada por uma redistribuição de esforço para o que o Montte quer ser:
+Não foi um corte para deixar vazio.
 
-- contexto operacional orientado por IA;
-- fluxo mais direto para decisões financeiras;
-- integração via camadas dedicadas com ferramentas certas para relacionamento comercial.
+O que veio no lugar foi foco:
 
-A ideia não é negar gestão de relacionamento. É recusar que ela consuma o espaço estrutural do que deveria ser o núcleo financeiro do Montte.
+- menos superfície dentro do ERP;
+- mais clareza no financeiro;
+- mais espaço para o fluxo conversacional;
+- menos manutenção de uma área que já vivia melhor fora do produto principal.
+
+Na prática, o Montte fica mais direto. Menos promessa de “fazer tudo”. Mais compromisso com a parte em que somos realmente bons.
+
+## Quem é afetado
+
+Quem usava o módulo de Contatos/CRM entra numa transição assistida.
+
+Não tem drama escondido aqui: existe impacto, e ele está sendo acompanhado no `MON-1106`. O ponto é tratar isso como mudança de produto, não como limbo técnico.
 
 ## O que aprendemos
 
-A decisão mostrou uma lição forte: **focar também dói no curto prazo, mas acelera no médio prazo**.
+A parte menos glamourosa é a mais útil:
 
-O que aprendemos com clareza:
+- **tirar também é construir**;
+- **benchmark público evita fantasia de time**;
+- **manter tudo dentro do produto não é sinônimo de servir melhor**.
 
-1. **Decidir não fazer também é decisão de produto.**
-2. **Benchmark público reduz viés interno.**
-3. **Tom importa.** Remoção precisa ser comunicada com humildade, sem tom de superioridade e com respeito aos usuários atuais.
+A decisão ficou mais clara quando a comparamos com o mercado real e com o que o Montte precisa ser daqui para frente.
 
-Na prática, clientes que usavam o módulo estão em acompanhamento específico, e o ponto de continuidade está registrado no `MON-1106` para não virar apenas “apagamos e ignoramos”.
+## Fechamento
 
-## CTA
+Então é isso: todo ERP brasileiro tem CRM. O Montte tinha um também. E decidimos tirar.
 
-Não foi uma decisão para parecer ousado. Foi para ficar mais consistente.
+Não para parecer ousado.
 
-Se você curte produto que assume trade-offs com transparência, esse é o tipo de decisão que nos permite ser melhores no que já é o nosso: entregar finanças mais claras, rápidas e úteis.
+Para ficar mais focado.
 
-Se quiser acompanhar o que está por vir, o link canônico está aqui: **/blog/removemos-o-crm**.
+Se você quer acompanhar a próxima fase do Montte, o caminho agora é menos abas, mais conversa, e um produto mais curto onde precisa ser curto.
