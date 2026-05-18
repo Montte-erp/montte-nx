@@ -13,7 +13,6 @@ import {
    type SQL,
 } from "drizzle-orm";
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
-import { contacts } from "@core/database/schemas/contacts";
 import { transactions } from "@core/database/schemas/transactions";
 import type { TransactionSortingRule } from "@modules/finance/services/transactions-query";
 
@@ -23,7 +22,6 @@ export interface TransactionFilter {
    bankAccountId?: string;
    categoryId?: string;
    tagId?: string;
-   contactId?: string;
    dateFrom?: string;
    dateTo?: string;
    search?: string;
@@ -96,10 +94,7 @@ const VIEW_FILTERS: Record<string, SQL[]> = {
    ignored: [eq(t.ignored, true)],
 };
 
-export function buildTransactionWhere(
-   f: TransactionFilter,
-   includeContactSearch: boolean,
-): SQL {
+export function buildTransactionWhere(f: TransactionFilter): SQL {
    const c: SQL[] = [eq(t.teamId, f.teamId)];
    if (f.ignored === true) c.push(eq(t.ignored, true));
    else if (f.ignored === false || !f.includeIgnored)
@@ -107,7 +102,6 @@ export function buildTransactionWhere(
    if (f.type) c.push(eq(t.type, f.type));
    if (f.bankAccountId) c.push(eq(t.bankAccountId, f.bankAccountId));
    if (f.categoryId) c.push(eq(t.categoryId, f.categoryId));
-   if (f.contactId) c.push(eq(t.contactId, f.contactId));
    if (f.tagId) c.push(eq(t.tagId, f.tagId));
    if (f.creditCardId) c.push(eq(t.creditCardId, f.creditCardId));
    if (f.dateFrom) c.push(gte(t.date, f.dateFrom));
@@ -132,13 +126,7 @@ export function buildTransactionWhere(
 
    if (f.search) {
       const p = `%${f.search}%`;
-      const cond = includeContactSearch
-         ? or(
-              ilike(t.name, p),
-              ilike(t.description, p),
-              ilike(contacts.name, p),
-           )
-         : or(ilike(t.name, p), ilike(t.description, p));
+      const cond = or(ilike(t.name, p), ilike(t.description, p));
       if (cond) c.push(cond);
    }
 

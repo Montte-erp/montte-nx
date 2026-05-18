@@ -102,7 +102,6 @@ export type FinancialReferences = {
    bankAccountId?: string | null;
    destinationBankAccountId?: string | null;
    categoryId?: string | null;
-   contactId?: string | null;
    tagId?: string | null;
    date?: Date | string | null;
 };
@@ -166,15 +165,6 @@ export async function requireValidFinancialReferences(
       });
       if (!tag || tag.teamId !== teamId) {
          throw WebAppError.badRequest("Centro de Custo inválido.");
-      }
-   }
-
-   if (refs.contactId) {
-      const contact = await db.query.contacts.findFirst({
-         where: (f, { eq }) => eq(f.id, refs.contactId ?? ""),
-      });
-      if (!contact || contact.teamId !== teamId) {
-         throw WebAppError.badRequest("Contato inválido.");
       }
    }
 }

@@ -14,7 +14,6 @@ import {
 import { financeSchema } from "@core/database/schemas/schemas";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
-import { contacts } from "@core/database/schemas/contacts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { tags } from "@core/database/schemas/tags";
 import { z } from "zod";
@@ -103,9 +102,6 @@ export const transactions = financeSchema.table(
       recurrenceOccurrenceNumber: integer("recurrence_occurrence_number"),
       paidAt: timestamp("paid_at", { withTimezone: true }),
       statementPeriod: text("statement_period"),
-      contactId: uuid("contact_id").references(() => contacts.id, {
-         onDelete: "restrict",
-      }),
       tagId: uuid("tag_id").references(() => tags.id, {
          onDelete: "set null",
       }),
@@ -126,7 +122,6 @@ export const transactions = financeSchema.table(
       index("transactions_bank_account_id_idx").on(table.bankAccountId),
       index("transactions_category_id_idx").on(table.categoryId),
       index("transactions_credit_card_id_idx").on(table.creditCardId),
-      index("transactions_contact_id_idx").on(table.contactId),
       index("transactions_suggested_category_id_idx").on(
          table.suggestedCategoryId,
       ),
@@ -240,7 +235,6 @@ const baseTransactionSchema = createInsertSchema(transactions).pick({
    destinationBankAccountId: true,
    categoryId: true,
    creditCardId: true,
-   contactId: true,
    tagId: true,
    paymentMethod: true,
    attachments: true,
@@ -275,7 +269,6 @@ export const createTransactionSchema = baseTransactionSchema
       destinationBankAccountId: z.string().uuid().nullable().optional(),
       creditCardId: z.string().uuid().nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
-      contactId: z.string().uuid().nullable().optional(),
       attachments: z.array(attachmentSchema).nullable().optional(),
       status: z
          .enum(["pending", "paid", "cancelled"])
@@ -356,7 +349,6 @@ export const updateTransactionSchema = baseTransactionSchema
       destinationBankAccountId: z.string().uuid().nullable().optional(),
       creditCardId: z.string().uuid().nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
-      contactId: z.string().uuid().nullable().optional(),
       attachments: z.array(attachmentSchema).nullable().optional(),
       status: z.enum(["pending", "paid", "cancelled"]).optional(),
       ignored: z.boolean().optional(),

@@ -22,7 +22,6 @@ const sortIdSchema = z.enum([
    "amount",
    "bankAccountName",
    "categoryName",
-   "contactName",
    "creditCardName",
    "date",
    "dueDate",
@@ -52,7 +51,6 @@ const filterSchema = z
       bankAccountId: z.string().uuid().optional(),
       categoryId: z.string().uuid().optional(),
       tagId: z.string().uuid().optional(),
-      contactId: z.string().uuid().optional(),
       dateFrom: isoDate.optional(),
       dateTo: isoDate.optional(),
       search: z.string().max(100).optional(),
@@ -88,7 +86,7 @@ export const getAll = protectedProcedure
       };
       const page = filter.page ?? 1;
       const pageSize = filter.pageSize ?? 50;
-      const where = buildTransactionWhere(filter, true);
+      const where = buildTransactionWhere(filter);
       const cg = filter.conditionGroup;
 
       if (cg?.scoringMode === "weighted") {
@@ -144,7 +142,7 @@ export const getSummary = protectedProcedure
          ...input,
          includeIgnored: filtersIgnored,
       };
-      const where = buildTransactionWhere(filter, false);
+      const where = buildTransactionWhere(filter);
       const t = transactions;
       const [row] = await context.db
          .select({

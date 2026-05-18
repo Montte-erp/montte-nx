@@ -24,7 +24,6 @@ export const reportConfigSchema = z
       bankAccountId: z.string().uuid().optional(),
       categoryId: z.string().uuid().optional(),
       tagId: z.string().uuid().optional(),
-      contactId: z.string().uuid().optional(),
       dreOnly: z.boolean().default(true),
       agingType: z.enum(["income", "expense"]).default("income"),
       agingStatus: z.enum(["open", "overdue", "settled"]).default("open"),
