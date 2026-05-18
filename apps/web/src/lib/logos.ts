@@ -44,7 +44,7 @@ const BANK_DOMAIN: Record<string, string> = {
    "001": "bb.com.br",
    "033": "santander.com.br",
    "070": "brb.com.br",
-   "077": "bancointer.com.br",
+   "077": "inter.co",
    "104": "caixa.gov.br",
    "208": "btgpactual.com",
    "212": "original.com.br",
@@ -54,17 +54,18 @@ const BANK_DOMAIN: Record<string, string> = {
    "290": "pagseguro.com.br",
    "318": "bancobmg.com.br",
    "323": "mercadopago.com.br",
-   "336": "bancoc6.com.br",
+   "336": "c6bank.com.br",
    "341": "itau.com.br",
    "380": "picpay.com",
    "389": "mercantildobrasil.com.br",
    "422": "safra.com.br",
    "623": "pan.com.br",
-   "655": "votorantim.com.br",
+   "626": "c6bank.com.br",
+   "655": "bv.com.br",
    "735": "banconeon.com.br",
    "739": "cetelem.com.br",
    "748": "sicredi.com.br",
-   "756": "sicoobnet.com.br",
+   "756": "sicoob.com.br",
 };
 
 const BANK_NAME_DOMAIN: Record<string, string> = {
@@ -73,7 +74,7 @@ const BANK_NAME_DOMAIN: Record<string, string> = {
    bancobmg: "bancobmg.com.br",
    bancobrasil: "bb.com.br",
    bancoc6: "c6bank.com.br",
-   bancointer: "bancointer.com.br",
+   bancointer: "inter.co",
    bancopan: "bancopan.com.br",
    bancooriginal: "original.com.br",
    bancovotorantim: "bv.com.br",
@@ -98,6 +99,8 @@ const BANK_NAME_DOMAIN: Record<string, string> = {
    sicoob: "sicoob.com.br",
    sicredi: "sicredi.com.br",
    unicred: "unicred.com.br",
+   bcoc6: "c6bank.com.br",
+   c6: "c6bank.com.br",
 };
 
 const BANK_COLOR: Record<string, string> = {
@@ -116,6 +119,7 @@ const BANK_COLOR: Record<string, string> = {
    "380": "#11C76F",
    "422": "#0B1F3A",
    "623": "#00AEEF",
+   "626": "#111827",
    "748": "#00A651",
    "756": "#003641",
 };
@@ -162,7 +166,10 @@ function bankNameLogoSlug(
 ): string | undefined {
    const normalized = normalizeLogoLookup(bankName ?? "");
    if (!normalized) return undefined;
-   return Object.keys(BANK_NAME_DOMAIN).find((key) => normalized.includes(key));
+   return (
+      Object.keys(BANK_NAME_DOMAIN).find((key) => normalized.includes(key)) ??
+      normalized
+   );
 }
 
 export function bankDomain(

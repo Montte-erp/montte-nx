@@ -9,7 +9,6 @@ import {
    Palette,
    Settings2,
    Shield,
-   Sparkles,
    User,
    Users,
 } from "lucide-react";
@@ -54,12 +53,6 @@ export const settingsNavSections: SettingsNavSection[] = [
                   title: "Financeiro",
                   href: "/$slug/$teamSlug/settings/project/products/financeiro",
                   icon: DollarSign,
-               },
-               {
-                  id: "module-assistente-ia",
-                  title: "Assistente IA",
-                  href: "/$slug/$teamSlug/settings/project/products/ai-agents",
-                  icon: Sparkles,
                },
             ],
          },

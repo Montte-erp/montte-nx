@@ -1,4 +1,4 @@
-import { motion, type Variants } from "motion/react";
+import { motion, type Variants, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 
 const fadeUp: Variants = {
@@ -27,15 +27,20 @@ export function Reveal({
    className,
 }: RevealProps) {
    const variants = variant === "fade-up" ? fadeUp : fadeIn;
+   const shouldReduceMotion = useReducedMotion();
 
    return (
       <motion.div
          className={className}
          variants={variants}
-         initial="hidden"
+         initial={shouldReduceMotion ? false : "hidden"}
          whileInView="visible"
          viewport={{ once: true, margin: "-80px" }}
-         transition={{ duration, delay, ease: [0.32, 0.72, 0, 1] }}
+         transition={{
+            duration: shouldReduceMotion ? 0 : duration,
+            delay: shouldReduceMotion ? 0 : delay,
+            ease: [0.32, 0.72, 0, 1],
+         }}
       >
          {children}
       </motion.div>
@@ -55,16 +60,21 @@ export function Stagger({
    delay = 0,
    className,
 }: StaggerProps) {
+   const shouldReduceMotion = useReducedMotion();
+
    return (
       <motion.div
          className={className}
-         initial="hidden"
+         initial={shouldReduceMotion ? false : "hidden"}
          whileInView="visible"
          viewport={{ once: true, margin: "-80px" }}
          variants={{
             hidden: {},
             visible: {
-               transition: { staggerChildren: stagger, delayChildren: delay },
+               transition: {
+                  staggerChildren: shouldReduceMotion ? 0 : stagger,
+                  delayChildren: shouldReduceMotion ? 0 : delay,
+               },
             },
          }}
       >
@@ -80,15 +90,20 @@ export function StaggerItem({
    children: ReactNode;
    className?: string;
 }) {
+   const shouldReduceMotion = useReducedMotion();
+
    return (
       <motion.div
          className={className}
          variants={{
-            hidden: { opacity: 0, y: 16 },
+            hidden: shouldReduceMotion ? {} : { opacity: 0, y: 16 },
             visible: {
                opacity: 1,
                y: 0,
-               transition: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
+               transition: {
+                  duration: shouldReduceMotion ? 0 : 0.45,
+                  ease: [0.32, 0.72, 0, 1],
+               },
             },
          }}
       >

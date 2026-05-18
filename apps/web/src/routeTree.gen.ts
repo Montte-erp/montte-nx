@@ -59,7 +59,6 @@ import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersR
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
-import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -354,14 +353,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute =
       getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
     } as any,
   )
-const AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute =
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport.update(
-    {
-      id: '/project/products/ai-agents',
-      path: '/project/products/ai-agents',
-      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardSettingsRoute,
-    } as any,
-  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -411,7 +402,6 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/$slug/$teamSlug/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/$slug/$teamSlug/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
-  '/$slug/$teamSlug/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
   '/$slug/$teamSlug/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRoutesByTo {
@@ -459,7 +449,6 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/$slug/$teamSlug/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/$slug/$teamSlug/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
-  '/$slug/$teamSlug/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
   '/$slug/$teamSlug/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRoutesById {
@@ -513,7 +502,6 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
-  '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRouteTypes {
@@ -566,7 +554,6 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/project/danger-zone'
     | '/$slug/$teamSlug/settings/project/general'
     | '/$slug/$teamSlug/settings/project/integrations'
-    | '/$slug/$teamSlug/settings/project/products/ai-agents'
     | '/$slug/$teamSlug/settings/project/products/financeiro'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -614,7 +601,6 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/project/danger-zone'
     | '/$slug/$teamSlug/settings/project/general'
     | '/$slug/$teamSlug/settings/project/integrations'
-    | '/$slug/$teamSlug/settings/project/products/ai-agents'
     | '/$slug/$teamSlug/settings/project/products/financeiro'
   id:
     | '__root__'
@@ -667,7 +653,6 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
-    | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
   fileRoutesById: FileRoutesById
 }
@@ -1036,13 +1021,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
     }
-    '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents': {
-      id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/ai-agents'
-      path: '/project/products/ai-agents'
-      fullPath: '/$slug/$teamSlug/settings/project/products/ai-agents'
-      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRouteImport
-      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRoute
-    }
   }
 }
 
@@ -1079,7 +1057,6 @@ interface AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren {
   AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
-  AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute
   AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 
@@ -1113,8 +1090,6 @@ const AuthenticatedSlugTeamSlugDashboardSettingsRouteChildren: AuthenticatedSlug
       AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute,
     AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute:
       AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute,
-    AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute:
-      AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsAiAgentsRoute,
     AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute:
       AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute,
   }

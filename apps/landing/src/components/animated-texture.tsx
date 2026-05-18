@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useReducedMotion } from "motion/react";
 
 interface AnimatedTextureProps {
    section: "footer" | "hero";
@@ -33,6 +34,7 @@ const footerVideoMask: CSSProperties = {
 
 export function AnimatedTexture(props: AnimatedTextureProps) {
    const isFooter = props.section === "footer";
+   const shouldReduceMotion = useReducedMotion();
 
    return (
       <>
@@ -46,21 +48,23 @@ export function AnimatedTexture(props: AnimatedTextureProps) {
             style={heroFallback}
             aria-hidden="true"
          />
-         <div
-            className="absolute inset-0 -z-20 overflow-hidden"
-            style={isFooter ? footerVideoMask : heroVideoMask}
-            aria-hidden="true"
-         >
-            <video
-               className="size-full object-cover"
-               src="/videos/montte-hero-bg.webm"
-               autoPlay
-               loop
-               muted
-               playsInline
-               preload="metadata"
-            />
-         </div>
+         {!shouldReduceMotion && (
+            <div
+               className="absolute inset-0 -z-20 overflow-hidden"
+               style={isFooter ? footerVideoMask : heroVideoMask}
+               aria-hidden="true"
+            >
+               <video
+                  className="size-full object-cover"
+                  src="/videos/montte-hero-bg.webm"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+               />
+            </div>
+         )}
          <div
             className="absolute inset-0 -z-10"
             style={{
