@@ -216,21 +216,14 @@ function toError(error: unknown): Error {
    return error instanceof Error ? error : new Error(String(error));
 }
 
-const taggedStatusErrorSchema = z.object({
-   error: z.object({
-      status: z.number().int(),
-   }),
-   message: z.string(),
-});
-
-type ORPCTransportCode =
-   | "BAD_REQUEST"
-   | "UNAUTHORIZED"
-   | "FORBIDDEN"
-   | "NOT_FOUND"
-   | "CONFLICT"
-   | "TOO_MANY_REQUESTS"
-   | "INTERNAL_SERVER_ERROR";
+const orpcCodeByStatus = new Map([
+   [400, "BAD_REQUEST"],
+   [401, "UNAUTHORIZED"],
+   [403, "FORBIDDEN"],
+   [404, "NOT_FOUND"],
+   [409, "CONFLICT"],
+   [429, "TOO_MANY_REQUESTS"],
+]);
 
 const withORPCErrors = withOrganization.use(async ({ next }) => {
    const result = await Result.tryPromise({
@@ -240,46 +233,37 @@ const withORPCErrors = withOrganization.use(async ({ next }) => {
 
    if (Result.isOk(result)) return result.value;
 
-   let status = 500;
-   let message = result.error.message;
-   let data: unknown;
-
    if (result.error instanceof AppError) {
-      status = result.error.status;
-      data = result.error.data;
-   } else if (isTaggedError(result.error)) {
-      const parsed = taggedStatusErrorSchema.safeParse(result.error);
-      if (!parsed.success) throw result.error;
-      status = parsed.data.error.status;
-      message = parsed.data.message;
-      data = { tag: result.error._tag };
-   } else {
+      throw new ORPCError(
+         orpcCodeByStatus.get(result.error.status) ?? "INTERNAL_SERVER_ERROR",
+         {
+            message: result.error.message,
+            cause: result.error,
+            data: result.error.data,
+         },
+      );
+   }
+
+   if (!isTaggedError(result.error)) throw result.error;
+   if (
+      !("error" in result.error) ||
+      !result.error.error ||
+      typeof result.error.error !== "object" ||
+      !("status" in result.error.error) ||
+      typeof result.error.error.status !== "number"
+   ) {
       throw result.error;
    }
 
-   let code: ORPCTransportCode = "INTERNAL_SERVER_ERROR";
-   switch (status) {
-      case 400:
-         code = "BAD_REQUEST";
-         break;
-      case 401:
-         code = "UNAUTHORIZED";
-         break;
-      case 403:
-         code = "FORBIDDEN";
-         break;
-      case 404:
-         code = "NOT_FOUND";
-         break;
-      case 409:
-         code = "CONFLICT";
-         break;
-      case 429:
-         code = "TOO_MANY_REQUESTS";
-         break;
-   }
-
-   throw new ORPCError(code, { message, cause: result.error, data });
+   throw new ORPCError(
+      orpcCodeByStatus.get(result.error.error.status) ??
+         "INTERNAL_SERVER_ERROR",
+      {
+         message: result.error.message,
+         cause: result.error,
+         data: { tag: result.error._tag },
+      },
+   );
 });
 
 const withLogger = withORPCErrors.use(
