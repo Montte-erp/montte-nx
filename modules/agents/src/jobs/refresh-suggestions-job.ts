@@ -193,230 +193,232 @@ export async function handleRefreshThreadSuggestionsJob(options: {
    prompts: Prompts;
    job: Job<RefreshThreadSuggestionsJobInput>;
 }) {
-   const parsedInput = refreshThreadSuggestionsJobInputSchema.safeParse(
-      options.job.data,
-   );
-   if (!parsedInput.success) {
-      return Result.err(
-         new RefreshThreadSuggestionsJobError({
-            error: refreshSuggestionsJobErrors.INVALID_PAYLOAD({
-               internal: { jobId: options.job.id },
+   return Result.gen(async function* () {
+      const parsedInput = refreshThreadSuggestionsJobInputSchema.safeParse(
+         options.job.data,
+      );
+      if (!parsedInput.success) {
+         return Result.err(
+            new RefreshThreadSuggestionsJobError({
+               error: refreshSuggestionsJobErrors.INVALID_PAYLOAD({
+                  internal: { jobId: options.job.id },
+               }),
+               message: refreshSuggestionsJobErrors.INVALID_PAYLOAD({
+                  internal: { jobId: options.job.id },
+               }).message,
             }),
-            message: refreshSuggestionsJobErrors.INVALID_PAYLOAD({
-               internal: { jobId: options.job.id },
-            }).message,
+         );
+      }
+
+      const input = parsedInput.data;
+      log.info({
+         module: "agents.refresh-suggestions-job",
+         message: "running",
+         jobId: options.job.id,
+         threadId: input.threadId,
+         teamId: input.teamId,
+         organizationId: input.organizationId,
+         messageCount: input.messageCount,
+      });
+
+      const recent = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               options.db.transaction(async (tx) => {
+                  const recent = await tx
+                     .select({
+                        id: messages.id,
+                        role: messages.role,
+                        parts: messages.parts,
+                     })
+                     .from(messages)
+                     .innerJoin(threads, eq(threads.id, messages.threadId))
+                     .where(
+                        and(
+                           eq(messages.threadId, input.threadId),
+                           eq(threads.teamId, input.teamId),
+                           eq(threads.organizationId, input.organizationId),
+                        ),
+                     )
+                     .orderBy(desc(messages.createdAt))
+                     .limit(8);
+                  return recent.slice().reverse();
+               }),
+            catch: () =>
+               new RefreshThreadSuggestionsJobError({
+                  error: refreshSuggestionsJobErrors.MESSAGES_LOAD_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }),
+                  message: refreshSuggestionsJobErrors.MESSAGES_LOAD_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }).message,
+                  threadId: input.threadId,
+               }),
          }),
       );
-   }
 
-   const input = parsedInput.data;
-   log.info({
-      module: "agents.refresh-suggestions-job",
-      message: "running",
-      jobId: options.job.id,
-      threadId: input.threadId,
-      teamId: input.teamId,
-      organizationId: input.organizationId,
-      messageCount: input.messageCount,
-   });
-
-   const recentResult = await Result.tryPromise({
-      try: () =>
-         options.db.transaction(async (tx) => {
-            const recent = await tx
-               .select({
-                  id: messages.id,
-                  role: messages.role,
-                  parts: messages.parts,
-               })
-               .from(messages)
-               .innerJoin(threads, eq(threads.id, messages.threadId))
-               .where(
-                  and(
-                     eq(messages.threadId, input.threadId),
-                     eq(threads.teamId, input.teamId),
-                     eq(threads.organizationId, input.organizationId),
-                  ),
-               )
-               .orderBy(desc(messages.createdAt))
-               .limit(8);
-            return recent.slice().reverse();
-         }),
-      catch: () =>
-         new RefreshThreadSuggestionsJobError({
-            error: refreshSuggestionsJobErrors.MESSAGES_LOAD_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }),
-            message: refreshSuggestionsJobErrors.MESSAGES_LOAD_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }).message,
+      if (recent.length === 0) {
+         log.info({
+            module: "agents.refresh-suggestions-job",
+            message: "skipping: no messages",
+            jobId: options.job.id,
             threadId: input.threadId,
-         }),
-   });
+         });
+         return Result.ok(undefined);
+      }
 
-   if (Result.isError(recentResult)) return Result.err(recentResult.error);
-   const recent = recentResult.value;
-   if (recent.length === 0) {
-      log.info({
-         module: "agents.refresh-suggestions-job",
-         message: "skipping: no messages",
-         jobId: options.job.id,
-         threadId: input.threadId,
-      });
-      return Result.ok(undefined);
-   }
-
-   const hasUser = recent.some((row) => row.role === "user");
-   const hasAssistant = recent.some((row) => row.role === "assistant");
-   if (!hasUser || !hasAssistant) {
-      log.info({
-         module: "agents.refresh-suggestions-job",
-         message: "skipping: conversation too shallow",
-         jobId: options.job.id,
-         threadId: input.threadId,
-      });
-      return Result.ok(undefined);
-   }
-
-   const prompt = await Result.tryPromise({
-      try: () =>
-         options.prompts.get(AGENT_PROMPTS.refreshSuggestions, {
-            withMetadata: true,
-         }),
-      catch: () =>
-         new RefreshThreadSuggestionsJobError({
-            error: refreshSuggestionsJobErrors.PROMPT_LOAD_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }),
-            message: refreshSuggestionsJobErrors.PROMPT_LOAD_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }).message,
+      const hasUser = recent.some((row) => row.role === "user");
+      const hasAssistant = recent.some((row) => row.role === "assistant");
+      if (!hasUser || !hasAssistant) {
+         log.info({
+            module: "agents.refresh-suggestions-job",
+            message: "skipping: conversation too shallow",
+            jobId: options.job.id,
             threadId: input.threadId,
-         }),
-   });
-   if (Result.isError(prompt)) return Result.err(prompt.error);
+         });
+         return Result.ok(undefined);
+      }
 
-   const suggestionsResult = await Result.tryPromise({
-      try: () =>
-         chat({
-            adapter: flashModel,
-            outputSchema: suggestionsSchema,
-            messages: convertMessagesToModelMessages([
-               ...recent,
-               {
-                  id: `${options.job.id}-suggestions-request`,
-                  role: "user",
-                  parts: [
-                     {
-                        type: "text",
-                        content: options.prompts.compile(prompt.value.prompt, {
-                           transcript:
-                              "A conversa recente está disponível nas mensagens anteriores.",
-                        }),
-                     },
-                  ],
-               },
-            ]),
-            stream: false,
-            conversationId: input.threadId,
-            middleware: [
-               otelMiddleware({
-                  tracer: getAiTracer(),
-                  captureContent: false,
-                  attributeEnricher: () =>
-                     aiTraceAttributes({
-                        distinctId: input.teamId,
-                        organizationId: input.organizationId,
-                        teamId: input.teamId,
-                        threadId: input.threadId,
-                        promptName: prompt.value.name,
-                        promptVersion: prompt.value.version,
-                        customProperties: {
-                           agent_role: "job",
-                           agent_workflow: "refresh-suggestions",
-                           agent_thread_id: input.threadId,
-                           pg_boss_job_id: options.job.id,
-                        },
-                     }),
+      const prompt = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               options.prompts.get(AGENT_PROMPTS.refreshSuggestions, {
+                  withMetadata: true,
                }),
-            ],
-         }),
-      catch: () =>
-         new RefreshThreadSuggestionsJobError({
-            error: refreshSuggestionsJobErrors.AI_FAILED({
-               internal: {
-                  jobId: options.job.id,
+            catch: () =>
+               new RefreshThreadSuggestionsJobError({
+                  error: refreshSuggestionsJobErrors.PROMPT_LOAD_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }),
+                  message: refreshSuggestionsJobErrors.PROMPT_LOAD_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }).message,
                   threadId: input.threadId,
-               },
-            }),
-            message: refreshSuggestionsJobErrors.AI_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }).message,
-            threadId: input.threadId,
+               }),
          }),
-   });
-   if (Result.isError(suggestionsResult)) {
-      return Result.err(suggestionsResult.error);
-   }
+      );
 
-   const suggestions = suggestionsResult.value;
-   const write = await Result.tryPromise({
-      try: () =>
-         options.db.transaction(async (tx) => {
-            await tx
-               .update(threads)
-               .set({
-                  suggestions,
-                  suggestionsUpdatedAt: dayjs().toDate(),
-               })
-               .where(
-                  and(
-                     eq(threads.id, input.threadId),
-                     eq(threads.teamId, input.teamId),
-                     eq(threads.organizationId, input.organizationId),
-                  ),
-               );
-         }),
-      catch: () =>
-         new RefreshThreadSuggestionsJobError({
-            error: refreshSuggestionsJobErrors.WRITE_FAILED({
-               internal: {
-                  jobId: options.job.id,
+      const suggestions = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               chat({
+                  adapter: flashModel,
+                  outputSchema: suggestionsSchema,
+                  messages: convertMessagesToModelMessages([
+                     ...recent,
+                     {
+                        id: `${options.job.id}-suggestions-request`,
+                        role: "user",
+                        parts: [
+                           {
+                              type: "text",
+                              content: options.prompts.compile(prompt.prompt, {
+                                 transcript:
+                                    "A conversa recente está disponível nas mensagens anteriores.",
+                              }),
+                           },
+                        ],
+                     },
+                  ]),
+                  stream: false,
+                  conversationId: input.threadId,
+                  middleware: [
+                     otelMiddleware({
+                        tracer: getAiTracer(),
+                        captureContent: false,
+                        attributeEnricher: () =>
+                           aiTraceAttributes({
+                              distinctId: input.teamId,
+                              organizationId: input.organizationId,
+                              teamId: input.teamId,
+                              threadId: input.threadId,
+                              promptName: prompt.name,
+                              promptVersion: prompt.version,
+                              customProperties: {
+                                 agent_role: "job",
+                                 agent_workflow: "refresh-suggestions",
+                                 agent_thread_id: input.threadId,
+                                 pg_boss_job_id: options.job.id,
+                              },
+                           }),
+                     }),
+                  ],
+               }),
+            catch: () =>
+               new RefreshThreadSuggestionsJobError({
+                  error: refreshSuggestionsJobErrors.AI_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }),
+                  message: refreshSuggestionsJobErrors.AI_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }).message,
                   threadId: input.threadId,
-               },
-            }),
-            message: refreshSuggestionsJobErrors.WRITE_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }).message,
-            threadId: input.threadId,
+               }),
          }),
-   });
-   if (Result.isError(write)) return Result.err(write.error);
+      );
 
-   log.info({
-      module: "agents.refresh-suggestions-job",
-      message: "completed",
-      jobId: options.job.id,
-      threadId: input.threadId,
-      suggestionsCount: suggestions.length,
+      yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               options.db.transaction(async (tx) => {
+                  await tx
+                     .update(threads)
+                     .set({
+                        suggestions,
+                        suggestionsUpdatedAt: dayjs().toDate(),
+                     })
+                     .where(
+                        and(
+                           eq(threads.id, input.threadId),
+                           eq(threads.teamId, input.teamId),
+                           eq(threads.organizationId, input.organizationId),
+                        ),
+                     );
+               }),
+            catch: () =>
+               new RefreshThreadSuggestionsJobError({
+                  error: refreshSuggestionsJobErrors.WRITE_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }),
+                  message: refreshSuggestionsJobErrors.WRITE_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }).message,
+                  threadId: input.threadId,
+               }),
+         }),
+      );
+
+      log.info({
+         module: "agents.refresh-suggestions-job",
+         message: "completed",
+         jobId: options.job.id,
+         threadId: input.threadId,
+         suggestionsCount: suggestions.length,
+      });
+      return Result.ok(undefined);
    });
-   return Result.ok(undefined);
 }
