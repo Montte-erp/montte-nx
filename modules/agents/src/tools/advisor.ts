@@ -56,6 +56,11 @@ type AdvisorCatalogError =
 class AdvisorToolError extends TaggedError("AdvisorToolError")<{
    error: AdvisorCatalogError;
    message: string;
+   userId?: string;
+   organizationId?: string;
+   teamId?: string;
+   threadId?: string;
+   turnId?: string;
 }>() {}
 
 export interface AdvisorToolDeps {
@@ -93,6 +98,14 @@ const advisorConsultInputSchema = z.object({
 });
 
 export function buildAdvisorTool(deps: AdvisorToolDeps) {
+   const errorContext = {
+      userId: deps.userId,
+      organizationId: deps.organizationId,
+      teamId: deps.teamId,
+      threadId: deps.threadId,
+      turnId: deps.turnId,
+   };
+
    return toolDefinition({
       name: "advisor_consult",
       description:
@@ -118,6 +131,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
                   new AdvisorToolError({
                      error: advisorErrors.PROMPT_LOAD_FAILED(),
                      message: advisorErrors.PROMPT_LOAD_FAILED().message,
+                     ...errorContext,
                   }),
             }),
          );
@@ -128,6 +142,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
                new AdvisorToolError({
                   error: advisorErrors.PROMPT_COMPILE_FAILED(),
                   message: advisorErrors.PROMPT_COMPILE_FAILED().message,
+                  ...errorContext,
                }),
          });
 
@@ -196,6 +211,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
                      new AdvisorToolError({
                         error: advisorErrors.RUN_FAILED(),
                         message: advisorErrors.RUN_FAILED().message,
+                        ...errorContext,
                      }),
                }),
             );
@@ -208,6 +224,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
                new AdvisorToolError({
                   error: advisorErrors.EMPTY_RESPONSE(),
                   message: advisorErrors.EMPTY_RESPONSE().message,
+                  ...errorContext,
                }),
             );
 
