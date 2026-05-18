@@ -14,7 +14,6 @@ import { seedTeam } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
-import { contacts } from "@core/database/schemas/contacts";
 import {
    transactionRecurrences,
    transactions,
@@ -163,15 +162,6 @@ describe("transactions router", () => {
             level: 1,
          })
          .returning();
-      const [contact] = await testDb.db
-         .insert(contacts)
-         .values({
-            teamId,
-            name: "Fornecedor Recorrente",
-            type: "fornecedor",
-         })
-         .returning();
-
       await call(
          transactionsRouter.create,
          {
@@ -184,7 +174,6 @@ describe("transactions router", () => {
             ignored: false,
             bankAccountId: account.id,
             categoryId: category.id,
-            contactId: contact.id,
             description: "Plano mensal",
             isRecurring: true,
             recurrenceFrequency: "monthly",
@@ -221,7 +210,6 @@ describe("transactions router", () => {
       );
       expect(rows.every((row) => row.bankAccountId === account.id)).toBe(true);
       expect(rows.every((row) => row.categoryId === category.id)).toBe(true);
-      expect(rows.every((row) => row.contactId === contact.id)).toBe(true);
       expect(rows[0]?.recurrenceId).not.toBeNull();
       expect(
          rows.every((row) => row.recurrenceId === rows[0]?.recurrenceId),

@@ -12,7 +12,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { platformSchema } from "@core/database/schemas/schemas";
 import { team } from "@core/database/schemas/auth";
-import { contacts } from "@core/database/schemas/contacts";
 import { meters } from "@core/database/schemas/meters";
 
 export const usageEvents = platformSchema.table(
@@ -24,9 +23,6 @@ export const usageEvents = platformSchema.table(
       teamId: uuid("team_id")
          .notNull()
          .references(() => team.id, { onDelete: "cascade" }),
-      contactId: uuid("contact_id").references(() => contacts.id, {
-         onDelete: "set null",
-      }),
       meterId: uuid("meter_id")
          .notNull()
          .references(() => meters.id, { onDelete: "restrict" }),
@@ -44,7 +40,6 @@ export const usageEvents = platformSchema.table(
          table.idempotencyKey,
       ),
       index("usage_events_team_id_idx").on(table.teamId),
-      index("usage_events_contact_id_idx").on(table.contactId),
       index("usage_events_meter_id_idx").on(table.meterId),
       index("usage_events_timestamp_idx").on(table.timestamp),
    ],
@@ -56,7 +51,6 @@ export type NewUsageEvent = typeof usageEvents.$inferInsert;
 export const upsertUsageEventSchema = createInsertSchema(usageEvents)
    .pick({
       teamId: true,
-      contactId: true,
       meterId: true,
       quantity: true,
       properties: true,
@@ -64,11 +58,6 @@ export const upsertUsageEventSchema = createInsertSchema(usageEvents)
    })
    .extend({
       teamId: z.string().uuid("ID do time inválido."),
-      contactId: z
-         .string()
-         .uuid("ID do contato inválido.")
-         .nullable()
-         .optional(),
       meterId: z.string().uuid("ID do medidor inválido."),
       quantity: z
          .string()

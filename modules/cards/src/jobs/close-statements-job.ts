@@ -12,10 +12,7 @@ import { defaultPgBossWorkOptions } from "@core/pg-boss/worker";
 import type { PgBossClient } from "@core/pg-boss/client";
 import type { DatabaseInstance } from "@core/database/client";
 import type { SendOptions } from "pg-boss";
-import {
-   closeStatement,
-   type CloseStatementInput,
-} from "../operations/close-statement";
+import { closeStatement, type CloseStatementInput } from "../statements";
 
 const CLOSE_STATEMENTS_QUEUE = "cards/close-statements";
 const CLOSE_STATEMENTS_DEAD_LETTER_QUEUE = "cards/close-statements/dead-letter";
@@ -229,6 +226,7 @@ export async function handleCloseStatementsJob({
             creditCardId: statement.creditCardId,
             statementPeriod: statement.statementPeriod,
             teamId: statement.teamId,
+            status: "paid",
          };
          return closeStatement(input);
       }),

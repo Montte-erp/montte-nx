@@ -15,7 +15,6 @@ import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
-import { contacts } from "@core/database/schemas/contacts";
 import { createReportSchema, reports } from "@core/database/schemas/reports";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
@@ -40,7 +39,6 @@ const baseFiltersShape = {
    bankAccountId: optionalUuid,
    categoryId: optionalUuid,
    tagId: optionalUuid,
-   contactId: optionalUuid,
 };
 
 const baseFilters = z
@@ -85,7 +83,6 @@ const agingFilters = z
       type: z.enum(["income", "expense"]).default("income"),
       dateFrom: isoDate,
       dateTo: isoDate,
-      contactId: optionalUuid,
       categoryId: optionalUuid,
       tagId: optionalUuid,
       status: z.enum(["open", "overdue", "settled"]).default("open"),
@@ -264,8 +261,6 @@ function baseTransactionConditions(
    if (input.categoryId)
       conditions.push(eq(transactions.categoryId, input.categoryId));
    if (input.tagId) conditions.push(eq(transactions.tagId, input.tagId));
-   if (input.contactId)
-      conditions.push(eq(transactions.contactId, input.contactId));
    return conditions;
 }
 
@@ -700,8 +695,6 @@ export const aging = protectedProcedure
          conditions.push(eq(transactions.status, "pending"));
          conditions.push(sql`${transactions.dueDate} < ${today}`);
       }
-      if (input.contactId)
-         conditions.push(eq(transactions.contactId, input.contactId));
       if (input.categoryId)
          conditions.push(eq(transactions.categoryId, input.categoryId));
       if (input.tagId) conditions.push(eq(transactions.tagId, input.tagId));
@@ -714,18 +707,14 @@ export const aging = protectedProcedure
                dueDate: transactions.dueDate,
                amount: transactions.amount,
                status: transactions.status,
-               contactId: contacts.id,
-               contactName: sql<string>`COALESCE(${contacts.name}, 'Sem contato')`,
-               contactType: contacts.type,
                tagName: tags.name,
                categoryName: categories.name,
             })
             .from(transactions)
-            .leftJoin(contacts, eq(transactions.contactId, contacts.id))
             .leftJoin(tags, eq(transactions.tagId, tags.id))
             .leftJoin(categories, eq(transactions.categoryId, categories.id))
             .where(and(...conditions))
-            .orderBy(asc(transactions.dueDate), asc(contacts.name)),
+            .orderBy(asc(transactions.dueDate)),
          () => WebAppError.internal("Falha ao calcular aging."),
       );
       if (result.isErr()) throw result.error;
@@ -754,9 +743,6 @@ export const aging = protectedProcedure
             dueDate: row.dueDate,
             amount: money(row.amount),
             status: row.status,
-            contactId: row.contactId,
-            contactName: row.contactName,
-            contactType: row.contactType,
             tagName: row.tagName,
             categoryName: row.categoryName,
             days,

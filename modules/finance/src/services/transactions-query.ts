@@ -3,7 +3,6 @@ import { alias } from "drizzle-orm/pg-core";
 import type { DatabaseInstance } from "@core/database/client";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
-import { contacts } from "@core/database/schemas/contacts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
@@ -12,7 +11,6 @@ export type TransactionSortId =
    | "amount"
    | "bankAccountName"
    | "categoryName"
-   | "contactName"
    | "creditCardName"
    | "date"
    | "dueDate"
@@ -45,9 +43,6 @@ function buildTransactionOrderBy(
             break;
          case "categoryName":
             orderBy.push(direction(categories.name));
-            break;
-         case "contactName":
-            orderBy.push(direction(contacts.name));
             break;
          case "creditCardName":
             orderBy.push(direction(creditCards.name));
@@ -89,7 +84,6 @@ export function selectTransactionsWithJoins(
          categoryName: categories.name,
          creditCardName: creditCards.name,
          bankAccountName: bankAccounts.name,
-         contactName: contacts.name,
          suggestedCategoryName: suggestedCategories.name,
          tagName: tagAlias.name,
          suggestedTagName: suggestedTags.name,
@@ -102,7 +96,6 @@ export function selectTransactionsWithJoins(
       )
       .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
       .leftJoin(bankAccounts, eq(transactions.bankAccountId, bankAccounts.id))
-      .leftJoin(contacts, eq(transactions.contactId, contacts.id))
       .leftJoin(tagAlias, eq(transactions.tagId, tagAlias.id))
       .leftJoin(
          suggestedTags,

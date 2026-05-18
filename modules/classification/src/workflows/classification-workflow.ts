@@ -352,7 +352,6 @@ const stepLoadInputs = (input: ClassifyTransactionsBatchInput) =>
                         isNull(f.categoryId),
                         isNull(f.suggestedCategoryId),
                      ),
-                  with: { contact: true },
                });
                const catRows = await tx
                   .select({
@@ -383,7 +382,7 @@ const stepLoadInputs = (input: ClassifyTransactionsBatchInput) =>
                      teamId: row.teamId,
                      name: row.name,
                      type: row.type,
-                     contactName: row.contact?.name ?? null,
+                     contactName: null,
                   })),
                   categories: catRows,
                   tagByName: new Map(tagRows.map((t) => [t.name, t.id])),

@@ -147,7 +147,6 @@ export const create = protectedProcedure
                ? null
                : transactionData.categoryId,
          tagId,
-         contactId: transactionData.contactId,
          date: transactionData.date,
       });
 
@@ -438,15 +437,13 @@ export const update = protectedProcedure
          input.bankAccountId ||
          input.destinationBankAccountId ||
          input.categoryId ||
-         input.tagId ||
-         input.contactId
+         input.tagId
       ) {
          await requireValidFinancialReferences(context.db, context.teamId, {
             bankAccountId: input.bankAccountId ?? existing.bankAccountId,
             destinationBankAccountId: input.destinationBankAccountId,
             categoryId: input.categoryId,
             tagId: input.tagId,
-            contactId: input.contactId,
             date: input.date ?? existing.date,
          });
       }

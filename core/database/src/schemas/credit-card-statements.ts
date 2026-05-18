@@ -19,7 +19,7 @@ import { transactions } from "@core/database/schemas/transactions";
 
 export const creditCardStatementStatusEnum = financeSchema.enum(
    "credit_card_statement_status",
-   ["open", "paid"],
+   ["open", "closed", "paid"],
 );
 
 // =============================================================================
