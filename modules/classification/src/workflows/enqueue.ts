@@ -1,46 +1,72 @@
-import { err, ok, type Result } from "neverthrow";
+import { Result, TaggedError, type Result as ResultType } from "better-result";
+import { defineErrorCatalog } from "evlog";
+import { sha256Hash } from "@core/utils/hash";
 import {
    enqueueDbosWorkflow,
-   type DbosQueueError,
    type DbosWorkflowHandle,
    matchDbosQueueResult,
    type WorkflowClient,
 } from "@core/dbos/client";
-import {
-   buildClassifyTransactionsBatchWorkflowId,
-   buildDeriveKeywordsWorkflowId,
-   CLASSIFICATION_WORKFLOW_QUEUES,
-   CLASSIFICATION_WORKFLOWS,
-   type ClassifyTransactionsBatchInput,
-   type DeriveKeywordsWorkflowInput,
-} from "@modules/classification/workflows/constants";
 
-export class ClassificationWorkflowQueueError extends Error {
-   readonly operation: "classify_transactions" | "derive_keywords";
-   readonly cause: DbosQueueError;
+const classificationWorkflowQueueErrors = defineErrorCatalog(
+   "classification.workflow.queue",
+   {
+      ENQUEUE_FAILED: {
+         status: 500,
+         message: "Falha ao enfileirar workflow de classificação.",
+         tags: ["classification", "workflow"],
+      },
+   },
+);
 
-   constructor(input: {
-      operation: "classify_transactions" | "derive_keywords";
-      message: string;
-      cause: DbosQueueError;
-   }) {
-      super(input.message);
-      this.name = "ClassificationWorkflowQueueError";
-      this.operation = input.operation;
-      this.cause = input.cause;
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "classification.workflow.queue": typeof classificationWorkflowQueueErrors;
    }
 }
 
-export function isClassificationWorkflowQueueFailure<T>(
-   result: Result<T, ClassificationWorkflowQueueError>,
+export const CLASSIFICATION_WORKFLOW_QUEUES = {
+   classify: "workflow:classify",
+};
+
+export const CLASSIFICATION_WORKFLOWS = {
+   classifyTransactionsBatch: "classifyTransactionsBatchWorkflowFn",
+};
+
+export type ClassifyTransactionsBatchInput = {
+   organizationId: string;
+   teamId: string;
+   transactionIds: string[];
+};
+
+export function buildClassifyTransactionsBatchWorkflowId(
+   input: ClassifyTransactionsBatchInput,
 ) {
-   return result.isErr();
+   const sorted = [...input.transactionIds].sort();
+   const hash = sha256Hash(sorted.join(",")).slice(0, 12);
+   return `classify-batch-${input.teamId}-${hash}`;
+}
+
+export class ClassificationWorkflowQueueError extends TaggedError(
+   "ClassificationWorkflowQueueError",
+)<{
+   error: ReturnType<typeof classificationWorkflowQueueErrors.ENQUEUE_FAILED>;
+   message: string;
+   teamId: string;
+   organizationId: string;
+   transactionCount: number;
+}>() {}
+
+export function isClassificationWorkflowQueueFailure<T>(
+   result: ResultType<T, ClassificationWorkflowQueueError>,
+) {
+   return Result.isError(result);
 }
 
 export async function enqueueClassifyTransactionsBatchWorkflow(
    client: WorkflowClient,
    input: ClassifyTransactionsBatchInput,
-): Promise<Result<DbosWorkflowHandle, ClassificationWorkflowQueueError>> {
+): Promise<ResultType<DbosWorkflowHandle, ClassificationWorkflowQueueError>> {
    const queued = await enqueueDbosWorkflow({
       client,
       queueName: CLASSIFICATION_WORKFLOW_QUEUES.classify,
@@ -54,51 +80,22 @@ export async function enqueueClassifyTransactionsBatchWorkflow(
    return matchDbosQueueResult(queued, {
       err: (
          cause,
-      ): Result<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
-         err(
+      ): ResultType<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
+         Result.err(
             new ClassificationWorkflowQueueError({
-               operation: "classify_transactions",
+               error: classificationWorkflowQueueErrors.ENQUEUE_FAILED({
+                  internal: { operation: cause.operation },
+               }),
                message:
                   "Não foi possível enfileirar a classificação de lançamentos.",
-               cause,
+               teamId: input.teamId,
+               organizationId: input.organizationId,
+               transactionCount: input.transactionIds.length,
             }),
          ),
       ok: (
          value,
-      ): Result<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
-         ok(value),
-   });
-}
-
-export async function enqueueDeriveKeywordsWorkflow(
-   client: WorkflowClient,
-   input: DeriveKeywordsWorkflowInput,
-): Promise<Result<DbosWorkflowHandle, ClassificationWorkflowQueueError>> {
-   const queued = await enqueueDbosWorkflow({
-      client,
-      queueName: CLASSIFICATION_WORKFLOW_QUEUES.deriveKeywords,
-      workflow: {
-         queueName: CLASSIFICATION_WORKFLOW_QUEUES.deriveKeywords,
-         workflowName: CLASSIFICATION_WORKFLOWS.deriveKeywords,
-         workflowID: buildDeriveKeywordsWorkflowId(input),
-      },
-      payload: input,
-   });
-   return matchDbosQueueResult(queued, {
-      err: (
-         cause,
-      ): Result<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
-         err(
-            new ClassificationWorkflowQueueError({
-               operation: "derive_keywords",
-               message:
-                  "Não foi possível enfileirar a derivação de palavras-chave.",
-               cause,
-            }),
-         ),
-      ok: (
-         value,
-      ): Result<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
-         ok(value),
+      ): ResultType<DbosWorkflowHandle, ClassificationWorkflowQueueError> =>
+         Result.ok(value),
    });
 }

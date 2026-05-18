@@ -21,6 +21,10 @@ vi.mock("@core/orpc/server", async () =>
 
 import * as tagsRouter from "../../src/router/tags";
 
+const isClassificationStatus =
+   (status: number) => (e: { _tag?: string; error?: { status?: number } }) =>
+      e._tag === "ClassificationRouterError" && e.error?.status === status;
+
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
 beforeAll(async () => {
@@ -68,9 +72,7 @@ describe("tags router", () => {
             { id: tag.id, name: "Hack" },
             { context: ctx },
          ),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "NOT_FOUND",
-      );
+      ).rejects.toSatisfy(isClassificationStatus(404));
    });
 
    it("update changes name", async () => {
@@ -145,9 +147,7 @@ describe("tags router", () => {
             { ids: [a.id, orphanId] },
             { context: ctx },
          ),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "NOT_FOUND",
-      );
+      ).rejects.toSatisfy(isClassificationStatus(404));
    });
 
    it("bulkRemove deletes all selected non-default tags", async () => {
@@ -181,9 +181,7 @@ describe("tags router", () => {
       const ctx = createTestContext(testDb.db, { teamId });
       await expect(
          call(tagsRouter.bulkRemove, { ids: [a.id, b.id] }, { context: ctx }),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "FORBIDDEN",
-      );
+      ).rejects.toSatisfy(isClassificationStatus(403));
    });
 
    it("getStats returns counts of active and archived", async () => {

@@ -18,16 +18,12 @@ import { makeCategory } from "../helpers/classification-factories";
 const { enqueueDeriveKeywordsSpy } = vi.hoisted(() => ({
    enqueueDeriveKeywordsSpy: vi.fn().mockResolvedValue({
       ok: true,
-      value: { workflowId: "derive-keywords-test" },
+      value: "derive-keywords-test",
    }),
 }));
 
-vi.mock("../../src/workflows/enqueue", () => ({
-   enqueueDeriveKeywordsWorkflow: enqueueDeriveKeywordsSpy,
-   isClassificationWorkflowQueueFailure: (result: {
-      ok?: boolean;
-      error?: unknown;
-   }) => result.ok === false || result.error !== undefined,
+vi.mock("../../src/jobs/derive-keywords-job", () => ({
+   enqueueDeriveKeywordsJob: enqueueDeriveKeywordsSpy,
 }));
 
 vi.mock("@core/orpc/server", async () =>
@@ -36,6 +32,10 @@ vi.mock("@core/orpc/server", async () =>
 
 import * as categoriesRouter from "../../src/router/categories";
 import * as categoriesBulkRouter from "../../src/router/categories-bulk";
+
+const isClassificationStatus =
+   (status: number) => (e: { _tag?: string; error?: { status?: number } }) =>
+      e._tag === "ClassificationRouterError" && e.error?.status === status;
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -80,12 +80,14 @@ describe("categories router", () => {
       expect(persisted?.icon).toBe("briefcase");
 
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-      const [, payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
+      const [payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
       expect(payload).toMatchObject({
-         categoryId: result.id,
-         teamId,
-         organizationId,
-         name: "Marketing",
+         input: {
+            categoryId: result.id,
+            teamId,
+            organizationId,
+            name: "Marketing",
+         },
       });
    });
 
@@ -190,9 +192,7 @@ describe("categories router", () => {
             { id: cat.id, name: "Hack", participatesDre: false },
             { context: ctx },
          ),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "NOT_FOUND",
-      );
+      ).rejects.toSatisfy(isClassificationStatus(404));
    });
 
    it("update allows default category", async () => {
@@ -316,9 +316,7 @@ describe("categories router", () => {
             { id: cat.id, parentId: cat.id, participatesDre: false },
             { context: ctx },
          ),
-      ).rejects.toSatisfy(
-         (e: Error & { code?: string }) => e.code === "BAD_REQUEST",
-      );
+      ).rejects.toSatisfy(isClassificationStatus(400));
    });
 
    it("getPaginated returns parents before children", async () => {
@@ -576,9 +574,11 @@ describe("categories router", () => {
       expect(result).toEqual({ success: true });
 
       expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-      const [, payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
+      const [payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
       expect(payload).toMatchObject({
-         categoryId: cat.id,
+         input: {
+            categoryId: cat.id,
+         },
       });
    });
 

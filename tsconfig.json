@@ -3,44 +3,44 @@
    "files": [],
    "exclude": [".worktrees", "node_modules", "dist"],
    "references": [
-      {
-         "path": "./core/notifications"
-      },
-      {
-         "path": "./core/environment"
-      },
-      {
-         "path": "./core/database"
-      },
-      {
-         "path": "./core/logging"
-      },
-      {
-         "path": "./core/posthog"
-      },
-      {
-         "path": "./packages/ui"
-      },
-      {
-         "path": "./core/files"
-      },
-      {
-         "path": "./core/redis"
-      },
-      {
-         "path": "./core/utils"
-      },
-      {
-         "path": "./core/ai"
-      },
-      {
-         "path": "./core/dbos"
-      },
-      {
-         "path": "./core/pg-boss"
-      },
-      {
-         "path": "./apps/web-e2e"
-      }
-   ]
+    {
+      "path": "./core/notifications"
+    },
+    {
+      "path": "./core/environment"
+    },
+    {
+      "path": "./core/database"
+    },
+    {
+      "path": "./core/logging"
+    },
+    {
+      "path": "./core/posthog"
+    },
+    {
+      "path": "./packages/ui"
+    },
+    {
+      "path": "./core/files"
+    },
+    {
+      "path": "./core/redis"
+    },
+    {
+      "path": "./core/utils"
+    },
+    {
+      "path": "./core/ai"
+    },
+    {
+      "path": "./core/dbos"
+    },
+    {
+      "path": "./core/pg-boss"
+    },
+    {
+      "path": "./apps/web-e2e"
+    }
+  ]
 }

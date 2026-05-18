@@ -14,6 +14,10 @@ import {
    agentPgBossQueues,
    registerAgentPgBossJobs,
 } from "@modules/agents/jobs/setup";
+import {
+   classificationPgBossQueues,
+   registerClassificationPgBossJobs,
+} from "@modules/classification/jobs/derive-keywords-job";
 import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
 import { Result, TaggedError } from "better-result";
@@ -50,7 +54,6 @@ async function initWorker() {
          log.info("worker", "Starting worker");
 
          const classificationWorkflows = await setupClassificationWorkflows({
-            posthog,
             prompts: promptsClient,
             workerConcurrency: 10,
          });
@@ -78,13 +81,19 @@ async function initWorker() {
 
    const pgBossWorker = await startPgBossWorker({
       connectionString: env.DATABASE_URL,
-      queues: agentPgBossQueues,
-      register: (boss) =>
-         registerAgentPgBossJobs({
+      queues: [...agentPgBossQueues, ...classificationPgBossQueues],
+      register: async (boss) => {
+         await registerClassificationPgBossJobs({
             boss,
             db: setup.value.db,
             prompts: setup.value.promptsClient,
-         }),
+         });
+         await registerAgentPgBossJobs({
+            boss,
+            db: setup.value.db,
+            prompts: setup.value.promptsClient,
+         });
+      },
    });
    if (Result.isError(pgBossWorker)) {
       return Result.err(

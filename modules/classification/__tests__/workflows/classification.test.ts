@@ -23,8 +23,6 @@ vi.mock("@dbos-inc/drizzle-datasource", async () => {
    return mod.drizzleDataSourceMockFactory(await dbosMocks);
 });
 
-import { posthogCaptureSpy } from "../helpers/mock-classification-context";
-
 import { LLMock } from "@copilotkit/aimock";
 import { eq } from "drizzle-orm";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
@@ -36,9 +34,21 @@ import {
    makeTransaction,
 } from "../helpers/classification-factories";
 
-import { classifyTransactionsBatchWorkflow } from "../../src/workflows/classification-workflow";
+import {
+   classifyTransactionsBatchWorkflow,
+   initClassificationWorkflowContext,
+} from "../../src/workflows/classification-workflow";
 
 const llmMock = new LLMock({ port: 14010 });
+const promptsClientStub = {
+   get: vi.fn().mockResolvedValue({
+      source: "active",
+      prompt: "Sistema: classifique as transações em lote.",
+      name: "montte-classify-transaction",
+      version: 1,
+   }),
+   compile: vi.fn((prompt: string) => prompt),
+};
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -58,6 +68,7 @@ beforeEach(async () => {
    vi.clearAllMocks();
    llmMock.clearFixtures();
    llmMock.clearRequests();
+   initClassificationWorkflowContext(promptsClientStub);
    const mocks = await dbosMocks;
    mocks.setActiveDb(testDb.db);
 });
@@ -385,7 +396,5 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t1?.suggestedCategoryId).toBe(food.id);
       expect(t2?.suggestedCategoryId).toBe(food.id);
       expect(t3?.suggestedCategoryId).toBeNull();
-
-      expect(posthogCaptureSpy).toBeDefined();
    });
 });

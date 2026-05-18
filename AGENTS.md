@@ -66,7 +66,7 @@ tooling/      # boundary, css (Tailwind), oxc, typescript
 
 Catalogs (root `package.json`): `analytics-client`, `assistant-ui`, `astro`, `auth`, `database`, `development`, `dnd`, `environment`, `files`, `fot`, `logging`, `mastra`, `notifications`, `orpc`, `payments`, `react`, `search-providers`, `server`, `tanstack`, `tanstack-ai`, `telemetry`, `testing`, `ui`, `validation`, `vite`, `workers`. Internal: `"@core/database": "workspace:*"`.
 
-Add a new dep → declare in the consuming package's `package.json` with the right catalog key.
+Add a new dep → declare in the consuming package's `package.json` with the right catalog key, run `bun nx sync`, and commit the generated TypeScript project references. Missing references make `bun run typecheck` fail before tests run.
 
 ---
 
@@ -76,10 +76,10 @@ Routers live in `modules/<module>/src/router/<name>.ts` and are aggregated in `a
 
 **Rules:**
 
-- Errors: only `WebAppError` (factories: `notFound`, `forbidden`, `unauthorized`, `badRequest`, `conflict`, `tooManyRequests`, `internal`, `database`, `validation`, `fromAppError`). Never `ORPCError` / raw `Error` / strings. **Messages always pt-BR** — they render directly in toasts.
+- Errors: expected domain/router failures use `better-result` with owner-local `TaggedError` carrying an evlog catalog error with `status`. Handlers may throw those tagged errors directly; the global oRPC middleware maps them to the typed `.errors(...)` constructors. `@core/orpc` configures `Registry.throwableError = Error` following oRPC's no-throw-literal best practice, so never throw literals, raw strings, or plain objects. Do not use `WebAppError`, `AppError`, direct `ORPCError`, raw `Error`, strings, wrapper factories, fake type guards, or `instanceof` checks for domain errors. **Messages always pt-BR** — they render directly in toasts.
 - **No repository layer.** Routers query `context.db` directly; workflows use `<module>DataSource.runTransaction`.
 - All writes inside `db.transaction(async (tx) => …)`. Single reads exempt.
-- Business-rule checks (conflict/notFound) **outside** the transaction. `mapErr` always to `WebAppError.internal`. Empty `returning()` → throw `WebAppError.internal` (specific) outside the tx.
+- Business-rule checks (conflict/notFound) **outside** the transaction. Empty `returning()` → return/throw the local tagged catalog error outside the tx.
 - Ownership via middleware: fetch entity, check `teamId`, pass via `next({ context: { entity } })`. Handler never re-queries.
 - Bulk ops: dedicated procedure + `Promise.allSettled` server-side. Never loop `mutateAsync` on the client.
 - Cost-incurring procedures: use `billableProcedure` + `.meta({ billableEvent: "<name>" })`. Pure CRUD stays on `protectedProcedure`.
@@ -90,17 +90,31 @@ Canonical pattern:
 const itemByIdProcedure = protectedProcedure
    .input(z.object({ id: z.string().uuid() }))
    .use(async ({ context, input, next }) => {
-      const result = await fromPromise(
-         context.db.query.items.findFirst({
-            where: (f, { eq }) => eq(f.id, input.id),
-         }),
-         () => WebAppError.internal("Falha ao verificar permissão."),
-      ).andThen((item) =>
-         !item || item.teamId !== context.teamId
-            ? err(WebAppError.notFound("Item não encontrado."))
-            : ok(item),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.gen(async function* () {
+         const item = yield* Result.await(
+            Result.tryPromise({
+               try: () =>
+                  context.db.query.items.findFirst({
+                     where: (f, { eq }) => eq(f.id, input.id),
+                  }),
+               catch: () =>
+                  new ItemRouterError({
+                     error: itemRouterErrors.PERMISSION_CHECK_FAILED(),
+                     message: "Falha ao verificar permissão.",
+                  }),
+            }),
+         );
+
+         if (!item || item.teamId !== context.teamId) {
+            yield* new ItemRouterError({
+               error: itemRouterErrors.NOT_FOUND(),
+               message: "Item não encontrado.",
+            });
+         }
+
+         return Result.ok(item);
+      });
+      if (Result.isError(result)) throw result.error;
       return next({ context: { item: result.value } });
    });
 ```
@@ -212,6 +226,7 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 - pg-boss consumers run only in `apps/worker`. Web may enqueue through the oRPC context `pgBoss` promise and the package helper, but must not run workers/consumers.
 - pg-boss jobs log through `@core/logging` (`evlog`) with structured fields (`module`, `message`, ids, tenant scope). Do not use DBOS.logger in pg-boss jobs.
 - pg-boss jobs should use the platform features directly instead of local throttling logic: `retryLimit`, `retryDelay`, `retryBackoff`, `expireInSeconds`, `retentionSeconds`, `deadLetter`, `singletonKey`, `singletonSeconds`, `singletonNextSlot`, `sendDebounced`, `sendThrottled`, and `group` when the queue semantics need them. For `key_strict_fifo`, always provide a stable `singletonKey`.
+- pg-boss queue names must satisfy pg-boss object-name validation: only alphanumeric characters, underscores, hyphens, periods, or forward slashes. Do not use colon-separated names like `classification:derive-keywords`; use slash paths such as `classification/derive-keywords`.
 - Every pg-boss job needs a Zod input schema, a typed `Result` return, a typed `TaggedError` union carrying evlog catalog errors, queue registration helpers, and a worker handler that validates `job.data` before doing work. Empty/missing pg-boss job ids are errors, not successful no-ops.
 - If a job needs DBOS steps, workflow replay, deterministic scheduling, or is financially/security critical, keep it in DBOS instead of porting it to pg-boss.
 
@@ -240,7 +255,7 @@ Request telemetry belongs in the evlog wide event and leaves through the PostHog
 
 No standalone health heartbeat/logger in `@core/logging`: Railway health stays on `/api/ping`, and service/request telemetry belongs to evlog or OTEL/TanStack AI. Do not keep unused SDK oRPC procedure layers; API key auth should live in the active oRPC middleware path when needed.
 
-Error direction: keep `WebAppError` only as the current oRPC/HTTP transport adapter. New domain errors belong to the owning module, not `@core/logging`: define a local `defineErrorCatalog("<bounded-context>", ...)` in the file/bounded context that owns the failure, register it through `declare module "evlog"`, and when recoverable errors need to flow through `Result`, use one `TaggedError("<Context>Error")<{ error: ReturnType<typeof catalog.SOME_ERROR>; ...payload }>` per bounded context. Do not add wrapper classes or factories around `TaggedError`. Do not create module-wide `errors.ts` files just to centralize errors; colocate the catalog with the router/job/runtime/tool that owns the contract. As modules are touched, migrate them away from direct `WebAppError` domain usage at the module boundary.
+Error direction: domain errors belong to the owning module, not `@core/logging` or transport helpers. Define a local `defineErrorCatalog("<bounded-context>", ...)` in the file/bounded context that owns the failure, register it through `declare module "evlog"`, and when recoverable errors need to flow through `Result`, use one `TaggedError("<Context>Error")<{ error: ReturnType<typeof catalog.SOME_ERROR>; ...payload }>` per bounded context. Do not add wrapper classes or factories around `TaggedError`: no `makeXError`, `xInternal`, `xNotFound`, `dbError`, or similar shortcuts that hide the concrete catalog code. Instantiate `new TaggedErrorClass({ error: catalog.CODE(), message, ...typedPayload })` directly at the failure owner. Do not create module-wide `errors.ts` files just to centralize errors; colocate the catalog with the router/job/runtime/tool that owns the contract. oRPC transport mapping is global in `@core/orpc` through typed `.errors(...)`; modules should not translate expected failures to transport errors.
 
 Audit logs are not part of the current migration. Do not wire `auditEnricher`, `auditOnly`, signed filesystem journals, MinIO journals, or `log.audit()` until the audit phase is explicitly reopened.
 
@@ -434,6 +449,8 @@ npx vitest run <file>
 ```
 
 Tests live in `core/*` and `packages/*` — non-trivial logic only (Zod transforms, date/math, analytics, credits, repository queries). **No unit/integration tests in `apps/*`** — never test routers/components/hooks/singletons/file existence.
+
+Tests that exercise AI behavior must use `@copilotkit/aimock`/`LLMock` fixtures against the real TanStack AI call path. Do not mock local AI action functions just to bypass model calls; only mock surrounding queue/workflow boundaries when the AI behavior itself is not under test.
 
 E2E tests live in `apps/web-e2e/tests/` (Playwright). Auth fixture in `fixtures.ts` injects authenticated `storageState`. For pages that require an unauthenticated session (e.g. `/auth/*`), use raw `import { test } from "@playwright/test"` + `test.use({ storageState: { cookies: [], origins: [] } })`.
 

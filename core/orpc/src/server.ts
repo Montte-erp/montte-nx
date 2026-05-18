@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Result } from "better-result";
+import { Result, isTaggedError } from "better-result";
 import { z } from "zod";
 import { os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
@@ -14,7 +14,6 @@ import {
 } from "@core/posthog/server";
 import { createNotificationsClient } from "@core/notifications/client";
 import { createRedis } from "@core/redis/connection";
-import { AppError, WebAppError } from "@core/logging/errors";
 import { createWorkflowClient } from "@core/dbos/client";
 import { startPgBossClient } from "@core/pg-boss/client";
 import type {
@@ -23,6 +22,13 @@ import type {
    ORPCContextWithAuth,
    ORPCContextWithOrganization,
 } from "./context";
+import { getLogger } from "./context";
+
+declare module "@orpc/server" {
+   interface Registry {
+      throwableError: Error;
+   }
+}
 
 const db = createDb({ databaseUrl: env.DATABASE_URL });
 const redis = createRedis(env.REDIS_URL);
@@ -85,14 +91,27 @@ export async function buildWebContext(
 
 export type BillableMeta = { billableEvent?: string };
 
-const base = os.$context<ORPCContext>().$meta<BillableMeta>({});
+const errorDataSchema = z.object({ tag: z.string() }).optional();
+
+const base = os
+   .errors({
+      BAD_REQUEST: { data: errorDataSchema },
+      UNAUTHORIZED: { data: errorDataSchema },
+      FORBIDDEN: { data: errorDataSchema },
+      NOT_FOUND: { data: errorDataSchema },
+      CONFLICT: { data: errorDataSchema },
+      TOO_MANY_REQUESTS: { data: errorDataSchema },
+      INTERNAL_SERVER_ERROR: { data: errorDataSchema },
+   })
+   .$context<ORPCContext>()
+   .$meta<BillableMeta>({});
 
 const apiKeyMetadataSchema = z.object({
    organizationId: z.string().min(1),
    teamId: z.string().min(1).nullish(),
 });
 
-const withDeps = base.use(async ({ context, next }) => {
+const withDeps = base.use(async ({ context, next, errors }) => {
    const apiKeyValue =
       context.headers.get("x-api-key") ?? context.headers.get("sdk-api-key");
 
@@ -101,17 +120,26 @@ const withDeps = base.use(async ({ context, next }) => {
          const verified = yield* Result.await(
             Result.tryPromise({
                try: () => auth.api.verifyApiKey({ body: { key: apiKeyValue } }),
-               catch: () => WebAppError.unauthorized("API key inválida."),
+               catch: () =>
+                  errors.UNAUTHORIZED({
+                     message: "API key inválida.",
+                  }),
             }),
          );
          if (!verified?.valid || !verified.key) {
-            return Result.err(WebAppError.unauthorized("API key inválida."));
+            return Result.err(
+               errors.UNAUTHORIZED({
+                  message: "API key inválida.",
+               }),
+            );
          }
 
          const parsed = apiKeyMetadataSchema.safeParse(verified.key.metadata);
          if (!parsed.success) {
             return Result.err(
-               WebAppError.badRequest("Metadata da API key inválida."),
+               errors.BAD_REQUEST({
+                  message: "Metadata da API key inválida.",
+               }),
             );
          }
 
@@ -122,19 +150,23 @@ const withDeps = base.use(async ({ context, next }) => {
             Result.tryPromise({
                try: () => auth.api.getSession({ headers: apiKeyHeaders }),
                catch: () =>
-                  WebAppError.unauthorized(
-                     "Falha ao resolver sessão da API key.",
-                  ),
+                  errors.UNAUTHORIZED({
+                     message: "Falha ao resolver sessão da API key.",
+                  }),
             }),
          );
          if (!session?.user) {
             return Result.err(
-               WebAppError.unauthorized("API key sem sessão associada."),
+               errors.UNAUTHORIZED({
+                  message: "API key sem sessão associada.",
+               }),
             );
          }
          if (session.user.id !== verified.key.referenceId) {
             return Result.err(
-               WebAppError.unauthorized("API key não pertence à sessão."),
+               errors.UNAUTHORIZED({
+                  message: "API key não pertence à sessão.",
+               }),
             );
          }
 
@@ -165,9 +197,18 @@ const withDeps = base.use(async ({ context, next }) => {
       });
    }
 
-   const cookieSession = await Result.tryPromise({
-      try: () => auth.api.getSession({ headers: context.headers }),
-      catch: () => WebAppError.internal("Falha ao resolver sessão."),
+   const cookieSession = await Result.gen(async function* () {
+      const session = yield* Result.await(
+         Result.tryPromise({
+            try: () => auth.api.getSession({ headers: context.headers }),
+            catch: () =>
+               errors.INTERNAL_SERVER_ERROR({
+                  message: "Falha ao resolver sessão.",
+               }),
+         }),
+      );
+
+      return Result.ok(session);
    });
    if (Result.isError(cookieSession)) throw cookieSession.error;
 
@@ -187,89 +228,154 @@ const withDeps = base.use(async ({ context, next }) => {
    });
 });
 
-const withAuth = withDeps.use(({ context, next }) => {
-   const { session } = context;
-   if (!session?.user) {
-      throw WebAppError.unauthorized(
-         "Você precisa estar autenticado para acessar este recurso.",
-      );
-   }
+const withAuth = withDeps.use(({ context, next, errors }) => {
+   const result = Result.gen(function* () {
+      const { session } = context;
+      if (!session?.user) {
+         return Result.err(
+            errors.UNAUTHORIZED({
+               message:
+                  "Você precisa estar autenticado para acessar este recurso.",
+            }),
+         );
+      }
+
+      const authContext = yield* Result.ok({
+         session,
+         userId: session.user.id,
+      });
+
+      return Result.ok(authContext);
+   });
+   if (Result.isError(result)) throw result.error;
+
    return next({
-      context: { ...context, session, userId: session.user.id },
+      context: {
+         ...context,
+         session: result.value.session,
+         userId: result.value.userId,
+      },
    });
 });
 
-const withOrganization = withAuth.use(({ context, next }) => {
-   const { session } = context;
-   const organizationId = session.session.activeOrganizationId;
-   const teamId = session.session.activeTeamId;
-   if (!organizationId) {
-      throw WebAppError.forbidden("Nenhuma organização ativa selecionada.");
-   }
-   if (!teamId) {
-      throw WebAppError.forbidden("Nenhum time ativo selecionado.");
-   }
-   return next({ context: { ...context, organizationId, teamId } });
+const withOrganization = withAuth.use(({ context, next, errors }) => {
+   const result = Result.gen(function* () {
+      const organizationId = context.session.session.activeOrganizationId;
+      const teamId = context.session.session.activeTeamId;
+
+      if (!organizationId) {
+         return Result.err(
+            errors.FORBIDDEN({
+               message: "Nenhuma organização ativa selecionada.",
+            }),
+         );
+      }
+      if (!teamId) {
+         return Result.err(
+            errors.FORBIDDEN({
+               message: "Nenhum time ativo selecionado.",
+            }),
+         );
+      }
+
+      const organizationContext = yield* Result.ok({ organizationId, teamId });
+
+      return Result.ok(organizationContext);
+   });
+   if (Result.isError(result)) throw result.error;
+
+   return next({
+      context: {
+         ...context,
+         organizationId: result.value.organizationId,
+         teamId: result.value.teamId,
+      },
+   });
 });
 
-function toError(error: unknown): Error {
-   return error instanceof Error ? error : new Error(String(error));
-}
+const withORPCErrors = withOrganization.use(async ({ next, errors }) => {
+   const result = await Result.tryPromise({
+      try: async () => next(),
+      catch: (error) => error,
+   });
 
-const withLogger = withOrganization.use(
+   if (Result.isOk(result)) return result.value;
+
+   if (!isTaggedError(result.error)) {
+      throw new Error(String(result.error), { cause: result.error });
+   }
+   const status = Reflect.get(result.error, "error").status;
+
+   const options = {
+      message: result.error.message,
+      cause: result.error,
+      data: { tag: result.error._tag },
+   };
+   switch (status) {
+      case 400:
+         throw errors.BAD_REQUEST(options);
+      case 401:
+         throw errors.UNAUTHORIZED(options);
+      case 403:
+         throw errors.FORBIDDEN(options);
+      case 404:
+         throw errors.NOT_FOUND(options);
+      case 409:
+         throw errors.CONFLICT(options);
+      case 429:
+         throw errors.TOO_MANY_REQUESTS(options);
+      default:
+         throw errors.INTERNAL_SERVER_ERROR(options);
+   }
+});
+
+const withLogger = withORPCErrors.use(
    async ({ context, path, next }, input) => {
-      const startDate = dayjs().toDate();
+      const startMs = Date.now();
+      const log = getLogger(context);
       const userId = context.session?.user?.id;
-      const organizationId = context.organizationId;
-      const teamId = context.teamId;
       const sessionId = context.headers.get("x-posthog-session-id");
       const orpcPath = path.join(".");
 
-      const eventIdentity = {
-         posthogDistinctId: userId ?? "anonymous",
-         ...(sessionId ? { sessionId } : {}),
-         organizationId,
-         teamId,
-         path: orpcPath,
-      };
-
-      context.log.set({
+      const logContext = {
          orpc: {
             path: orpcPath,
             rootPath: path[0],
          },
          userId,
-         ...eventIdentity,
-      });
+         posthogDistinctId: userId ?? "anonymous",
+         organizationId: context.organizationId,
+         teamId: context.teamId,
+         path: orpcPath,
+      };
+      if (sessionId) Object.assign(logContext, { sessionId });
+      log.set(logContext);
 
       const result = await Result.tryPromise({
          try: async () => next(),
-         catch: toError,
+         catch: (error) => error,
       });
 
-      const durationMs = Date.now() - startDate.getTime();
-      const isSuccess = Result.isOk(result);
-      const error = Result.isError(result) ? result.error : null;
+      const orpcLog = {
+         path: orpcPath,
+         rootPath: path[0],
+         durationMs: Date.now() - startMs,
+         endAt: dayjs().toISOString(),
+         success: Result.isOk(result),
+         input,
+      };
+      if (Result.isError(result) && isTaggedError(result.error)) {
+         Object.assign(orpcLog, {
+            errorName: result.error.name,
+            errorMessage: result.error.message,
+         });
+      }
 
-      context.log.set({
-         orpc: {
-            path: orpcPath,
-            rootPath: path[0],
-            durationMs,
-            endAt: dayjs().toISOString(),
-            success: isSuccess,
-            input,
-            ...(error
-               ? { errorName: error.name, errorMessage: error.message }
-               : {}),
-         },
-      });
-      context.log.emit();
+      log.set({ orpc: orpcLog });
+      log.emit();
 
       if (Result.isError(result)) {
-         throw result.error instanceof AppError
-            ? WebAppError.fromAppError(result.error)
-            : result.error;
+         throw result.error;
       }
 
       return result.value;
@@ -282,29 +388,33 @@ const withTelemetry = withLogger.use(async ({ context, next }) => {
    const userName = context.session.user.name;
    const organizationId = context.organizationId;
 
-   const telemetry = Result.try({
-      try: () => {
-         identifyUser(context.posthog, userId, {
-            email: userEmail,
-            name: userName,
-         });
-         setGroup(context.posthog, organizationId, {});
+   const telemetry = Result.gen(function* () {
+      yield* Result.try({
+         try: () => {
+            identifyUser(context.posthog, userId, {
+               email: userEmail,
+               name: userName,
+            });
+            setGroup(context.posthog, organizationId, {});
 
-         context.log.set({
-            posthog: {
-               distinctId: userId,
-               group: { organization: organizationId },
-            },
-         });
-      },
-      catch: toError,
+            getLogger(context).set({
+               posthog: {
+                  distinctId: userId,
+                  group: { organization: organizationId },
+               },
+            });
+         },
+         catch: (error) => error,
+      });
+
+      return Result.ok();
    });
 
    if (telemetry.isErr()) {
-      context.log.warn("PostHog telemetry failed", {
+      getLogger(context).warn("PostHog telemetry failed", {
          posthog: {
-            errorName: telemetry.error.name,
-            errorMessage: telemetry.error.message,
+            errorName: "PostHogTelemetryError",
+            errorMessage: "Falha ao registrar telemetria no PostHog.",
          },
       });
    }

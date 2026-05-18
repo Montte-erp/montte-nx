@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
+import { Result, type Result as ResultType } from "better-result";
 import { and, asc, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
-import { errAsync, fromPromise, okAsync } from "neverthrow";
 import { z } from "zod";
 import {
    categories,
@@ -10,10 +10,15 @@ import {
    createCategorySchema,
    updateCategorySchema,
 } from "@core/database/schemas/categories";
-import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import {
+   DeriveKeywordsJobError,
+   enqueueDeriveKeywordsJob,
+} from "@modules/classification/jobs/derive-keywords-job";
+import {
+   ClassificationRouterError,
+   classificationRouterErrors,
    requireCategory,
    requireEmptyCategoryTree,
    requireKeywordsUnique,
@@ -21,7 +26,6 @@ import {
    requireResolvedCategoryParent,
    withCategoryDescendants,
 } from "@modules/classification/router/middlewares";
-import { enqueueCategoryKeywordsDerivation } from "@modules/classification/router/enqueue-keywords";
 
 const idSchema = z.object({ id: z.string().uuid() });
 const subcategoryInputSchema = categorySchema.pick({ name: true });
@@ -33,7 +37,43 @@ type CategoryUniqueCandidate = {
 };
 
 const ensureRow = <T>(row: T | undefined, msg: string) =>
-   row ? okAsync(row) : errAsync(WebAppError.internal(msg));
+   row
+      ? Result.ok(row)
+      : Result.err(
+           new ClassificationRouterError({
+              error: classificationRouterErrors.INTERNAL(),
+              message: msg,
+           }),
+        );
+
+type CategoryKeywordsSource = {
+   id: string;
+   name: string;
+   description: string | null;
+};
+
+async function enqueueCategoryKeywordsDerivation(
+   context: Pick<
+      ORPCContextWithOrganization,
+      "organizationId" | "teamId" | "userId" | "pgBoss"
+   >,
+   category: CategoryKeywordsSource,
+): Promise<ResultType<void, DeriveKeywordsJobError>> {
+   const queued = await enqueueDeriveKeywordsJob({
+      boss: await context.pgBoss,
+      input: {
+         categoryId: category.id,
+         teamId: context.teamId,
+         organizationId: context.organizationId,
+         userId: context.userId,
+         name: category.name,
+         description: category.description,
+      },
+   });
+
+   if (Result.isError(queued)) return Result.err(queued.error);
+   return Result.ok(undefined);
+}
 
 async function checkCategoryUniqueConflict(
    db: ORPCContextWithOrganization["db"],
@@ -74,38 +114,50 @@ export const create = protectedProcedure
       const { subcategories, ...data } = input;
       const { resolvedParent } = context;
 
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const [parent] = await tx
-               .insert(categories)
-               .values({
-                  ...data,
-                  icon: data.parentId ? null : data.icon,
-                  teamId: context.teamId,
-                  level: resolvedParent.level,
-                  type: resolvedParent.type,
-               })
-               .returning();
-            if (!parent) return undefined;
-            for (const sub of subcategories ?? []) {
-               await tx.insert(categories).values({
-                  name: sub.name,
-                  type: parent.type,
-                  parentId: parent.id,
-                  level: parent.level + 1,
-                  teamId: context.teamId,
-                  participatesDre: false,
-               });
-            }
-            return parent;
-         }),
-         () => WebAppError.internal("Falha ao criar categoria."),
-      ).andThen((row) =>
-         ensureRow(row, "Falha ao criar categoria: insert vazio."),
+      const created = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) => {
+               const [parent] = await tx
+                  .insert(categories)
+                  .values({
+                     ...data,
+                     icon: data.parentId ? null : data.icon,
+                     teamId: context.teamId,
+                     level: resolvedParent.level,
+                     type: resolvedParent.type,
+                  })
+                  .returning();
+               if (!parent) return undefined;
+               for (const sub of subcategories ?? []) {
+                  await tx.insert(categories).values({
+                     name: sub.name,
+                     type: parent.type,
+                     parentId: parent.id,
+                     level: parent.level + 1,
+                     teamId: context.teamId,
+                     participatesDre: false,
+                  });
+               }
+               return parent;
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao criar categoria.",
+            }),
+      });
+      if (Result.isError(created)) throw created.error;
+      const result = ensureRow(
+         created.value,
+         "Falha ao criar categoria: insert vazio.",
       );
-      if (result.isErr()) throw result.error;
+      if (Result.isError(result)) throw result.error;
 
-      await enqueueCategoryKeywordsDerivation(context, result.value);
+      const queued = await enqueueCategoryKeywordsDerivation(
+         context,
+         result.value,
+      );
+      if (Result.isError(queued)) throw queued.error;
       return result.value;
    });
 
@@ -120,19 +172,25 @@ const getAllInput = z
 export const getAll = protectedProcedure
    .input(getAllInput)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.query.categories.findMany({
-            where: (f, { and, eq }) => {
-               const conds = [eq(f.teamId, context.teamId)];
-               if (input?.type) conds.push(eq(f.type, input.type));
-               if (!input?.includeArchived) conds.push(eq(f.isArchived, false));
-               return and(...conds);
-            },
-            orderBy: (f, { asc }) => [asc(f.name)],
-         }),
-         () => WebAppError.internal("Falha ao listar categorias."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.query.categories.findMany({
+               where: (f, { and, eq }) => {
+                  const conds = [eq(f.teamId, context.teamId)];
+                  if (input?.type) conds.push(eq(f.type, input.type));
+                  if (!input?.includeArchived)
+                     conds.push(eq(f.isArchived, false));
+                  return and(...conds);
+               },
+               orderBy: (f, { asc }) => [asc(f.name)],
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao listar categorias.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       const all = result.value;
       const search = input?.search?.toLowerCase();
       if (!search) return all;
@@ -190,8 +248,8 @@ function buildCategoryOrderBy(
 export const getPaginated = protectedProcedure
    .input(getPaginatedInput)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         (async () => {
+      const result = await Result.tryPromise({
+         try: async () => {
             const rootFilter: SQL[] = [
                eq(categories.teamId, context.teamId),
                isNull(categories.parentId),
@@ -268,10 +326,14 @@ export const getPaginated = protectedProcedure
                : [];
 
             return { data: [...rootRows, ...childRows], total };
-         })(),
-         () => WebAppError.internal("Falha ao listar categorias."),
-      );
-      if (result.isErr()) throw result.error;
+         },
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao listar categorias.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       return result.value;
    });
 
@@ -292,8 +354,8 @@ export const update = protectedProcedure
          ? (data.parentId ?? null)
          : context.category.parentId;
 
-      const conflictResult = await fromPromise(
-         (async () => {
+      const conflictResult = await Result.tryPromise({
+         try: async () => {
             const excludeIds = [id, ...resolvedParent.descendantCategoryIds];
             const candidates: CategoryUniqueCandidate[] = [
                {
@@ -350,64 +412,83 @@ export const update = protectedProcedure
             }
 
             return false;
-         })(),
-         () => WebAppError.internal("Falha ao validar categoria duplicada."),
-      );
-      if (conflictResult.isErr()) throw conflictResult.error;
+         },
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao validar categoria duplicada.",
+            }),
+      });
+      if (Result.isError(conflictResult)) throw conflictResult.error;
       if (conflictResult.value)
-         throw WebAppError.conflict("Categoria já existe nesse nível.");
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message: "Categoria já existe nesse nível.",
+         });
 
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const levelOffset = resolvedParent.updateParent
-               ? resolvedParent.level - context.category.level
-               : 0;
-            const [row] = await tx
-               .update(categories)
-               .set({
-                  ...data,
-                  icon: nextParentId ? null : data.icon,
-                  ...(resolvedParent.updateParent
-                     ? {
-                          level: resolvedParent.level,
-                          type: resolvedParent.type,
-                       }
-                     : {}),
-                  updatedAt: dayjs().toDate(),
-               })
-               .where(eq(categories.id, id))
-               .returning();
-
-            if (
-               row &&
-               resolvedParent.updateParent &&
-               resolvedParent.descendantCategoryIds.length > 0
-            ) {
-               await tx
+      const updated = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) => {
+               const levelOffset = resolvedParent.updateParent
+                  ? resolvedParent.level - context.category.level
+                  : 0;
+               const [row] = await tx
                   .update(categories)
                   .set({
-                     level: sql`${categories.level} + ${levelOffset}`,
-                     type: resolvedParent.type,
+                     ...data,
+                     icon: nextParentId ? null : data.icon,
+                     ...(resolvedParent.updateParent
+                        ? {
+                             level: resolvedParent.level,
+                             type: resolvedParent.type,
+                          }
+                        : {}),
                      updatedAt: dayjs().toDate(),
                   })
-                  .where(
-                     inArray(
-                        categories.id,
-                        resolvedParent.descendantCategoryIds,
-                     ),
-                  );
-            }
+                  .where(eq(categories.id, id))
+                  .returning();
 
-            return row;
-         }),
-         () => WebAppError.internal("Falha ao atualizar categoria."),
-      ).andThen((row) =>
-         ensureRow(row, "Falha ao atualizar categoria: update vazio."),
+               if (
+                  row &&
+                  resolvedParent.updateParent &&
+                  resolvedParent.descendantCategoryIds.length > 0
+               ) {
+                  await tx
+                     .update(categories)
+                     .set({
+                        level: sql`${categories.level} + ${levelOffset}`,
+                        type: resolvedParent.type,
+                        updatedAt: dayjs().toDate(),
+                     })
+                     .where(
+                        inArray(
+                           categories.id,
+                           resolvedParent.descendantCategoryIds,
+                        ),
+                     );
+               }
+
+               return row;
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao atualizar categoria.",
+            }),
+      });
+      if (Result.isError(updated)) throw updated.error;
+      const result = ensureRow(
+         updated.value,
+         "Falha ao atualizar categoria: update vazio.",
       );
-      if (result.isErr()) throw result.error;
+      if (Result.isError(result)) throw result.error;
 
       if (data.keywords === undefined) {
-         await enqueueCategoryKeywordsDerivation(context, result.value);
+         const queued = await enqueueCategoryKeywordsDerivation(
+            context,
+            result.value,
+         );
+         if (Result.isError(queued)) throw queued.error;
       }
       return result.value;
    });
@@ -416,7 +497,11 @@ export const regenerateKeywords = protectedProcedure
    .input(idSchema)
    .use(requireCategory, (input) => input.id)
    .handler(async ({ context }) => {
-      await enqueueCategoryKeywordsDerivation(context, context.category);
+      const queued = await enqueueCategoryKeywordsDerivation(
+         context,
+         context.category,
+      );
+      if (Result.isError(queued)) throw queued.error;
       return { success: true };
    });
 
@@ -425,14 +510,19 @@ export const remove = protectedProcedure
    .use(requireCategory, (input) => input.id)
    .use(requireEmptyCategoryTree, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db
-            .delete(categories)
-            .where(eq(categories.id, input.id))
-            .then(() => undefined),
-         () => WebAppError.internal("Falha ao excluir categoria."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db
+               .delete(categories)
+               .where(eq(categories.id, input.id))
+               .then(() => undefined),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao excluir categoria.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       return { success: true };
    });
 
@@ -442,8 +532,8 @@ export const archive = protectedProcedure
    .use(withCategoryDescendants, (input) => input.id)
    .handler(async ({ context, input }) => {
       const allIds = [input.id, ...context.descendantCategoryIds];
-      const result = await fromPromise(
-         (async () => {
+      const archived = await Result.tryPromise({
+         try: async () => {
             await context.db
                .update(categories)
                .set({ isArchived: true, updatedAt: dayjs().toDate() })
@@ -451,12 +541,19 @@ export const archive = protectedProcedure
             return context.db.query.categories.findFirst({
                where: (f, { eq }) => eq(f.id, input.id),
             });
-         })(),
-         () => WebAppError.internal("Falha ao arquivar categoria."),
-      ).andThen((row) =>
-         ensureRow(row, "Falha ao arquivar categoria: update vazio."),
+         },
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao arquivar categoria.",
+            }),
+      });
+      if (Result.isError(archived)) throw archived.error;
+      const result = ensureRow(
+         archived.value,
+         "Falha ao arquivar categoria: update vazio.",
       );
-      if (result.isErr()) throw result.error;
+      if (Result.isError(result)) throw result.error;
       return result.value;
    });
 
@@ -464,17 +561,25 @@ export const unarchive = protectedProcedure
    .input(idSchema)
    .use(requireCategory, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db
-            .update(categories)
-            .set({ isArchived: false, updatedAt: dayjs().toDate() })
-            .where(eq(categories.id, input.id))
-            .returning()
-            .then((rows) => rows[0]),
-         () => WebAppError.internal("Falha ao reativar categoria."),
-      ).andThen((row) =>
-         ensureRow(row, "Falha ao reativar categoria: update vazio."),
+      const unarchived = await Result.tryPromise({
+         try: () =>
+            context.db
+               .update(categories)
+               .set({ isArchived: false, updatedAt: dayjs().toDate() })
+               .where(eq(categories.id, input.id))
+               .returning()
+               .then((rows) => rows[0]),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao reativar categoria.",
+            }),
+      });
+      if (Result.isError(unarchived)) throw unarchived.error;
+      const result = ensureRow(
+         unarchived.value,
+         "Falha ao reativar categoria: update vazio.",
       );
-      if (result.isErr()) throw result.error;
+      if (Result.isError(result)) throw result.error;
       return result.value;
    });

@@ -1,21 +1,64 @@
 import { os } from "@orpc/server";
+import { Result, TaggedError, type Result as ResultType } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import {
-   err,
-   errAsync,
-   fromPromise,
-   ok,
-   okAsync,
-   ResultAsync,
-} from "neverthrow";
 import { categories, type Category } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
-import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 
 const base = os.$context<ORPCContextWithOrganization>();
 
-const dbErr = (msg: string) => () => WebAppError.internal(msg);
+export const classificationRouterErrors = defineErrorCatalog(
+   "classification.router",
+   {
+      BAD_REQUEST: {
+         status: 400,
+         message: "Requisição inválida em classificação.",
+         tags: ["classification", "router"],
+      },
+      CONFLICT: {
+         status: 409,
+         message: "Conflito em classificação.",
+         tags: ["classification", "router"],
+      },
+      FORBIDDEN: {
+         status: 403,
+         message: "Ação não permitida em classificação.",
+         tags: ["classification", "router"],
+      },
+      INTERNAL: {
+         status: 500,
+         message: "Falha interna em classificação.",
+         tags: ["classification", "router"],
+      },
+      NOT_FOUND: {
+         status: 404,
+         message: "Registro de classificação não encontrado.",
+         tags: ["classification", "router"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "classification.router": typeof classificationRouterErrors;
+   }
+}
+
+type ClassificationRouterCatalogError =
+   | ReturnType<typeof classificationRouterErrors.BAD_REQUEST>
+   | ReturnType<typeof classificationRouterErrors.CONFLICT>
+   | ReturnType<typeof classificationRouterErrors.FORBIDDEN>
+   | ReturnType<typeof classificationRouterErrors.INTERNAL>
+   | ReturnType<typeof classificationRouterErrors.NOT_FOUND>;
+
+export class ClassificationRouterError extends TaggedError(
+   "ClassificationRouterError",
+)<{
+   error: ClassificationRouterCatalogError;
+   message: string;
+}>() {}
+
 type ResolvedCategoryUpdateParent = {
    updateParent: boolean;
    level: number;
@@ -25,57 +68,74 @@ type ResolvedCategoryUpdateParent = {
 
 export const requireCategory = base.middleware(
    async ({ context, next }, id: string) => {
-      const result = await fromPromise(
-         context.db.query.categories.findFirst({
-            where: (f, { eq }) => eq(f.id, id),
-         }),
-         dbErr("Falha ao verificar permissão."),
-      ).andThen((category) =>
-         !category || category.teamId !== context.teamId
-            ? err(WebAppError.notFound("Categoria não encontrada."))
-            : ok(category),
-      );
-      if (result.isErr()) throw result.error;
-      return next({ context: { category: result.value } });
+      const category = await Result.tryPromise({
+         try: () =>
+            context.db.query.categories.findFirst({
+               where: (f, { eq }) => eq(f.id, id),
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar permissão.",
+            }),
+      });
+      if (Result.isError(category)) throw category.error;
+      if (!category.value || category.value.teamId !== context.teamId) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.NOT_FOUND(),
+            message: "Categoria não encontrada.",
+         });
+      }
+      return next({ context: { category: category.value } });
    },
 );
 
 export const requireTag = base.middleware(
    async ({ context, next }, id: string) => {
-      const result = await fromPromise(
-         context.db.query.tags.findFirst({
-            where: (f, { eq }) => eq(f.id, id),
-         }),
-         dbErr("Falha ao verificar permissão."),
-      ).andThen((tag) =>
-         !tag || tag.teamId !== context.teamId
-            ? err(WebAppError.notFound("Centro de custo não encontrado."))
-            : ok(tag),
-      );
-      if (result.isErr()) throw result.error;
-      return next({ context: { tag: result.value } });
+      const tag = await Result.tryPromise({
+         try: () =>
+            context.db.query.tags.findFirst({
+               where: (f, { eq }) => eq(f.id, id),
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar permissão.",
+            }),
+      });
+      if (Result.isError(tag)) throw tag.error;
+      if (!tag.value || tag.value.teamId !== context.teamId) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.NOT_FOUND(),
+            message: "Centro de custo não encontrado.",
+         });
+      }
+      return next({ context: { tag: tag.value } });
    },
 );
 
 export const requireOwnedCategoryIds = base.middleware(
    async ({ context, next }, ids: string[]) => {
-      const result = await fromPromise(
-         context.db.query.categories.findMany({
-            where: (f, { and, inArray, eq }) =>
-               and(inArray(f.id, ids), eq(f.teamId, context.teamId)),
-         }),
-         dbErr("Falha ao verificar categorias."),
-      ).andThen((rows) =>
-         rows.length !== ids.length
-            ? err(
-                 WebAppError.notFound(
-                    "Uma ou mais categorias não foram encontradas.",
-                 ),
-              )
-            : ok(rows),
-      );
-      if (result.isErr()) throw result.error;
-      return next({ context: { ownedCategories: result.value } });
+      const rows = await Result.tryPromise({
+         try: () =>
+            context.db.query.categories.findMany({
+               where: (f, { and, inArray, eq }) =>
+                  and(inArray(f.id, ids), eq(f.teamId, context.teamId)),
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar categorias.",
+            }),
+      });
+      if (Result.isError(rows)) throw rows.error;
+      if (rows.value.length !== ids.length) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.NOT_FOUND(),
+            message: "Uma ou mais categorias não foram encontradas.",
+         });
+      }
+      return next({ context: { ownedCategories: rows.value } });
    },
 );
 
@@ -86,8 +146,12 @@ export const blockDefaultCategories = os
       }
    >()
    .middleware(async ({ context, next }, message: string) => {
-      if (context.ownedCategories.some((c) => c.isDefault))
-         throw WebAppError.conflict(message);
+      if (context.ownedCategories.some((c) => c.isDefault)) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message,
+         });
+      }
       return next();
    });
 
@@ -109,23 +173,26 @@ export const requireKeywordsUnique = base.middleware(
       ];
       if (excludeId) conds.push(sql`${categories.id} != ${excludeId}`);
 
-      const result = await fromPromise(
-         context.db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(categories)
-            .where(and(...conds))
-            .then((rows) => rows[0]?.count ?? 0),
-         dbErr("Falha ao validar palavras-chave."),
-      ).andThen((count) =>
-         count > 0
-            ? err(
-                 WebAppError.conflict(
-                    "Palavras-chave já utilizadas em outra categoria ativa.",
-                 ),
-              )
-            : ok(undefined),
-      );
-      if (result.isErr()) throw result.error;
+      const countResult = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({ count: sql<number>`count(*)::int` })
+               .from(categories)
+               .where(and(...conds))
+               .then((rows) => rows[0]?.count ?? 0),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao validar palavras-chave.",
+            }),
+      });
+      if (Result.isError(countResult)) throw countResult.error;
+      if (countResult.value > 0) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message: "Palavras-chave já utilizadas em outra categoria ativa.",
+         });
+      }
       return next();
    },
 );
@@ -142,20 +209,38 @@ export const requireResolvedCategoryParent = base.middleware(
       if (!parentId)
          return next({ context: { resolvedParent: { level: 1, type } } });
 
-      const result = await fromPromise(
-         context.db.query.categories.findFirst({
-            where: (f, { eq }) => eq(f.id, parentId),
-         }),
-         dbErr("Falha ao verificar categoria pai."),
-      ).andThen((parent) => {
-         if (!parent || parent.teamId !== context.teamId)
-            return err(WebAppError.notFound("Categoria pai não encontrada."));
-         if (parent.level >= 3)
-            return err(WebAppError.badRequest("Limite de 3 níveis atingido."));
-         return ok({ level: parent.level + 1, type: parent.type });
+      const parent = await Result.tryPromise({
+         try: () =>
+            context.db.query.categories.findFirst({
+               where: (f, { eq }) => eq(f.id, parentId),
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar categoria pai.",
+            }),
       });
-      if (result.isErr()) throw result.error;
-      return next({ context: { resolvedParent: result.value } });
+      if (Result.isError(parent)) throw parent.error;
+      if (!parent.value || parent.value.teamId !== context.teamId) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.NOT_FOUND(),
+            message: "Categoria pai não encontrada.",
+         });
+      }
+      if (parent.value.level >= 3) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.BAD_REQUEST(),
+            message: "Limite de 3 níveis atingido.",
+         });
+      }
+      return next({
+         context: {
+            resolvedParent: {
+               level: parent.value.level + 1,
+               type: parent.value.type,
+            },
+         },
+      });
    },
 );
 
@@ -185,7 +270,7 @@ export const requireResolvedCategoryUpdateParent = os
             context.db,
             context.category.id,
          );
-         if (descendantsResult.isErr()) throw descendantsResult.error;
+         if (Result.isError(descendantsResult)) throw descendantsResult.error;
          const descendantCategoryIds = descendantsResult.value.map((r) => r.id);
          const maxDepth = descendantsResult.value.reduce(
             (max, row) => Math.max(max, row.level - context.category.level + 1),
@@ -194,56 +279,73 @@ export const requireResolvedCategoryUpdateParent = os
 
          if (!parentId) {
             if (maxDepth > 3)
-               throw WebAppError.badRequest("Limite de 3 níveis atingido.");
+               throw new ClassificationRouterError({
+                  error: classificationRouterErrors.BAD_REQUEST(),
+                  message: "Limite de 3 níveis atingido.",
+               });
             const resolvedParent: ResolvedCategoryUpdateParent = {
                updateParent: true,
                level: 1,
                type: context.category.type,
                descendantCategoryIds,
             };
-            return next({
-               context: { resolvedParent },
+            return next({ context: { resolvedParent } });
+         }
+
+         if (parentId === context.category.id) {
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.BAD_REQUEST(),
+               message: "Categoria pai não pode ser a própria categoria.",
+            });
+         }
+         if (descendantCategoryIds.includes(parentId)) {
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.BAD_REQUEST(),
+               message:
+                  "Categoria pai não pode ser uma subcategoria da categoria editada.",
             });
          }
 
-         if (parentId === context.category.id)
-            throw WebAppError.badRequest(
-               "Categoria pai não pode ser a própria categoria.",
-            );
-         if (descendantCategoryIds.includes(parentId))
-            throw WebAppError.badRequest(
-               "Categoria pai não pode ser uma subcategoria da categoria editada.",
-            );
-
-         const result = await fromPromise(
-            context.db.query.categories.findFirst({
-               where: (f, { eq }) => eq(f.id, parentId),
-            }),
-            dbErr("Falha ao verificar categoria pai."),
-         ).andThen((parent) => {
-            if (!parent || parent.teamId !== context.teamId)
-               return err(
-                  WebAppError.notFound("Categoria pai não encontrada."),
-               );
-            if (parent.isArchived)
-               return err(WebAppError.badRequest("Categoria pai arquivada."));
-
-            const nextLevel = parent.level + 1;
-            if (nextLevel + maxDepth - 1 > 3)
-               return err(
-                  WebAppError.badRequest("Limite de 3 níveis atingido."),
-               );
-
-            const resolvedParent: ResolvedCategoryUpdateParent = {
-               updateParent: true,
-               level: nextLevel,
-               type: parent.type,
-               descendantCategoryIds,
-            };
-            return ok(resolvedParent);
+         const parent = await Result.tryPromise({
+            try: () =>
+               context.db.query.categories.findFirst({
+                  where: (f, { eq }) => eq(f.id, parentId),
+               }),
+            catch: () =>
+               new ClassificationRouterError({
+                  error: classificationRouterErrors.INTERNAL(),
+                  message: "Falha ao verificar categoria pai.",
+               }),
          });
-         if (result.isErr()) throw result.error;
-         return next({ context: { resolvedParent: result.value } });
+         if (Result.isError(parent)) throw parent.error;
+         if (!parent.value || parent.value.teamId !== context.teamId) {
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.NOT_FOUND(),
+               message: "Categoria pai não encontrada.",
+            });
+         }
+         if (parent.value.isArchived) {
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.BAD_REQUEST(),
+               message: "Categoria pai arquivada.",
+            });
+         }
+
+         const nextLevel = parent.value.level + 1;
+         if (nextLevel + maxDepth - 1 > 3) {
+            throw new ClassificationRouterError({
+               error: classificationRouterErrors.BAD_REQUEST(),
+               message: "Limite de 3 níveis atingido.",
+            });
+         }
+
+         const resolvedParent: ResolvedCategoryUpdateParent = {
+            updateParent: true,
+            level: nextLevel,
+            type: parent.value.type,
+            descendantCategoryIds,
+         };
+         return next({ context: { resolvedParent } });
       },
    );
 
@@ -251,103 +353,116 @@ function fetchDescendantRows(
    db: ORPCContextWithOrganization["db"],
    categoryId: string,
 ) {
-   return fromPromise(
-      (async () => {
+   return Result.tryPromise({
+      try: async () => {
          const level2 = await db
             .select({ id: categories.id, level: categories.level })
             .from(categories)
             .where(eq(categories.parentId, categoryId));
-         if (level2.length === 0) {
-            const rows: { id: string; level: number }[] = [];
-            return rows;
-         }
+         if (level2.length === 0) return [];
          const level2Ids = level2.map((r) => r.id);
          const level3 = await db
             .select({ id: categories.id, level: categories.level })
             .from(categories)
             .where(inArray(categories.parentId, level2Ids));
          return [...level2, ...level3];
-      })(),
-      dbErr("Falha ao verificar descendentes."),
-   );
+      },
+      catch: () =>
+         new ClassificationRouterError({
+            error: classificationRouterErrors.INTERNAL(),
+            message: "Falha ao verificar descendentes.",
+         }),
+   });
 }
 
-function fetchDescendantIds(
+async function fetchDescendantIds(
    db: ORPCContextWithOrganization["db"],
    categoryId: string,
-) {
-   return fetchDescendantRows(db, categoryId).map((rows) =>
-      rows.map((row) => row.id),
-   );
+): Promise<ResultType<string[], ClassificationRouterError>> {
+   const rows = await fetchDescendantRows(db, categoryId);
+   if (Result.isError(rows)) return Result.err(rows.error);
+   return Result.ok(rows.value.map((row) => row.id));
 }
 
 export const requireEmptyCategoryTree = base.middleware(
    async ({ context, next }, id: string) => {
-      const result = await fetchDescendantIds(context.db, id).andThen(
-         (descendants) => {
-            const allIds = [id, ...descendants];
-            return fromPromise(
-               context.db
-                  .select({ count: sql<number>`count(*)::int` })
-                  .from(transactions)
-                  .where(inArray(transactions.categoryId, allIds))
-                  .then((rows) => rows[0]?.count ?? 0),
-               dbErr("Falha ao verificar lançamentos."),
-            ).andThen((count) =>
-               count > 0
-                  ? err(
-                       WebAppError.conflict(
-                          "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
-                       ),
-                    )
-                  : ok(undefined),
-            );
-         },
-      );
-      if (result.isErr()) throw result.error;
+      const descendants = await fetchDescendantIds(context.db, id);
+      if (Result.isError(descendants)) throw descendants.error;
+      const allIds = [id, ...descendants.value];
+      const countResult = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({ count: sql<number>`count(*)::int` })
+               .from(transactions)
+               .where(inArray(transactions.categoryId, allIds))
+               .then((rows) => rows[0]?.count ?? 0),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos.",
+            }),
+      });
+      if (Result.isError(countResult)) throw countResult.error;
+      if (countResult.value > 0) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message:
+               "Categoria com lançamentos não pode ser excluída. Use arquivamento.",
+         });
+      }
       return next();
    },
 );
 
 export const withExpandedCategoryIds = base.middleware(
    async ({ context, next }, ids: string[]) => {
-      const result = await ResultAsync.combine(
-         ids.map((id) => fetchDescendantIds(context.db, id)),
-      ).map((lists) => [...new Set([...ids, ...lists.flat()])]);
-      if (result.isErr()) throw result.error;
-      return next({ context: { expandedCategoryIds: result.value } });
+      const lists: string[][] = [];
+      for (const id of ids) {
+         const descendants = await fetchDescendantIds(context.db, id);
+         if (Result.isError(descendants)) throw descendants.error;
+         lists.push(descendants.value);
+      }
+      return next({
+         context: {
+            expandedCategoryIds: [...new Set([...ids, ...lists.flat()])],
+         },
+      });
    },
 );
 
 export const requireNoTransactionsForExpandedIds = os
    .$context<ORPCContextWithOrganization & { expandedCategoryIds: string[] }>()
    .middleware(async ({ context, next }) => {
-      const result = await fromPromise(
-         context.db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(transactions)
-            .where(
-               inArray(transactions.categoryId, context.expandedCategoryIds),
-            )
-            .then((rows) => rows[0]?.count ?? 0),
-         dbErr("Falha ao verificar lançamentos."),
-      ).andThen((count) =>
-         count > 0
-            ? errAsync(
-                 WebAppError.conflict(
-                    "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
-                 ),
-              )
-            : okAsync(undefined),
-      );
-      if (result.isErr()) throw result.error;
+      const countResult = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({ count: sql<number>`count(*)::int` })
+               .from(transactions)
+               .where(
+                  inArray(transactions.categoryId, context.expandedCategoryIds),
+               )
+               .then((rows) => rows[0]?.count ?? 0),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos.",
+            }),
+      });
+      if (Result.isError(countResult)) throw countResult.error;
+      if (countResult.value > 0) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message:
+               "Categorias com lançamentos não podem ser excluídas. Use arquivamento.",
+         });
+      }
       return next();
    });
 
 export const withCategoryDescendants = base.middleware(
    async ({ context, next }, id: string) => {
-      const result = await fetchDescendantIds(context.db, id);
-      if (result.isErr()) throw result.error;
-      return next({ context: { descendantCategoryIds: result.value } });
+      const descendants = await fetchDescendantIds(context.db, id);
+      if (Result.isError(descendants)) throw descendants.error;
+      return next({ context: { descendantCategoryIds: descendants.value } });
    },
 );

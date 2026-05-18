@@ -34,3 +34,5 @@ export interface ORPCContextWithOrganization extends ORPCContextAuthenticated {
    organizationId: string;
    teamId: string;
 }
+
+export const getLogger = (context: ORPCContext) => context.log;
