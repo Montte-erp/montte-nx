@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Result, isTaggedError } from "better-result";
+import { Result, isTaggedError, type TaggedErrorInstance } from "better-result";
 import { z } from "zod";
 import { os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
@@ -83,6 +83,14 @@ export async function buildWebContext(
 }
 
 export type BillableMeta = { billableEvent?: string };
+
+type PlatformTaggedError = TaggedErrorInstance<
+   string,
+   { error: { status: number }; message: string }
+>;
+
+const isPlatformTaggedError = (error: unknown): error is PlatformTaggedError =>
+   isTaggedError(error);
 
 const errorDataSchema = z.object({ tag: z.string() }).optional();
 
@@ -300,14 +308,8 @@ const withORPCErrors = withOrganization.use(async ({ next, errors }) => {
 
    if (Result.isOk(result)) return result.value;
 
-   if (!isTaggedError(result.error)) throw result.error;
-   if (!("error" in result.error)) throw result.error;
-   const catalogError = result.error.error;
-   if (typeof catalogError !== "object") throw result.error;
-   if (!catalogError) throw result.error;
-   if (!("status" in catalogError)) throw result.error;
-   const { status } = catalogError;
-   if (typeof status !== "number") throw result.error;
+   if (!isPlatformTaggedError(result.error)) throw result.error;
+   const { status } = result.error.error;
 
    const options = {
       message: result.error.message,
