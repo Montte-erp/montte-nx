@@ -21,9 +21,9 @@ import { proModel } from "@core/ai/models";
 import { aiTraceAttributes, type AiTraceContext } from "@core/ai/otel";
 
 const DERIVE_KEYWORDS_PROMPT = "montte-derive-keywords";
-const DERIVE_KEYWORDS_QUEUE = "classification:derive-keywords";
+const DERIVE_KEYWORDS_QUEUE = "classification/derive-keywords";
 const DERIVE_KEYWORDS_DEAD_LETTER_QUEUE =
-   "classification:derive-keywords:dead-letter";
+   "classification/derive-keywords/dead-letter";
 
 export const deriveKeywordsJobInputSchema = z.object({
    categoryId: z.string().uuid(),

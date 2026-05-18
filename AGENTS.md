@@ -226,6 +226,7 @@ DBOS runs in `apps/worker` — never the web process. Web enqueues via `context.
 - pg-boss consumers run only in `apps/worker`. Web may enqueue through the oRPC context `pgBoss` promise and the package helper, but must not run workers/consumers.
 - pg-boss jobs log through `@core/logging` (`evlog`) with structured fields (`module`, `message`, ids, tenant scope). Do not use DBOS.logger in pg-boss jobs.
 - pg-boss jobs should use the platform features directly instead of local throttling logic: `retryLimit`, `retryDelay`, `retryBackoff`, `expireInSeconds`, `retentionSeconds`, `deadLetter`, `singletonKey`, `singletonSeconds`, `singletonNextSlot`, `sendDebounced`, `sendThrottled`, and `group` when the queue semantics need them. For `key_strict_fifo`, always provide a stable `singletonKey`.
+- pg-boss queue names must satisfy pg-boss object-name validation: only alphanumeric characters, underscores, hyphens, periods, or forward slashes. Do not use colon-separated names like `classification:derive-keywords`; use slash paths such as `classification/derive-keywords`.
 - Every pg-boss job needs a Zod input schema, a typed `Result` return, a typed `TaggedError` union carrying evlog catalog errors, queue registration helpers, and a worker handler that validates `job.data` before doing work. Empty/missing pg-boss job ids are errors, not successful no-ops.
 - If a job needs DBOS steps, workflow replay, deterministic scheduling, or is financially/security critical, keep it in DBOS instead of porting it to pg-boss.
 
