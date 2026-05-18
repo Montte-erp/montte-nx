@@ -18,6 +18,13 @@ const advisorErrors = defineErrorCatalog("agents.advisor", {
       fix: "Tente novamente. Se persistir, verifique a configuração de prompts.",
       tags: ["agents", "advisor", "prompt"],
    },
+   PROMPT_COMPILE_FAILED: {
+      status: 500,
+      message: "Falha ao compilar prompt do advisor.",
+      why: "O template do advisor não pôde ser compilado.",
+      fix: "Tente novamente. Se persistir, verifique o template do advisor.",
+      tags: ["agents", "advisor", "prompt"],
+   },
    RUN_FAILED: {
       status: 500,
       message: "Advisor falhou ao responder.",
@@ -42,6 +49,7 @@ declare module "evlog" {
 
 type AdvisorCatalogError =
    | ReturnType<typeof advisorErrors.PROMPT_LOAD_FAILED>
+   | ReturnType<typeof advisorErrors.PROMPT_COMPILE_FAILED>
    | ReturnType<typeof advisorErrors.RUN_FAILED>
    | ReturnType<typeof advisorErrors.EMPTY_RESPONSE>;
 
@@ -110,7 +118,15 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
       });
       if (Result.isError(templateResult)) throw templateResult.error;
 
-      const systemPrompt = deps.prompts.compile(templateResult.value, {});
+      const systemPromptResult = Result.try({
+         try: () => deps.prompts.compile(templateResult.value, {}),
+         catch: () =>
+            new AdvisorToolError({
+               error: advisorErrors.PROMPT_COMPILE_FAILED(),
+            }),
+      });
+      if (Result.isError(systemPromptResult)) throw systemPromptResult.error;
+      const systemPrompt = systemPromptResult.value;
 
       const optionsBlock =
          options && options.length > 0
@@ -173,8 +189,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
             new AdvisorToolError({
                error: advisorErrors.RUN_FAILED(),
             }),
-      });
-      clearTimeout(timeout);
+      }).finally(() => clearTimeout(timeout));
 
       if (Result.isError(result)) throw result.error;
       if (!result.value)
