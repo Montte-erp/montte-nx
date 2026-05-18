@@ -99,6 +99,7 @@
         "@maskito/react": "catalog:ui",
         "@modules/account": "workspace:*",
         "@modules/agents": "workspace:*",
+        "@modules/cards": "workspace:*",
         "@modules/classification": "workspace:*",
         "@modules/finance": "workspace:*",
         "@modules/inbox": "workspace:*",
@@ -507,6 +508,25 @@
         "vitest": "catalog:testing",
       },
     },
+    "modules/cards": {
+      "name": "@modules/cards",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@orpc/server": "catalog:orpc",
+        "better-result": "catalog:validation",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "evlog": "catalog:logging",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
     "modules/classification": {
       "name": "@modules/classification",
       "version": "0.1.0",
@@ -519,7 +539,6 @@
         "@core/orpc": "workspace:*",
         "@core/pg-boss": "workspace:*",
         "@core/posthog": "workspace:*",
-        "@core/redis": "workspace:*",
         "@core/utils": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
         "@dbos-inc/drizzle-datasource": "catalog:workers",
@@ -531,7 +550,6 @@
         "better-result": "catalog:validation",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
-        "drizzle-zod": "catalog:database",
         "evlog": "catalog:logging",
         "pg-boss": "catalog:workers",
         "zod": "catalog:validation",
@@ -1609,6 +1627,8 @@
     "@modules/account": ["@modules/account@workspace:modules/account"],
 
     "@modules/agents": ["@modules/agents@workspace:modules/agents"],
+
+    "@modules/cards": ["@modules/cards@workspace:modules/cards"],
 
     "@modules/classification": ["@modules/classification@workspace:modules/classification"],
 

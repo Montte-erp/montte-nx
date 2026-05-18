@@ -24,23 +24,6 @@ export const requireBankAccount = base.middleware(
    },
 );
 
-export const requireCreditCard = base.middleware(
-   async ({ context, next }, id: string) => {
-      const result = await fromPromise(
-         context.db.query.creditCards.findFirst({
-            where: (f, { eq }) => eq(f.id, id),
-         }),
-         () => WebAppError.internal("Falha ao verificar permissão."),
-      ).andThen((card) =>
-         !card || card.teamId !== context.teamId
-            ? err(WebAppError.notFound("Cartão de crédito não encontrado."))
-            : ok(card),
-      );
-      if (result.isErr()) throw result.error;
-      return next({ context: { creditCard: result.value } });
-   },
-);
-
 export const requireTransaction = base.middleware(
    async ({ context, next }, id: string) => {
       const result = await fromPromise(
