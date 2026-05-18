@@ -375,11 +375,11 @@ export async function handleRefreshThreadSuggestionsJob(options: {
          }),
       );
 
-      yield* Result.await(
+      const updatedThreads = yield* Result.await(
          Result.tryPromise({
             try: () =>
-               options.db.transaction(async (tx) => {
-                  await tx
+               options.db.transaction(async (tx) =>
+                  tx
                      .update(threads)
                      .set({
                         suggestions,
@@ -391,8 +391,9 @@ export async function handleRefreshThreadSuggestionsJob(options: {
                            eq(threads.teamId, input.teamId),
                            eq(threads.organizationId, input.organizationId),
                         ),
-                     );
-               }),
+                     )
+                     .returning({ id: threads.id }),
+               ),
             catch: () =>
                new RefreshThreadSuggestionsJobError({
                   error: refreshSuggestionsJobErrors.WRITE_FAILED({
@@ -411,6 +412,18 @@ export async function handleRefreshThreadSuggestionsJob(options: {
                }),
          }),
       );
+
+      if (updatedThreads.length === 0) {
+         log.info({
+            module: "agents.refresh-suggestions-job",
+            message: "skipping: thread not found in scope",
+            jobId: options.job.id,
+            threadId: input.threadId,
+            teamId: input.teamId,
+            organizationId: input.organizationId,
+         });
+         return Result.ok(undefined);
+      }
 
       log.info({
          module: "agents.refresh-suggestions-job",
