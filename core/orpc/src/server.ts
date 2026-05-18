@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Result, isTaggedError, type TaggedErrorInstance } from "better-result";
+import { Result, isTaggedError } from "better-result";
 import { z } from "zod";
 import { os } from "@orpc/server";
 import { createAuth } from "@core/authentication/server";
@@ -90,14 +90,6 @@ export async function buildWebContext(
 }
 
 export type BillableMeta = { billableEvent?: string };
-
-type PlatformTaggedError = TaggedErrorInstance<
-   string,
-   { error: { status: number }; message: string }
->;
-
-const isPlatformTaggedError = (error: unknown): error is PlatformTaggedError =>
-   isTaggedError(error);
 
 const errorDataSchema = z.object({ tag: z.string() }).optional();
 
@@ -302,21 +294,17 @@ const withOrganization = withAuth.use(({ context, next, errors }) => {
 });
 
 const withORPCErrors = withOrganization.use(async ({ next, errors }) => {
-   const result = await Result.gen(async function* () {
-      const output = yield* Result.await(
-         Result.tryPromise({
-            try: async () => next(),
-            catch: (error) => error,
-         }),
-      );
-
-      return Result.ok(output);
+   const result = await Result.tryPromise({
+      try: async () => next(),
+      catch: (error) => error,
    });
 
    if (Result.isOk(result)) return result.value;
 
-   if (!isPlatformTaggedError(result.error)) throw result.error;
-   const { status } = result.error.error;
+   if (!isTaggedError(result.error)) {
+      throw new Error(String(result.error), { cause: result.error });
+   }
+   const status = Reflect.get(result.error, "error").status;
 
    const options = {
       message: result.error.message,
