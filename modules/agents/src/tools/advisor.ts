@@ -55,6 +55,7 @@ type AdvisorCatalogError =
 
 class AdvisorToolError extends TaggedError("AdvisorToolError")<{
    error: AdvisorCatalogError;
+   message: string;
 }>() {}
 
 export interface AdvisorToolDeps {
@@ -114,6 +115,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
          catch: () =>
             new AdvisorToolError({
                error: advisorErrors.PROMPT_LOAD_FAILED(),
+               message: advisorErrors.PROMPT_LOAD_FAILED().message,
             }),
       });
       if (Result.isError(templateResult)) throw templateResult.error;
@@ -123,6 +125,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
          catch: () =>
             new AdvisorToolError({
                error: advisorErrors.PROMPT_COMPILE_FAILED(),
+               message: advisorErrors.PROMPT_COMPILE_FAILED().message,
             }),
       });
       if (Result.isError(systemPromptResult)) throw systemPromptResult.error;
@@ -188,6 +191,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
          catch: () =>
             new AdvisorToolError({
                error: advisorErrors.RUN_FAILED(),
+               message: advisorErrors.RUN_FAILED().message,
             }),
       }).finally(() => clearTimeout(timeout));
 
@@ -195,6 +199,7 @@ export function buildAdvisorTool(deps: AdvisorToolDeps) {
       if (!result.value)
          throw new AdvisorToolError({
             error: advisorErrors.EMPTY_RESPONSE(),
+            message: advisorErrors.EMPTY_RESPONSE().message,
          });
       return {
          guidance: result.value,

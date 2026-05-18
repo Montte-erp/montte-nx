@@ -67,6 +67,7 @@ type AgentRuntimeCatalogError =
 
 class AgentRuntimeError extends TaggedError("AgentRuntimeError")<{
    error: AgentRuntimeCatalogError;
+   message: string;
    threadId: string;
    teamId?: string;
    organizationId?: string;
@@ -209,6 +210,9 @@ async function persistAssistantMessages(options: {
             error: runtimeErrors.ASSISTANT_MESSAGE_PERSIST_FAILED({
                internal: { threadId: options.threadId },
             }),
+            message: runtimeErrors.ASSISTANT_MESSAGE_PERSIST_FAILED({
+               internal: { threadId: options.threadId },
+            }).message,
             threadId: options.threadId,
          }),
    });
@@ -246,6 +250,13 @@ async function enqueueThreadTitle(options: {
                   organizationId: options.organizationId,
                },
             }),
+            message: runtimeErrors.THREAD_TITLE_CHECK_FAILED({
+               internal: {
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+               },
+            }).message,
             threadId: options.threadId,
             teamId: options.teamId,
             organizationId: options.organizationId,
@@ -265,6 +276,13 @@ async function enqueueThreadTitle(options: {
                   organizationId: options.organizationId,
                },
             }),
+            message: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
+               internal: {
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+               },
+            }).message,
             threadId: options.threadId,
             teamId: options.teamId,
             organizationId: options.organizationId,
@@ -290,6 +308,13 @@ async function enqueueThreadTitle(options: {
                   organizationId: options.organizationId,
                },
             }),
+            message: runtimeErrors.THREAD_TITLE_ENQUEUE_FAILED({
+               internal: {
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+               },
+            }).message,
             threadId: options.threadId,
             teamId: options.teamId,
             organizationId: options.organizationId,
@@ -319,6 +344,14 @@ async function enqueueThreadSuggestions(options: {
                   messageCount: options.messageCount,
                },
             }),
+            message: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
+               internal: {
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+                  messageCount: options.messageCount,
+               },
+            }).message,
             threadId: options.threadId,
             teamId: options.teamId,
             organizationId: options.organizationId,
@@ -347,6 +380,14 @@ async function enqueueThreadSuggestions(options: {
                   messageCount: options.messageCount,
                },
             }),
+            message: runtimeErrors.THREAD_SUGGESTIONS_ENQUEUE_FAILED({
+               internal: {
+                  threadId: options.threadId,
+                  teamId: options.teamId,
+                  organizationId: options.organizationId,
+                  messageCount: options.messageCount,
+               },
+            }).message,
             threadId: options.threadId,
             teamId: options.teamId,
             organizationId: options.organizationId,
