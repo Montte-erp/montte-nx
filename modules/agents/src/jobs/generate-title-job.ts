@@ -182,284 +182,283 @@ export async function handleGenerateThreadTitleJob(options: {
    prompts: Prompts;
    job: Job<GenerateThreadTitleJobInput>;
 }) {
-   const parsedInput = generateThreadTitleJobInputSchema.safeParse(
-      options.job.data,
-   );
-   if (!parsedInput.success) {
-      return Result.err(
-         new GenerateThreadTitleJobError({
-            error: generateTitleJobErrors.INVALID_PAYLOAD({
-               internal: { jobId: options.job.id },
+   return Result.gen(async function* () {
+      const parsedInput = generateThreadTitleJobInputSchema.safeParse(
+         options.job.data,
+      );
+      if (!parsedInput.success) {
+         return Result.err(
+            new GenerateThreadTitleJobError({
+               error: generateTitleJobErrors.INVALID_PAYLOAD({
+                  internal: { jobId: options.job.id },
+               }),
+               message: generateTitleJobErrors.INVALID_PAYLOAD({
+                  internal: { jobId: options.job.id },
+               }).message,
             }),
-            message: generateTitleJobErrors.INVALID_PAYLOAD({
-               internal: { jobId: options.job.id },
-            }).message,
+         );
+      }
+
+      const input = parsedInput.data;
+      log.info({
+         module: "agents.generate-title-job",
+         message: "running",
+         jobId: options.job.id,
+         threadId: input.threadId,
+         teamId: input.teamId,
+         organizationId: input.organizationId,
+      });
+
+      const loaded = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               options.db.transaction(async (tx) => {
+                  const thread = await tx.query.threads.findFirst({
+                     where: (f, { and: andFn, eq: eqFn }) =>
+                        andFn(
+                           eqFn(f.id, input.threadId),
+                           eqFn(f.teamId, input.teamId),
+                           eqFn(f.organizationId, input.organizationId),
+                        ),
+                  });
+                  if (!thread) return null;
+                  if (thread.title)
+                     return { title: thread.title, recent: null };
+                  const recent = await tx
+                     .select({
+                        id: messages.id,
+                        role: messages.role,
+                        parts: messages.parts,
+                     })
+                     .from(messages)
+                     .innerJoin(threads, eq(threads.id, messages.threadId))
+                     .where(
+                        and(
+                           eq(messages.threadId, input.threadId),
+                           eq(threads.teamId, input.teamId),
+                           eq(threads.organizationId, input.organizationId),
+                        ),
+                     )
+                     .orderBy(asc(messages.createdAt))
+                     .limit(6);
+                  return { title: null, recent };
+               }),
+            catch: () =>
+               new GenerateThreadTitleJobError({
+                  error: generateTitleJobErrors.MESSAGES_LOAD_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }),
+                  message: generateTitleJobErrors.MESSAGES_LOAD_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }).message,
+                  threadId: input.threadId,
+               }),
          }),
       );
-   }
 
-   const input = parsedInput.data;
-   log.info({
-      module: "agents.generate-title-job",
-      message: "running",
-      jobId: options.job.id,
-      threadId: input.threadId,
-      teamId: input.teamId,
-      organizationId: input.organizationId,
-   });
-
-   const loaded = await Result.tryPromise({
-      try: () =>
-         options.db.transaction(async (tx) => {
-            const thread = await tx.query.threads.findFirst({
-               where: (f, { and: andFn, eq: eqFn }) =>
-                  andFn(
-                     eqFn(f.id, input.threadId),
-                     eqFn(f.teamId, input.teamId),
-                     eqFn(f.organizationId, input.organizationId),
-                  ),
-            });
-            if (!thread) return null;
-            if (thread.title) return { title: thread.title, recent: null };
-            const recent = await tx
-               .select({
-                  id: messages.id,
-                  role: messages.role,
-                  parts: messages.parts,
-               })
-               .from(messages)
-               .innerJoin(threads, eq(threads.id, messages.threadId))
-               .where(
-                  and(
-                     eq(messages.threadId, input.threadId),
-                     eq(threads.teamId, input.teamId),
-                     eq(threads.organizationId, input.organizationId),
-                  ),
-               )
-               .orderBy(asc(messages.createdAt))
-               .limit(6);
-            return { title: null, recent };
-         }),
-      catch: () =>
-         new GenerateThreadTitleJobError({
-            error: generateTitleJobErrors.MESSAGES_LOAD_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }),
-            message: generateTitleJobErrors.MESSAGES_LOAD_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }).message,
+      if (!loaded) {
+         log.info({
+            module: "agents.generate-title-job",
+            message: "skipping: thread not found in scope",
+            jobId: options.job.id,
             threadId: input.threadId,
-         }),
-   });
+         });
+         return Result.ok(undefined);
+      }
 
-   if (Result.isError(loaded)) {
-      return Result.err(loaded.error);
-   }
-   if (!loaded.value) {
-      log.info({
-         module: "agents.generate-title-job",
-         message: "skipping: thread not found in scope",
-         jobId: options.job.id,
-         threadId: input.threadId,
-      });
-      return Result.ok(undefined);
-   }
-   if (loaded.value.title) {
-      log.info({
-         module: "agents.generate-title-job",
-         message: "skipping: title already exists",
-         jobId: options.job.id,
-         threadId: input.threadId,
-      });
-      return Result.ok(undefined);
-   }
-   if (!loaded.value.recent || loaded.value.recent.length === 0) {
-      log.info({
-         module: "agents.generate-title-job",
-         message: "skipping: no messages",
-         jobId: options.job.id,
-         threadId: input.threadId,
-      });
-      return Result.ok(undefined);
-   }
-
-   const recent = loaded.value.recent;
-   const hasUser = recent.some((row) => row.role === "user");
-   const hasAssistant = recent.some((row) => row.role === "assistant");
-   if (!hasUser || !hasAssistant) {
-      log.info({
-         module: "agents.generate-title-job",
-         message: "skipping: conversation too shallow",
-         jobId: options.job.id,
-         threadId: input.threadId,
-      });
-      return Result.ok(undefined);
-   }
-
-   const prompt = await Result.tryPromise({
-      try: () =>
-         options.prompts.get(AGENT_PROMPTS.generateTitle, {
-            withMetadata: true,
-         }),
-      catch: () =>
-         new GenerateThreadTitleJobError({
-            error: generateTitleJobErrors.PROMPT_LOAD_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }),
-            message: generateTitleJobErrors.PROMPT_LOAD_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }).message,
+      if (loaded.title) {
+         log.info({
+            module: "agents.generate-title-job",
+            message: "skipping: title already exists",
+            jobId: options.job.id,
             threadId: input.threadId,
-         }),
-   });
+         });
+         return Result.ok(undefined);
+      }
 
-   if (Result.isError(prompt)) {
-      return Result.err(prompt.error);
-   }
+      if (!loaded.recent || loaded.recent.length === 0) {
+         log.info({
+            module: "agents.generate-title-job",
+            message: "skipping: no messages",
+            jobId: options.job.id,
+            threadId: input.threadId,
+         });
+         return Result.ok(undefined);
+      }
 
-   const titleResult = await Result.tryPromise({
-      try: () =>
-         chat({
-            adapter: flashModel,
-            messages: convertMessagesToModelMessages([
-               ...recent,
-               {
-                  id: `${options.job.id}-title-request`,
-                  role: "user",
-                  parts: [
-                     {
-                        type: "text",
-                        content: options.prompts.compile(prompt.value.prompt, {
-                           transcript:
-                              "A conversa recente está disponível nas mensagens anteriores.",
-                        }),
-                     },
-                  ],
-               },
-            ]),
-            stream: false,
-            conversationId: input.threadId,
-            middleware: [
-               otelMiddleware({
-                  tracer: getAiTracer(),
-                  captureContent: false,
-                  attributeEnricher: () =>
-                     aiTraceAttributes({
-                        distinctId: input.teamId,
-                        organizationId: input.organizationId,
-                        teamId: input.teamId,
-                        threadId: input.threadId,
-                        promptName: prompt.value.name,
-                        promptVersion: prompt.value.version,
-                        customProperties: {
-                           agent_role: "job",
-                           agent_workflow: "generate-title",
-                           agent_thread_id: input.threadId,
-                           pg_boss_job_id: options.job.id,
-                        },
-                     }),
+      const recent = loaded.recent;
+      const hasUser = recent.some((row) => row.role === "user");
+      const hasAssistant = recent.some((row) => row.role === "assistant");
+      if (!hasUser || !hasAssistant) {
+         log.info({
+            module: "agents.generate-title-job",
+            message: "skipping: conversation too shallow",
+            jobId: options.job.id,
+            threadId: input.threadId,
+         });
+         return Result.ok(undefined);
+      }
+
+      const prompt = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               options.prompts.get(AGENT_PROMPTS.generateTitle, {
+                  withMetadata: true,
                }),
-            ],
+            catch: () =>
+               new GenerateThreadTitleJobError({
+                  error: generateTitleJobErrors.PROMPT_LOAD_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }),
+                  message: generateTitleJobErrors.PROMPT_LOAD_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }).message,
+                  threadId: input.threadId,
+               }),
          }),
-      catch: () =>
-         new GenerateThreadTitleJobError({
-            error: generateTitleJobErrors.AI_FAILED({
-               internal: {
-                  jobId: options.job.id,
+      );
+
+      const title = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               chat({
+                  adapter: flashModel,
+                  messages: convertMessagesToModelMessages([
+                     ...recent,
+                     {
+                        id: `${options.job.id}-title-request`,
+                        role: "user",
+                        parts: [
+                           {
+                              type: "text",
+                              content: options.prompts.compile(prompt.prompt, {
+                                 transcript:
+                                    "A conversa recente está disponível nas mensagens anteriores.",
+                              }),
+                           },
+                        ],
+                     },
+                  ]),
+                  stream: false,
+                  conversationId: input.threadId,
+                  middleware: [
+                     otelMiddleware({
+                        tracer: getAiTracer(),
+                        captureContent: false,
+                        attributeEnricher: () =>
+                           aiTraceAttributes({
+                              distinctId: input.teamId,
+                              organizationId: input.organizationId,
+                              teamId: input.teamId,
+                              threadId: input.threadId,
+                              promptName: prompt.name,
+                              promptVersion: prompt.version,
+                              customProperties: {
+                                 agent_role: "job",
+                                 agent_workflow: "generate-title",
+                                 agent_thread_id: input.threadId,
+                                 pg_boss_job_id: options.job.id,
+                              },
+                           }),
+                     }),
+                  ],
+               }),
+            catch: () =>
+               new GenerateThreadTitleJobError({
+                  error: generateTitleJobErrors.AI_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }),
+                  message: generateTitleJobErrors.AI_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }).message,
                   threadId: input.threadId,
-               },
-            }),
-            message: generateTitleJobErrors.AI_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }).message,
+               }),
+         }),
+      );
+
+      const normalizedTitle = title.trim().slice(0, 80);
+      if (normalizedTitle.length === 0) {
+         log.warn({
+            module: "agents.generate-title-job",
+            message: "empty title generated: skipping",
+            jobId: options.job.id,
             threadId: input.threadId,
-         }),
-   });
+         });
+         return Result.ok(undefined);
+      }
 
-   if (Result.isError(titleResult)) {
-      return Result.err(titleResult.error);
-   }
-
-   const title = titleResult.value.trim().slice(0, 80);
-   if (title.length === 0) {
-      log.warn({
-         module: "agents.generate-title-job",
-         message: "empty title generated: skipping",
-         jobId: options.job.id,
-         threadId: input.threadId,
-      });
-      return Result.ok(undefined);
-   }
-
-   const write = await Result.tryPromise({
-      try: () =>
-         options.db.transaction(async (tx) => {
-            return tx
-               .update(threads)
-               .set({ title })
-               .where(
-                  and(
-                     eq(threads.id, input.threadId),
-                     eq(threads.teamId, input.teamId),
-                     eq(threads.organizationId, input.organizationId),
-                     isNull(threads.title),
-                  ),
-               )
-               .returning({ title: threads.title });
-         }),
-      catch: () =>
-         new GenerateThreadTitleJobError({
-            error: generateTitleJobErrors.WRITE_FAILED({
-               internal: {
-                  jobId: options.job.id,
+      const write = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               options.db.transaction(async (tx) => {
+                  return tx
+                     .update(threads)
+                     .set({ title: normalizedTitle })
+                     .where(
+                        and(
+                           eq(threads.id, input.threadId),
+                           eq(threads.teamId, input.teamId),
+                           eq(threads.organizationId, input.organizationId),
+                           isNull(threads.title),
+                        ),
+                     )
+                     .returning({ title: threads.title });
+               }),
+            catch: () =>
+               new GenerateThreadTitleJobError({
+                  error: generateTitleJobErrors.WRITE_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }),
+                  message: generateTitleJobErrors.WRITE_FAILED({
+                     internal: {
+                        jobId: options.job.id,
+                        threadId: input.threadId,
+                     },
+                  }).message,
                   threadId: input.threadId,
-               },
-            }),
-            message: generateTitleJobErrors.WRITE_FAILED({
-               internal: {
-                  jobId: options.job.id,
-                  threadId: input.threadId,
-               },
-            }).message,
+               }),
+         }),
+      );
+
+      const writtenTitle = write[0]?.title;
+      if (!writtenTitle) {
+         log.info({
+            module: "agents.generate-title-job",
+            message: "skipping: title already set concurrently",
+            jobId: options.job.id,
             threadId: input.threadId,
-         }),
-   });
+         });
+         return Result.ok(undefined);
+      }
 
-   if (Result.isError(write)) {
-      return Result.err(write.error);
-   }
-   const writtenTitle = write.value[0]?.title;
-   if (!writtenTitle) {
       log.info({
          module: "agents.generate-title-job",
-         message: "skipping: title already set concurrently",
+         message: "completed",
          jobId: options.job.id,
          threadId: input.threadId,
+         title: normalizedTitle,
       });
       return Result.ok(undefined);
-   }
-
-   log.info({
-      module: "agents.generate-title-job",
-      message: "completed",
-      jobId: options.job.id,
-      threadId: input.threadId,
-      title,
    });
-   return Result.ok(undefined);
 }

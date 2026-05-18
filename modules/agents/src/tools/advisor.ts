@@ -56,6 +56,11 @@ type AdvisorCatalogError =
 class AdvisorToolError extends TaggedError("AdvisorToolError")<{
    error: AdvisorCatalogError;
    message: string;
+   userId?: string;
+   organizationId?: string;
+   teamId?: string;
+   threadId?: string;
+   turnId?: string;
 }>() {}
 
 export interface AdvisorToolDeps {
@@ -93,117 +98,143 @@ const advisorConsultInputSchema = z.object({
 });
 
 export function buildAdvisorTool(deps: AdvisorToolDeps) {
+   const errorContext = {
+      userId: deps.userId,
+      organizationId: deps.organizationId,
+      teamId: deps.teamId,
+      threadId: deps.threadId,
+      turnId: deps.turnId,
+   };
+
    return toolDefinition({
       name: "advisor_consult",
       description:
          "Consulte o advisor sênior antes de tomar decisões ambíguas dentro de uma skill ativa: tabela/dado confuso ou mesma operação falhou 2x. NÃO consulte para CRUD trivial, listagem, input claro ou pedidos sem skill ativa. Budget: até 3 consultas por turno.",
       inputSchema: advisorConsultInputSchema,
    }).server(async ({ situation, question, options }) => {
-      if (SKILLS.length === 0) {
-         return {
-            guidance:
-               "Nenhuma skill operacional está disponível no momento. Não é possível consultar o advisor para este pedido.",
-            fallback: true,
-         };
-      }
+      const result = await Result.gen(async function* () {
+         if (SKILLS.length === 0) {
+            return Result.ok({
+               guidance:
+                  "Nenhuma skill operacional está disponível no momento. Não é possível consultar o advisor para este pedido.",
+               fallback: true,
+            });
+         }
 
-      const templateResult = await Result.tryPromise({
-         try: () =>
-            deps.prompts.get(AGENT_PROMPTS.advisor, {
-               withMetadata: false,
-            }),
-         catch: () =>
-            new AdvisorToolError({
-               error: advisorErrors.PROMPT_LOAD_FAILED(),
-               message: advisorErrors.PROMPT_LOAD_FAILED().message,
-            }),
-      });
-      if (Result.isError(templateResult)) throw templateResult.error;
-
-      const systemPromptResult = Result.try({
-         try: () => deps.prompts.compile(templateResult.value, {}),
-         catch: () =>
-            new AdvisorToolError({
-               error: advisorErrors.PROMPT_COMPILE_FAILED(),
-               message: advisorErrors.PROMPT_COMPILE_FAILED().message,
-            }),
-      });
-      if (Result.isError(systemPromptResult)) throw systemPromptResult.error;
-      const systemPrompt = systemPromptResult.value;
-
-      const optionsBlock =
-         options && options.length > 0
-            ? `\nOpções consideradas:\n${options.map((o, i) => `${i + 1}. ${o}`).join("\n")}`
-            : "";
-
-      const userContent = `Situação:\n${situation}\n\nDecisão necessária:\n${question}${optionsBlock}`;
-
-      const advisorController = new AbortController();
-      const timeout = setTimeout(
-         () => advisorController.abort("advisor-timeout"),
-         ADVISOR_TIMEOUT_MS,
-      );
-
-      const result = await Result.tryPromise({
-         try: () =>
-            chat({
-               adapter: proModel,
-               systemPrompts: [systemPrompt],
-               messages: [
-                  {
-                     role: "user",
-                     content: [{ type: "text", content: userContent }],
-                  },
-               ],
-               stream: false,
-               abortController: advisorController,
-               middleware: [
-                  otelMiddleware({
-                     tracer: getAiTracer(),
-                     captureContent: false,
-                     attributeEnricher: () =>
-                        aiTraceAttributes({
-                           distinctId: deps.distinctId,
-                           userId: deps.userId,
-                           organizationId: deps.organizationId,
-                           teamId: deps.teamId,
-                           threadId: deps.threadId,
-                           promptName: AGENT_PROMPTS.advisor,
-                           customProperties: {
-                              agent_role: "advisor",
-                              ...(deps.organizationId && {
-                                 agent_organization_id: deps.organizationId,
-                              }),
-                              ...(deps.teamId && {
-                                 agent_team_id: deps.teamId,
-                              }),
-                              ...(deps.threadId && {
-                                 agent_thread_id: deps.threadId,
-                              }),
-                              ...(deps.turnId && {
-                                 agent_turn_id: deps.turnId,
-                              }),
-                           },
-                        }),
+         const template = yield* Result.await(
+            Result.tryPromise({
+               try: () =>
+                  deps.prompts.get(AGENT_PROMPTS.advisor, {
+                     withMetadata: false,
                   }),
-               ],
+               catch: () =>
+                  new AdvisorToolError({
+                     error: advisorErrors.PROMPT_LOAD_FAILED(),
+                     message: advisorErrors.PROMPT_LOAD_FAILED().message,
+                     ...errorContext,
+                  }),
             }),
-         catch: () =>
-            new AdvisorToolError({
-               error: advisorErrors.RUN_FAILED(),
-               message: advisorErrors.RUN_FAILED().message,
-            }),
-      }).finally(() => clearTimeout(timeout));
+         );
+
+         const systemPrompt = yield* Result.try({
+            try: () => deps.prompts.compile(template, {}),
+            catch: () =>
+               new AdvisorToolError({
+                  error: advisorErrors.PROMPT_COMPILE_FAILED(),
+                  message: advisorErrors.PROMPT_COMPILE_FAILED().message,
+                  ...errorContext,
+               }),
+         });
+
+         const optionsBlock =
+            options && options.length > 0
+               ? `\nOpções consideradas:\n${options.map((o, i) => `${i + 1}. ${o}`).join("\n")}`
+               : "";
+
+         const userContent = `Situação:\n${situation}\n\nDecisão necessária:\n${question}${optionsBlock}`;
+
+         const advisorController = new AbortController();
+         const timeout = setTimeout(
+            () => advisorController.abort("advisor-timeout"),
+            ADVISOR_TIMEOUT_MS,
+         );
+
+         let response: string | undefined;
+         try {
+            response = yield* Result.await(
+               Result.tryPromise({
+                  try: () =>
+                     chat({
+                        adapter: proModel,
+                        systemPrompts: [systemPrompt],
+                        messages: [
+                           {
+                              role: "user",
+                              content: [{ type: "text", content: userContent }],
+                           },
+                        ],
+                        stream: false,
+                        abortController: advisorController,
+                        middleware: [
+                           otelMiddleware({
+                              tracer: getAiTracer(),
+                              captureContent: false,
+                              attributeEnricher: () =>
+                                 aiTraceAttributes({
+                                    distinctId: deps.distinctId,
+                                    userId: deps.userId,
+                                    organizationId: deps.organizationId,
+                                    teamId: deps.teamId,
+                                    threadId: deps.threadId,
+                                    promptName: AGENT_PROMPTS.advisor,
+                                    customProperties: {
+                                       agent_role: "advisor",
+                                       ...(deps.organizationId && {
+                                          agent_organization_id:
+                                             deps.organizationId,
+                                       }),
+                                       ...(deps.teamId && {
+                                          agent_team_id: deps.teamId,
+                                       }),
+                                       ...(deps.threadId && {
+                                          agent_thread_id: deps.threadId,
+                                       }),
+                                       ...(deps.turnId && {
+                                          agent_turn_id: deps.turnId,
+                                       }),
+                                    },
+                                 }),
+                           }),
+                        ],
+                     }),
+                  catch: () =>
+                     new AdvisorToolError({
+                        error: advisorErrors.RUN_FAILED(),
+                        message: advisorErrors.RUN_FAILED().message,
+                        ...errorContext,
+                     }),
+               }),
+            );
+         } finally {
+            clearTimeout(timeout);
+         }
+
+         if (!response)
+            return Result.err(
+               new AdvisorToolError({
+                  error: advisorErrors.EMPTY_RESPONSE(),
+                  message: advisorErrors.EMPTY_RESPONSE().message,
+                  ...errorContext,
+               }),
+            );
+
+         return Result.ok({
+            guidance: response,
+            fallback: false,
+         });
+      });
 
       if (Result.isError(result)) throw result.error;
-      if (!result.value)
-         throw new AdvisorToolError({
-            error: advisorErrors.EMPTY_RESPONSE(),
-            message: advisorErrors.EMPTY_RESPONSE().message,
-         });
-      return {
-         guidance: result.value,
-         fallback: false,
-      };
+      return result.value;
    });
 }
