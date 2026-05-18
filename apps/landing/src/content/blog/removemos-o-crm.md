@@ -5,7 +5,7 @@ publishedAt: 2026-05-18
 author: "Manoel Neto"
 tags: ["produto", "crm", "erp", "montte-ai", "operacao"]
 category: "Produto"
-coverImage: "../../assets/blog/montte-2026-05-15.jpg"
+coverImage: "../../assets/blog/removemos-o-crm-cover.png"
 featured: false
 readingMinutes: 4
 keyTakeaways:
