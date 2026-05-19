@@ -37,6 +37,7 @@
     "apps/landing": {
       "name": "landing",
       "dependencies": {
+        "@arcjet/astro": "catalog:astro",
         "@astrojs/check": "catalog:astro",
         "@astrojs/mdx": "catalog:astro",
         "@astrojs/node": "catalog:astro",
@@ -52,6 +53,7 @@
         "@types/react-dom": "catalog:react",
         "astro": "catalog:astro",
         "astro-og-canvas": "catalog:astro",
+        "better-result": "catalog:validation",
         "dayjs": "catalog:ui",
         "foxact": "catalog:ui",
         "motion": "catalog:ui",
@@ -544,8 +546,10 @@
         "@f-o-t/money": "catalog:fot",
         "@modules/classification": "workspace:*",
         "@orpc/server": "catalog:orpc",
+        "better-result": "catalog:validation",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
+        "evlog": "catalog:logging",
         "neverthrow": "catalog:validation",
         "zod": "catalog:validation",
       },
@@ -745,6 +749,7 @@
       "posthog-node": "^5.29.2",
     },
     "astro": {
+      "@arcjet/astro": "1.4.0",
       "@astrojs/check": "0.9.9",
       "@astrojs/mdx": "5.0.4",
       "@astrojs/node": "^10.0.6",
@@ -959,6 +964,8 @@
     "@arcjet/analyze": ["@arcjet/analyze@1.4.0", "", { "dependencies": { "@arcjet/analyze-wasm": "1.4.0", "@arcjet/protocol": "1.4.0" } }, "sha512-dKvRoAnhNRHVuHnQZ4LxL8yH7CVrP4uDhfvoN26aqDuAwjLkJZSR1PzGzj1OH91jD1Qqthn/+wzNm7lqPEjJDw=="],
 
     "@arcjet/analyze-wasm": ["@arcjet/analyze-wasm@1.4.0", "", {}, "sha512-UHyTqz0rQqBccJIWmTPoeKreq3dvZ6Ql5loLY2S0nukA+wBMaBh1Ok88Vo8+qoT10Qkyh9FXk6famNhSiNS/nw=="],
+
+    "@arcjet/astro": ["@arcjet/astro@1.4.0", "", { "dependencies": { "@arcjet/body": "1.4.0", "@arcjet/env": "1.4.0", "@arcjet/headers": "1.4.0", "@arcjet/ip": "1.4.0", "@arcjet/logger": "1.4.0", "@arcjet/protocol": "1.4.0", "@arcjet/transport": "1.4.0", "arcjet": "1.4.0" }, "peerDependencies": { "astro": "^5.9.3 || ^6.0.0" } }, "sha512-D08eQkYep7nrPcstuWII8pvesWLvOzN849RBBGCenyGYJzh8HvC5JFY/BPVhKk6g19NGo03thSmCZPjfIMj3ag=="],
 
     "@arcjet/body": ["@arcjet/body@1.4.0", "", {}, "sha512-feR887vz8X/jQH8EpztkIdRzY3RnfKjGNBqFIqy2cb+EhxEGmGXJxq+tb0UFndoZ0UIaby+eofDhXUy/4uiF0w=="],
 

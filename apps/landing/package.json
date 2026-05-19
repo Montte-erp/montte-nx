@@ -11,7 +11,7 @@
       "check": "oxlint astro.config.mjs src"
    },
    "dependencies": {
-      "@arcjet/astro": "1.4.0",
+      "@arcjet/astro": "catalog:astro",
       "@astrojs/check": "catalog:astro",
       "@astrojs/mdx": "catalog:astro",
       "@astrojs/node": "catalog:astro",

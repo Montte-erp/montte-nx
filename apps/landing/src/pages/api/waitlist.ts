@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { Result, TaggedError } from "better-result";
-import type { ArcjetDecision } from "@arcjet/protocol";
 import aj from "arcjet:client";
+import dayjs from "dayjs";
 import type { APIContext } from "astro";
 import { z } from "zod";
 
@@ -216,22 +216,19 @@ async function validateWithArcjet(
       return Result.ok(email);
    }
 
-   const decision = await Result.tryPromise<ArcjetDecision, WaitlistRouteError>(
-      {
-         try: () =>
-            aj.protect(context.request, { email }) as Promise<ArcjetDecision>,
-         catch: () =>
-            new WaitlistRouteError({
-               source: "landing",
-               emailHash: hashForLog(email),
-               error: waitlistErrorCatalog.email_validation_failed(
-                  "Não conseguimos validar esse e-mail agora. Tente novamente em instantes.",
-               ),
-               message:
-                  "Não conseguimos validar esse e-mail agora. Tente novamente em instantes.",
-            }),
-      },
-   );
+   const decision = await Result.tryPromise({
+      try: () => aj.protect(context.request, { email }),
+      catch: () =>
+         new WaitlistRouteError({
+            source: "landing",
+            emailHash: hashForLog(email),
+            error: waitlistErrorCatalog.email_validation_failed(
+               "Não conseguimos validar esse e-mail agora. Tente novamente em instantes.",
+            ),
+            message:
+               "Não conseguimos validar esse e-mail agora. Tente novamente em instantes.",
+         }),
+   });
 
    if (Result.isError(decision)) {
       console.warn("waitlist_arcjet_error", {
@@ -330,7 +327,7 @@ async function captureWaitlistLead(
                      source,
                      waitlist_source: "landing",
                   },
-                  timestamp: new Date().toISOString(),
+                  timestamp: dayjs().toISOString(),
                   ip: getClientIp(context) ?? undefined,
                }),
             },
