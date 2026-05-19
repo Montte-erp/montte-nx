@@ -1,6 +1,6 @@
 ---
 title: "Removemos o CRM. Empurramos pro Twenty."
-description: "O Montte tirou o módulo de Contatos: 3.081 linhas em 37 arquivos. Relacionamento passa a viver no Twenty, com a integração planejada como fronteira oficial. O Customer está virando primitive de cobrança, no espírito do Autumn e do Polar. O destino é runtime de billing brasileiro."
+description: "O Montte tirou o módulo de Contatos: 3.081 linhas em 37 arquivos. Relacionamento passa a viver no Twenty, que é o CRM que a gente já usa por dentro. O Customer está virando primitive de cobrança, no espírito do Autumn e do Polar. O destino é runtime de billing brasileiro."
 publishedAt: 2026-05-18
 author: "Manoel Neto"
 tags: ["opiniao", "crm", "billing", "twenty"]
@@ -10,14 +10,14 @@ featured: false
 readingMinutes: 3
 keyTakeaways:
    - "O módulo de Contatos saiu do produto: 3.081 linhas em 37 arquivos."
-   - "Relacionamento passa a viver no Twenty. Integração no roadmap como fronteira oficial."
+   - "Relacionamento passa a viver no Twenty, que é o CRM que o Montte já usa internamente. Integração com o produto é a primeira da fila."
    - "O Customer no Montte está virando primitive de cobrança, inspirado em Autumn e Polar."
    - "O Montte é runtime de billing usage-based brasileiro, não ERP."
 faq:
    - question: "Por que o Montte não tem mais módulo de Contatos?"
      answer: "Porque o lugar do relacionamento é em ferramenta dedicada. No Montte, o Customer existe pra cobrança, não pra pipeline."
    - question: "A integração com o Twenty já está pronta?"
-     answer: "Ainda não. Está planejada como a fronteira oficial do Montte pra CRM. O escopo inicial é mapear o Customer do Montte para Company ou Person no Twenty."
+     answer: "Ainda não. É a primeira integração que entra no roadmap, porque o Twenty é o CRM que a gente já usa por dentro. O escopo inicial é mapear o Customer do Montte para Company ou Person no Twenty."
    - question: "Então o Montte virou o quê?"
      answer: "Runtime de billing usage-based brasileiro, no espírito do Autumn e do Polar. O Customer vai agregar assinaturas, uso, faturas e status de pagamento numa resposta só. Tem peça por construir, e a gente conta em público."
 ---
@@ -40,7 +40,7 @@ A escolha aqui é antiga. Ou se assume metade, ou se delega o relacionamento pra
 
 [Twenty](https://twenty.com). Open-source, TypeScript, feito pra ser CRM. Pessoas, empresas, oportunidades, pipeline e responsável comercial vivem lá.
 
-A integração entra como a fronteira oficial do Montte pra CRM. O Customer do Montte aponta pra Company ou Person no Twenty quando faz sentido. Não tem segunda opção de CRM no roadmap: Twenty é a escolha.
+É a primeira integração planejada do Montte, porque o Twenty é o CRM que a gente já usa internamente pra rodar o próprio negócio. O Customer do Montte vai apontar pra Company ou Person no Twenty quando fizer sentido.
 
 ## O Customer está virando outra coisa
 
