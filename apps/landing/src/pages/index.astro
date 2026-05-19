@@ -1,8 +1,6 @@
 ---
 export const prerender = true;
 import BaseLayout from "../layouts/base-layout.astro";
-import { ArrowRight } from "@lucide/astro";
-import { Button } from "@packages/ui/components/button";
 import { AnimatedTexture } from "../components/animated-texture";
 import { HeroCarousel } from "../blocks/hero-carousel";
 import SocialProofBlock from "../blocks/social-proof-block.astro";
@@ -34,15 +32,6 @@ import FooterBlock from "../blocks/footer-block.astro";
 
       <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center gap-4 overflow-hidden px-2 py-4 sm:px-4">
          <HeroCarousel client:load />
-
-         <div class="flex flex-wrap items-center justify-center gap-2">
-            <a href="#waitlist" data-ph-cta="hero_waitlist">
-               <Button size="lg" variant="default">
-                  Quero acesso antecipado
-                  <ArrowRight data-icon="inline-end" aria-hidden="true" />
-               </Button>
-            </a>
-         </div>
       </div>
    </section>
 
