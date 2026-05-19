@@ -1,4 +1,5 @@
 import { call } from "@orpc/server";
+import type { ConditionGroup } from "@f-o-t/condition-evaluator";
 import { asc, eq } from "drizzle-orm";
 import {
    beforeAll,
@@ -36,6 +37,7 @@ vi.mock("@core/orpc/server", async () =>
 );
 
 import * as transactionsRouter from "../../src/router/transactions";
+import * as transactionsListRouter from "../../src/router/transactions-list";
 
 let testDb: Awaited<ReturnType<typeof setupTestDb>>;
 
@@ -315,5 +317,101 @@ describe("transactions router", () => {
             { context: ctx },
          ),
       ).rejects.toThrow("Lançamento recorrente não pode ser parcelado.");
+   });
+
+   it("getAll lista lançamentos ignorados na view ignored", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const ctx = createTestContext(testDb.db, { teamId, organizationId });
+      const [account] = await testDb.db
+         .insert(bankAccounts)
+         .values({
+            teamId,
+            name: "Conta Ignorados",
+            type: "checking",
+            initialBalance: "0",
+            status: "active",
+         })
+         .returning();
+
+      await testDb.db.insert(transactions).values([
+         {
+            teamId,
+            type: "expense",
+            name: "Oculto",
+            amount: "10.00",
+            date: "2026-05-15",
+            status: "pending",
+            ignored: true,
+            bankAccountId: account.id,
+         },
+         {
+            teamId,
+            type: "expense",
+            name: "Visível",
+            amount: "20.00",
+            date: "2026-05-15",
+            status: "pending",
+            ignored: false,
+            bankAccountId: account.id,
+         },
+      ]);
+
+      const result = await call(
+         transactionsListRouter.getAll,
+         { view: "ignored" },
+         { context: ctx },
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.data.map((row) => row.name)).toEqual(["Oculto"]);
+   });
+
+   it("getAll ignora operador textual em coluna monetária", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const ctx = createTestContext(testDb.db, { teamId, organizationId });
+      const [account] = await testDb.db
+         .insert(bankAccounts)
+         .values({
+            teamId,
+            name: "Conta Filtros",
+            type: "checking",
+            initialBalance: "0",
+            status: "active",
+         })
+         .returning();
+      const conditionGroup = {
+         id: "amount-text-filter",
+         operator: "AND",
+         scoringMode: "binary",
+         conditions: [
+            {
+               id: "amount-contains",
+               type: "string",
+               field: "amount",
+               operator: "contains",
+               value: "10",
+            },
+         ],
+      } satisfies ConditionGroup;
+
+      await testDb.db.insert(transactions).values({
+         teamId,
+         type: "expense",
+         name: "Compra",
+         amount: "10.00",
+         date: "2026-05-15",
+         status: "pending",
+         ignored: false,
+         bankAccountId: account.id,
+      });
+
+      const result = await call(
+         transactionsListRouter.getAll,
+         { conditionGroup },
+         { context: ctx },
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.data.map((row) => row.name)).toEqual(["Compra"]);
    });
 });

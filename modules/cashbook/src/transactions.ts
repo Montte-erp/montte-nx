@@ -161,13 +161,13 @@ export interface TransactionFilter {
 const t = transactions;
 
 const COND_COLUMNS = {
-   categoryId: t.categoryId,
-   bankAccountId: t.bankAccountId,
-   creditCardId: t.creditCardId,
-   amount: t.amount,
-   name: t.name,
-   paymentMethod: t.paymentMethod,
-} as const;
+   categoryId: { column: t.categoryId, isText: false },
+   bankAccountId: { column: t.bankAccountId, isText: false },
+   creditCardId: { column: t.creditCardId, isText: false },
+   amount: { column: t.amount, isText: false },
+   name: { column: t.name, isText: true },
+   paymentMethod: { column: t.paymentMethod, isText: true },
+};
 
 function isCondColumnKey(value: string): value is keyof typeof COND_COLUMNS {
    return value in COND_COLUMNS;
@@ -181,29 +181,33 @@ function conditionToSql(c: Condition) {
    const s = String(v);
    switch (c.operator) {
       case "eq":
-         return sql`${col} = ${v}`;
+         return sql`${col.column} = ${v}`;
       case "neq":
-         return sql`${col} <> ${v}`;
+         return sql`${col.column} <> ${v}`;
       case "gt":
-         return sql`${col} > ${v}`;
+         return sql`${col.column} > ${v}`;
       case "gte":
-         return sql`${col} >= ${v}`;
+         return sql`${col.column} >= ${v}`;
       case "lt":
-         return sql`${col} < ${v}`;
+         return sql`${col.column} < ${v}`;
       case "lte":
-         return sql`${col} <= ${v}`;
+         return sql`${col.column} <= ${v}`;
       case "is_empty":
-         return sql`${col} IS NULL`;
+         return sql`${col.column} IS NULL`;
       case "is_not_empty":
-         return sql`${col} IS NOT NULL`;
+         return sql`${col.column} IS NOT NULL`;
       case "contains":
-         return sql`${col} ILIKE ${`%${s}%`}`;
+         if (!col.isText) return null;
+         return sql`${col.column} ILIKE ${`%${s}%`}`;
       case "not_contains":
-         return sql`${col} NOT ILIKE ${`%${s}%`}`;
+         if (!col.isText) return null;
+         return sql`${col.column} NOT ILIKE ${`%${s}%`}`;
       case "starts_with":
-         return sql`${col} ILIKE ${`${s}%`}`;
+         if (!col.isText) return null;
+         return sql`${col.column} ILIKE ${`${s}%`}`;
       case "ends_with":
-         return sql`${col} ILIKE ${`%${s}`}`;
+         if (!col.isText) return null;
+         return sql`${col.column} ILIKE ${`%${s}`}`;
       default:
          return null;
    }
@@ -263,8 +267,11 @@ function conditionGroupToSql(group: ConditionGroup) {
 
 export function buildTransactionWhere(f: TransactionFilter) {
    const c: SQL[] = [eq(t.teamId, f.teamId)];
+   const viewFilter = f.view ? VIEW_FILTERS[f.view] : undefined;
+   const filtersIgnoredView = f.view === "ignored";
+
    if (f.ignored === true) c.push(eq(t.ignored, true));
-   else if (f.ignored === false || !f.includeIgnored)
+   else if (!filtersIgnoredView && (f.ignored === false || !f.includeIgnored))
       c.push(eq(t.ignored, false));
    if (f.type) c.push(eq(t.type, f.type));
    if (f.bankAccountId) c.push(eq(t.bankAccountId, f.bankAccountId));
@@ -288,7 +295,6 @@ export function buildTransactionWhere(f: TransactionFilter) {
       c.push(eq(t.status, "pending"));
       c.push(lt(t.dueDate, dayjs().format("YYYY-MM-DD")));
    }
-   const viewFilter = f.view ? VIEW_FILTERS[f.view] : undefined;
    if (viewFilter) c.push(...viewFilter);
 
    if (f.search) {
