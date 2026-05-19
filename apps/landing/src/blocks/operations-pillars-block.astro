@@ -25,7 +25,7 @@ import { Reveal } from "../components/reveal";
                Do contrato ao caixa, com o contexto do cliente no meio
             </h2>
             <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-               Montte combina billing, uso medido e financeiro em fluxos de trabalho que
+               Montte combina cobrança, uso medido e financeiro em fluxos de trabalho que
                mostram o que aconteceu, o que precisa de cobrança e qual ação vem depois.
             </p>
          </div>
@@ -49,7 +49,7 @@ import { Reveal } from "../components/reveal";
                            <Bot class="size-4" />
                         </div>
                         <div class="flex flex-col gap-2">
-                           <p class="text-sm font-semibold text-foreground">Billing Agent</p>
+                           <p class="text-sm font-semibold text-foreground">Agente de cobrança</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Gera cobrança a partir de contrato, uso e estado do cliente.
                            </p>
@@ -60,7 +60,7 @@ import { Reveal } from "../components/reveal";
                            <FileText class="size-4" />
                         </div>
                         <div class="flex flex-col gap-2">
-                           <p class="text-sm font-semibold text-foreground">Finance Agent</p>
+                           <p class="text-sm font-semibold text-foreground">Agente financeiro</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Reconcilia receita, pendências e Centros de Custo.
                            </p>
@@ -71,7 +71,7 @@ import { Reveal } from "../components/reveal";
                            <CircleCheck class="size-4" />
                         </div>
                         <div class="flex flex-col gap-2">
-                           <p class="text-sm font-semibold text-foreground">Customer State</p>
+                           <p class="text-sm font-semibold text-foreground">Estado do cliente</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Mostra assinatura, uso, fatura e próxima ação.
                            </p>
@@ -82,7 +82,7 @@ import { Reveal } from "../components/reveal";
                   <div class="flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-2">
                      <span class="flex-1 text-xs text-muted-foreground">Pergunte sobre uso, cobrança ou caixa...</span>
                      <span class="rounded-full border border-border/70 px-2 py-2 text-xs text-muted-foreground">
-                        Billing Agent
+                        Agente de cobrança
                      </span>
                      <span class="inline-flex items-center justify-center p-2 rounded-full bg-primary text-primary-foreground">
                         <ArrowRight class="size-4" />
@@ -110,9 +110,9 @@ import { Reveal } from "../components/reveal";
                      Revisando uso, faturas e contratos...
                   </div>
                   <div class="flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-2">
-                     <span class="flex-1 text-xs text-muted-foreground">Ask anything...</span>
+                     <span class="flex-1 text-xs text-muted-foreground">Pergunte qualquer coisa...</span>
                      <span class="rounded-full border border-border/70 px-2 py-2 text-xs text-muted-foreground">
-                        Customer State
+                        Estado do cliente
                      </span>
                   </div>
                </div>
@@ -170,7 +170,7 @@ import { Reveal } from "../components/reveal";
                   <button class="flex items-center justify-between rounded-lg border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground">
                      <span class="flex items-center gap-2">
                         <Upload class="size-4 text-primary" />
-                        Contract upload
+                        Enviar contrato
                      </span>
                      <CircleCheck class="size-4 text-primary" />
                   </button>
@@ -214,9 +214,11 @@ import { Reveal } from "../components/reveal";
 
          <Reveal className="lg:col-span-3" delay={0.5} client:visible>
             <article class="flex h-full min-h-[300px] flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4 text-center">
-               <div class="inline-flex items-center justify-center rounded-full border border-primary/30 bg-primary/15 p-4 shadow-2xl shadow-primary/20">
-                  <img src="/mascot.svg" alt="Mascote do Montte" class="size-4" />
-               </div>
+               <img
+                  src="/mascot.svg"
+                  alt="Mascote do Montte"
+                  style="width: 88px; height: auto;"
+               />
                <div class="flex max-w-md flex-col items-center gap-2">
                   <h3 class="text-xl font-semibold text-foreground">Vá mais fundo quando precisar</h3>
                   <p class="text-sm leading-relaxed text-muted-foreground">
@@ -227,7 +229,7 @@ import { Reveal } from "../components/reveal";
                   href="#waitlist"
                   class="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/80 px-4 py-2 text-sm font-semibold text-foreground"
                >
-                  Explorar Montte AI
+                  Conhecer o assistente
                   <ArrowRight class="size-4" />
                </a>
             </article>
