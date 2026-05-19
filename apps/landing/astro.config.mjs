@@ -1,9 +1,12 @@
+import arcjet, { validateEmail } from "@arcjet/astro";
 import mdx from "@astrojs/mdx";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, envField } from "astro/config";
+
+delete process.env.is_vim;
 
 export default defineConfig({
    site: "https://montte.co",
@@ -21,7 +24,19 @@ export default defineConfig({
          }),
       },
    },
-   integrations: [react(), sitemap(), mdx()],
+   integrations: [
+      react(),
+      sitemap(),
+      mdx(),
+      arcjet({
+         rules: [
+            validateEmail({
+               mode: "LIVE",
+               deny: ["INVALID", "DISPOSABLE"],
+            }),
+         ],
+      }),
+   ],
    prefetch: { defaultStrategy: "viewport" },
    vite: {
       resolve: {
