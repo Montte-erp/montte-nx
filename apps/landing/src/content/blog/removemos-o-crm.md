@@ -46,6 +46,8 @@ A escolha aqui é antiga. Ou se assume metade, ou se delega o relacionamento pra
 
 O `Customer` no Montte deixa de carregar endereço, telefone e histórico de visita. Vira primitive de cobrança, no espírito do [Autumn](https://useautumn.com) e do [Polar](https://polar.sh).
 
+O que sobra de dados pessoais é o mínimo pra emitir NFe: CPF quando o cliente é pessoa física, CNPJ quando é pessoa jurídica. Isso decide como o registro entra no Twenty: CPF vira Person, CNPJ vira Company. O resto do perfil mora lá.
+
 Cinco verbos planejados pro runtime:
 
 - `customers.getOrCreate` no signup ou login.
