@@ -6,13 +6,14 @@ import { Button } from "@packages/ui/components/button";
 import { AnimatedTexture } from "../components/animated-texture";
 import { HeroCarousel } from "../blocks/hero-carousel";
 import SocialProofBlock from "../blocks/social-proof-block.astro";
+import OperationsPillarsBlock from "../blocks/operations-pillars-block.astro";
 import WaitlistBlock from "../blocks/waitlist-block.astro";
 import FooterBlock from "../blocks/footer-block.astro";
 ---
 
 <BaseLayout
-   title="Montte: Plataforma operacional para empresas brasileiras"
-   description="Entre na waitlist do Montte e organize financeiro, contatos, serviços e cobranças em uma plataforma operacional feita para empresas brasileiras."
+   title="Montte: recorrência e billing para SaaS brasileiros"
+   description="Conecte assinatura, uso, cobrança, cliente e financeiro em uma operação recorrente feita para SaaS brasileiros."
 >
    <section
       class="relative isolate flex min-h-screen flex-col overflow-hidden"
@@ -31,18 +32,13 @@ import FooterBlock from "../blocks/footer-block.astro";
       >
       </div>
 
-      <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-8 overflow-hidden px-2 py-4 sm:px-4">
+      <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-6 overflow-hidden px-2 py-4 sm:px-4">
          <HeroCarousel client:load />
-
-         <p class="max-w-xl text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Controle clientes, receita, uso e pendências em uma operação feita
-            para SaaS e serviços recorrentes no Brasil.
-         </p>
 
          <div class="flex flex-wrap items-center justify-center gap-2">
             <a href="#waitlist" data-ph-cta="hero_waitlist">
                <Button size="lg" variant="default">
-                  Entrar na lista
+                  Quero acesso antecipado
                   <ArrowRight data-icon="inline-end" aria-hidden="true" />
                </Button>
             </a>
@@ -51,6 +47,7 @@ import FooterBlock from "../blocks/footer-block.astro";
    </section>
 
    <SocialProofBlock />
+   <OperationsPillarsBlock />
    <WaitlistBlock />
 
    <FooterBlock />

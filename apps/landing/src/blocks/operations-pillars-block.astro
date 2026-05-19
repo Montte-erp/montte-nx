@@ -1,0 +1,86 @@
+---
+import {
+   ArrowRight,
+   BellRing,
+   BadgeCheck,
+   Building2,
+   CreditCard,
+} from "@lucide/astro";
+import { Reveal } from "../components/reveal";
+
+const pillars = [
+   {
+      Icon: CreditCard,
+      title: "Cobrança recorrente sem gambiarra",
+      description:
+         "Registre assinatura, uso e faturas no mesmo painel para não depender de planilha paralela.",
+   },
+   {
+      Icon: Building2,
+      title: "Clientes com leitura de risco",
+      description:
+         "Acompanhe receita, pendências e eventos por cliente para agir antes de virar perda de caixa.",
+   },
+   {
+      Icon: BadgeCheck,
+      title: "Finanças com decisão imediata",
+      description:
+         "Classifique, valide e feche fluxos recorrentes no painel, com visão diária do que precisa de ação.",
+   },
+   {
+      Icon: BellRing,
+      title: "Operação pronta para o time",
+      description:
+         "Exiba status, alertas e próximos passos para que cada pessoa execute sem ruído.",
+   },
+];
+---
+
+<section
+   class="relative isolate flex min-h-[70vh] flex-col justify-center overflow-hidden bg-background py-12"
+   aria-label="Pilares de operação"
+>
+   <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-2 sm:px-4">
+      <Reveal client:visible>
+         <div class="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
+            <p class="text-sm font-medium uppercase tracking-[0.08em] text-muted-foreground">
+               Método de operação
+            </p>
+            <h2 class="text-3xl leading-tight font-black text-foreground text-balance sm:text-4xl md:text-5xl">
+               Estruture a operação recorrente no ritmo do negócio
+            </h2>
+            <p class="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+               O que você vê aqui é o que sua operação precisa no dia a dia: dinheiro,
+               uso, clientes e cobranças organizados para decidir mais rápido.
+            </p>
+         </div>
+      </Reveal>
+
+      <div class="grid gap-4 md:grid-cols-2">
+         {pillars.map(({ Icon, title, description }, index) => (
+            <Reveal className="w-full" delay={index * 0.1} client:visible>
+               <article class="border border-border/70 bg-card p-4 shadow-sm">
+                  <div class="flex items-start gap-3">
+                     <span class="mt-1 inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border/80 bg-secondary/60">
+                        <Icon class="size-4 text-primary" />
+                     </span>
+                     <div class="space-y-2">
+                        <h3 class="text-lg font-semibold leading-tight text-foreground">
+                           {title}
+                        </h3>
+                        <p class="text-sm leading-relaxed text-muted-foreground">{description}</p>
+                     </div>
+                  </div>
+                  <a
+                     href="#waitlist"
+                     class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary"
+                  >
+                     Quero saber como funciona
+                     <ArrowRight class="size-4" />
+                  </a>
+               </article>
+            </Reveal>
+         ))}
+      </div>
+   </div>
+</section>
