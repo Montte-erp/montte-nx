@@ -35,21 +35,21 @@ import { Reveal } from "../components/reveal";
          <Reveal className="lg:col-span-4" client:visible>
             <article class="flex h-full min-h-[330px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
                <div class="flex flex-col gap-2">
-                  <h3 class="text-xl font-semibold text-foreground">Escolha a skill operacional</h3>
+                  <h3 class="text-xl font-semibold text-foreground">Selecione um contexto</h3>
                   <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                     Comece por uma rotina concreta: cobrar uso, revisar inadimplência,
-                     conciliar receita ou entender a saúde de um cliente.
+                     Use o seletor no canto para escolher o contexto da resposta.
+                     Escolha uma área da plataforma ou deixe em Auto para o padrão.
                   </p>
                </div>
 
                <div class="mx-auto flex w-full max-w-3xl flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-2xl shadow-background/60">
-                  <div class="grid gap-2 md:grid-cols-3">
+                  <div class="grid gap-4 md:grid-cols-3">
                      <div class="flex flex-col gap-2 rounded-lg border border-primary/60 bg-primary/10 p-4">
                         <div class="inline-flex items-center justify-center p-2 rounded-md bg-primary/15 text-primary">
                            <BarChart3 class="size-4" />
                         </div>
                         <div class="flex flex-col gap-2">
-                           <p class="text-sm font-semibold text-foreground">Skill de cobrança</p>
+                           <p class="text-sm font-semibold text-foreground">Cobrança</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Gera cobrança a partir de contrato, uso e estado do cliente.
                            </p>
@@ -60,7 +60,7 @@ import { Reveal } from "../components/reveal";
                            <FileText class="size-4" />
                         </div>
                         <div class="flex flex-col gap-2">
-                           <p class="text-sm font-semibold text-foreground">Skill financeira</p>
+                           <p class="text-sm font-semibold text-foreground">Financeiro</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Reconcilia receita, pendências e Centros de Custo.
                            </p>
@@ -71,7 +71,7 @@ import { Reveal } from "../components/reveal";
                            <CircleCheck class="size-4" />
                         </div>
                         <div class="flex flex-col gap-2">
-                           <p class="text-sm font-semibold text-foreground">Estado do cliente</p>
+                           <p class="text-sm font-semibold text-foreground">Acompanhamento</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Mostra assinatura, uso, fatura e próxima ação.
                            </p>
@@ -82,7 +82,7 @@ import { Reveal } from "../components/reveal";
                   <div class="flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-2">
                      <span class="flex-1 text-xs text-muted-foreground">Pergunte sobre uso, cobrança ou caixa...</span>
                      <span class="rounded-full border border-border/70 px-2 py-2 text-xs text-muted-foreground">
-                        Skill de cobrança
+                        Auto
                      </span>
                      <span class="inline-flex items-center justify-center p-2 rounded-full bg-primary text-primary-foreground">
                         <ArrowRight class="size-4" />
@@ -97,7 +97,7 @@ import { Reveal } from "../components/reveal";
                <div class="flex flex-col gap-2">
                   <h3 class="text-xl font-semibold text-foreground">Pergunte sobre a operação</h3>
                   <p class="text-sm leading-relaxed text-muted-foreground">
-                     Respostas com base no estado real do cliente, renderizadas em OpenUI.
+                     Respostas claras com base no estado real do cliente.
                   </p>
                </div>
 
@@ -112,7 +112,7 @@ import { Reveal } from "../components/reveal";
                   <div class="flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-2">
                      <span class="flex-1 text-xs text-muted-foreground">Pergunte qualquer coisa...</span>
                      <span class="rounded-full border border-border/70 px-2 py-2 text-xs text-muted-foreground">
-                        Estado do cliente
+                        Acompanhamento
                      </span>
                   </div>
                </div>
@@ -158,7 +158,7 @@ import { Reveal } from "../components/reveal";
          <Reveal className="lg:col-span-4" delay={0.3} client:visible>
             <article class="flex h-full min-h-[300px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
                <div class="mx-auto flex w-full max-w-md flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-2xl shadow-background/60">
-                  <div class="grid grid-cols-5 gap-2">
+                  <div class="grid grid-cols-5 gap-4">
                      <span class="block rounded-lg p-4 bg-secondary"></span>
                      <span class="block rounded-lg p-4 bg-primary/30"></span>
                      <span class="flex items-center justify-center p-4 rounded-lg bg-primary/15 text-primary">
