@@ -12,12 +12,12 @@ import { Reveal } from "../components/reveal";
 ---
 
 <section
-   class="relative isolate overflow-hidden bg-background py-12"
+   class="relative isolate overflow-hidden bg-background py-4"
    aria-label="Operação recorrente"
 >
-   <div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-2 sm:px-4">
+   <div class="mx-auto flex w-full max-w-7xl flex-col gap-4 px-2 sm:px-4">
       <Reveal client:visible>
-         <div class="mx-auto flex max-w-3xl flex-col items-center gap-3 text-center">
+         <div class="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
             <p class="text-sm font-medium uppercase tracking-[0.08em] text-muted-foreground">
                Operação nativa para recorrência
             </p>
@@ -42,35 +42,35 @@ import { Reveal } from "../components/reveal";
                   </p>
                </div>
 
-               <div class="mx-auto flex w-full max-w-3xl flex-col gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-2xl shadow-background/60">
+               <div class="mx-auto flex w-full max-w-3xl flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-2xl shadow-background/60">
                   <div class="grid gap-2 md:grid-cols-3">
-                     <div class="flex flex-col gap-2 rounded-lg border border-primary/60 bg-primary/10 p-3">
-                        <div class="flex size-7 items-center justify-center rounded-md bg-primary/15 text-primary">
+                     <div class="flex flex-col gap-2 rounded-lg border border-primary/60 bg-primary/10 p-4">
+                        <div class="inline-flex items-center justify-center p-2 rounded-md bg-primary/15 text-primary">
                            <Bot class="size-4" />
                         </div>
-                        <div class="flex flex-col gap-1">
+                        <div class="flex flex-col gap-2">
                            <p class="text-sm font-semibold text-foreground">Billing Agent</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Gera cobrança a partir de contrato, uso e estado do cliente.
                            </p>
                         </div>
                      </div>
-                     <div class="flex flex-col gap-2 rounded-lg border border-border/70 bg-background/70 p-3">
-                        <div class="flex size-7 items-center justify-center rounded-md bg-secondary text-muted-foreground">
+                     <div class="flex flex-col gap-2 rounded-lg border border-border/70 bg-background/70 p-4">
+                        <div class="inline-flex items-center justify-center p-2 rounded-md bg-secondary text-muted-foreground">
                            <FileText class="size-4" />
                         </div>
-                        <div class="flex flex-col gap-1">
+                        <div class="flex flex-col gap-2">
                            <p class="text-sm font-semibold text-foreground">Finance Agent</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Reconcilia receita, pendências e Centros de Custo.
                            </p>
                         </div>
                      </div>
-                     <div class="flex flex-col gap-2 rounded-lg border border-border/70 bg-background/70 p-3">
-                        <div class="flex size-7 items-center justify-center rounded-md bg-secondary text-muted-foreground">
+                     <div class="flex flex-col gap-2 rounded-lg border border-border/70 bg-background/70 p-4">
+                        <div class="inline-flex items-center justify-center p-2 rounded-md bg-secondary text-muted-foreground">
                            <CircleCheck class="size-4" />
                         </div>
-                        <div class="flex flex-col gap-1">
+                        <div class="flex flex-col gap-2">
                            <p class="text-sm font-semibold text-foreground">Customer State</p>
                            <p class="text-xs leading-relaxed text-muted-foreground">
                               Mostra assinatura, uso, fatura e próxima ação.
@@ -81,10 +81,10 @@ import { Reveal } from "../components/reveal";
 
                   <div class="flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-2">
                      <span class="flex-1 text-xs text-muted-foreground">Pergunte sobre uso, cobrança ou caixa...</span>
-                     <span class="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
+                     <span class="rounded-full border border-border/70 px-2 py-2 text-xs text-muted-foreground">
                         Billing Agent
                      </span>
-                     <span class="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                     <span class="inline-flex items-center justify-center p-2 rounded-full bg-primary text-primary-foreground">
                         <ArrowRight class="size-4" />
                      </span>
                   </div>
@@ -101,8 +101,8 @@ import { Reveal } from "../components/reveal";
                   </p>
                </div>
 
-               <div class="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-xl shadow-background/50">
-                  <div class="rounded-lg bg-primary/10 p-3 text-xs font-medium text-foreground">
+               <div class="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-xl shadow-background/50">
+                  <div class="rounded-lg bg-primary/10 p-4 text-xs font-medium text-foreground">
                      Quais clientes passaram da cota este mês?
                   </div>
                   <div class="flex items-center gap-2 text-xs text-muted-foreground">
@@ -111,7 +111,7 @@ import { Reveal } from "../components/reveal";
                   </div>
                   <div class="flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-2">
                      <span class="flex-1 text-xs text-muted-foreground">Ask anything...</span>
-                     <span class="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
+                     <span class="rounded-full border border-border/70 px-2 py-2 text-xs text-muted-foreground">
                         Customer State
                      </span>
                   </div>
@@ -121,7 +121,7 @@ import { Reveal } from "../components/reveal";
 
          <Reveal className="lg:col-span-2" delay={0.2} client:visible>
             <article class="flex h-full min-h-[300px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
-               <div class="rounded-xl border border-border/70 bg-card p-3 shadow-xl shadow-background/50">
+               <div class="rounded-xl border border-border/70 bg-card p-4 shadow-xl shadow-background/50">
                   <div class="grid grid-cols-[1.2fr_0.8fr_0.6fr] gap-2 border-b border-border/60 pb-2 text-xs text-muted-foreground">
                      <span>Cliente</span>
                      <span>Status</span>
@@ -157,24 +157,24 @@ import { Reveal } from "../components/reveal";
 
          <Reveal className="lg:col-span-4" delay={0.3} client:visible>
             <article class="flex h-full min-h-[300px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
-               <div class="mx-auto flex w-full max-w-md flex-col gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-2xl shadow-background/60">
+               <div class="mx-auto flex w-full max-w-md flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-2xl shadow-background/60">
                   <div class="grid grid-cols-5 gap-2">
-                     <span class="h-8 rounded-lg bg-secondary"></span>
-                     <span class="h-8 rounded-lg bg-primary/30"></span>
-                     <span class="flex h-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                     <span class="block rounded-lg p-4 bg-secondary"></span>
+                     <span class="block rounded-lg p-4 bg-primary/30"></span>
+                     <span class="flex items-center justify-center p-4 rounded-lg bg-primary/15 text-primary">
                         <BarChart3 class="size-4" />
                      </span>
-                     <span class="h-8 rounded-lg bg-secondary"></span>
-                     <span class="h-8 rounded-lg bg-secondary"></span>
+                     <span class="block rounded-lg p-4 bg-secondary"></span>
+                     <span class="block rounded-lg p-4 bg-secondary"></span>
                   </div>
-                  <button class="flex items-center justify-between rounded-lg border border-border/70 bg-background/80 px-3 py-2 text-sm font-medium text-foreground">
+                  <button class="flex items-center justify-between rounded-lg border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground">
                      <span class="flex items-center gap-2">
                         <Upload class="size-4 text-primary" />
                         Contract upload
                      </span>
                      <CircleCheck class="size-4 text-primary" />
                   </button>
-                  <button class="flex items-center justify-between rounded-lg bg-primary/15 px-3 py-2 text-sm font-semibold text-primary">
+                  <button class="flex items-center justify-between rounded-lg bg-primary/15 px-4 py-2 text-sm font-semibold text-primary">
                      <span class="flex items-center gap-2">
                         <BarChart3 class="size-4" />
                         Gerar análise de cobrança
@@ -195,7 +195,7 @@ import { Reveal } from "../components/reveal";
          <Reveal className="lg:col-span-3" delay={0.4} client:visible>
             <article class="flex h-full min-h-[300px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
                <div class="mx-auto w-full max-w-sm rounded-xl border border-border/70 bg-card p-4 shadow-xl shadow-background/50">
-                  <div class="flex flex-col gap-3 text-xs text-muted-foreground">
+                  <div class="flex flex-col gap-4 text-xs text-muted-foreground">
                      <p class="font-semibold text-foreground">Análise Acme · maio</p>
                      <p><strong class="text-foreground">Uso:</strong> 18.420 eventos, 14% acima da cota.</p>
                      <p><strong class="text-foreground">Contrato:</strong> cobrança incremental aplicável.</p>
@@ -213,9 +213,9 @@ import { Reveal } from "../components/reveal";
          </Reveal>
 
          <Reveal className="lg:col-span-3" delay={0.5} client:visible>
-            <article class="flex h-full min-h-[300px] flex-col items-center justify-center gap-5 overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4 text-center">
-               <div class="flex size-24 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-primary shadow-2xl shadow-primary/20">
-                  <Bot class="size-10" />
+            <article class="flex h-full min-h-[300px] flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4 text-center">
+               <div class="inline-flex items-center justify-center p-4 rounded-full border border-primary/30 bg-primary/15 text-primary shadow-2xl shadow-primary/20">
+                  <Bot class="size-4" />
                </div>
                <div class="flex max-w-md flex-col items-center gap-2">
                   <h3 class="text-xl font-semibold text-foreground">Vá mais fundo quando precisar</h3>
@@ -225,7 +225,7 @@ import { Reveal } from "../components/reveal";
                </div>
                <a
                   href="#waitlist"
-                  class="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/80 px-3 py-2 text-sm font-semibold text-foreground"
+                  class="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/80 px-4 py-2 text-sm font-semibold text-foreground"
                >
                   Explorar Montte AI
                   <ArrowRight class="size-4" />

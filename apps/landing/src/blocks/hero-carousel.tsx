@@ -5,13 +5,14 @@ import {
    useTransform,
    animate,
 } from "motion/react";
+import { useEffect } from "react";
 
 const EASE = [0.32, 0.72, 0, 1] as const;
 
 export function HeroCarousel() {
    return (
-      <div className="grid w-full gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-         <div className="flex flex-col items-center gap-5 sm:items-start">
+      <div className="grid w-full gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+         <div className="flex flex-col items-center gap-4 sm:items-start">
             <p className="text-sm font-medium uppercase tracking-[0.08em] text-muted-foreground">
                Billing e operação no mesmo ciclo
             </p>
@@ -25,16 +26,16 @@ export function HeroCarousel() {
             </p>
 
             <div className="flex flex-wrap justify-start gap-2">
-               <span className="rounded-full border border-border/70 bg-secondary/50 px-2 py-1 text-xs text-muted-foreground">
+               <span className="rounded-full border border-border/70 bg-secondary/50 px-2 py-2 text-xs text-muted-foreground">
                   customers.state
                </span>
-               <span className="rounded-full border border-border/70 bg-secondary/50 px-2 py-1 text-xs text-muted-foreground">
+               <span className="rounded-full border border-border/70 bg-secondary/50 px-2 py-2 text-xs text-muted-foreground">
                   uso medido
                </span>
-               <span className="rounded-full border border-border/70 bg-secondary/50 px-2 py-1 text-xs text-muted-foreground">
+               <span className="rounded-full border border-border/70 bg-secondary/50 px-2 py-2 text-xs text-muted-foreground">
                   cobrança recorrente
                </span>
-               <span className="rounded-full border border-border/70 bg-secondary/50 px-2 py-1 text-xs text-muted-foreground">
+               <span className="rounded-full border border-border/70 bg-secondary/50 px-2 py-2 text-xs text-muted-foreground">
                   caixa e risco
                </span>
             </div>
@@ -51,8 +52,8 @@ function RecurringOperationsMock() {
          path="/acme/recurrence/operations"
          chips={["SaaS BR", "Maio 2026", "customers.state"]}
       >
-         <section className="space-y-3 p-3">
-            <header className="flex items-start justify-between gap-3">
+         <section className="flex flex-col gap-4 p-4">
+            <header className="flex items-start justify-between gap-4">
                <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                      Estado operacional
@@ -64,14 +65,12 @@ function RecurringOperationsMock() {
                <StatusPill tone="ok">Ativo</StatusPill>
             </header>
 
-            <div className="grid gap-3 lg:grid-cols-2">
-               <div className="rounded-md border border-border/60 p-3">
+            <div className="grid gap-4 lg:grid-cols-2">
+               <div className="flex flex-col gap-2 rounded-md border border-border/60 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                      Billing
                   </p>
-                  <p className="mt-1 text-sm text-foreground">
-                     R$ 2.412,90 do mês
-                  </p>
+                  <p className="text-sm text-foreground">R$ 2.412,90 do mês</p>
                   <p className="text-xs text-muted-foreground">
                      Fatura: aberta · vencimento em 2 dias
                   </p>
@@ -84,11 +83,11 @@ function RecurringOperationsMock() {
                   />
                </div>
 
-               <div className="rounded-md border border-border/60 p-3">
+               <div className="flex flex-col gap-2 rounded-md border border-border/60 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                      Finanças
                   </p>
-                  <div className="mt-1 grid gap-1">
+                  <div className="grid gap-2">
                      <div className="flex justify-between text-sm text-foreground">
                         <span>Receita reconhecida</span>
                         <span>R$ 1.284,00</span>
@@ -105,20 +104,20 @@ function RecurringOperationsMock() {
                </div>
             </div>
 
-            <div className="rounded-md border border-border/60 p-3">
+            <div className="flex flex-col gap-2 rounded-md border border-border/60 p-4">
                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   Próximos passos no painel
                </p>
-               <div className="mt-2 space-y-2 text-sm text-foreground">
-                  <div className="flex items-center justify-between gap-4 border-t border-border/30 py-1">
+               <div className="flex flex-col gap-2 text-sm text-foreground">
+                  <div className="flex items-center justify-between gap-4 border-t border-border/30 py-2">
                      <span className="text-muted-foreground">Acme</span>
                      <span>Cliente com uso acima do contrato</span>
                   </div>
-                  <div className="flex items-center justify-between gap-4 border-t border-border/30 py-1">
+                  <div className="flex items-center justify-between gap-4 border-t border-border/30 py-2">
                      <span className="text-muted-foreground">Northwind</span>
                      <span>Cobrança automática pendente</span>
                   </div>
-                  <div className="flex items-center justify-between gap-4 border-t border-border/30 py-1">
+                  <div className="flex items-center justify-between gap-4 border-t border-border/30 py-2">
                      <span className="text-muted-foreground">Infra</span>
                      <span>Alocar custo no Centro de Custo</span>
                   </div>
@@ -146,14 +145,14 @@ function AppFrame({
                <span className="size-2 rounded-full bg-chart-3/60" />
                <span className="size-2 rounded-full bg-primary/60" />
             </div>
-            <code className="flex-1 truncate rounded-md bg-background/60 px-2 py-1 text-xs text-muted-foreground">
+            <code className="flex-1 truncate rounded-md bg-background/60 px-2 py-2 text-xs text-muted-foreground">
                app.montte.co{path}
             </code>
             <div className="hidden items-center gap-2 sm:flex">
                {chips.map((c) => (
                   <span
                      key={c}
-                     className="rounded-full border border-border/70 bg-background/70 px-2 py-1 text-xs text-muted-foreground"
+                     className="rounded-full border border-border/70 bg-background/70 px-2 py-2 text-xs text-muted-foreground"
                   >
                      {c}
                   </span>
@@ -174,12 +173,16 @@ function CounterValue({ to, prefix = "R$ " }: { to: number; prefix?: string }) {
          `${prefix}${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
    );
 
-   if (shouldReduceMotion) {
-      mv.set(to);
-      return <motion.span>{rounded}</motion.span>;
-   }
+   useEffect(() => {
+      if (shouldReduceMotion) {
+         mv.set(to);
+         return;
+      }
 
-   animate(mv, to, { duration: 1.2, ease: EASE });
+      const controls = animate(mv, to, { duration: 1.2, ease: EASE });
+      return controls.stop;
+   }, [mv, shouldReduceMotion, to]);
+
    return <motion.span>{rounded}</motion.span>;
 }
 
@@ -241,7 +244,7 @@ function KPIHeader({
 }) {
    return (
       <header className="flex items-end justify-between gap-4 px-4 py-4">
-         <div className="flex flex-col gap-1">
+         <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                {label}
             </span>
@@ -249,7 +252,7 @@ function KPIHeader({
                {typeof value === "number" ? <CounterValue to={value} /> : value}
             </span>
             <span
-               className={`flex items-center gap-1 text-xs font-semibold ${positive ? "text-primary" : "text-destructive"}`}
+               className={`flex items-center gap-2 text-xs font-semibold ${positive ? "text-primary" : "text-destructive"}`}
             >
                <ArrowTrend up={positive} />
                {delta}
@@ -262,7 +265,7 @@ function KPIHeader({
 
 function ArrowTrend({ up }: { up: boolean }) {
    return (
-      <svg viewBox="0 0 12 12" className="size-3" aria-hidden="true">
+      <svg viewBox="0 0 12 12" className="size-4" aria-hidden="true">
          <path
             d={up ? "M2 8 L6 4 L10 8" : "M2 4 L6 8 L10 4"}
             fill="none"
@@ -291,9 +294,9 @@ function StatusPill({
 
    return (
       <span
-         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${map[tone]}`}
+         className={`inline-flex items-center gap-2 rounded-full px-2 py-2 text-xs font-medium ${map[tone]}`}
       >
-         <span className="size-1.5 rounded-full bg-current" />
+         <span className="size-2 rounded-full bg-current" />
          {children}
       </span>
    );
