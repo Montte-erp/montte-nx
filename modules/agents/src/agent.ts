@@ -22,6 +22,7 @@ export interface AgentChatOptions {
    headers: Headers;
    request: Request;
    threadId?: string;
+   runId?: string;
    messages: UIMessage[];
    pageContext?: PageContext;
    reasoningEffort?: "high" | "xhigh";
@@ -90,7 +91,8 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          parallelToolCalls: false,
       },
       agentLoopStrategy: maxIterations(8),
-      ...(options.threadId && { conversationId: options.threadId }),
+      ...(options.threadId && { threadId: options.threadId }),
+      ...(options.runId && { runId: options.runId }),
       abortController: options.abortSignal
          ? abortControllerFromSignal(options.abortSignal)
          : undefined,

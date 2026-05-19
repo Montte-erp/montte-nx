@@ -37,14 +37,14 @@ function getCollectionMap<T>(
 function createThreadsCollection(queryClient: QueryClient) {
    return createCollection(
       queryCollectionOptions({
-         id: "chat-threads",
-         queryClient,
-         queryKey: ["chat-threads"],
-         queryFn: async () => {
+         queryFn: async (): Promise<ChatThreadListItem[]> => {
             const data = await client.threads.list({ limit: 50 });
             return data.threads;
          },
          getKey: (thread) => thread.id,
+         id: "chat-threads",
+         queryClient,
+         queryKey: ["chat-threads"],
       }),
    );
 }
@@ -57,6 +57,7 @@ function createThreadCollection(threadId: string, queryClient: QueryClient) {
          queryKey: ["chat-thread", threadId],
          queryFn: async (): Promise<ChatThreadBundle[]> => {
             const data = await client.threads.getById({ threadId });
+            if (data.thread === null) return [];
             const thread = {
                ...data.thread,
                suggestions: data.thread.suggestions ?? [],

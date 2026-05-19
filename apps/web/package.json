@@ -14,7 +14,10 @@
       "check": "oxlint ."
    },
    "dependencies": {
+      "@ag-ui/client": "catalog:ui",
+      "@assistant-ui/core": "catalog:ui",
       "@assistant-ui/react": "catalog:ui",
+      "@assistant-ui/react-ag-ui": "catalog:ui",
       "@assistant-ui/react-streamdown": "catalog:ui",
       "@better-upload/client": "catalog:files",
       "@better-upload/server": "catalog:files",

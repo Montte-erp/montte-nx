@@ -1,15 +1,22 @@
 import {
-   AssistantRuntimeProvider,
-   type AppendMessage,
    type ThreadMessageLike,
-   useExternalStoreRuntime,
+   useAui,
+   useAuiState,
 } from "@assistant-ui/react";
-import { fetchHttpStream, useChat } from "@tanstack/ai-react";
+import { AssistantRuntimeProvider } from "@assistant-ui/core/react";
+import { useAgUiRuntime } from "@assistant-ui/react-ag-ui";
+import type { AgUiAssistantRuntime } from "@assistant-ui/react-ag-ui";
+import {
+   HttpAgent,
+   RunAgentInputSchema,
+   type AgentSubscriber,
+   type RunAgentParameters,
+   type RunAgentResult,
+} from "@ag-ui/client";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { createStore } from "@tanstack/store";
 import { shallow, useStore } from "@tanstack/react-store";
-import type { UIMessage } from "@tanstack/ai-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePostHog } from "posthog-js/react";
 import {
@@ -21,6 +28,7 @@ import {
    type LucideIcon,
 } from "lucide-react";
 import dayjs from "dayjs";
+import { z } from "zod";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { createPersistedStore } from "@/lib/store";
 import { client } from "@/integrations/orpc/client";
@@ -35,7 +43,6 @@ type ChatMessageMetadata = ChatMessage["metadata"];
 type ChatPageContext = NonNullable<
    NonNullable<ChatMessageMetadata>["pageContext"]
 >;
-type UiMessagePart = UIMessage["parts"][number];
 
 export type AgentScopeId =
    | "auto"
@@ -80,6 +87,13 @@ const scopeStore = createPersistedStore<{ id: AgentScopeId }>(
    { id: "auto" },
 );
 
+const suggestionsStore = createStore<{ suggestions: string[] }>({
+   suggestions: [],
+});
+
+const uuidSchema = z.string().uuid();
+const forwardedPropsSchema = z.record(z.string(), z.unknown()).catch({});
+
 export const setActiveThread = (threadId: string | null) =>
    chatStore.setState((s) => ({ ...s, activeThreadId: threadId }));
 
@@ -99,16 +113,13 @@ export const useSelectedScope = (): AgentScope => {
    return SCOPES.find((scope) => scope.id === id) ?? AUTO_SCOPE;
 };
 
+export const useMontteSuggestions = () =>
+   useStore(suggestionsStore, (s) => s.suggestions);
+
 function pickPageContext(): ChatPageContext | undefined {
    const scope = SCOPES.find((item) => item.id === scopeStore.state.id);
    return scope?.skillHint ? { skillHint: scope.skillHint } : undefined;
 }
-
-export type ChatTurnRequest = {
-   text?: string;
-   regenerate?: boolean;
-   replaceFromMessageId?: string;
-};
 
 interface MontteAssistantActions {
    startNewConversation: () => void;
@@ -161,135 +172,58 @@ export const useMontteActions = () =>
       shallow,
    );
 
-function toUiMessage(message: ChatMessage): UIMessage {
-   return {
-      id: message.id,
-      role: message.role,
-      parts: message.parts,
-      createdAt: dayjs(message.createdAt).toDate(),
-   };
-}
+class MontteHttpAgent extends HttpAgent {
+   constructor(private readonly queryClient: QueryClient) {
+      super({ url: "/api/chat" });
+   }
 
-function messageText(message: AppendMessage): string {
-   return message.content
-      .flatMap((part) => {
-         if (part.type !== "text") return [];
-         return [part.text];
-      })
-      .join("\n\n")
-      .trim();
-}
-
-function pendingApprovalIds(messages: UIMessage[]): string[] {
-   return messages.flatMap((message) => {
-      if (message.role !== "assistant") return [];
-      return message.parts.flatMap((part) => {
-         if (part.type !== "tool-call") return [];
-         if (part.state !== "approval-requested") return [];
-         if (part.approval === undefined) return [];
-         if (part.approval.approved !== undefined) return [];
-         return [part.approval.id];
-      });
-   });
-}
-
-function hasPendingToolWork(messages: UIMessage[]): boolean {
-   return messages.some((message) => {
-      if (message.role !== "assistant") return false;
-      const resultIds = new Set(
-         message.parts.flatMap((part) =>
-            part.type === "tool-result" ? [part.toolCallId] : [],
-         ),
+   override async runAgent(
+      parameters?: RunAgentParameters,
+      subscriber?: AgentSubscriber,
+   ): Promise<RunAgentResult> {
+      const input = RunAgentInputSchema.parse(parameters);
+      const threadId = await this.ensureThread();
+      const forwardedProps = forwardedPropsSchema.parse(input.forwardedProps);
+      this.threadId = threadId;
+      this.setMessages(input.messages);
+      this.setState(input.state);
+      return super.runAgent(
+         {
+            runId: input.runId,
+            tools: input.tools,
+            context: input.context,
+            forwardedProps: {
+               ...forwardedProps,
+               pageContext: pickPageContext(),
+            },
+         },
+         subscriber,
       );
-      return message.parts.some((part) => {
-         if (part.type !== "tool-call") return false;
-         if (
-            part.state === "approval-requested" &&
-            part.approval?.approved === undefined
-         )
-            return true;
-         return part.output === undefined && !resultIds.has(part.id);
-      });
-   });
-}
-
-function isNonEmptyThinkingPart(part: UiMessagePart): boolean {
-   return part.type === "thinking" && part.content.trim().length > 0;
-}
-
-function mergeStreamingMessage(
-   previous: UIMessage | undefined,
-   next: UIMessage,
-): UIMessage {
-   if (previous === undefined) return next;
-   if (next.role !== "assistant") return next;
-
-   const previousThinking = previous.parts.filter(isNonEmptyThinkingPart);
-   let changed = false;
-   const nextParts = next.parts.map((part, index) => {
-      if (part.type !== "thinking") return part;
-      const previousPart = previous.parts[index];
-      const shouldKeepPrevious =
-         previousPart?.type === "thinking" &&
-         previousPart.content.length > part.content.length;
-      if (shouldKeepPrevious) {
-         changed = true;
-         return previousPart;
-      }
-      return part;
-   });
-
-   if (nextParts.some(isNonEmptyThinkingPart)) {
-      if (!changed) return next;
-      return { ...next, parts: nextParts };
    }
-   if (previousThinking.length === 0) return next;
 
-   const firstTextIndex = nextParts.findIndex((part) => part.type === "text");
-   const insertAt = firstTextIndex === -1 ? nextParts.length : firstTextIndex;
+   private async ensureThread(): Promise<string> {
+      const activeThreadId = chatStore.state.activeThreadId;
+      const activeThread = uuidSchema.safeParse(activeThreadId);
+      if (activeThread.success) return activeThread.data;
 
-   return {
-      ...next,
-      parts: [
-         ...nextParts.slice(0, insertAt),
-         ...previousThinking,
-         ...nextParts.slice(insertAt),
-      ],
-   };
-}
-
-function mergeStreamingMessages(
-   previousMessages: UIMessage[],
-   nextMessages: UIMessage[],
-   activeTurn: boolean,
-): UIMessage[] {
-   if (!activeTurn) return nextMessages;
-
-   const previousById = new Map(
-      previousMessages.map((message) => [message.id, message]),
-   );
-   return nextMessages.map((message) =>
-      mergeStreamingMessage(previousById.get(message.id), message),
-   );
-}
-
-function collapseAdjacentAssistantMessages(messages: UIMessage[]): UIMessage[] {
-   const collapsed: UIMessage[] = [];
-   for (const message of messages) {
-      const previous = collapsed.at(-1);
-      if (previous?.role === "assistant" && message.role === "assistant") {
-         collapsed[collapsed.length - 1] = {
-            ...previous,
-            parts: [...previous.parts, ...message.parts],
-         };
-         continue;
+      const thread = await client.threads.create({}).catch(() => null);
+      if (thread === null) {
+         toast.error("Falha ao criar conversa.");
+         throw new Error("Falha ao criar conversa.");
       }
-      collapsed.push(message);
+
+      void refreshChatData(this.queryClient, thread.id);
+      setActiveThread(thread.id);
+      return thread.id;
    }
-   return collapsed;
 }
 
-function convertMessage(message: UIMessage): ThreadMessageLike {
+function jsonPartResult(value: unknown): unknown {
+   if (typeof value !== "string") return value;
+   return z.json().catch(value).parse(value);
+}
+
+function convertMessage(message: ChatMessage): ThreadMessageLike {
    const toolResults = new Map<string, { content: string; error?: string }>();
    for (const part of message.parts) {
       if (part.type !== "tool-result") continue;
@@ -321,7 +255,7 @@ function convertMessage(message: UIMessage): ThreadMessageLike {
          toolCallId: part.id,
          toolName: part.name,
          argsText: part.arguments,
-         result: part.output ?? result?.content,
+         result: part.output ?? jsonPartResult(result?.content),
          isError: result?.error !== undefined,
          artifact: {
             state: part.state,
@@ -335,54 +269,26 @@ function convertMessage(message: UIMessage): ThreadMessageLike {
       id: message.id,
       role: message.role,
       content,
-      createdAt: message.createdAt,
+      createdAt: dayjs(message.createdAt).toDate(),
    };
 }
 
-export function ChatSessionProvider({
-   children,
+function ChatRuntimeBridge({
+   queryClient,
+   runtime,
 }: {
-   children: React.ReactNode;
+   queryClient: QueryClient;
+   runtime: AgUiAssistantRuntime;
 }) {
-   const queryClient = useQueryClient();
-   const posthog = usePostHog();
+   const aui = useAui();
    const threadId = useActiveThreadId();
-   const pendingTurn = useRef<ChatTurnRequest | null>(null);
    const loadedSnapshotKey = useRef<string | null>(null);
-   const visibleMessages = useRef<UIMessage[]>([]);
-
-   const connection = useMemo(
-      () =>
-         fetchHttpStream("/api/chat", () => {
-            const turn = pendingTurn.current;
-            pendingTurn.current = null;
-            return {
-               credentials: "include",
-               body: {
-                  threadId: chatStore.state.activeThreadId ?? "",
-                  ...(turn?.text !== undefined && { text: turn.text }),
-                  ...(turn?.regenerate && { regenerate: true }),
-                  ...(turn?.replaceFromMessageId && {
-                     replaceFromMessageId: turn.replaceFromMessageId,
-                  }),
-                  pageContext: pickPageContext(),
-               },
-            };
-         }),
-      [],
-   );
-
-   const chat = useChat({
-      connection,
-      initialMessages: [],
-      onFinish: () => {
-         const id = chatStore.state.activeThreadId;
-         if (!id) return;
-         void refreshChatData(queryClient, id);
-      },
-      onError: () => toast.error("Falha no streaming da Montte AI."),
-   });
-
+   const wasRunning = useRef(false);
+   const messages = useAuiState((s) => s.thread.messages);
+   const isRunning = useAuiState((s) => s.thread.isRunning);
+   const pendingApprovalIds = runtime
+      .unstable_getPendingInterrupts()
+      .map((interrupt) => interrupt.id);
    const { data: threadBundles } = useLiveQuery(
       (q) => {
          if (threadId === null) return undefined;
@@ -392,105 +298,47 @@ export function ChatSessionProvider({
    );
    const threadBundle = threadBundles?.[0];
 
-   const status = chat.status;
-   const activeTurn =
-      chat.isLoading ||
-      chat.sessionGenerating ||
-      status === "submitted" ||
-      status === "streaming" ||
-      hasPendingToolWork(chat.messages);
-
    useEffect(() => {
       if (threadId === null) {
-         if (loadedSnapshotKey.current === null && chat.messages.length === 0)
-            return;
          loadedSnapshotKey.current = null;
-         chat.setMessages([]);
+         suggestionsStore.setState(() => ({ suggestions: [] }));
+         aui.thread().reset([]);
          return;
       }
-      if (activeTurn) return;
+      if (isRunning) return;
       if (threadBundles === undefined) return;
       if (threadBundle === undefined) return;
-      const messages = threadBundle.messages.map(toUiMessage);
-      const snapshotKey = `${threadId}:${messages
+
+      const importedMessages = threadBundle.messages.map(convertMessage);
+      const snapshotKey = `${threadId}:${importedMessages
          .map((message) => message.id)
          .join(":")}`;
       if (loadedSnapshotKey.current === snapshotKey) return;
       loadedSnapshotKey.current = snapshotKey;
-      chat.setMessages(messages);
-   }, [
-      activeTurn,
-      chat,
-      chat.messages.length,
-      threadBundle,
-      threadBundles,
-      threadId,
-   ]);
+      suggestionsStore.setState(() => ({
+         suggestions: threadBundle.thread.suggestions ?? [],
+      }));
+      aui.thread().reset(importedMessages);
+   }, [aui, isRunning, threadBundle, threadBundles, threadId]);
 
-   const messages = useMemo(() => {
-      const merged = mergeStreamingMessages(
-         visibleMessages.current,
-         chat.messages,
-         activeTurn,
-      );
-      const collapsed = collapseAdjacentAssistantMessages(merged);
-      visibleMessages.current = collapsed;
-      return collapsed;
-   }, [activeTurn, chat.messages]);
-   const approvalIds = useMemo(() => pendingApprovalIds(messages), [messages]);
-
-   const ensureThread = useCallback(async (): Promise<string | null> => {
-      const existing = chatStore.state.activeThreadId;
-      if (existing !== null) return existing;
-      const thread = await client.threads.create({}).catch(() => null);
-      if (thread === null) {
-         toast.error("Falha ao criar conversa.");
-         return null;
+   useEffect(() => {
+      if (isRunning) {
+         wasRunning.current = true;
+         return;
       }
-      void refreshChatData(queryClient);
-      setActiveThread(thread.id);
-      return thread.id;
-   }, [queryClient]);
-
-   const onNew = useCallback(
-      async (message: AppendMessage) => {
-         const text = messageText(message);
-         if (!text || activeTurn) return;
-         const id = await ensureThread();
-         if (id === null) return;
-         pendingTurn.current = { text };
-         await chat.sendMessage(text);
-      },
-      [activeTurn, chat, ensureThread],
-   );
-
-   const onEdit = useCallback(
-      async (message: AppendMessage) => {
-         const text = messageText(message);
-         if (!text || activeTurn) return;
-         const id = await ensureThread();
-         if (id === null) return;
-         pendingTurn.current = {
-            text,
-            replaceFromMessageId: message.sourceId ?? message.parentId ?? "",
-         };
-         await chat.sendMessage(text);
-      },
-      [activeTurn, chat, ensureThread],
-   );
-
-   const onReload = useCallback(async () => {
-      if (activeTurn) return;
-      pendingTurn.current = { regenerate: true };
-      await chat.reload();
-   }, [activeTurn, chat]);
+      if (!wasRunning.current) return;
+      wasRunning.current = false;
+      const id = chatStore.state.activeThreadId;
+      if (!id) return;
+      void refreshChatData(queryClient, id);
+   }, [isRunning, queryClient]);
 
    const startNewConversation = useCallback(() => {
-      chat.setMessages([]);
+      aui.thread().reset([]);
       setActiveThread(null);
-   }, [chat]);
+   }, [aui]);
 
-   const stop = useCallback(() => chat.stop(), [chat]);
+   const stop = useCallback(() => aui.thread().cancelRun(), [aui]);
 
    const deleteMessage = useCallback(
       async (messageId: string) => {
@@ -509,27 +357,63 @@ export function ChatSessionProvider({
    );
 
    const approveTool = useCallback(
-      (id: string) => chat.addToolApprovalResponse({ id, approved: true }),
-      [chat],
+      (id: string) =>
+         runtime.unstable_submitInterruptResponses([
+            {
+               interruptId: id,
+               status: "resolved",
+               payload: { approved: true },
+            },
+         ]),
+      [runtime],
    );
 
    const rejectTool = useCallback(
-      (id: string) => chat.addToolApprovalResponse({ id, approved: false }),
-      [chat],
+      (id: string) =>
+         runtime.unstable_submitInterruptResponses([
+            { interruptId: id, status: "cancelled" },
+         ]),
+      [runtime],
    );
 
-   const runtime = useExternalStoreRuntime<UIMessage>({
-      messages,
-      isRunning: activeTurn,
-      isDisabled: false,
-      suggestions: (threadBundle?.thread.suggestions ?? []).map((prompt) => ({
-         prompt,
-      })),
-      convertMessage,
-      onNew,
-      onEdit,
-      onReload,
-      onCancel: async () => chat.stop(),
+   useEffect(() => {
+      montteAssistantStore.setState((s) => ({
+         ...s,
+         messageCount: messages.length,
+         isRunning,
+         pendingApprovalIds,
+         startNewConversation,
+         stop,
+         deleteMessage,
+         approveTool,
+         rejectTool,
+      }));
+   }, [
+      approveTool,
+      deleteMessage,
+      isRunning,
+      messages.length,
+      pendingApprovalIds,
+      rejectTool,
+      startNewConversation,
+      stop,
+   ]);
+
+   return null;
+}
+
+export function ChatSessionProvider({
+   children,
+}: {
+   children: React.ReactNode;
+}) {
+   const queryClient = useQueryClient();
+   const posthog = usePostHog();
+   const agent = useMemo(() => new MontteHttpAgent(queryClient), [queryClient]);
+   const runtime = useAgUiRuntime({
+      agent,
+      showThinking: true,
+      onError: () => toast.error("Falha no streaming da Montte AI."),
       adapters: {
          feedback: {
             submit: ({ message, type }) => {
@@ -539,41 +423,16 @@ export function ChatSessionProvider({
                   message_id: message.id,
                   message_role: "assistant",
                   thread_id: chatStore.state.activeThreadId,
-                  content_part_count:
-                     typeof message.content === "string"
-                        ? 1
-                        : message.content.length,
+                  content_part_count: message.content.length,
                });
             },
          },
       },
    });
 
-   useEffect(() => {
-      montteAssistantStore.setState((s) => ({
-         ...s,
-         messageCount: messages.length,
-         isRunning: activeTurn,
-         pendingApprovalIds: approvalIds,
-         startNewConversation,
-         stop,
-         deleteMessage,
-         approveTool,
-         rejectTool,
-      }));
-   }, [
-      activeTurn,
-      approvalIds,
-      approveTool,
-      deleteMessage,
-      messages.length,
-      rejectTool,
-      startNewConversation,
-      stop,
-   ]);
-
    return (
       <AssistantRuntimeProvider runtime={runtime}>
+         <ChatRuntimeBridge queryClient={queryClient} runtime={runtime} />
          {children}
       </AssistantRuntimeProvider>
    );
