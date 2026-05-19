@@ -11,6 +11,7 @@ import {
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
 import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
+import { format, of } from "@f-o-t/money";
 import {
    ArrowDown,
    Banknote,
@@ -258,9 +259,9 @@ export function Thread({
             scrollToBottomOnRunStart
             turnAnchor="top"
          >
-            <div className="mx-auto flex min-h-full w-full max-w-5xl flex-1 flex-col p-4">
+            <div className="flex min-h-full w-full max-w-5xl flex-1 flex-col p-4">
                <AuiIf condition={(s) => s.thread.isEmpty}>
-                  <div className="flex grow flex-col items-center justify-center gap-6 p-4">
+                  <div className="flex grow flex-col items-center justify-center gap-4 p-4">
                      {empty}
                   </div>
                </AuiIf>
@@ -631,7 +632,7 @@ function getArgsMetrics(args: z.infer<typeof toolArgsSchema> | undefined) {
    if (!args) return [];
    const metrics: string[] = [];
    if (args.startDate && args.endDate) {
-      metrics.push(`${args.startDate} ate ${args.endDate}`);
+      metrics.push(`${args.startDate} até ${args.endDate}`);
    }
    if (args.query) metrics.push(`Busca: ${args.query}`);
    const reportType = reportTypeLabel(args.reportType);
@@ -713,12 +714,7 @@ function reportTypeLabel(reportType: string | undefined) {
 }
 
 function formatCurrency(value: string) {
-   const number = Number(value);
-   if (!Number.isFinite(number)) return value;
-   return new Intl.NumberFormat("pt-BR", {
-      currency: "BRL",
-      style: "currency",
-   }).format(number);
+   return format(of(value, "BRL"), "pt-BR");
 }
 
 function MessageActions({

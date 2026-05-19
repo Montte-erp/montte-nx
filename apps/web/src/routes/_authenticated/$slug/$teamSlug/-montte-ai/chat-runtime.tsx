@@ -41,7 +41,7 @@ import type {
 import type { AssistantStream } from "assistant-stream";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { createPersistedStore } from "@/lib/store";
-import { client, type Outputs } from "@/integrations/orpc/client";
+import { client, orpc, type Outputs } from "@/integrations/orpc/client";
 
 type ChatMessage = Outputs["threads"]["getById"]["messages"][number];
 
@@ -115,7 +115,7 @@ function pickPageContext(): ChatPageContext | undefined {
 }
 
 class MontteHttpAgent extends HttpAgent {
-   constructor(private readonly initialThreadId: string | undefined) {
+   constructor(private initialThreadId: string | undefined) {
       super({ threadId: initialThreadId, url: "/api/chat" });
    }
 
@@ -150,6 +150,8 @@ class MontteHttpAgent extends HttpAgent {
          toast.error("Falha ao criar conversa.");
          throw new Error("Falha ao criar conversa.");
       }
+      this.initialThreadId = thread.id;
+      this.threadId = thread.id;
       return thread.id;
    }
 }
@@ -380,16 +382,15 @@ export function ChatSessionProvider({
 
 export function useMontteSuggestions() {
    const remoteThreadId = useAuiState((s) => s.threadListItem.remoteId);
-   const { data } = useQuery({
-      queryKey: ["montte-chat-thread-suggestions", remoteThreadId],
-      queryFn: async () => {
-         if (!remoteThreadId) return [];
-         const data = await client.threads.getById({
-            threadId: remoteThreadId,
-         });
-         return data.thread?.suggestions ?? [];
+   const suggestionsQueryOptions = orpc.threads.getById.queryOptions({
+      input: {
+         threadId: remoteThreadId ?? "00000000-0000-0000-0000-000000000000",
       },
+      enabled: remoteThreadId !== undefined,
+      select: (data) => data.thread?.suggestions ?? [],
    });
+
+   const { data } = useQuery(suggestionsQueryOptions);
    return data ?? [];
 }
 
@@ -414,10 +415,14 @@ export function useMontteActions() {
                toast.error("Falha ao excluir mensagem.");
                return;
             }
-            const data = await client.threads.getById({
-               threadId: remoteThreadId,
-            });
-            aui.thread().reset(data.messages.map(convertMessage));
+            try {
+               const data = await client.threads.getById({
+                  threadId: remoteThreadId,
+               });
+               aui.thread().reset(data.messages.map(convertMessage));
+            } catch {
+               toast.error("Falha ao recarregar conversa.");
+            }
          },
          approveTool: (id: string) =>
             activeAgUiRuntime?.unstable_submitInterruptResponses([

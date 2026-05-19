@@ -58,7 +58,7 @@ export function ToolGroupTrigger({
    count,
 }: ToolGroupTriggerProps) {
    const label = `${count} ${count === 1 ? "ferramenta" : "ferramentas"}`;
-   const stateLabel = active ? "executando" : "concluídas";
+   const stateLabel = active ? "executando" : "concluída";
 
    return (
       <CollapsibleTrigger className="flex w-full items-center gap-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground">

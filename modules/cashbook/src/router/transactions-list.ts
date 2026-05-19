@@ -15,7 +15,7 @@ import {
 } from "@modules/cashbook/transactions";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const txStatus = z.enum(["pending", "paid"]);
+const txStatus = z.enum(["pending", "paid", "cancelled"]);
 const sortIdSchema = z.enum([
    "amount",
    "bankAccountName",

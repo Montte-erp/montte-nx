@@ -13,16 +13,26 @@ const reportTypeSchema = z.enum([
    "aging",
 ]);
 
-const generateFinancialReportInputSchema = z.object({
-   reportType: reportTypeSchema,
-   startDate: isoDate,
-   endDate: isoDate,
-   status: z.enum(["paid", "pending", "all"]).default("paid"),
-   type: z.enum(["income", "expense"]).optional(),
-   categoryId: uuid.optional(),
-   costCenterId: uuid.optional(),
-   bankAccountId: uuid.optional(),
-});
+const generateFinancialReportInputSchema = z
+   .object({
+      reportType: reportTypeSchema,
+      startDate: isoDate,
+      endDate: isoDate,
+      status: z.enum(["paid", "pending", "all"]).default("paid"),
+      type: z.enum(["income", "expense"]).optional(),
+      categoryId: uuid.optional(),
+      costCenterId: uuid.optional(),
+      bankAccountId: uuid.optional(),
+   })
+   .refine(
+      (value) =>
+         new Date(value.startDate).getTime() <=
+         new Date(value.endDate).getTime(),
+      {
+         path: ["endDate"],
+         message: "A data final deve ser maior ou igual à data inicial.",
+      },
+   );
 
 const generateFinancialReportOutputSchema = z.object({
    reportType: reportTypeSchema,
@@ -72,7 +82,11 @@ export function buildReportReadTools({ client }: ReportReadToolDeps) {
                      dateFrom: input.startDate,
                      dateTo: input.endDate,
                      type: input.type ?? "income",
-                     status: "open",
+                     ...(input.status === "paid"
+                        ? { status: "settled" }
+                        : input.status === "pending"
+                          ? { status: "open" }
+                          : {}),
                      categoryId: input.categoryId,
                      tagId: input.costCenterId,
                   });

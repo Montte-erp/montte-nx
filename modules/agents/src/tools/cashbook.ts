@@ -5,22 +5,49 @@ import type { AgentReadClient } from "@modules/agents/tools/registry";
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const uuid = z.string().uuid();
 
-const transactionStatusSchema = z.enum(["pending", "paid", "ignored"]);
+const transactionStatusSchema = z.enum([
+   "pending",
+   "paid",
+   "cancelled",
+   "ignored",
+]);
 
-const searchTransactionsInputSchema = z.object({
-   query: z.string().trim().min(1).max(100).optional(),
-   startDate: isoDate.optional(),
-   endDate: isoDate.optional(),
-   dueStartDate: isoDate.optional(),
-   dueEndDate: isoDate.optional(),
-   status: transactionStatusSchema.optional(),
-   type: z.enum(["income", "expense", "transfer"]).optional(),
-   categoryId: uuid.optional(),
-   costCenterId: uuid.optional(),
-   bankAccountId: uuid.optional(),
-   creditCardId: uuid.optional(),
-   limit: z.number().int().min(1).max(50).default(20),
-});
+const searchTransactionsInputSchema = z
+   .object({
+      query: z.string().trim().min(1).max(100).optional(),
+      startDate: isoDate.optional(),
+      endDate: isoDate.optional(),
+      dueStartDate: isoDate.optional(),
+      dueEndDate: isoDate.optional(),
+      status: transactionStatusSchema.optional(),
+      type: z.enum(["income", "expense", "transfer"]).optional(),
+      categoryId: uuid.optional(),
+      costCenterId: uuid.optional(),
+      bankAccountId: uuid.optional(),
+      creditCardId: uuid.optional(),
+      limit: z.number().int().min(1).max(50).default(20),
+   })
+   .superRefine((input, context) => {
+      if (input.startDate && input.endDate && input.startDate > input.endDate) {
+         context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "A data inicial deve ser anterior ou igual à data final.",
+            path: ["endDate"],
+         });
+      }
+      if (
+         input.dueStartDate &&
+         input.dueEndDate &&
+         input.dueStartDate > input.dueEndDate
+      ) {
+         context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+               "O vencimento inicial deve ser anterior ou igual ao vencimento final.",
+            path: ["dueEndDate"],
+         });
+      }
+   });
 
 const transactionRowSchema = z.object({
    id: uuid,

@@ -19,13 +19,34 @@ export interface AgentReadToolDeps {
 export function createAgentReadClient(context: ORPCContextWithOrganization) {
    return createRouterClient(
       {
-         bankAccounts: bankAccountsRouter,
-         categories: categoriesRouter,
-         creditCards: creditCardsRouter,
-         reports: reportsRouter,
-         statements: statementsRouter,
-         tags: tagsRouter,
-         transactions: transactionsListRouter,
+         bankAccounts: {
+            getAll: bankAccountsRouter.getAll,
+            list: bankAccountsRouter.list,
+         },
+         categories: {
+            getAll: categoriesRouter.getAll,
+            getPaginated: categoriesRouter.getPaginated,
+         },
+         creditCards: {
+            getAll: creditCardsRouter.getAll,
+         },
+         reports: {
+            profitAndLoss: reportsRouter.profitAndLoss,
+            cashFlow: reportsRouter.cashFlow,
+            expensesByCostCenter: reportsRouter.expensesByCostCenter,
+            expensesByCategory: reportsRouter.expensesByCategory,
+            aging: reportsRouter.aging,
+         },
+         statements: {
+            getAll: statementsRouter.getAll,
+         },
+         tags: {
+            getAll: tagsRouter.getAll,
+         },
+         transactions: {
+            getAll: transactionsListRouter.getAll,
+            getSummary: transactionsListRouter.getSummary,
+         },
       },
       { context },
    );

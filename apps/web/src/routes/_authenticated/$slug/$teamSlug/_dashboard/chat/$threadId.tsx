@@ -20,7 +20,7 @@ export const Route = createFileRoute(
 
 function ChatThreadPage() {
    return (
-      <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4">
+      <div className="self-center flex h-full w-full max-w-5xl flex-col gap-4">
          <Thread empty={<EmptyState variant="page" />}>
             <Composer />
          </Thread>

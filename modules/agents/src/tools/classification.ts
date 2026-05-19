@@ -57,12 +57,18 @@ export function buildClassificationReadTools({
             "Lista categorias financeiras disponíveis por tipo. Use para responder quais categorias existem ou para escolher categoryId em leituras financeiras.",
          inputSchema: listCategoriesInputSchema,
          outputSchema: listCategoriesOutputSchema,
-      }).server(async (input) => ({
-         data: await client.categories.getAll({
+      }).server(async (input) => {
+         const result = await client.categories.getPaginated({
             type: input.type,
             includeArchived: input.includeArchived,
-         }),
-      })),
+            page: 1,
+            pageSize: 50,
+         });
+
+         return {
+            data: result.data,
+         };
+      }),
       toolDefinition({
          name: "list_cost_centers",
          description:
