@@ -1,5 +1,4 @@
 import { Button } from "@packages/ui/components/button";
-import { SearchInput } from "@packages/ui/components/search-input";
 import {
    SheetDescription,
    SheetHeader,
@@ -13,15 +12,12 @@ import {
    SidebarManager,
    SidebarProvider,
 } from "@packages/ui/components/sidebar";
-import { useForm } from "@tanstack/react-form";
-import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useMediaQuery } from "foxact/use-media-query";
 import { Menu } from "lucide-react";
 import type * as React from "react";
 import { useSheet } from "@/hooks/use-sheet";
 import { RouteTransition } from "@/components/route-transition";
-import { Route } from "@/routes/_authenticated/$slug/$teamSlug/_dashboard/chat";
-import { ChatSidebar } from "./chat-sidebar";
+import { ThreadList } from "../../../-montte-ai/thread-list";
 
 const CHAT_SIDEBAR_STYLE = {
    "--sidebar-width": "16rem",
@@ -41,7 +37,6 @@ export function ChatLayout({ children }: ChatLayoutProps) {
 }
 
 function ChatLayoutDesktop({ children }: ChatLayoutProps) {
-   const { q } = Route.useSearch();
    return (
       <SidebarProvider
          className="!absolute !inset-0 !min-h-0 !h-full"
@@ -49,11 +44,11 @@ function ChatLayoutDesktop({ children }: ChatLayoutProps) {
       >
          <SidebarManager name="chat">
             <Sidebar className="border-r" collapsible="none">
-               <SidebarHeader className="p-4">
-                  <ChatSearchField />
+               <SidebarHeader className="p-4 pb-2">
+                  <span className="text-sm font-medium">Conversas</span>
                </SidebarHeader>
                <SidebarContent>
-                  <ChatSidebar search={q} />
+                  <ThreadList />
                </SidebarContent>
             </Sidebar>
          </SidebarManager>
@@ -95,7 +90,6 @@ function ChatLayoutMobile({ children }: ChatLayoutProps) {
 }
 
 function MobileSidebarBody() {
-   const { q } = Route.useSearch();
    return (
       <SidebarProvider
          className="flex h-full min-h-0 flex-col"
@@ -107,46 +101,9 @@ function MobileSidebarBody() {
                Histórico de conversas com a Montte AI.
             </SheetDescription>
          </SheetHeader>
-         <div className="px-4 pb-2">
-            <ChatSearchField />
-         </div>
          <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-4">
-            <ChatSidebar search={q} />
+            <ThreadList />
          </div>
       </SidebarProvider>
-   );
-}
-
-function ChatSearchField() {
-   const { q } = Route.useSearch();
-   const navigate = Route.useNavigate();
-
-   const debouncedNavigate = useDebouncedCallback(
-      (value: string) =>
-         navigate({
-            search: (prev) => ({ ...prev, q: value }),
-            replace: true,
-         }),
-      { wait: 300 },
-   );
-
-   const form = useForm({ defaultValues: { q } });
-
-   return (
-      <form.Field name="q">
-         {(field) => (
-            <SearchInput
-               aria-label="Buscar conversas"
-               id={field.name}
-               name={field.name}
-               onChange={(e) => {
-                  field.handleChange(e.target.value);
-                  debouncedNavigate(e.target.value);
-               }}
-               placeholder="Buscar conversas..."
-               value={field.state.value}
-            />
-         )}
-      </form.Field>
    );
 }

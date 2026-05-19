@@ -10,7 +10,7 @@ import posthog from "posthog-js";
 import { RouteTransition } from "@/components/route-transition";
 import { authClient } from "@/integrations/better-auth/auth-client";
 import type { orpc as orpcClient } from "@/integrations/orpc/client";
-import { ChatSessionProvider } from "./-montte-ai/chat-store";
+import { ChatSessionProvider } from "./-montte-ai/chat-runtime";
 import { DashboardLayout } from "./-layout/dashboard-layout";
 
 interface OnEnterContext {

@@ -2,12 +2,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Composer } from "../../-montte-ai/composer";
 import {
-   useActiveThreadId,
+   useCurrentRemoteThreadId,
    useMontteIsRunning,
-   useMontteMessageCount,
-} from "../../-montte-ai/chat-store";
+} from "../../-montte-ai/chat-runtime";
 import { EmptyState } from "../../-montte-ai/empty-state";
-import { MessageList, ThreadFrame } from "../../-montte-ai/message-list";
+import { Thread } from "../../-montte-ai/message-list";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 
 export const Route = createFileRoute(
@@ -20,8 +19,7 @@ export const Route = createFileRoute(
 function ChatIndexPage() {
    const { slug, teamSlug } = useDashboardSlugs();
    const navigate = useNavigate();
-   const activeThreadId = useActiveThreadId();
-   const messageCount = useMontteMessageCount();
+   const activeThreadId = useCurrentRemoteThreadId();
    const isRunning = useMontteIsRunning();
 
    useEffect(() => {
@@ -34,20 +32,11 @@ function ChatIndexPage() {
       });
    }, [activeThreadId, isRunning, slug, teamSlug, navigate]);
 
-   const hasConversation = messageCount > 0;
-
    return (
       <div className="mx-auto flex h-[calc(100%-2rem)] w-full max-w-5xl flex-col gap-4">
-         {hasConversation ? (
-            <MessageList>
-               <Composer />
-            </MessageList>
-         ) : (
-            <ThreadFrame>
-               <EmptyState variant="page" />
-               <Composer />
-            </ThreadFrame>
-         )}
+         <Thread empty={<EmptyState variant="page" />}>
+            <Composer />
+         </Thread>
       </div>
    );
 }

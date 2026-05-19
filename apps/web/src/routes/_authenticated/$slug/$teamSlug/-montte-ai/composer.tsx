@@ -17,7 +17,7 @@ import {
    selectScope,
    useMontteSuggestions,
    useSelectedScope,
-} from "./chat-store";
+} from "./chat-runtime";
 
 type Effort = "high" | "xhigh";
 

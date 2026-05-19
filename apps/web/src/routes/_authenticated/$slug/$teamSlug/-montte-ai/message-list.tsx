@@ -1,5 +1,7 @@
 import {
    ActionBarPrimitive,
+   AuiIf,
+   getMcpAppFromToolPart,
    MessagePartPrimitive,
    MessagePrimitive,
    ThreadPrimitive,
@@ -8,16 +10,11 @@ import {
 } from "@assistant-ui/react";
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
 import { Button } from "@packages/ui/components/button";
-import {
-   Collapsible,
-   CollapsibleContent,
-   CollapsibleTrigger,
-} from "@packages/ui/components/collapsible";
+import { ScrollBar } from "@packages/ui/components/scroll-area";
 import { cn } from "@packages/ui/lib/utils";
 import {
-   Brain,
+   ArrowDown,
    Check,
-   ChevronDown,
    Copy,
    Loader2,
    Pencil,
@@ -27,10 +24,22 @@ import {
    Trash2,
    Wrench,
 } from "lucide-react";
+import { ScrollArea as ScrollAreaPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 import { z } from "zod";
 import { EditComposer } from "./composer";
-import { useMontteActions, useMontteIsRunning } from "./chat-store";
+import { useMontteActions, useMontteIsRunning } from "./chat-runtime";
+import {
+   ReasoningContent,
+   ReasoningRoot,
+   ReasoningText,
+   ReasoningTrigger,
+} from "./reasoning";
+import {
+   ToolGroupContent,
+   ToolGroupRoot,
+   ToolGroupTrigger,
+} from "./tool-group";
 
 const TOOL_LABELS: Record<string, string> = {
    advisor_consult: "Consultando advisor sênior",
@@ -57,28 +66,19 @@ const toolArtifactSchema = z.object({
    approvalApproved: z.boolean().optional(),
 });
 
-type AssistantPartGroup =
-   | "group-chainOfThought"
-   | "group-reasoning"
-   | "group-tool";
+type AssistantPartGroup = "group-reasoning" | "group-tool";
 
 type AssistantPartForGrouping = {
    type: string;
-   text?: string;
 };
 
 type MessageActionRole = "assistant" | "user" | "system";
 
-const isEmptyTextPart = (part: AssistantPartForGrouping) =>
-   part.type === "text" && (part.text ?? "").trim().length === 0;
-
 const groupAssistantParts = (
    part: AssistantPartForGrouping,
 ): readonly AssistantPartGroup[] | null => {
-   if (part.type === "reasoning")
-      return ["group-chainOfThought", "group-reasoning"];
-   if (part.type === "tool-call") return ["group-chainOfThought", "group-tool"];
-   if (isEmptyTextPart(part)) return ["group-chainOfThought"];
+   if (part.type === "reasoning") return ["group-reasoning"];
+   if (part.type === "tool-call") return ["group-tool"];
    return null;
 };
 
@@ -88,41 +88,82 @@ interface ThreadFrameProps {
 
 export function ThreadFrame({ children }: ThreadFrameProps) {
    return (
-      <ThreadPrimitive.Root className="relative flex min-h-0 flex-1 flex-col">
-         <ThreadPrimitive.Viewport
-            autoScroll
-            className="flex-1 overflow-y-auto"
-            scrollToBottomOnRunStart
-         >
-            <div className="flex min-h-full flex-col justify-end gap-4 pb-4">
-               {children}
-            </div>
-         </ThreadPrimitive.Viewport>
-      </ThreadPrimitive.Root>
+      <ScrollAreaPrimitive.Root asChild>
+         <ThreadPrimitive.Root className="aui-root relative flex min-h-0 flex-1 flex-col overflow-hidden">
+            <ScrollAreaPrimitive.Viewport asChild>
+               <ThreadPrimitive.Viewport
+                  autoScroll
+                  className="flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth"
+                  scrollToBottomOnRunStart
+                  turnAnchor="top"
+               >
+                  <div className="flex min-h-full flex-col p-4">{children}</div>
+               </ThreadPrimitive.Viewport>
+            </ScrollAreaPrimitive.Viewport>
+            <ScrollBar />
+            <ScrollAreaPrimitive.Corner />
+         </ThreadPrimitive.Root>
+      </ScrollAreaPrimitive.Root>
    );
 }
 
-export function MessageList({
+export function Thread({
    children,
    compact = false,
+   empty,
 }: {
    children?: ReactNode;
    compact?: boolean;
+   empty: ReactNode;
 }) {
    return (
       <ThreadFrame>
-         <ThreadPrimitive.Messages>
-            {({ message }) => {
-               if (message.composer.isEditing) return <EditComposer />;
-               if (message.role === "user")
-                  return <UserMessage compact={compact} />;
-               return <AssistantMessage compact={compact} />;
-            }}
-         </ThreadPrimitive.Messages>
-         <ThinkingIndicator />
-         {children}
+         <AuiIf condition={(s) => s.thread.isEmpty}>
+            <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-6">
+               {empty}
+               <div className="w-full max-w-3xl">{children}</div>
+            </div>
+         </AuiIf>
+         <AuiIf condition={(s) => !s.thread.isEmpty}>
+            <div className="flex min-h-full flex-1 flex-col gap-4">
+               <div className="flex flex-col gap-4">
+                  <ThreadPrimitive.Messages>
+                     {() => <ThreadMessage compact={compact} />}
+                  </ThreadPrimitive.Messages>
+               </div>
+               <ThinkingIndicator />
+               <div className="flex-1" />
+               <ThreadPrimitive.ViewportFooter className="sticky bottom-0 flex flex-col gap-2 bg-background/95 pb-4">
+                  <ThreadPrimitive.ScrollToBottom asChild>
+                     <Button
+                        aria-label="Ir para o final"
+                        className="self-center rounded-full"
+                        size="icon"
+                        type="button"
+                        variant="outline"
+                     >
+                        <ArrowDownIcon />
+                     </Button>
+                  </ThreadPrimitive.ScrollToBottom>
+                  {children}
+               </ThreadPrimitive.ViewportFooter>
+            </div>
+         </AuiIf>
       </ThreadFrame>
    );
+}
+
+function ThreadMessage({ compact }: { compact: boolean }) {
+   const role = useAuiState((s) => s.message.role);
+   const isEditing = useAuiState((s) => s.message.composer.isEditing);
+
+   if (isEditing) return <EditComposer />;
+   if (role === "user") return <UserMessage compact={compact} />;
+   return <AssistantMessage compact={compact} />;
+}
+
+function ArrowDownIcon() {
+   return <ArrowDown className="size-4" />;
 }
 
 function ThinkingIndicator() {
@@ -136,9 +177,8 @@ function ThinkingIndicator() {
 
    return (
       <div className="flex items-center gap-2 rounded-lg bg-muted/30 p-2 text-sm text-muted-foreground shimmer">
-         <Brain className="size-4" />
-         <span className="flex-1">Montte AI está pensando</span>
          <Loader2 className="size-4 animate-spin" />
+         <span className="flex-1">Montte AI está pensando</span>
       </div>
    );
 }
@@ -184,32 +224,39 @@ function AssistantMessage({ compact }: { compact: boolean }) {
       >
          <MessagePrimitive.GroupedParts groupBy={groupAssistantParts}>
             {({ part, children }) => {
-               if (part.type === "group-chainOfThought") {
-                  return (
-                     <ChainOfThoughtGroup
-                        running={part.status.type === "running"}
-                     >
-                        {children}
-                     </ChainOfThoughtGroup>
-                  );
-               }
                if (part.type === "group-reasoning") {
                   const running = part.status.type === "running";
                   return (
-                     <ReasoningGroup running={running}>
-                        {children}
-                     </ReasoningGroup>
+                     <ReasoningRoot defaultOpen={running}>
+                        <ReasoningTrigger active={running} />
+                        <ReasoningContent active={running}>
+                           <ReasoningText>{children}</ReasoningText>
+                        </ReasoningContent>
+                     </ReasoningRoot>
                   );
                }
                if (part.type === "group-tool") {
-                  return <InlineToolGroup>{children}</InlineToolGroup>;
+                  return (
+                     <ToolGroupRoot
+                        defaultOpen={part.status.type === "running"}
+                     >
+                        <ToolGroupTrigger
+                           active={part.status.type === "running"}
+                           count={part.indices.length}
+                        />
+                        <ToolGroupContent>{children}</ToolGroupContent>
+                     </ToolGroupRoot>
+                  );
                }
                if (part.type === "text") {
                   if (part.text.trim().length === 0) return null;
                   return <AssistantText />;
                }
                if (part.type === "reasoning") return <ReasoningPart />;
-               if (part.type === "tool-call") return <ToolPart part={part} />;
+               if (part.type === "tool-call") {
+                  if (getMcpAppFromToolPart(part)) return part.toolUI;
+                  return <ToolPart part={part} />;
+               }
                if (part.type === "data") return part.dataRendererUI;
                return null;
             }}
@@ -233,64 +280,9 @@ function AssistantText() {
    return <StreamdownTextPrimitive />;
 }
 
-function ChainOfThoughtGroup({
-   children,
-   running,
-}: {
-   children: ReactNode;
-   running: boolean;
-}) {
-   return (
-      <Collapsible
-         aria-busy={running}
-         className="group/cot w-full overflow-hidden rounded-lg text-sm text-muted-foreground"
-      >
-         <CollapsibleTrigger className="flex w-full items-center gap-2 p-2 text-left text-foreground/90 hover:bg-muted/30">
-            <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=closed]/cot:-rotate-90" />
-            <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-               <Brain className="size-2" />
-            </span>
-            <span className="flex-1 font-medium">Raciocínio</span>
-            {running ? (
-               <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
-            ) : (
-               <Check className="size-4 shrink-0 text-emerald-500" />
-            )}
-         </CollapsibleTrigger>
-         <CollapsibleContent className="flex flex-col gap-2 p-2">
-            {children}
-         </CollapsibleContent>
-      </Collapsible>
-   );
-}
-
-function ReasoningGroup({
-   children,
-   running,
-}: {
-   children: ReactNode;
-   running: boolean;
-}) {
-   return (
-      <div
-         aria-busy={running}
-         className="flex gap-2 rounded-lg p-2 text-muted-foreground hover:bg-muted/30"
-      >
-         <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-muted">
-            <Brain className="size-2" />
-         </span>
-         <div className="min-w-0 flex-1 italic leading-relaxed">{children}</div>
-      </div>
-   );
-}
-
 function ReasoningPart() {
    const running = useAuiState((s) => s.part.status.type === "running");
    return <StreamdownTextPrimitive mode={running ? "streaming" : "static"} />;
-}
-
-function InlineToolGroup({ children }: { children: ReactNode }) {
-   return <div className="flex flex-col gap-2">{children}</div>;
 }
 
 function ToolPart({
