@@ -17,7 +17,7 @@ faq:
    - question: "Por que o Montte não tem mais módulo de Contatos?"
      answer: "Porque o lugar do relacionamento é em ferramenta dedicada. No Montte, o Customer existe pra cobrança, não pra pipeline."
    - question: "A integração com o Twenty já está pronta?"
-     answer: "Ainda não. Está planejada como fronteira oficial do Montte, ao lado do PostHog. O escopo inicial é mapear o Customer do Montte para Company ou Person no Twenty."
+     answer: "Ainda não. Está planejada como a fronteira oficial do Montte pra CRM. O escopo inicial é mapear o Customer do Montte para Company ou Person no Twenty."
    - question: "Então o Montte virou o quê?"
      answer: "Runtime de billing usage-based brasileiro, no espírito do Autumn e do Polar. O Customer vai agregar assinaturas, uso, faturas e status de pagamento numa resposta só. Tem peça por construir, e a gente conta em público."
 ---
@@ -32,17 +32,15 @@ O módulo funcionava. O problema era de posição.
 
 ## Por que saiu
 
-Cada ajuste em outra área puxava regra nova no Contatos, migração, mais tela pra revisar. O módulo ia crescer pra parecer Pipedrive, e a gente não quer ser Pipedrive.
+Cada ajuste em outra área puxava regra nova no Contatos, migração, mais tela pra revisar. CRM dentro de produto que não nasceu pra ser CRM sempre fica pela metade.
 
-A escolha aqui é antiga. Ou se vira metade CRM, ou se assume que CRM mora em ferramenta dedicada. Optamos pela segunda.
+A escolha aqui é antiga. Ou se assume metade, ou se delega o relacionamento pra uma ferramenta dedicada. A gente delega.
 
 ## Onde o relacionamento vai morar
 
 [Twenty](https://twenty.com). Open-source, TypeScript, feito pra ser CRM. Pessoas, empresas, oportunidades, pipeline e responsável comercial vivem lá.
 
-A integração entra como fronteira oficial do Montte, ao lado do PostHog. O Customer do Montte aponta pra Company ou Person no Twenty quando faz sentido.
-
-Integrações oficiais são duas: PostHog e Twenty. O resto entra como adapter técnico.
+A integração entra como a fronteira oficial do Montte pra CRM. O Customer do Montte aponta pra Company ou Person no Twenty quando faz sentido. Não tem segunda opção de CRM no roadmap: Twenty é a escolha.
 
 ## O Customer está virando outra coisa
 
