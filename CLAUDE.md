@@ -82,7 +82,6 @@ Routers live in `modules/<module>/src/router/<name>.ts` and are aggregated in `a
 - Business-rule checks (conflict/notFound) **outside** the transaction. `mapErr` always to `WebAppError.internal`. Empty `returning()` → throw `WebAppError.internal` (specific) outside the tx.
 - Ownership via middleware: fetch entity, check `teamId`, pass via `next({ context: { entity } })`. Handler never re-queries.
 - Bulk ops: dedicated procedure + `Promise.allSettled` server-side. Never loop `mutateAsync` on the client.
-- Cost-incurring procedures: use `billableProcedure` + `.meta({ billableEvent: "<name>" })`. Pure CRUD stays on `protectedProcedure`.
 
 Canonical pattern:
 
@@ -286,7 +285,7 @@ No Mastra, no `@packages/agents`, no Vercel AI SDK.
 
 **Bill only what costs us** (AI calls, email, storage, webhook egress). UI/CRUD/listings are free.
 
-Routers tag cost-incurring procedures with `billableProcedure` + `.meta({ billableEvent: "<name>" })` (`core/orpc/src/server.ts` — `BillableMeta`). Pure CRUD stays on `protectedProcedure`. Workflows write usage rows directly to the `usage-events` schema; the period-end-invoice workflow aggregates them via `summarizeUsageByMeter`. HyprPay ingestion middleware is planned but not wired yet — don't reference helpers that aren't in the codebase.
+Workflows write usage rows directly to the `usage-events` schema; the period-end-invoice workflow aggregates them via `summarizeUsageByMeter`. HyprPay ingestion middleware is planned but not wired yet — don't reference helpers that aren't in the codebase.
 
 ---
 

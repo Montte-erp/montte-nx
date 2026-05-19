@@ -101,7 +101,6 @@ function ProfitAndLossData({ config }: { config: ReportConfig }) {
                bankAccountId: config.bankAccountId,
                categoryId: config.categoryId,
                tagId: config.tagId,
-               contactId: config.contactId,
                dreOnly: config.dreOnly,
             },
          }),
@@ -113,7 +112,6 @@ function ProfitAndLossData({ config }: { config: ReportConfig }) {
                bankAccountId: config.bankAccountId,
                categoryId: config.categoryId,
                tagId: config.tagId,
-               contactId: config.contactId,
                page: 1,
                pageSize: 100,
                sorting: [{ id: "date", desc: true }],
@@ -172,7 +170,6 @@ function AgingData({ config }: { config: ReportConfig }) {
             type: config.agingType,
             dateFrom: config.dateFrom,
             dateTo: config.dateTo,
-            contactId: config.contactId,
             categoryId: config.categoryId,
             tagId: config.tagId,
             status: config.agingStatus,
@@ -724,7 +721,7 @@ function AgingPanel({ report }: { report: AgingReport }) {
       <Table>
          <TableHeader>
             <TableRow>
-               <TableHead>Contato</TableHead>
+               <TableHead>Categoria</TableHead>
                <TableHead>Lançamento</TableHead>
                <TableHead>Vencimento</TableHead>
                <TableHead>Centro de Custo</TableHead>
@@ -736,7 +733,7 @@ function AgingPanel({ report }: { report: AgingReport }) {
             {report.rows.map((row) => (
                <TableRow key={row.id}>
                   <TableCell className="font-medium">
-                     {row.contactName}
+                     {row.categoryName ?? "Sem categoria"}
                   </TableCell>
                   <TableCell>{row.name}</TableCell>
                   <TableCell>
