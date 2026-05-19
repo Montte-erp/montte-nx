@@ -4,7 +4,7 @@ import {
    type ThreadMessageLike,
    useExternalStoreRuntime,
 } from "@assistant-ui/react";
-import { stream, useChat } from "@tanstack/ai-react";
+import { fetchHttpStream, useChat } from "@tanstack/ai-react";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueryClient } from "@tanstack/react-query";
 import { createStore } from "@tanstack/store";
@@ -105,12 +105,9 @@ function pickPageContext(): ChatPageContext | undefined {
 }
 
 export type ChatTurnRequest = {
-   threadId: string;
-   runId: string;
    text?: string;
    regenerate?: boolean;
    replaceFromMessageId?: string;
-   pageContext?: ChatPageContext;
 };
 
 interface MontteAssistantActions {
@@ -351,68 +348,26 @@ export function ChatSessionProvider({
    const posthog = usePostHog();
    const threadId = useActiveThreadId();
    const pendingTurn = useRef<ChatTurnRequest | null>(null);
-   const activeTurnThreadId = useRef<string | null>(null);
    const loadedSnapshotKey = useRef<string | null>(null);
    const visibleMessages = useRef<UIMessage[]>([]);
 
-   const createTurn = useCallback(
-      (
-         overrides: Omit<ChatTurnRequest, "threadId" | "runId"> & {
-            threadId?: string;
-         },
-      ) => {
-         const thread = overrides.threadId ?? chatStore.state.activeThreadId;
-         if (thread === null) return;
-         const runId =
-            typeof crypto.randomUUID === "function"
-               ? crypto.randomUUID()
-               : `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-         const next: ChatTurnRequest = {
-            threadId: thread,
-            runId,
-            pageContext: pickPageContext(),
-            ...overrides,
-         };
-         pendingTurn.current = next;
-         activeTurnThreadId.current = thread;
-         return next;
-      },
-      [],
-   );
-
    const connection = useMemo(
       () =>
-         stream(() => {
+         fetchHttpStream("/api/chat", () => {
             const turn = pendingTurn.current;
             pendingTurn.current = null;
-            if (turn === null) {
-               return {
-                  async *[Symbol.asyncIterator]() {},
-               };
-            }
-            return (async function* () {
-               const iterator = await client.threads.chat({
-                  threadId: turn.threadId,
-                  runId: turn.runId,
-                  messages: [],
-                  state: {},
-                  context: [],
-                  tools: [],
-                  forwardedProps: {
-                     ...(turn.text !== undefined && { text: turn.text }),
-                     ...(turn.replaceFromMessageId !== undefined && {
-                        replaceFromMessageId: turn.replaceFromMessageId,
-                     }),
-                     ...(turn.regenerate && { regenerate: true }),
-                     ...(turn.pageContext !== undefined && {
-                        pageContext: turn.pageContext,
-                     }),
-                  },
-               });
-               for await (const event of iterator) {
-                  yield event;
-               }
-            })();
+            return {
+               credentials: "include",
+               body: {
+                  threadId: chatStore.state.activeThreadId ?? "",
+                  ...(turn?.text !== undefined && { text: turn.text }),
+                  ...(turn?.regenerate && { regenerate: true }),
+                  ...(turn?.replaceFromMessageId && {
+                     replaceFromMessageId: turn.replaceFromMessageId,
+                  }),
+                  pageContext: pickPageContext(),
+               },
+            };
          }),
       [],
    );
@@ -421,22 +376,9 @@ export function ChatSessionProvider({
       connection,
       initialMessages: [],
       onFinish: () => {
-         const turnThreadId = activeTurnThreadId.current;
-         activeTurnThreadId.current = null;
-         if (turnThreadId === null) return;
-         void (async () => {
-            const id = turnThreadId;
-            const wasActiveThread = chatStore.state.activeThreadId;
-            try {
-               await refreshChatData(queryClient, id);
-            } catch {
-               if (wasActiveThread !== id) return;
-               setActiveThread(null);
-               loadedSnapshotKey.current = null;
-               visibleMessages.current = [];
-               chat.setMessages([]);
-            }
-         })();
+         const id = chatStore.state.activeThreadId;
+         if (!id) return;
+         void refreshChatData(queryClient, id);
       },
       onError: () => toast.error("Falha no streaming da Montte AI."),
    });
@@ -463,18 +405,12 @@ export function ChatSessionProvider({
          if (loadedSnapshotKey.current === null && chat.messages.length === 0)
             return;
          loadedSnapshotKey.current = null;
-         visibleMessages.current = [];
          chat.setMessages([]);
          return;
       }
       if (activeTurn) return;
       if (threadBundles === undefined) return;
-      if (threadBundle === undefined) {
-         loadedSnapshotKey.current = null;
-         visibleMessages.current = [];
-         chat.setMessages([]);
-         return;
-      }
+      if (threadBundle === undefined) return;
       const messages = threadBundle.messages.map(toUiMessage);
       const snapshotKey = `${threadId}:${messages
          .map((message) => message.id)
@@ -522,10 +458,10 @@ export function ChatSessionProvider({
          if (!text || activeTurn) return;
          const id = await ensureThread();
          if (id === null) return;
-         createTurn({ threadId: id, text });
+         pendingTurn.current = { text };
          await chat.sendMessage(text);
       },
-      [activeTurn, chat, createTurn, ensureThread],
+      [activeTurn, chat, ensureThread],
    );
 
    const onEdit = useCallback(
@@ -534,30 +470,22 @@ export function ChatSessionProvider({
          if (!text || activeTurn) return;
          const id = await ensureThread();
          if (id === null) return;
-         createTurn({
-            threadId: id,
+         pendingTurn.current = {
             text,
-            replaceFromMessageId:
-               message.sourceId ?? message.parentId ?? undefined,
-         });
+            replaceFromMessageId: message.sourceId ?? message.parentId ?? "",
+         };
          await chat.sendMessage(text);
       },
-      [activeTurn, chat, createTurn, ensureThread],
+      [activeTurn, chat, ensureThread],
    );
 
    const onReload = useCallback(async () => {
       if (activeTurn) return;
-      const thread = chatStore.state.activeThreadId;
-      if (thread === null) return;
-      createTurn({ regenerate: true });
+      pendingTurn.current = { regenerate: true };
       await chat.reload();
-   }, [activeTurn, chat, createTurn]);
+   }, [activeTurn, chat]);
 
    const startNewConversation = useCallback(() => {
-      pendingTurn.current = null;
-      activeTurnThreadId.current = null;
-      loadedSnapshotKey.current = null;
-      visibleMessages.current = [];
       chat.setMessages([]);
       setActiveThread(null);
    }, [chat]);

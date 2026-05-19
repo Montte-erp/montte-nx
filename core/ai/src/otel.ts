@@ -6,7 +6,6 @@ export interface AiTraceContext {
    organizationId?: string;
    teamId?: string;
    threadId?: string;
-   runId?: string;
    promptName?: string;
    promptVersion?: number;
    customProperties?: Record<string, AiTraceAttributeValue>;
@@ -28,9 +27,6 @@ export function aiTraceAttributes(context: AiTraceContext) {
       ...(context.threadId && {
          "thread.id": context.threadId,
          "gen_ai.conversation.id": context.threadId,
-      }),
-      ...(context.runId && {
-         "gen_ai.run.id": context.runId,
       }),
       ...(context.promptName && {
          $ai_prompt_name: context.promptName,
