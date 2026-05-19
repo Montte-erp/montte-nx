@@ -39,7 +39,72 @@ A regra de ouro: **o texto tem que soar como se um humano cansado tivesse escrit
 
 **Pronomes:** "nós/a gente" como padrão de equipe Montte. "eu" só em post de opinião assinado por um autor. "você" direto pro leitor.
 
-**Marca:** Montte é masculino. Nunca "ERP simples", é "plataforma operacional com IA nativa". Nunca cite Bling ou ContaAzul como concorrente; cite Asaas, Stripe, Mercado Pago, Abacate Pay como gateway. Tags chamam-se "Centro de Custo".
+**Marca:** Montte é masculino. Nome do produto é só "Montte" em copy public-facing, nunca "Montte Payments", "Montte ERP", "Montte CRM" ou qualquer sufixo (vertical interna pode aparecer no Linear, nunca no blog/landing/social). Nunca cite Bling, Omie ou Conta Azul como concorrente; cite Asaas, Stripe, Mercado Pago e Abacate Pay como gateway. Tags chamam-se "Centro de Custo".
+
+---
+
+## Posicionamento canônico
+
+A frase-régua que vale pra todo canal Montte: **camada de billing pra SaaS de um jeito que o founder não precise de ERP**.
+
+Tagline public oficial: **a camada que falta no SaaS brasileiro pra facilitar a vida do founder**. Essa é a forma que entra em description de blog, hook, landing. Use literalmente, sem reinventar.
+
+### Mental model interno (NÃO usar em copy public)
+
+Montte é mistura de **Autumn + Rillet**. Vocabulário pra alinhamento interno, jamais em texto pro leitor:
+
+- **Lado Autumn (dev-facing billing layer):** Customer como primitiva de cobrança por uso, SDK, `customers.state` agregando assinatura/uso/fatura/status numa chamada. Plugar em qualquer SaaS substitui o trabalho de wirear Stripe Billing, Lago, Orb ou planilha caseira.
+- **Lado Rillet (founder/ops-facing financial intelligence):** contabilidade e financeiro AI-native — auto-categorização, conciliação, dashboards. Substitui o reflexo de comprar Omie/Bling/Conta Azul.
+
+Junto fecha o ciclo: cobra, mede, fatura, concilia, mostra saúde financeira, **sem ERP separado**. Quando der dúvida de escopo num post, a régua é: ou serve o dev integrando billing, ou serve o founder olhando financeiro com IA. Fora disso é Twenty (CRM), Abacate Pay (gateway), ou NFe — não core do Montte.
+
+### O que dizer (frases canônicas)
+
+| Tema | Forma canônica |
+|------|----------------|
+| O que é o Montte | "Camada de billing que falta no SaaS brasileiro." |
+| Posicionamento amplo | "A camada que falta no SaaS brasileiro pra facilitar a vida do founder." |
+| Promessa pro founder | "Cobrança, uso, fatura e estado do cliente sem precisar montar um ERP por fora." |
+| Customer | "Primitiva de cobrança por uso." (não "primitive", não "objeto de billing") |
+| API central | "`customers.state` devolve assinatura, uso, fatura e status numa chamada." |
+| CRM | "Twenty é a primeira integração porque o Montte usa o Twenty internamente." |
+| Pagamento | "Abacate Pay vai entrar como primeiro adapter." |
+| Não-concorrência | "Não é Bling, Omie ou Conta Azul." (afirmação seca, sem "estamos tentando ser") |
+
+### O que NÃO dizer (frases banidas)
+
+| Não use | Por quê |
+|---------|---------|
+| "Montte Payments", "Montte CRM", "Montte ERP" | Produto é só Montte. Sufixos confundem posicionamento |
+| "Runtime de billing" | Termo técnico que afasta founder. Usar "camada" |
+| "ERP simples", "ERP nacional", "ERP brasileiro" | Montte não é ERP — a frase canônica é literalmente "sem ERP" |
+| "Plataforma operacional completa" | Genérico, soa institucional. Usar a tagline |
+| "Infraestrutura de pagamentos" | Falso — Montte é camada de billing, gateway entra como adapter |
+| "Stack de billing", "stack de finanças" | Anglicismo + vago |
+| "Solução all-in-one" | Pitch de SaaS dos anos 2010 |
+| "Founder-friendly", "developer-first" | Anglicismo de pitch. Mostre, não rotule |
+| "Não estamos tentando ser X" | Eco desnecessário depois de "não somos X". Afirmação seca já basta |
+| "Facilitamos a vida de empresas brasileiras" | Soft, vazio. A tagline tem alvo (founder) e domínio (SaaS) — use ela |
+
+### Hierarquia de menção em copy public
+
+- ✅ Twenty: única integração de CRM citável. É a primeira porque Montte usa internamente.
+- ✅ Abacate Pay: primeiro adapter de pagamento. Pode citar em escopo de billing.
+- ⚠️ DocuSeal: assinatura digital, self-hosted. Citável só quando o tema for documentos.
+- ❌ Bling, Omie, Conta Azul: só como referência negativa ("não é Bling, Omie ou Conta Azul").
+- ❌ Pipedrive, HubSpot, Salesforce: não citar como integração — Twenty é o único CRM no roadmap.
+- ❌ Autumn, Rillet, Polar, Stripe Billing, Lago, Orb: aparecem em survey/contexto técnico, nunca como comparação direta em headline. Em texto pode citar como "o que tem hoje no mercado lá fora" sem virar tese.
+- ❌ Mastra, Vercel AI SDK, `@packages/agents`: não existem no Montte. Não mencionar.
+
+### Vocabulário operacional
+
+- "Customer" (em código e em texto técnico) ≠ "Cliente" (em copy founder-facing). Use cada um no contexto certo.
+- "Cobrança por uso" >> "usage-based billing" em copy pt-BR.
+- "Adapter de pagamento" ok (termo técnico consolidado). "Adaptador de pagamento" também aceitável.
+- "Plano", "assinatura", "fatura", "uso medido", "status de pagamento" — léxico estável.
+- "Centro de Custo" sempre que aparecer o que outros chamam de "tag".
+- "Build in public" pode aparecer; "transparência radical" não.
+- Quando NFe vier: "emissão própria, sem SaaS", não "solução de NFe integrada".
 
 ---
 

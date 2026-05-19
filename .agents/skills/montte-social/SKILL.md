@@ -66,7 +66,21 @@ Conteúdo cai num dos quatro. Se não cai, provavelmente não é pra publicar.
 1. **Removemos X / quebramos padrão Y** — opinião contrária baseada em decisão real do produto (ex: removemos CRM, removemos Instagram, removemos planilha de billing)
 2. **Build log** — número específico + nome próprio + lição (ex: "deletamos 3.081 linhas hoje", "consertamos N bug em M horas")
 3. **Postmortem / "errei feio"** — vulnerabilidade real com data e impacto, fechamento com aprendizado
-4. **Position contra ERP tradicional** — Montte é plataforma operacional com IA nativa, não "ERP simples"; concorrente é status quo (Bling, Omie, ContaAzul como referência de mercado, não como ataque)
+4. **Position: camada de billing, não ERP** — Montte é a camada que falta no SaaS brasileiro pra facilitar a vida do founder; cobra, mede, fatura e mostra saúde financeira sem ERP separado. Bling/Omie/Conta Azul aparecem como referência de mercado, não como ataque.
+
+## Posicionamento (canônico)
+
+Antes de escrever qualquer post, fixar o frame:
+
+- **Tagline public:** "a camada que falta no SaaS brasileiro pra facilitar a vida do founder".
+- **Pitch curto:** "billing pra SaaS de um jeito que o founder não precise de ERP".
+- **Mental model interno (NÃO usar em copy):** Montte = mistura de **Autumn** (dev-facing billing layer, Customer como primitiva, `customers.state`) + **Rillet** (founder/ops AI accounting, auto-categorização, conciliação, dashboards).
+- **Nome do produto em copy:** apenas "Montte". Nunca "Montte Payments", "Montte ERP", "Montte CRM".
+- **CRM:** Twenty é a primeira integração porque o Montte usa internamente. Nenhum outro CRM citável.
+- **Pagamento:** Abacate Pay como primeiro adapter. Asaas, Stripe, Mercado Pago como gateway de referência.
+- **Não-concorrência:** "Não é Bling, Omie ou Conta Azul." Afirmação seca, sem "estamos tentando ser".
+
+Detalhes completos (frases canônicas, banidas, hierarquia de menção, vocabulário) em [`references/blog.md` §Posicionamento canônico](references/blog.md). Sempre abrir antes de rascunhar.
 
 ## Resources
 
