@@ -24,8 +24,8 @@
          "@modules/account/*": ["../../modules/account/src/*"],
          "@modules/agents/*": ["../../modules/agents/src/*"],
          "@modules/cards/*": ["../../modules/cards/src/*"],
+         "@modules/cashbook/*": ["../../modules/cashbook/src/*"],
          "@modules/classification/*": ["../../modules/classification/src/*"],
-         "@modules/finance/*": ["../../modules/finance/src/*"],
          "@modules/inbox/*": ["../../modules/inbox/src/*"]
       }
    },
