@@ -9,17 +9,17 @@ coverImage: "../../assets/blog/removemos-o-crm-cover.png"
 featured: false
 readingMinutes: 3
 keyTakeaways:
-   - "O módulo de Contatos saiu do produto: 3.081 linhas em 37 arquivos."
-   - "Relacionamento passa a viver no Twenty, que é o CRM que o Montte já usa internamente. Integração com o produto é a primeira da fila."
-   - "O Customer no Montte está virando a primitiva de cobrança por uso."
-   - "O Montte é a camada de billing que falta no SaaS brasileiro, não ERP."
+   - "Módulo de Contatos saiu: 3.081 linhas em 37 arquivos."
+   - "Relacionamento passa a viver no Twenty. Integração entra como primeira da fila porque o Montte já usa por dentro."
+   - "O Customer vira a primitiva de cobrança por uso."
+   - "Montte é camada de billing, não ERP."
 faq:
    - question: "Por que o Montte não tem mais módulo de Contatos?"
-     answer: "Porque o lugar do relacionamento é em ferramenta dedicada. No Montte, o Customer existe pra cobrança, não pra pipeline."
+     answer: "Relacionamento mora em CRM. No Montte, o Customer existe pra cobrança."
    - question: "A integração com o Twenty já está pronta?"
-     answer: "Ainda não. É a primeira integração que entra no roadmap, porque o Twenty é o CRM que a gente já usa por dentro. O escopo inicial é mapear o Customer do Montte para Company ou Person no Twenty."
+     answer: "Ainda não. É a primeira da fila porque o Twenty é o CRM que a gente usa por dentro. Escopo inicial: mapear o Customer pra Company ou Person no Twenty."
    - question: "Então o Montte virou o quê?"
-     answer: "A camada de billing que falta no SaaS brasileiro pra facilitar a vida de quem está construindo. O Customer vai juntar assinaturas, uso, faturas e status de pagamento num lugar só. O desenho da API ainda está aberto, e a gente está coletando feedback da comunidade pra fechar."
+     answer: "Camada de billing. Assinatura, uso medido, fatura e status de pagamento juntos numa resposta. O desenho da API ainda está aberto."
 ---
 
 Tinha um módulo de Contatos no Montte. Não tem mais. Saíram 3.081 linhas em 37 arquivos. Relacionamento passa a viver fora, com a integração com o Twenty no roadmap.
