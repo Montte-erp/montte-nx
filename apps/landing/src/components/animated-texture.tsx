@@ -12,11 +12,9 @@ const footerTone: CSSProperties = {
 
 const heroFallback: CSSProperties = {
    backgroundImage: [
-      "url('/videos/montte-hero-bg.webp')",
       "radial-gradient(ellipse at 74% 45%, color-mix(in oklch, var(--primary) 20%, transparent) 0%, transparent 36%)",
+      "radial-gradient(ellipse at 62% 26%, color-mix(in oklch, var(--chart-2) 14%, transparent) 0%, transparent 34%)",
    ].join(", "),
-   backgroundSize: "cover, auto",
-   backgroundPosition: "center, center",
 };
 
 const heroVideoMask: CSSProperties = {
@@ -59,11 +57,14 @@ export function AnimatedTexture(props: AnimatedTextureProps) {
                style={isFooter ? footerVideoMask : heroVideoMask}
                aria-hidden="true"
             >
-               <img
+               <video
                   className="size-full object-cover"
-                  src="/videos/montte-hero-bg.webp"
-                  alt=""
-                  loading="eager"
+                  src="/videos/montte-hero-bg.webm"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
                />
             </div>
          )}
