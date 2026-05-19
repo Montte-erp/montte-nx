@@ -70,4 +70,4 @@ ERP genérico, plataforma faz-tudo, "também temos CRM": passamos longe. Quem qu
 
 ## O que vem por aí
 
-O próximo passo é abrir a waitlist do Montte Payments e publicar o SDK em fases. Se quiser entrar primeiro, [a fila tá aberta em montte.com.br](https://montte.com.br).
+A waitlist do Montte Payments já está aberta. O próximo passo é publicar o SDK em fases. Se quiser entrar primeiro, [entra na fila em montte.com.br](https://montte.com.br/#waitlist).
