@@ -56,16 +56,16 @@ O formato exato dessa API ainda está em aberto. É sobre isso que a gente quer 
 
 Tem um survey aberto pra quem já bateu de frente com billing em SaaS. Três perguntas curtas: como você imagina a DX dessa camada, o que você usa hoje (Polar, Stripe Billing, Lago, Orb, plano próprio em planilha) e o que te trava quando precisa entregar cobrança por uso.
 
-[Responder o survey](https://montte.com.br/#dx-survey)
+[Responder o survey](https://us.posthog.com/external_surveys/019e3db6-1650-0000-9810-32389338ce6a)
 
 Quanto mais resposta com exemplo concreto, mais fácil fica fechar o desenho. A intenção é publicar de volta o que sair do survey num próximo post.
 
 ## Posição
 
-O Montte é a camada de billing que falta no SaaS brasileiro. A ideia é cuidar de assinatura, uso medido, cobrança e estado do cliente pra quem está tocando um produto e não quer perder semana fazendo isso na mão. Twenty resolve CRM por fora. Abacate Pay vai entrar como primeiro adapter de pagamento.
+O Montte cuida de assinatura, uso medido, cobrança e estado do cliente. Twenty resolve CRM por fora. Abacate Pay entra como primeiro adapter de pagamento.
 
-Não somos Bling, Omie ou Conta Azul. Não estamos tentando ser.
+Não é Bling, Omie ou Conta Azul.
 
 ## O que vem por aí
 
-Waitlist aberta em [montte.com.br](https://montte.com.br/#waitlist). Quem entrar agora recebe os próximos posts da série, o resultado do survey de DX e o primeiro acesso quando a camada de billing abrir pra teste.
+Tem [waitlist aberta](https://montte.com.br/#waitlist) pra quem quiser acompanhar de perto. O resultado do survey de DX sai num próximo post.
