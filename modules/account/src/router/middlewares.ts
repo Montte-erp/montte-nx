@@ -1,30 +1,62 @@
 import { os } from "@orpc/server";
-import { fromPromise } from "neverthrow";
+import { Result } from "better-result";
 import { cnpjDataSchema } from "@core/authentication/server";
-import { WebAppError } from "@core/logging/errors";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
+import { AccountError, accountErrors } from "@modules/account/router/errors";
 
 const base = os.$context<ORPCContextWithOrganization>();
 
 export const requireOrganizationTeam = base.middleware(
    async ({ context, next }, teamId: string) => {
-      const fetched = await fromPromise(
-         context.db.query.team.findFirst({
-            where: (f, { and, eq }) =>
-               and(
-                  eq(f.id, teamId),
-                  eq(f.organizationId, context.organizationId),
-               ),
-         }),
-         () => WebAppError.internal("Falha ao verificar projeto."),
-      );
-      if (fetched.isErr()) throw fetched.error;
+      const teamResult = await Result.tryPromise({
+         try: () =>
+            context.db.query.team.findFirst({
+               where: (f, { and, eq }) =>
+                  and(
+                     eq(f.id, teamId),
+                     eq(f.organizationId, context.organizationId),
+                  ),
+            }),
+         catch: () =>
+            new AccountError({
+               error: accountErrors.INTERNAL(),
+               message: "Falha ao verificar projeto.",
+               organizationId: context.organizationId,
+               teamId,
+            }),
+      });
+      if (teamResult.isErr()) throw teamResult.error;
 
-      const row = fetched.value;
-      if (!row) throw WebAppError.notFound("Projeto não encontrado.");
+      if (!teamResult.value) {
+         throw new AccountError({
+            error: accountErrors.NOT_FOUND(),
+            message: "Projeto não encontrado.",
+            organizationId: context.organizationId,
+            teamId,
+         });
+      }
 
-      const cnpjData = row.cnpjData ? cnpjDataSchema.parse(row.cnpjData) : null;
+      const team = teamResult.value;
+      const parsedCnpjDataResult = await Result.try({
+         try: () =>
+            team.cnpjData ? cnpjDataSchema.parse(team.cnpjData) : null,
+         catch: () =>
+            new AccountError({
+               error: accountErrors.INTERNAL(),
+               message: "Falha ao processar dados do projeto.",
+               organizationId: context.organizationId,
+               teamId,
+            }),
+      });
+      if (parsedCnpjDataResult.isErr()) throw parsedCnpjDataResult.error;
 
-      return next({ context: { organizationTeam: { ...row, cnpjData } } });
+      return next({
+         context: {
+            organizationTeam: {
+               ...team,
+               cnpjData: parsedCnpjDataResult.value,
+            },
+         },
+      });
    },
 );

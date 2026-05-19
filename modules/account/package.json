@@ -24,10 +24,11 @@
       "@core/utils": "workspace:*",
       "@modules/classification": "workspace:*",
       "@orpc/server": "catalog:orpc",
+      "better-result": "catalog:validation",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "drizzle-zod": "catalog:database",
-      "neverthrow": "catalog:validation",
+      "evlog": "catalog:logging",
       "posthog-node": "catalog:analytics-client",
       "zod": "catalog:validation"
    },
