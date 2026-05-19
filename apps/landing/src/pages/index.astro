@@ -1,7 +1,6 @@
 ---
 export const prerender = true;
 import BaseLayout from "../layouts/base-layout.astro";
-import { AnimatedTexture } from "../components/animated-texture";
 import { HeroCarousel } from "../blocks/hero-carousel";
 import SocialProofBlock from "../blocks/social-proof-block.astro";
 import OperationsPillarsBlock from "../blocks/operations-pillars-block.astro";
@@ -17,7 +16,18 @@ import FooterBlock from "../blocks/footer-block.astro";
       class="relative isolate flex min-h-screen flex-col overflow-hidden"
       aria-label="Apresentação"
    >
-      <AnimatedTexture section="hero" client:load />
+      <img
+         src="/videos/montte-hero-bg.webp"
+         alt=""
+         class="absolute inset-0 -z-30 size-full object-cover"
+         loading="eager"
+         aria-hidden="true"
+      />
+      <div
+         class="absolute inset-0 -z-20 bg-gradient-to-r from-background/40 via-background/10 to-transparent"
+         aria-hidden="true"
+      >
+      </div>
       <div
          class="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-b from-transparent to-background"
          aria-hidden="true"
