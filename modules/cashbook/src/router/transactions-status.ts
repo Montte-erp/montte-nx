@@ -1,14 +1,59 @@
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
-import { fromPromise } from "neverthrow";
+import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
 import { transactions } from "@core/database/schemas/transactions";
-import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
    requireOwnedTransactionIds,
    requireTransaction,
 } from "@modules/cashbook/router/middlewares";
+
+const transactionStatusRouterErrors = defineErrorCatalog(
+   "cashbook.router.transactionsStatus",
+   {
+      BAD_REQUEST: {
+         status: 400,
+         message: "Requisição inválida para status de lançamento.",
+         tags: ["cashbook"],
+      },
+      CONFLICT: {
+         status: 409,
+         message: "Conflito no status do lançamento.",
+         tags: ["cashbook"],
+      },
+      INTERNAL: {
+         status: 500,
+         message: "Falha interna no status do lançamento.",
+         tags: ["cashbook"],
+      },
+      NOT_FOUND: {
+         status: 404,
+         message: "Registro não encontrado.",
+         tags: ["cashbook"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "cashbook.router.transactionsStatus": typeof transactionStatusRouterErrors;
+   }
+}
+
+type TransactionStatusRouterCatalogError =
+   | ReturnType<typeof transactionStatusRouterErrors.BAD_REQUEST>
+   | ReturnType<typeof transactionStatusRouterErrors.CONFLICT>
+   | ReturnType<typeof transactionStatusRouterErrors.INTERNAL>
+   | ReturnType<typeof transactionStatusRouterErrors.NOT_FOUND>;
+
+class TransactionStatusRouterError extends TaggedError(
+   "TransactionStatusRouterError",
+)<{
+   error: TransactionStatusRouterCatalogError;
+   message: string;
+}>() {}
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -26,46 +71,73 @@ export const markAsPaid = protectedProcedure
    .handler(async ({ context, input }) => {
       const existing = context.transaction;
       if (existing.status === "paid" && !existing.ignored) {
-         throw WebAppError.conflict("Lançamento já está pago.");
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.CONFLICT(),
+            message: "Lançamento já está pago.",
+         });
       }
       if (existing.ignored) {
-         throw WebAppError.badRequest("Lançamento ignorado não pode ser pago.");
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.BAD_REQUEST(),
+            message: "Lançamento ignorado não pode ser pago.",
+         });
       }
       if (typeof input.bankAccountId === "string") {
-         const account = await fromPromise(
-            context.db.query.bankAccounts.findFirst({
-               where: (f, { eq }) => eq(f.id, input.bankAccountId ?? ""),
-            }),
-            () => WebAppError.internal("Falha ao verificar conta bancária."),
-         );
-         if (account.isErr()) throw account.error;
+         const account = await Result.tryPromise({
+            try: () =>
+               context.db.query.bankAccounts.findFirst({
+                  where: (f, { eq }) => eq(f.id, input.bankAccountId ?? ""),
+               }),
+            catch: () =>
+               new TransactionStatusRouterError({
+                  error: transactionStatusRouterErrors.INTERNAL(),
+                  message: "Falha ao verificar conta bancária.",
+               }),
+         });
+         if (Result.isError(account)) throw account.error;
          if (!account.value || account.value.teamId !== context.teamId) {
-            throw WebAppError.notFound("Conta bancária não encontrada.");
+            throw new TransactionStatusRouterError({
+               error: transactionStatusRouterErrors.NOT_FOUND(),
+               message: "Conta bancária não encontrada.",
+            });
          }
       }
       const paidDate = input.paidDate ?? dayjs().format("YYYY-MM-DD");
 
-      const result = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx
-               .update(transactions)
-               .set({
-                  status: "paid",
-                  ignored: false,
-                  paidAt: dayjs().toDate(),
-                  date: paidDate,
-                  ...(input.bankAccountId !== undefined
-                     ? { bankAccountId: input.bankAccountId }
-                     : {}),
-               })
-               .where(eq(transactions.id, input.id))
-               .returning(),
-         ),
-         () => WebAppError.internal("Falha ao marcar lançamento como pago."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .update(transactions)
+                  .set({
+                     status: "paid",
+                     ignored: false,
+                     paidAt: dayjs().toDate(),
+                     date: paidDate,
+                     ...(() => {
+                        if (input.bankAccountId !== undefined) {
+                           return { bankAccountId: input.bankAccountId };
+                        }
+                        return {};
+                     })(),
+                  })
+                  .where(eq(transactions.id, input.id))
+                  .returning(),
+            ),
+         catch: () =>
+            new TransactionStatusRouterError({
+               error: transactionStatusRouterErrors.INTERNAL(),
+               message: "Falha ao marcar lançamento como pago.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       const [row] = result.value;
-      if (!row) throw WebAppError.notFound("Lançamento não encontrado.");
+      if (!row) {
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.NOT_FOUND(),
+            message: "Lançamento não encontrado.",
+         });
+      }
       return row;
    });
 
@@ -77,23 +149,34 @@ export const markAsUnpaid = protectedProcedure
          context.transaction.status !== "paid" ||
          context.transaction.ignored
       ) {
-         throw WebAppError.conflict(
-            "Apenas lançamentos pagos podem ser desmarcados.",
-         );
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.CONFLICT(),
+            message: "Apenas lançamentos pagos podem ser desmarcados.",
+         });
       }
-      const result = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx
-               .update(transactions)
-               .set({ status: "pending", ignored: false, paidAt: null })
-               .where(eq(transactions.id, input.id))
-               .returning(),
-         ),
-         () => WebAppError.internal("Falha ao desmarcar lançamento."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .update(transactions)
+                  .set({ status: "pending", ignored: false, paidAt: null })
+                  .where(eq(transactions.id, input.id))
+                  .returning(),
+            ),
+         catch: () =>
+            new TransactionStatusRouterError({
+               error: transactionStatusRouterErrors.INTERNAL(),
+               message: "Falha ao desmarcar lançamento.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       const [row] = result.value;
-      if (!row) throw WebAppError.notFound("Lançamento não encontrado.");
+      if (!row) {
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.NOT_FOUND(),
+            message: "Lançamento não encontrado.",
+         });
+      }
       return row;
    });
 
@@ -102,21 +185,34 @@ export const cancel = protectedProcedure
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
       if (context.transaction.ignored) {
-         throw WebAppError.conflict("Lançamento já está ignorado.");
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.CONFLICT(),
+            message: "Lançamento já está ignorado.",
+         });
       }
-      const result = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx
-               .update(transactions)
-               .set({ ignored: true })
-               .where(eq(transactions.id, input.id))
-               .returning(),
-         ),
-         () => WebAppError.internal("Falha ao ignorar lançamento."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .update(transactions)
+                  .set({ ignored: true })
+                  .where(eq(transactions.id, input.id))
+                  .returning(),
+            ),
+         catch: () =>
+            new TransactionStatusRouterError({
+               error: transactionStatusRouterErrors.INTERNAL(),
+               message: "Falha ao ignorar lançamento.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       const [row] = result.value;
-      if (!row) throw WebAppError.notFound("Lançamento não encontrado.");
+      if (!row) {
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.NOT_FOUND(),
+            message: "Lançamento não encontrado.",
+         });
+      }
       return row;
    });
 
@@ -125,23 +221,34 @@ export const reactivate = protectedProcedure
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
       if (!context.transaction.ignored) {
-         throw WebAppError.conflict(
-            "Apenas lançamentos ignorados podem ser reativados.",
-         );
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.CONFLICT(),
+            message: "Apenas lançamentos ignorados podem ser reativados.",
+         });
       }
-      const result = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx
-               .update(transactions)
-               .set({ ignored: false })
-               .where(eq(transactions.id, input.id))
-               .returning(),
-         ),
-         () => WebAppError.internal("Falha ao reativar lançamento."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .update(transactions)
+                  .set({ ignored: false })
+                  .where(eq(transactions.id, input.id))
+                  .returning(),
+            ),
+         catch: () =>
+            new TransactionStatusRouterError({
+               error: transactionStatusRouterErrors.INTERNAL(),
+               message: "Falha ao reativar lançamento.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       const [row] = result.value;
-      if (!row) throw WebAppError.notFound("Lançamento não encontrado.");
+      if (!row) {
+         throw new TransactionStatusRouterError({
+            error: transactionStatusRouterErrors.NOT_FOUND(),
+            message: "Lançamento não encontrado.",
+         });
+      }
       return row;
    });
 
@@ -156,15 +263,23 @@ export const bulkMarkAsPaid = protectedProcedure
    .use(requireOwnedTransactionIds, (input) => input.ids)
    .handler(async ({ context, input }) => {
       if (typeof input.bankAccountId === "string") {
-         const account = await fromPromise(
-            context.db.query.bankAccounts.findFirst({
-               where: (f, { eq }) => eq(f.id, input.bankAccountId ?? ""),
-            }),
-            () => WebAppError.internal("Falha ao verificar conta bancária."),
-         );
-         if (account.isErr()) throw account.error;
+         const account = await Result.tryPromise({
+            try: () =>
+               context.db.query.bankAccounts.findFirst({
+                  where: (f, { eq }) => eq(f.id, input.bankAccountId ?? ""),
+               }),
+            catch: () =>
+               new TransactionStatusRouterError({
+                  error: transactionStatusRouterErrors.INTERNAL(),
+                  message: "Falha ao verificar conta bancária.",
+               }),
+         });
+         if (Result.isError(account)) throw account.error;
          if (!account.value || account.value.teamId !== context.teamId) {
-            throw WebAppError.notFound("Conta bancária não encontrada.");
+            throw new TransactionStatusRouterError({
+               error: transactionStatusRouterErrors.NOT_FOUND(),
+               message: "Conta bancária não encontrada.",
+            });
          }
       }
       const paidDate = input.paidDate ?? dayjs().format("YYYY-MM-DD");
@@ -178,9 +293,12 @@ export const bulkMarkAsPaid = protectedProcedure
                      ignored: false,
                      paidAt: dayjs().toDate(),
                      date: paidDate,
-                     ...(input.bankAccountId !== undefined
-                        ? { bankAccountId: input.bankAccountId }
-                        : {}),
+                     ...(() => {
+                        if (input.bankAccountId !== undefined) {
+                           return { bankAccountId: input.bankAccountId };
+                        }
+                        return {};
+                     })(),
                   })
                   .where(eq(transactions.id, id))
                   .returning(),

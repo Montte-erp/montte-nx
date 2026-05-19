@@ -11,7 +11,8 @@ import {
    sql,
 } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
-import { err, fromPromise, fromThrowable, ok } from "neverthrow";
+import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
 import {
    bankAccounts,
@@ -19,7 +20,6 @@ import {
    updateBankAccountSchema,
 } from "@core/database/schemas/bank-accounts";
 import { transactions } from "@core/database/schemas/transactions";
-import { WebAppError } from "@core/logging/errors";
 import { log } from "@core/logging";
 import { protectedProcedure } from "@core/orpc/server";
 import { requireBankAccount } from "@modules/cashbook/router/middlewares";
@@ -29,23 +29,70 @@ import {
    computeBankAccountBalances,
 } from "@modules/cashbook/bank-accounts";
 
+const bankAccountRouterErrors = defineErrorCatalog(
+   "cashbook.router.bankAccounts",
+   {
+      CONFLICT: {
+         status: 409,
+         message: "Conflito em conta bancária.",
+         tags: ["cashbook"],
+      },
+      INTERNAL: {
+         status: 500,
+         message: "Falha interna em conta bancária.",
+         tags: ["cashbook"],
+      },
+      NOT_FOUND: {
+         status: 404,
+         message: "Conta bancária não encontrada.",
+         tags: ["cashbook"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "cashbook.router.bankAccounts": typeof bankAccountRouterErrors;
+   }
+}
+
+type BankAccountRouterCatalogError =
+   | ReturnType<typeof bankAccountRouterErrors.CONFLICT>
+   | ReturnType<typeof bankAccountRouterErrors.INTERNAL>
+   | ReturnType<typeof bankAccountRouterErrors.NOT_FOUND>;
+
+class BankAccountRouterError extends TaggedError("BankAccountRouterError")<{
+   error: BankAccountRouterCatalogError;
+   internal?: { detail: string };
+   message: string;
+}>() {}
+
 const idSchema = z.object({ id: z.string().uuid() });
 export const create = protectedProcedure
    .input(createBankAccountSchema)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx
-               .insert(bankAccounts)
-               .values({ ...input, teamId: context.teamId })
-               .returning(),
-         ),
-         () => WebAppError.internal("Falha ao criar conta bancária."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .insert(bankAccounts)
+                  .values({ ...input, teamId: context.teamId })
+                  .returning(),
+            ),
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao criar conta bancária.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       const [account] = result.value;
-      if (!account)
-         throw WebAppError.internal("Falha ao criar conta bancária.");
+      if (!account) {
+         throw new BankAccountRouterError({
+            error: bankAccountRouterErrors.INTERNAL(),
+            message: "Falha ao criar conta bancária.",
+         });
+      }
       return account;
    });
 
@@ -91,11 +138,17 @@ const currentBalanceSql = buildBankAccountBalanceSql(false);
 const projectedBalanceSql = buildBankAccountBalanceSql(true);
 
 function buildBankAccountOrderBy(sorting: ListSorting): SQL[] {
-   const rules = sorting?.length ? sorting : [defaultBankAccountSort];
+   const rules = (() => {
+      if (sorting?.length) return sorting;
+      return [defaultBankAccountSort];
+   })();
    const orderBy: SQL[] = [];
 
    for (const sort of rules) {
-      const direction = sort.desc ? desc : asc;
+      const direction = (() => {
+         if (sort.desc) return desc;
+         return asc;
+      })();
       switch (sort.id) {
          case "currentBalance":
             orderBy.push(direction(currentBalanceSql));
@@ -126,41 +179,52 @@ export const list = protectedProcedure
       const where = and(
          eq(bankAccounts.teamId, context.teamId),
          eq(bankAccounts.status, "active"),
-         type ? eq(bankAccounts.type, type) : undefined,
-         search ? ilike(bankAccounts.name, `%${search}%`) : undefined,
+         (() => {
+            if (type) return eq(bankAccounts.type, type);
+            return undefined;
+         })(),
+         (() => {
+            if (search) return ilike(bankAccounts.name, `%${search}%`);
+            return undefined;
+         })(),
       );
 
-      const result = await fromPromise(
-         Promise.all([
-            context.db
-               .select(getTableColumns(bankAccounts))
-               .from(bankAccounts)
-               .leftJoin(
-                  transactions,
-                  and(
-                     or(
-                        eq(transactions.bankAccountId, bankAccounts.id),
-                        eq(
-                           transactions.destinationBankAccountId,
-                           bankAccounts.id,
+      const result = await Result.tryPromise({
+         try: () =>
+            Promise.all([
+               context.db
+                  .select(getTableColumns(bankAccounts))
+                  .from(bankAccounts)
+                  .leftJoin(
+                     transactions,
+                     and(
+                        or(
+                           eq(transactions.bankAccountId, bankAccounts.id),
+                           eq(
+                              transactions.destinationBankAccountId,
+                              bankAccounts.id,
+                           ),
                         ),
+                        eq(transactions.ignored, false),
                      ),
-                     eq(transactions.ignored, false),
-                  ),
-               )
-               .where(where)
-               .groupBy(bankAccounts.id)
-               .orderBy(...buildBankAccountOrderBy(sorting))
-               .limit(pageSize)
-               .offset(offset),
-            context.db
-               .select({ count: sql<number>`cast(count(*) as int)` })
-               .from(bankAccounts)
-               .where(where),
-         ]),
-         () => WebAppError.internal("Falha ao listar contas bancárias."),
-      );
-      if (result.isErr()) throw result.error;
+                  )
+                  .where(where)
+                  .groupBy(bankAccounts.id)
+                  .orderBy(...buildBankAccountOrderBy(sorting))
+                  .limit(pageSize)
+                  .offset(offset),
+               context.db
+                  .select({ count: sql<number>`cast(count(*) as int)` })
+                  .from(bankAccounts)
+                  .where(where),
+            ]),
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao listar contas bancárias.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       const [rows, countRows] = result.value;
       const totalCount = countRows[0]?.count ?? 0;
 
@@ -184,15 +248,20 @@ export const list = protectedProcedure
    });
 
 export const getAll = protectedProcedure.handler(async ({ context }) => {
-   const result = await fromPromise(
-      context.db.query.bankAccounts.findMany({
-         where: (f, { and, eq }) =>
-            and(eq(f.teamId, context.teamId), eq(f.status, "active")),
-         orderBy: (f, { asc }) => [asc(f.name)],
-      }),
-      () => WebAppError.internal("Falha ao listar contas bancárias."),
-   );
-   if (result.isErr()) throw result.error;
+   const result = await Result.tryPromise({
+      try: () =>
+         context.db.query.bankAccounts.findMany({
+            where: (f, { and, eq }) =>
+               and(eq(f.teamId, context.teamId), eq(f.status, "active")),
+            orderBy: (f, { asc }) => [asc(f.name)],
+         }),
+      catch: () =>
+         new BankAccountRouterError({
+            error: bankAccountRouterErrors.INTERNAL(),
+            message: "Falha ao listar contas bancárias.",
+         }),
+   });
+   if (Result.isError(result)) throw result.error;
 
    const balances = await computeBankAccountBalances(context.db, result.value);
    return result.value.map((account) => ({
@@ -221,20 +290,29 @@ export const update = protectedProcedure
    .use(requireBankAccount, (input) => input.id)
    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      const result = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx
-               .update(bankAccounts)
-               .set({ ...data, updatedAt: dayjs().toDate() })
-               .where(eq(bankAccounts.id, id))
-               .returning(),
-         ),
-         () => WebAppError.internal("Falha ao atualizar conta bancária."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .update(bankAccounts)
+                  .set({ ...data, updatedAt: dayjs().toDate() })
+                  .where(eq(bankAccounts.id, id))
+                  .returning(),
+            ),
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao atualizar conta bancária.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       const [updated] = result.value;
-      if (!updated)
-         throw WebAppError.notFound("Conta bancária não encontrada.");
+      if (!updated) {
+         throw new BankAccountRouterError({
+            error: bankAccountRouterErrors.NOT_FOUND(),
+            message: "Conta bancária não encontrada.",
+         });
+      }
       return updated;
    });
 
@@ -242,88 +320,111 @@ export const remove = protectedProcedure
    .input(idSchema)
    .use(requireBankAccount, (input) => input.id)
    .handler(async ({ context, input }) => {
-      const usage = await fromPromise(
-         context.db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(transactions)
-            .where(
-               or(
-                  eq(transactions.bankAccountId, input.id),
-                  eq(transactions.destinationBankAccountId, input.id),
+      const usage = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({ count: sql<number>`count(*)::int` })
+               .from(transactions)
+               .where(
+                  or(
+                     eq(transactions.bankAccountId, input.id),
+                     eq(transactions.destinationBankAccountId, input.id),
+                  ),
                ),
-            ),
-         () =>
-            WebAppError.internal(
-               "Falha ao verificar lançamentos da conta bancária.",
-            ),
-      ).andThen(([row]) =>
-         (row?.count ?? 0) > 0
-            ? err(
-                 WebAppError.conflict(
-                    "Conta com lançamentos não pode ser excluída. Use arquivamento.",
-                 ),
-              )
-            : ok(undefined),
-      );
-      if (usage.isErr()) throw usage.error;
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos da conta bancária.",
+            }),
+      });
+      if (Result.isError(usage)) throw usage.error;
+      if ((usage.value[0]?.count ?? 0) > 0) {
+         throw new BankAccountRouterError({
+            error: bankAccountRouterErrors.CONFLICT(),
+            message:
+               "Conta com lançamentos não pode ser excluída. Use arquivamento.",
+         });
+      }
 
-      const deleted = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx.delete(bankAccounts).where(eq(bankAccounts.id, input.id)),
-         ),
-         () => WebAppError.internal("Falha ao excluir conta bancária."),
-      );
-      if (deleted.isErr()) throw deleted.error;
+      const deleted = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx.delete(bankAccounts).where(eq(bankAccounts.id, input.id)),
+            ),
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao excluir conta bancária.",
+            }),
+      });
+      if (Result.isError(deleted)) throw deleted.error;
       return { success: true };
    });
 
 export const bulkRemove = protectedProcedure
    .input(z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }))
    .handler(async ({ context, input }) => {
-      const owned = await fromPromise(
-         context.db.query.bankAccounts.findMany({
-            where: (f, { and, eq, inArray: inArr }) =>
-               and(eq(f.teamId, context.teamId), inArr(f.id, input.ids)),
-            columns: { id: true },
-         }),
-         () => WebAppError.internal("Falha ao verificar contas bancárias."),
-      );
-      if (owned.isErr()) throw owned.error;
+      const owned = await Result.tryPromise({
+         try: () =>
+            context.db.query.bankAccounts.findMany({
+               where: (f, { and, eq, inArray: inArr }) =>
+                  and(eq(f.teamId, context.teamId), inArr(f.id, input.ids)),
+               columns: { id: true },
+            }),
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao verificar contas bancárias.",
+            }),
+      });
+      if (Result.isError(owned)) throw owned.error;
       if (owned.value.length !== input.ids.length) {
-         throw WebAppError.notFound(
-            "Uma ou mais contas bancárias não encontradas.",
-         );
+         throw new BankAccountRouterError({
+            error: bankAccountRouterErrors.NOT_FOUND(),
+            message: "Uma ou mais contas bancárias não encontradas.",
+         });
       }
 
-      const usage = await fromPromise(
-         context.db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(transactions)
-            .where(
-               or(
-                  inArray(transactions.bankAccountId, input.ids),
-                  inArray(transactions.destinationBankAccountId, input.ids),
+      const usage = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({ count: sql<number>`count(*)::int` })
+               .from(transactions)
+               .where(
+                  or(
+                     inArray(transactions.bankAccountId, input.ids),
+                     inArray(transactions.destinationBankAccountId, input.ids),
+                  ),
                ),
-            ),
-         () =>
-            WebAppError.internal(
-               "Falha ao verificar lançamentos das contas bancárias.",
-            ),
-      );
-      if (usage.isErr()) throw usage.error;
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos das contas bancárias.",
+            }),
+      });
+      if (Result.isError(usage)) throw usage.error;
       if ((usage.value[0]?.count ?? 0) > 0) {
-         throw WebAppError.conflict(
-            "Uma ou mais contas têm lançamentos e não podem ser excluídas. Use arquivamento.",
-         );
+         throw new BankAccountRouterError({
+            error: bankAccountRouterErrors.CONFLICT(),
+            message:
+               "Uma ou mais contas têm lançamentos e não podem ser excluídas. Use arquivamento.",
+         });
       }
 
-      const deleted = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx.delete(bankAccounts).where(inArray(bankAccounts.id, input.ids)),
-         ),
-         () => WebAppError.internal("Falha ao excluir contas bancárias."),
-      );
-      if (deleted.isErr()) throw deleted.error;
+      const deleted = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .delete(bankAccounts)
+                  .where(inArray(bankAccounts.id, input.ids)),
+            ),
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao excluir contas bancárias.",
+            }),
+      });
+      if (Result.isError(deleted)) throw deleted.error;
       return { deleted: input.ids.length };
    });
 
@@ -396,43 +497,62 @@ function withFallbackBanks(banks: BrasilApiBank[]) {
 async function fetchBanks(
    redis: import("@core/redis/connection").Redis,
 ): Promise<BrasilApiBank[]> {
-   const cached = await fromPromise(redis.get(BANKS_REDIS_KEY), (e) => e);
-   if (cached.isErr()) {
+   const cached = await Result.tryPromise({
+      try: () => redis.get(BANKS_REDIS_KEY),
+      catch: (error) =>
+         new BankAccountRouterError({
+            error: bankAccountRouterErrors.INTERNAL(),
+            message: "Falha ao ler cache da lista de bancos.",
+            internal: { detail: String(error) },
+         }),
+   });
+   if (Result.isError(cached)) {
       log.warn({
          module: "finance.bank-accounts",
          message: "Falha ao ler cache da lista de bancos",
-         err: cached.error,
+         err: cached.error.internal?.detail,
          key: BANKS_REDIS_KEY,
       });
    }
-   if (cached.isOk() && cached.value) {
+   if (Result.isOk(cached) && cached.value) {
       const cachedPayload = cached.value;
-      const parsed = fromThrowable(
-         () => BrasilApiBankArraySchema.parse(JSON.parse(cachedPayload)),
-         (e) => e,
-      )();
-      if (parsed.isOk()) return withFallbackBanks(parsed.value);
+      const parsed = Result.try({
+         try: () => BrasilApiBankArraySchema.parse(JSON.parse(cachedPayload)),
+         catch: (error) =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao interpretar cache da lista de bancos.",
+               internal: { detail: String(error) },
+            }),
+      });
+      if (Result.isOk(parsed)) return withFallbackBanks(parsed.value);
       log.warn({
          module: "finance.bank-accounts",
          message:
             "Falha ao interpretar cache da lista de bancos com BrasilApiBankArraySchema",
-         err: parsed.error,
+         err: parsed.error.internal?.detail,
          key: BANKS_REDIS_KEY,
       });
    }
 
-   const responseResult = await fromPromise(
-      fetch("https://brasilapi.com.br/api/banks/v1", {
-         signal: AbortSignal.timeout(5000),
-      }),
-      (e) => e,
-   );
-   if (responseResult.isErr()) {
+   const responseResult = await Result.tryPromise({
+      try: () =>
+         fetch("https://brasilapi.com.br/api/banks/v1", {
+            signal: AbortSignal.timeout(5000),
+         }),
+      catch: (error) =>
+         new BankAccountRouterError({
+            error: bankAccountRouterErrors.INTERNAL(),
+            message: "Falha ao buscar bancos na BrasilAPI.",
+            internal: { detail: String(error) },
+         }),
+   });
+   if (Result.isError(responseResult)) {
       log.error({
          module: "finance.bank-accounts",
          message:
             "Falha ao buscar bancos na BrasilAPI, retornando FALLBACK_BANKS",
-         err: responseResult.error,
+         err: responseResult.error.internal?.detail,
          fallbackCount: FALLBACK_BANKS.length,
       });
       return FALLBACK_BANKS;
@@ -449,13 +569,21 @@ async function fetchBanks(
       return FALLBACK_BANKS;
    }
 
-   const jsonResult = await fromPromise(responseResult.value.json(), (e) => e);
-   if (jsonResult.isErr()) {
+   const jsonResult = await Result.tryPromise({
+      try: () => responseResult.value.json(),
+      catch: (error) =>
+         new BankAccountRouterError({
+            error: bankAccountRouterErrors.INTERNAL(),
+            message: "Falha ao interpretar JSON da lista de bancos.",
+            internal: { detail: String(error) },
+         }),
+   });
+   if (Result.isError(jsonResult)) {
       log.error({
          module: "finance.bank-accounts",
          message:
             "Falha ao interpretar JSON da lista de bancos da BrasilAPI, retornando FALLBACK_BANKS",
-         err: jsonResult.error,
+         err: jsonResult.error.internal?.detail,
          fallbackCount: FALLBACK_BANKS.length,
       });
       return FALLBACK_BANKS;
@@ -474,21 +602,27 @@ async function fetchBanks(
       return FALLBACK_BANKS;
    }
 
-   const cacheResult = await fromPromise(
-      redis.set(
-         BANKS_REDIS_KEY,
-         JSON.stringify(parsed.data),
-         "EX",
-         BANKS_CACHE_TTL_SEC,
-      ),
-      (e) => e,
-   );
-   if (cacheResult.isErr()) {
+   const cacheResult = await Result.tryPromise({
+      try: () =>
+         redis.set(
+            BANKS_REDIS_KEY,
+            JSON.stringify(parsed.data),
+            "EX",
+            BANKS_CACHE_TTL_SEC,
+         ),
+      catch: (error) =>
+         new BankAccountRouterError({
+            error: bankAccountRouterErrors.INTERNAL(),
+            message: "Falha ao persistir lista de bancos da BrasilAPI.",
+            internal: { detail: String(error) },
+         }),
+   });
+   if (Result.isError(cacheResult)) {
       log.warn({
          module: "finance.bank-accounts",
          message:
             "Falha ao persistir lista de bancos da BrasilAPI com redis.set",
-         err: cacheResult.error,
+         err: cacheResult.error.internal?.detail,
          key: BANKS_REDIS_KEY,
       });
    }
@@ -522,17 +656,25 @@ export const bulkCreate = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx
-               .insert(bankAccounts)
-               .values(
-                  input.accounts.map((a) => ({ ...a, teamId: context.teamId })),
-               )
-               .returning(),
-         ),
-         () => WebAppError.internal("Falha ao importar contas bancárias."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .insert(bankAccounts)
+                  .values(
+                     input.accounts.map((a) => ({
+                        ...a,
+                        teamId: context.teamId,
+                     })),
+                  )
+                  .returning(),
+            ),
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao importar contas bancárias.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
       return { created: result.value.length };
    });

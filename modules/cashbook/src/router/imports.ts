@@ -1,11 +1,11 @@
 import { evaluateConditionGroup } from "@f-o-t/condition-evaluator";
-import { fromPromise } from "neverthrow";
+import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
 import {
    createTransactionSchema,
    transactions,
 } from "@core/database/schemas/transactions";
-import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import {
    enqueueClassifyTransactionsBatchWorkflow,
@@ -16,6 +16,25 @@ import {
    requireBankAccount,
    requireValidFinancialReferences,
 } from "@modules/cashbook/router/middlewares";
+
+const importRouterErrors = defineErrorCatalog("cashbook.router.imports", {
+   INTERNAL: {
+      status: 500,
+      message: "Falha interna na importação de caixa.",
+      tags: ["cashbook"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "cashbook.router.imports": typeof importRouterErrors;
+   }
+}
+
+class ImportRouterError extends TaggedError("ImportRouterError")<{
+   error: ReturnType<typeof importRouterErrors.INTERNAL>;
+   message: string;
+}>() {}
 
 const tagOnlySchema = z.object({
    tagId: z.string().uuid().nullable().optional(),
@@ -82,17 +101,22 @@ export const importStatement = protectedProcedure
          paymentMethod: t.paymentMethod ?? null,
       }));
 
-      const inserted = await fromPromise(
-         context.db.transaction(async (tx) =>
-            tx.insert(transactions).values(rows).returning({
-               id: transactions.id,
-               type: transactions.type,
-               categoryId: transactions.categoryId,
+      const inserted = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx.insert(transactions).values(rows).returning({
+                  id: transactions.id,
+                  type: transactions.type,
+                  categoryId: transactions.categoryId,
+               }),
+            ),
+         catch: () =>
+            new ImportRouterError({
+               error: importRouterErrors.INTERNAL(),
+               message: "Falha ao importar lançamentos.",
             }),
-         ),
-         () => WebAppError.internal("Falha ao importar lançamentos."),
-      );
-      if (inserted.isErr()) throw inserted.error;
+      });
+      if (Result.isError(inserted)) throw inserted.error;
 
       if (input.autoCategorize) {
          const idsToClassify = inserted.value
@@ -112,9 +136,10 @@ export const importStatement = protectedProcedure
                },
             );
             if (isClassificationWorkflowQueueFailure(queued)) {
-               throw WebAppError.internal(
-                  "Falha ao enfileirar classificação de lançamentos.",
-               );
+               throw new ImportRouterError({
+                  error: importRouterErrors.INTERNAL(),
+                  message: "Falha ao enfileirar classificação de lançamentos.",
+               });
             }
          }
       }
@@ -226,46 +251,59 @@ export const importBulk = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const idsToClassify: string[] = [];
-      let imported = 0;
-      for (const t of input.transactions) {
-         const { tagId, ...data } = t;
-         await requireValidFinancialReferences(context.db, context.teamId, {
-            bankAccountId: data.bankAccountId,
-            destinationBankAccountId: data.destinationBankAccountId,
-            categoryId: data.categoryId,
-            tagId,
-            date: data.date,
-         });
-         const ignored = data.ignored ?? false;
-         const inserted = await fromPromise(
-            context.db.transaction(async (tx) =>
-               tx
-                  .insert(transactions)
-                  .values({
-                     ...data,
-                     status: data.status,
-                     ignored,
-                     teamId: context.teamId,
-                     tagId: tagId ?? null,
-                  })
-                  .returning({ id: transactions.id }),
-            ),
-            () => WebAppError.internal("Falha ao importar lançamento."),
-         );
-         if (inserted.isErr()) throw inserted.error;
-         const [row] = inserted.value;
+      const imported = await Promise.all(
+         input.transactions.map(async (t) => {
+            const { tagId, ...data } = t;
+            await requireValidFinancialReferences(context.db, context.teamId, {
+               bankAccountId: data.bankAccountId,
+               destinationBankAccountId: data.destinationBankAccountId,
+               categoryId: data.categoryId,
+               tagId,
+               date: data.date,
+            });
+            const ignored = data.ignored ?? false;
+            const inserted = await Result.tryPromise({
+               try: () =>
+                  context.db.transaction(async (tx) =>
+                     tx
+                        .insert(transactions)
+                        .values({
+                           ...data,
+                           status: data.status,
+                           ignored,
+                           teamId: context.teamId,
+                           tagId: tagId ?? null,
+                        })
+                        .returning({ id: transactions.id }),
+                  ),
+               catch: () =>
+                  new ImportRouterError({
+                     error: importRouterErrors.INTERNAL(),
+                     message: "Falha ao importar lançamento.",
+                  }),
+            });
+            if (Result.isError(inserted)) throw inserted.error;
+            const [row] = inserted.value;
+            return {
+               categoryId: data.categoryId,
+               id: row?.id ?? null,
+               ignored,
+               type: data.type,
+            };
+         }),
+      );
+      const idsToClassify = imported.flatMap((row) => {
          if (
             input.autoCategorize &&
-            row &&
-            !ignored &&
-            !data.categoryId &&
-            (data.type === "income" || data.type === "expense")
+            row.id &&
+            !row.ignored &&
+            !row.categoryId &&
+            (row.type === "income" || row.type === "expense")
          ) {
-            idsToClassify.push(row.id);
+            return [row.id];
          }
-         imported++;
-      }
+         return [];
+      });
       if (idsToClassify.length > 0) {
          const queued = await enqueueClassifyTransactionsBatchWorkflow(
             context.workflowClient,
@@ -276,10 +314,11 @@ export const importBulk = protectedProcedure
             },
          );
          if (isClassificationWorkflowQueueFailure(queued)) {
-            throw WebAppError.internal(
-               "Falha ao enfileirar classificação de lançamentos.",
-            );
+            throw new ImportRouterError({
+               error: importRouterErrors.INTERNAL(),
+               message: "Falha ao enfileirar classificação de lançamentos.",
+            });
          }
       }
-      return { imported, skipped: 0 };
+      return { imported: imported.length, skipped: 0 };
    });
