@@ -125,6 +125,8 @@ export const requireTransactionRecurrence = base.middleware(
 
 export const requireOwnedTransactionIds = base.middleware(
    async ({ context, next }, ids: string[]) => {
+      if (ids.length === 0) return next();
+
       const result = await Result.tryPromise({
          try: () =>
             context.db
@@ -191,18 +193,27 @@ export async function requireValidFinancialReferences(
    refs: FinancialReferences,
 ) {
    if (refs.bankAccountId) {
-      const account = await db.query.bankAccounts.findFirst({
-         where: (f, { eq }) => eq(f.id, refs.bankAccountId ?? ""),
+      const account = await Result.tryPromise({
+         try: () =>
+            db.query.bankAccounts.findFirst({
+               where: (f, { eq }) => eq(f.id, refs.bankAccountId ?? ""),
+            }),
+         catch: () =>
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
+               message: "Falha ao verificar conta bancária.",
+            }),
       });
-      if (!account || account.teamId !== teamId) {
+      if (Result.isError(account)) throw account.error;
+      if (!account.value || account.value.teamId !== teamId) {
          throw new CashbookMiddlewareError({
             error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Conta bancária inválida.",
          });
       }
-      if (account.initialBalanceDate && refs.date) {
+      if (account.value.initialBalanceDate && refs.date) {
          const txDate = dayjs(refs.date);
-         const balanceDate = dayjs(account.initialBalanceDate);
+         const balanceDate = dayjs(account.value.initialBalanceDate);
          if (txDate.isBefore(balanceDate)) {
             throw new CashbookMiddlewareError({
                error: cashbookMiddlewareErrors.BAD_REQUEST(),
@@ -213,18 +224,28 @@ export async function requireValidFinancialReferences(
    }
 
    if (refs.destinationBankAccountId) {
-      const dest = await db.query.bankAccounts.findFirst({
-         where: (f, { eq }) => eq(f.id, refs.destinationBankAccountId ?? ""),
+      const dest = await Result.tryPromise({
+         try: () =>
+            db.query.bankAccounts.findFirst({
+               where: (f, { eq }) =>
+                  eq(f.id, refs.destinationBankAccountId ?? ""),
+            }),
+         catch: () =>
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
+               message: "Falha ao verificar conta de destino.",
+            }),
       });
-      if (!dest || dest.teamId !== teamId) {
+      if (Result.isError(dest)) throw dest.error;
+      if (!dest.value || dest.value.teamId !== teamId) {
          throw new CashbookMiddlewareError({
             error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Conta de destino inválida.",
          });
       }
-      if (dest.initialBalanceDate && refs.date) {
+      if (dest.value.initialBalanceDate && refs.date) {
          const txDate = dayjs(refs.date);
-         const balanceDate = dayjs(dest.initialBalanceDate);
+         const balanceDate = dayjs(dest.value.initialBalanceDate);
          if (txDate.isBefore(balanceDate)) {
             throw new CashbookMiddlewareError({
                error: cashbookMiddlewareErrors.BAD_REQUEST(),
@@ -235,16 +256,25 @@ export async function requireValidFinancialReferences(
    }
 
    if (refs.categoryId) {
-      const cat = await db.query.categories.findFirst({
-         where: (f, { eq }) => eq(f.id, refs.categoryId ?? ""),
+      const cat = await Result.tryPromise({
+         try: () =>
+            db.query.categories.findFirst({
+               where: (f, { eq }) => eq(f.id, refs.categoryId ?? ""),
+            }),
+         catch: () =>
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
+               message: "Falha ao verificar categoria.",
+            }),
       });
-      if (!cat || cat.teamId !== teamId) {
+      if (Result.isError(cat)) throw cat.error;
+      if (!cat.value || cat.value.teamId !== teamId) {
          throw new CashbookMiddlewareError({
             error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Categoria inválida.",
          });
       }
-      if (cat.isArchived) {
+      if (cat.value.isArchived) {
          throw new CashbookMiddlewareError({
             error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Categoria arquivada.",
@@ -253,10 +283,19 @@ export async function requireValidFinancialReferences(
    }
 
    if (refs.tagId) {
-      const tag = await db.query.tags.findFirst({
-         where: (f, { eq }) => eq(f.id, refs.tagId ?? ""),
+      const tag = await Result.tryPromise({
+         try: () =>
+            db.query.tags.findFirst({
+               where: (f, { eq }) => eq(f.id, refs.tagId ?? ""),
+            }),
+         catch: () =>
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
+               message: "Falha ao verificar Centro de Custo.",
+            }),
       });
-      if (!tag || tag.teamId !== teamId) {
+      if (Result.isError(tag)) throw tag.error;
+      if (!tag.value || tag.value.teamId !== teamId) {
          throw new CashbookMiddlewareError({
             error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Centro de Custo inválido.",

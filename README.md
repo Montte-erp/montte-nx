@@ -3,7 +3,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
-**Montte** e a camada de billing que falta no SaaS brasileiro: cobranca recorrente, uso medido, faturamento e estado do cliente de um jeito que o founder nao precisa montar um ERP por fora.
+**Montte** é a camada de billing que falta no SaaS brasileiro: cobranca recorrente, uso medido, faturamento e estado do cliente de um jeito que o founder nao precisa montar um ERP por fora.
 
 Mentalmente o produto e uma mistura de **Autumn + Rillet**: o lado Autumn cuida do billing dev-facing (Customer como primitiva, `customers.state` agregando assinatura/uso/fatura/status numa chamada); o lado Rillet cuida do financeiro/contabil/ops AI-native (auto-categorizacao, conciliacao, dashboards). Junto fecha o ciclo sem empurrar o founder pra Omie, Bling ou Conta Azul.
 

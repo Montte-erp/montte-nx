@@ -89,8 +89,6 @@ export async function buildWebContext(
    };
 }
 
-export type BillableMeta = { billableEvent?: string };
-
 const errorDataSchema = z.object({ tag: z.string() }).optional();
 
 const base = os
@@ -103,8 +101,7 @@ const base = os
       TOO_MANY_REQUESTS: { data: errorDataSchema },
       INTERNAL_SERVER_ERROR: { data: errorDataSchema },
    })
-   .$context<ORPCContext>()
-   .$meta<BillableMeta>({});
+   .$context<ORPCContext>();
 
 const apiKeyMetadataSchema = z.object({
    organizationId: z.string().min(1),
@@ -432,4 +429,3 @@ export type {
 export const publicProcedure = withDeps;
 export const authenticatedProcedure = withAuth;
 export const protectedProcedure = withTelemetry;
-export const billableProcedure = withTelemetry;

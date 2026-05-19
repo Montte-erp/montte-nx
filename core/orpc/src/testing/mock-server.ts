@@ -16,6 +16,5 @@ export function createMockServerModule() {
       publicProcedure: base,
       authenticatedProcedure: base,
       protectedProcedure: base,
-      billableProcedure: base,
    };
 }

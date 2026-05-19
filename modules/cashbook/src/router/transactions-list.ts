@@ -83,7 +83,7 @@ export const getAll = protectedProcedure
          includeIgnored: filtersIgnored,
       };
       const page = filter.page ?? 1;
-      const pageSize = filter.pageSize ?? 50;
+      const pageSize = filter.pageSize ?? 20;
       const where = buildTransactionWhere(filter);
       const cg = filter.conditionGroup;
 

@@ -13,6 +13,7 @@ import {
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
+import { createMockServerModule } from "@core/orpc/testing/mock-server";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import {
@@ -32,9 +33,7 @@ vi.mock("@modules/classification/workflows/enqueue", () => ({
    isClassificationWorkflowQueueFailure: vi.fn(() => false),
 }));
 
-vi.mock("@core/orpc/server", async () =>
-   (await import("@core/orpc/testing/mock-server")).createMockServerModule(),
-);
+vi.mock("@core/orpc/server", () => createMockServerModule());
 
 import * as transactionsRouter from "../../src/router/transactions";
 import * as transactionsListRouter from "../../src/router/transactions-list";

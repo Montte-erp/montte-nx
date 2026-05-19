@@ -323,9 +323,10 @@ export function buildTransactionWhere(f: TransactionFilter) {
    if (f.uncategorized) c.push(isNull(t.categoryId));
    if (f.paymentMethod) c.push(sql`${t.paymentMethod} = ${f.paymentMethod}`);
    if (f.status) {
-      if (Array.isArray(f.status)) {
+      if (Array.isArray(f.status) && f.status.length > 0) {
          c.push(inArray(t.status, f.status));
-      } else {
+      }
+      if (!Array.isArray(f.status)) {
          c.push(eq(t.status, f.status));
       }
    }

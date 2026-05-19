@@ -251,54 +251,47 @@ export const importBulk = protectedProcedure
       }),
    )
    .handler(async ({ context, input }) => {
-      const imported = await Promise.all(
-         input.transactions.map(async (t) => {
-            const { tagId, ...data } = t;
-            await requireValidFinancialReferences(context.db, context.teamId, {
+      await Promise.all(
+         input.transactions.map(({ tagId, ...data }) =>
+            requireValidFinancialReferences(context.db, context.teamId, {
                bankAccountId: data.bankAccountId,
                destinationBankAccountId: data.destinationBankAccountId,
                categoryId: data.categoryId,
                tagId,
                date: data.date,
-            });
-            const ignored = data.ignored ?? false;
-            const inserted = await Result.tryPromise({
-               try: () =>
-                  context.db.transaction(async (tx) =>
-                     tx
-                        .insert(transactions)
-                        .values({
-                           ...data,
-                           status: data.status,
-                           ignored,
-                           teamId: context.teamId,
-                           tagId: tagId ?? null,
-                        })
-                        .returning({ id: transactions.id }),
-                  ),
-               catch: () =>
-                  new ImportRouterError({
-                     error: importRouterErrors.INTERNAL(),
-                     message: "Falha ao importar lançamento.",
-                  }),
-            });
-            if (Result.isError(inserted)) throw inserted.error;
-            const [row] = inserted.value;
-            return {
-               categoryId: data.categoryId,
-               id: row?.id ?? null,
-               ignored,
-               type: data.type,
-            };
-         }),
+            }),
+         ),
       );
-      const idsToClassify = imported.flatMap((row) => {
+      const rows = input.transactions.map(({ tagId, ...data }) => ({
+         ...data,
+         status: data.status,
+         ignored: data.ignored ?? false,
+         teamId: context.teamId,
+         tagId: tagId ?? null,
+      }));
+      const inserted = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .insert(transactions)
+                  .values(rows)
+                  .returning({ id: transactions.id }),
+            ),
+         catch: () =>
+            new ImportRouterError({
+               error: importRouterErrors.INTERNAL(),
+               message: "Falha ao importar lançamentos.",
+            }),
+      });
+      if (Result.isError(inserted)) throw inserted.error;
+      const idsToClassify = inserted.value.flatMap((row, index) => {
+         const source = rows[index];
+         if (!source) return [];
          if (
             input.autoCategorize &&
-            row.id &&
-            !row.ignored &&
-            !row.categoryId &&
-            (row.type === "income" || row.type === "expense")
+            !source.ignored &&
+            !source.categoryId &&
+            (source.type === "income" || source.type === "expense")
          ) {
             return [row.id];
          }
@@ -320,5 +313,5 @@ export const importBulk = protectedProcedure
             });
          }
       }
-      return { imported: imported.length, skipped: 0 };
+      return { imported: inserted.value.length, skipped: 0 };
    });

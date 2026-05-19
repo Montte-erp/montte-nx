@@ -92,7 +92,7 @@ const installmentSchema = z
    .object({
       isInstallment: z.boolean().optional().default(false),
       installmentCount: z
-         .number({ message: "Número de parcelas é obrigatório." })
+         .number({ error: "Número de parcelas é obrigatório." })
          .int("Número de parcelas deve ser inteiro.")
          .min(2, "Número de parcelas deve ser maior que 1.")
          .max(120, "Número de parcelas deve ser menor ou igual a 120.")
@@ -113,7 +113,7 @@ const recurrenceSchema = z
       isRecurring: z.boolean().optional().default(false),
       recurrenceFrequency: z
          .enum(transactionRecurrenceFrequencyEnum.enumValues, {
-            message: "Periodicidade da recorrência é obrigatória.",
+            error: "Periodicidade da recorrência é obrigatória.",
          })
          .optional(),
    })
@@ -348,13 +348,15 @@ export const create = protectedProcedure
                }
                if (items.length > 0) {
                   await tx.insert(transactionItems).values(
-                     items.map((item) => ({
-                        transactionId: row.id,
-                        teamId: context.teamId,
-                        description: item.description ?? null,
-                        quantity: item.quantity,
-                        unitPrice: item.unitPrice,
-                     })),
+                     rows.flatMap((createdRow) =>
+                        items.map((item) => ({
+                           transactionId: createdRow.id,
+                           teamId: context.teamId,
+                           description: item.description ?? null,
+                           quantity: item.quantity,
+                           unitPrice: item.unitPrice,
+                        })),
+                     ),
                   );
                }
                return row;
@@ -466,7 +468,7 @@ export const updateRecurrence = protectedProcedure
          z.object({
             frequency: z
                .enum(transactionRecurrenceFrequencyEnum.enumValues, {
-                  message: "Periodicidade da recorrência é obrigatória.",
+                  error: "Periodicidade da recorrência é obrigatória.",
                })
                .optional(),
             status: z.enum(["active", "stopped"]).optional(),
@@ -583,20 +585,14 @@ export const update = protectedProcedure
             });
          }
       }
-      if (
-         input.bankAccountId ||
-         input.destinationBankAccountId ||
-         input.categoryId ||
-         input.tagId
-      ) {
-         await requireValidFinancialReferences(context.db, context.teamId, {
-            bankAccountId: input.bankAccountId ?? existing.bankAccountId,
-            destinationBankAccountId: input.destinationBankAccountId,
-            categoryId: input.categoryId,
-            tagId: input.tagId,
-            date: input.date ?? existing.date,
-         });
-      }
+      await requireValidFinancialReferences(context.db, context.teamId, {
+         bankAccountId: input.bankAccountId ?? existing.bankAccountId,
+         destinationBankAccountId:
+            input.destinationBankAccountId ?? existing.destinationBankAccountId,
+         categoryId: input.categoryId ?? existing.categoryId,
+         tagId: input.tagId ?? existing.tagId,
+         date: input.date ?? existing.date,
+      });
       const { id, tagId, items, ...data } = input;
       const updateData = (() => {
          if (tagId !== undefined && data.categoryId !== undefined) {

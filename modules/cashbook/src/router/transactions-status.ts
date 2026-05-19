@@ -217,7 +217,7 @@ export const cancel = protectedProcedure
    });
 
 export const reactivate = protectedProcedure
-   .input(z.object({ id: z.string().uuid(), paid: z.boolean().default(false) }))
+   .input(idSchema)
    .use(requireTransaction, (input) => input.id)
    .handler(async ({ context, input }) => {
       if (!context.transaction.ignored) {

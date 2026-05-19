@@ -1,4 +1,4 @@
-import { of, toDecimal } from "@f-o-t/money";
+import { add, of, subtract, toDecimal } from "@f-o-t/money";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { DatabaseInstance } from "@core/database/client";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -69,19 +69,24 @@ export async function computeBankAccountBalance(
       );
 
    const currency = "BRL";
-   const num = (v: string | undefined) => Number(v ?? 0);
-   const current =
-      Number(initialBalance) +
-      num(row?.income) -
-      num(row?.expense) -
-      num(row?.transferOut) +
-      num(row?.transferIn);
-   const projected =
-      current + num(row?.pendingReceivable) - num(row?.pendingPayable);
+   const current = add(
+      subtract(
+         subtract(
+            add(of(initialBalance, currency), of(row?.income ?? "0", currency)),
+            of(row?.expense ?? "0", currency),
+         ),
+         of(row?.transferOut ?? "0", currency),
+      ),
+      of(row?.transferIn ?? "0", currency),
+   );
+   const projected = subtract(
+      add(current, of(row?.pendingReceivable ?? "0", currency)),
+      of(row?.pendingPayable ?? "0", currency),
+   );
 
    return {
-      currentBalance: toDecimal(of(current.toFixed(2), currency)),
-      projectedBalance: toDecimal(of(projected.toFixed(2), currency)),
+      currentBalance: toDecimal(current),
+      projectedBalance: toDecimal(projected),
    };
 }
 
