@@ -54,14 +54,11 @@ export function AnimatedTexture(props: AnimatedTextureProps) {
                style={isFooter ? footerVideoMask : heroVideoMask}
                aria-hidden="true"
             >
-               <video
+               <img
                   className="size-full object-cover"
-                  src="/videos/montte-hero-bg.webm"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="metadata"
+                  src="/videos/montte-hero-bg.webp"
+                  alt=""
+                  loading="eager"
                />
             </div>
          )}

@@ -11,10 +11,11 @@ import { Reveal } from "../components/reveal";
 ---
 
 <section
-   class="relative isolate overflow-hidden bg-background py-4"
+   id="operacao"
+   class="relative isolate overflow-hidden bg-background py-[6rem]"
    aria-label="Operação recorrente"
 >
-   <div class="mx-auto flex w-full max-w-7xl flex-col gap-4 px-2 sm:px-4">
+   <div class="mx-auto flex w-full max-w-7xl flex-col gap-[4rem] px-2 sm:px-4">
       <Reveal client:visible>
          <div class="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
             <p class="text-sm font-medium uppercase tracking-[0.08em] text-muted-foreground">
@@ -30,7 +31,7 @@ import { Reveal } from "../components/reveal";
          </div>
       </Reveal>
 
-      <div class="grid gap-[2rem] lg:grid-cols-6">
+      <div class="grid gap-[3rem] lg:grid-cols-6">
          <Reveal className="lg:col-span-4" client:visible>
             <article class="flex h-full min-h-[330px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
                <div class="flex flex-col gap-2">
