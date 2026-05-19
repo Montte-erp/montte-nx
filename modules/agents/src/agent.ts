@@ -6,13 +6,40 @@ import {
    type UIMessage,
 } from "@tanstack/ai";
 import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
+import { defineErrorCatalog } from "evlog";
+import { Result, TaggedError } from "better-result";
 import type { Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { aiTraceAttributes } from "@core/ai/otel";
 import { getAiTracer } from "@core/logging";
+import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { AGENT_PROMPTS, type PageContext } from "@modules/agents/constants";
-import { buildSkillCatalog } from "@modules/agents/skills";
+import { buildSkillCatalog, getSkillPromptName } from "@modules/agents/skills";
 import { buildAdvisorTool } from "@modules/agents/tools/advisor";
+import { buildAgentReadTools } from "@modules/agents/tools/registry";
+
+const agentErrors = defineErrorCatalog("agents.chat", {
+   PROMPT_FAILED: {
+      status: 500,
+      message: "Falha ao carregar prompt do agente.",
+      why: "Não foi possível carregar o template de prompts necessário para a conversa.",
+      fix: "Tente novamente. Se persistir, verifique a configuração de prompts.",
+      tags: ["agents", "prompt"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "agents.chat": typeof agentErrors;
+   }
+}
+
+type AgentCatalogError = ReturnType<typeof agentErrors.PROMPT_FAILED>;
+
+class AgentChatError extends TaggedError("AgentChatError")<{
+   error: AgentCatalogError;
+   message: string;
+}>() {}
 
 export interface AgentChatOptions {
    prompts: Prompts;
@@ -21,6 +48,7 @@ export interface AgentChatOptions {
    teamId: string;
    headers: Headers;
    request: Request;
+   orpcContext: ORPCContextWithOrganization;
    threadId?: string;
    runId?: string;
    messages: UIMessage[];
@@ -71,19 +99,63 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          threadId: options.threadId,
          turnId,
       }),
+      ...buildAgentReadTools({ context: options.orpcContext }),
    ];
 
-   const rootTemplate = await options.prompts.get(AGENT_PROMPTS.root, {
-      withMetadata: false,
-   });
-   const systemPrompt = options.prompts.compile(rootTemplate, {
-      skill_catalog: buildSkillCatalog(),
-      page_context: formatPageContext(options.pageContext),
-   });
+   const rootTemplate = await (async () => {
+      const result = await Result.tryPromise({
+         try: () =>
+            options.prompts.get(AGENT_PROMPTS.root, {
+               withMetadata: false,
+            }),
+         catch: () =>
+            new AgentChatError({
+               error: agentErrors.PROMPT_FAILED(),
+               message: agentErrors.PROMPT_FAILED().message,
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
+      return result.value;
+   })();
+   const systemPrompt = Result.try(() =>
+      options.prompts.compile(rootTemplate, {
+         skill_catalog: buildSkillCatalog(),
+         page_context: formatPageContext(options.pageContext),
+      }),
+   );
+   if (Result.isError(systemPrompt)) throw systemPrompt.error;
+
+   const skillPromptName = getSkillPromptName(options.pageContext?.skillHint);
+   const activeSkillPrompt = await (async () => {
+      if (!skillPromptName) return undefined;
+      const template = await (async () => {
+         const result = await Result.tryPromise({
+            try: () =>
+               options.prompts.get(skillPromptName, {
+                  withMetadata: false,
+               }),
+            catch: () =>
+               new AgentChatError({
+                  error: agentErrors.PROMPT_FAILED(),
+                  message: agentErrors.PROMPT_FAILED().message,
+               }),
+         });
+         if (Result.isError(result)) throw result.error;
+         return result.value;
+      })();
+
+      const compiled = Result.try(() => options.prompts.compile(template, {}));
+      if (Result.isError(compiled)) throw compiled.error;
+      return compiled.value;
+   })();
 
    return {
       adapter: flashModel,
-      systemPrompts: [systemPrompt, RENDERING_PRIMER],
+      systemPrompts: [
+         systemPrompt.value,
+         ...(activeSkillPrompt ? [activeSkillPrompt] : []),
+         RENDERING_PRIMER,
+      ],
       messages: convertMessagesToModelMessages(options.messages),
       tools,
       modelOptions: {

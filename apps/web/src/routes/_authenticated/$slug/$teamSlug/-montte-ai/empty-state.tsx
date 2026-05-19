@@ -10,7 +10,7 @@ export function EmptyState({ variant }: EmptyStateProps) {
    return (
       <div
          className={cn(
-            "flex flex-1 flex-col items-center justify-center gap-4",
+            "flex flex-col items-center justify-center gap-4",
             isPage && "gap-6",
          )}
       >

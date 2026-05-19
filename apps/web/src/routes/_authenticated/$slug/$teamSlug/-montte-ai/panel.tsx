@@ -8,6 +8,7 @@ import {
    ContextPanelTitle,
 } from "@packages/ui/components/context-panel";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import { useAui } from "@assistant-ui/react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Link } from "@tanstack/react-router";
 import { Maximize2, Minus, X } from "lucide-react";
@@ -19,17 +20,14 @@ import {
    useSelectionToolbar,
 } from "@/hooks/use-selection-toolbar";
 import {
-   setActiveThread,
-   togglePanel,
-   useActiveThreadId,
+   useCurrentRemoteThreadId,
    useMontteActions,
    useMontteIsRunning,
-   useMontteMessageCount,
    useMonttePendingApprovals,
-} from "./chat-store";
+} from "./chat-runtime";
 import { Composer } from "./composer";
 import { EmptyState } from "./empty-state";
-import { MessageList } from "./message-list";
+import { Thread } from "./message-list";
 
 interface AgentPanelProps {
    onMinimize?: () => void;
@@ -37,10 +35,10 @@ interface AgentPanelProps {
 }
 
 export function AgentPanel({ onMinimize, onClose }: AgentPanelProps = {}) {
-   useHotkey("Mod+J", togglePanel);
+   const aui = useAui();
+   useHotkey("Mod+J", () => onMinimize?.());
    useHotkey("Mod+Shift+J", () => {
-      setActiveThread(null);
-      togglePanel();
+      void aui.threads().switchToNewThread();
    });
    return (
       <QueryBoundary
@@ -64,14 +62,12 @@ function PanelSkeleton() {
 }
 
 function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
-   const activeThreadId = useActiveThreadId();
+   const aui = useAui();
+   const activeThreadId = useCurrentRemoteThreadId();
    const { slug, teamSlug } = useDashboardSlugs();
-   const messageCount = useMontteMessageCount();
 
    useApprovalSelectionBar();
    useStreamShortcuts();
-
-   const hasConversation = messageCount > 0;
 
    return (
       <ContextPanel className="overflow-hidden">
@@ -85,7 +81,7 @@ function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
                   <Button
                      aria-label="Nova conversa"
                      className="h-7 px-2 text-xs"
-                     onClick={() => setActiveThread(null)}
+                     onClick={() => void aui.threads().switchToNewThread()}
                      size="sm"
                      variant="ghost"
                   >
@@ -136,25 +132,11 @@ function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
          </ContextPanelHeader>
 
          <ContextPanelContent className="overflow-hidden">
-            {hasConversation ? (
-               <>
-                  <div className="flex min-h-0 flex-1 flex-col">
-                     <MessageList compact />
-                  </div>
-                  <div className="shrink-0">
-                     <Composer />
-                  </div>
-               </>
-            ) : (
-               <>
-                  <div className="flex min-h-0 flex-1 flex-col">
-                     <EmptyState variant="panel" />
-                  </div>
-                  <div className="shrink-0">
-                     <Composer />
-                  </div>
-               </>
-            )}
+            <div className="flex min-h-0 flex-1 flex-col">
+               <Thread compact empty={<EmptyState variant="panel" />}>
+                  <Composer />
+               </Thread>
+            </div>
          </ContextPanelContent>
       </ContextPanel>
    );

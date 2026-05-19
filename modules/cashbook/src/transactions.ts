@@ -178,7 +178,11 @@ export interface TransactionFilter {
    creditCardId?: string;
    paymentMethod?: string;
    conditionGroup?: ConditionGroup;
-   status?: "pending" | "paid" | ("pending" | "paid")[];
+   status?:
+      | "pending"
+      | "paid"
+      | "cancelled"
+      | ("pending" | "paid" | "cancelled")[];
    dueDateFrom?: string;
    dueDateTo?: string;
    overdueOnly?: boolean;

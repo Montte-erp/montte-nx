@@ -3,7 +3,13 @@ import { and, asc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import dayjs from "dayjs";
 import { defineErrorCatalog } from "evlog";
 import { Result, TaggedError } from "better-result";
-import type { UIMessage } from "@tanstack/ai";
+import {
+   generateMessageId,
+   normalizeToUIMessage,
+   type ModelMessage,
+   type StreamChunk,
+   type UIMessage,
+} from "@tanstack/ai";
 import { z } from "zod";
 import {
    messagePageContextSchema,
@@ -235,10 +241,55 @@ export const chatInputSchema = z.object({
 export type ChatInput = z.infer<typeof chatInputSchema>;
 
 interface AgUiChatParams {
-   messages: unknown[];
+   messages: Array<UIMessage | ModelMessage>;
    threadId: string;
    runId: string;
    forwardedProps: Record<string, unknown>;
+}
+
+async function* strictAgUiLifecycleStream(
+   stream: AsyncIterable<StreamChunk>,
+): AsyncGenerator<StreamChunk> {
+   const activeToolCalls = new Set<string>();
+   const completedToolCalls = new Set<string>();
+   let terminalChunk: StreamChunk | undefined;
+   let runStarted = false;
+
+   for await (const chunk of stream) {
+      if (chunk.type === "RUN_STARTED") {
+         if (runStarted) continue;
+         runStarted = true;
+         yield chunk;
+         continue;
+      }
+
+      if (chunk.type === "RUN_FINISHED" || chunk.type === "RUN_ERROR") {
+         terminalChunk = chunk;
+         continue;
+      }
+
+      if (chunk.type === "TOOL_CALL_START") {
+         activeToolCalls.add(chunk.toolCallId);
+         completedToolCalls.delete(chunk.toolCallId);
+         yield chunk;
+         continue;
+      }
+
+      if (chunk.type === "TOOL_CALL_END") {
+         if (!activeToolCalls.has(chunk.toolCallId)) {
+            continue;
+         } else {
+            activeToolCalls.delete(chunk.toolCallId);
+         }
+         completedToolCalls.add(chunk.toolCallId);
+         yield chunk;
+         continue;
+      }
+
+      yield chunk;
+   }
+
+   if (terminalChunk) yield terminalChunk;
 }
 
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
@@ -328,23 +379,6 @@ const messagePartSchema = z.discriminatedUnion("type", [
 const messagePartsSchema = z
    .array(messagePartSchema)
    .min(1) satisfies z.ZodType<UIMessage["parts"]>;
-
-const agUiTextContentPartSchema = z
-   .object({
-      type: z.literal("text"),
-      text: z.string(),
-   })
-   .passthrough();
-
-const agUiIncomingMessageSchema = z
-   .object({
-      id: z.string().optional(),
-      role: z.enum(["assistant", "system", "tool", "user"]),
-      content: z
-         .union([z.string(), z.array(agUiTextContentPartSchema)])
-         .optional(),
-   })
-   .passthrough();
 
 const agUiForwardedPropsSchema = z
    .object({
@@ -457,13 +491,15 @@ const prepareChatHistoryWithThreadAdvisoryLock = (
          .orderBy(asc(messages.createdAt));
    });
 
-function agUiContentText(
-   content: z.infer<typeof agUiIncomingMessageSchema>["content"],
-): string {
-   if (content === undefined) return "";
-   if (typeof content === "string") return content.trim();
-   return content
-      .map((part) => part.text)
+function agUiContentText(message: UIMessage): string {
+   return message.parts
+      .filter(
+         (
+            part,
+         ): part is { type: "text"; content: string; metadata?: unknown } =>
+            part.type === "text",
+      )
+      .map((part) => part.content)
       .join("\n\n")
       .trim();
 }
@@ -472,7 +508,9 @@ async function prepareAgUiChatHistoryWithThreadAdvisoryLock(
    context: ORPCContextWithOrganization,
    params: AgUiChatParams,
 ): Promise<UIMessage[]> {
-   const incoming = z.array(agUiIncomingMessageSchema).parse(params.messages);
+   const normalizedIncoming = params.messages.map((message) =>
+      normalizeToUIMessage(message, generateMessageId),
+   );
    const forwardedProps = agUiForwardedPropsSchema.parse(params.forwardedProps);
 
    return context.db.transaction(async (tx) => {
@@ -492,7 +530,9 @@ async function prepareAgUiChatHistoryWithThreadAdvisoryLock(
          .orderBy(asc(messages.createdAt));
 
       const incomingIds = new Set(
-         incoming.flatMap((message) => (message.id ? [message.id] : [])),
+         normalizedIncoming.flatMap((message) =>
+            message.id ? [message.id] : [],
+         ),
       );
       const latestMatched = existingRows.reduce<
          (typeof existingRows)[number] | undefined
@@ -516,12 +556,12 @@ async function prepareAgUiChatHistoryWithThreadAdvisoryLock(
       }
 
       const existingIds = new Set(existingRows.map((row) => row.id));
-      const lastIncoming = incoming.at(-1);
+      const lastIncoming = normalizedIncoming.at(-1);
       if (
          lastIncoming?.role === "user" &&
          (!lastIncoming.id || !existingIds.has(lastIncoming.id))
       ) {
-         const text = agUiContentText(lastIncoming.content);
+         const text = agUiContentText(lastIncoming);
          if (text.length > 0) {
             await tx.insert(messages).values({
                threadId: params.threadId,
@@ -960,6 +1000,7 @@ export async function createThreadChatStream(options: {
             teamId: context.teamId,
             headers: context.headers,
             request: context.request,
+            orpcContext: context,
             threadId: input.threadId,
             messages: history,
             pageContext: input.pageContext,
@@ -1094,6 +1135,7 @@ export async function createAgUiThreadChatStream(options: {
                   teamId: context.teamId,
                   headers: context.headers,
                   request: context.request,
+                  orpcContext: context,
                   threadId: params.threadId,
                   runId: params.runId,
                   messages: history,
@@ -1122,7 +1164,7 @@ export async function createAgUiThreadChatStream(options: {
          }),
       );
 
-      return Result.ok(stream);
+      return Result.ok(strictAgUiLifecycleStream(stream));
    });
    if (Result.isError(result)) throw result.error;
    return result.value;

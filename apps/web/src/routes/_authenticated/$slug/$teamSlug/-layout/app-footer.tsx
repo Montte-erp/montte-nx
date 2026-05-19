@@ -1,4 +1,5 @@
 import { Button } from "@packages/ui/components/button";
+import { AssistantModalPrimitive } from "@assistant-ui/react";
 import {
    DropdownMenu,
    DropdownMenuContent,
@@ -8,16 +9,15 @@ import {
    DropdownMenuTrigger,
 } from "@packages/ui/components/dropdown-menu";
 import {
-   Popover,
-   PopoverContent,
-   PopoverTrigger,
-} from "@packages/ui/components/popover";
-import {
    Tooltip,
    TooltipContent,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import dayjs from "dayjs";
+import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
 import {
    ExternalLink,
    HelpCircle,
@@ -29,12 +29,9 @@ import { Activity, useState } from "react";
 import { POSTHOG_SURVEYS } from "@core/posthog/config";
 import { LogoDevAttribution } from "@/components/logo-dev-attribution";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
-import {
-   setActiveThread,
-   useActiveThreadId,
-   useRecentThreads,
-} from "../-montte-ai/chat-store";
+import { useCurrentRemoteThreadId } from "../-montte-ai/chat-runtime";
 import { AgentPanel } from "../-montte-ai/panel";
+import { ThreadList } from "../-montte-ai/thread-list";
 import { openKeyboardShortcuts } from "./keyboard-shortcuts-sheet";
 
 function HelpMenu() {
@@ -95,14 +92,14 @@ function HelpMenu() {
    );
 }
 
-function HistoryMenu({ onOpenThread }: { onOpenThread: (id: string) => void }) {
-   const recents = useRecentThreads();
+function HistoryButton({ onSelectThread }: { onSelectThread: () => void }) {
+   const [open, setOpen] = useState(false);
 
    return (
-      <DropdownMenu>
+      <Popover onOpenChange={setOpen} open={open}>
          <Tooltip>
             <TooltipTrigger asChild>
-               <DropdownMenuTrigger asChild>
+               <PopoverTrigger asChild>
                   <Button
                      aria-label="Histórico de conversas"
                      className="size-7"
@@ -111,79 +108,61 @@ function HistoryMenu({ onOpenThread }: { onOpenThread: (id: string) => void }) {
                   >
                      <History className="size-4" />
                   </Button>
-               </DropdownMenuTrigger>
+               </PopoverTrigger>
             </TooltipTrigger>
             <TooltipContent side="top">Conversas recentes</TooltipContent>
          </Tooltip>
-         <DropdownMenuContent align="end" className="w-72" side="top">
-            <DropdownMenuLabel>Conversas recentes</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {recents.length === 0 ? (
-               <div className="px-2 py-4 text-center text-xs text-muted-foreground">
-                  Sem conversas
-               </div>
-            ) : (
-               recents.map((thread) => {
-                  const days = thread.lastMessageAt
-                     ? dayjs().diff(dayjs(thread.lastMessageAt), "day")
-                     : dayjs().diff(dayjs(thread.createdAt), "day");
-                  return (
-                     <DropdownMenuItem
-                        className="cursor-pointer gap-2"
-                        key={thread.id}
-                        onClick={() => onOpenThread(thread.id)}
-                     >
-                        <span className="flex-1 truncate">
-                           {thread.title ?? "Conversa sem título"}
-                        </span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                           {days}d
-                        </span>
-                     </DropdownMenuItem>
-                  );
-               })
-            )}
-         </DropdownMenuContent>
-      </DropdownMenu>
+         <PopoverContent
+            align="end"
+            className="flex h-80 w-64 flex-col overflow-hidden p-2"
+            side="top"
+            sideOffset={8}
+         >
+            <ThreadList
+               onSelectThread={() => {
+                  setOpen(false);
+                  onSelectThread();
+               }}
+               showActions={false}
+               showNew={false}
+            />
+         </PopoverContent>
+      </Popover>
    );
 }
 
 function MontteAITrigger() {
    const [open, setOpen] = useState(false);
-   const activeThreadId = useActiveThreadId();
-
-   const handleOpenThread = (threadId: string) => {
-      setActiveThread(threadId);
-      setOpen(true);
-   };
+   const activeThreadId = useCurrentRemoteThreadId();
 
    const handleClose = () => {
-      setActiveThread(null);
       setOpen(false);
    };
 
    return (
       <div className="flex items-center gap-1">
-         <Popover onOpenChange={setOpen} open={open}>
-            <PopoverTrigger asChild>
-               <Button
-                  className="h-7 gap-2 px-2 text-xs"
-                  size="sm"
-                  variant="ghost"
-               >
-                  <img
-                     alt=""
-                     aria-hidden="true"
-                     className="size-4"
-                     draggable={false}
-                     src="/mascot.svg"
-                  />
-                  Pergunte ao Montte
-               </Button>
-            </PopoverTrigger>
-            <PopoverContent
+         <AssistantModalPrimitive.Root onOpenChange={setOpen} open={open}>
+            <AssistantModalPrimitive.Anchor>
+               <AssistantModalPrimitive.Trigger asChild>
+                  <Button
+                     className="h-7 gap-2 px-2 text-xs"
+                     size="sm"
+                     variant="ghost"
+                  >
+                     <img
+                        alt=""
+                        aria-hidden="true"
+                        className="size-4"
+                        draggable={false}
+                        src="/mascot.svg"
+                     />
+                     Pergunte ao Montte
+                  </Button>
+               </AssistantModalPrimitive.Trigger>
+            </AssistantModalPrimitive.Anchor>
+            <AssistantModalPrimitive.Content
                align="end"
-               className="h-[600px] w-[465px] overflow-hidden p-0"
+               className="z-50 h-[600px] w-[620px] overflow-hidden rounded-lg border bg-popover p-0 text-popover-foreground shadow-md outline-none"
                side="top"
                sideOffset={8}
             >
@@ -193,9 +172,9 @@ function MontteAITrigger() {
                      onMinimize={() => setOpen(false)}
                   />
                </Activity>
-            </PopoverContent>
-         </Popover>
-         <HistoryMenu onOpenThread={handleOpenThread} />
+            </AssistantModalPrimitive.Content>
+         </AssistantModalPrimitive.Root>
+         <HistoryButton onSelectThread={() => setOpen(true)} />
          <HelpMenu />
       </div>
    );

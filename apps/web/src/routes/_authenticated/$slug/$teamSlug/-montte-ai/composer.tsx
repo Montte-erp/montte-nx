@@ -1,4 +1,8 @@
-import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
+import {
+   ComposerPrimitive,
+   ThreadPrimitive,
+   useAuiState,
+} from "@assistant-ui/react";
 import { Button } from "@packages/ui/components/button";
 import {
    Popover,
@@ -17,7 +21,7 @@ import {
    selectScope,
    useMontteSuggestions,
    useSelectedScope,
-} from "./chat-store";
+} from "./chat-runtime";
 
 type Effort = "high" | "xhigh";
 
@@ -41,10 +45,11 @@ export function Composer({
    placeholder = "Faça uma pergunta ou / para comandos",
 }: ComposerProps) {
    const suggestions = useMontteSuggestions();
+   const isThreadEmpty = useAuiState((s) => s.thread.isEmpty);
 
    return (
       <div className={cn("flex flex-col gap-2", className)}>
-         {suggestions.length > 0 ? (
+         {isThreadEmpty && suggestions.length > 0 ? (
             <div className="flex flex-wrap gap-2">
                {suggestions.map((prompt) => (
                   <ThreadPrimitive.Suggestion
