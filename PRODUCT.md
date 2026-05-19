@@ -14,11 +14,16 @@ O contexto de uso é trabalho real, muitas vezes com dados sensíveis e pouca to
 
 ## Product Purpose
 
-Montte é uma plataforma operacional brasileira com IA nativa para organizar financeiro, contatos, serviços e cobranças recorrentes.
+Montte é a camada de billing que falta no SaaS brasileiro: assinatura, uso medido, cobrança e estado do cliente entregues de um jeito que o founder não precise montar um ERP por fora.
 
-A direção estratégica é construir infraestrutura de recorrência e pagamentos para o Brasil, com uma experiência operacional que combine controle financeiro, contratos de serviço, uso, cobrança, comunicação e automação assistida. O app atual já entrega a base operacional: dashboard autenticado, transações, contas bancárias, cartões, categorias, Centros de Custo, inbox, relatórios, configurações, API keys e Montte AI.
+A régua interna pra escopo é a mistura de **Autumn + Rillet**:
 
-Sucesso significa que uma empresa consegue entender e operar sua recorrência no mesmo lugar: não apenas emitir cobrança, mas enxergar o efeito operacional, financeiro e de relacionamento por cliente, serviço e time.
+- **Lado Autumn (dev-facing billing layer):** Customer como primitiva de cobrança, SDK pra plugar em qualquer produto SaaS, `customers.state` agregando assinatura, uso, faturas e status de pagamento numa chamada só. Substitui o trabalho manual de wirear Stripe Billing, Lago, Orb ou planilha caseira.
+- **Lado Rillet (founder/ops-facing financial intelligence):** contabilidade e financeiro AI-native, auto-categorização, conciliação, dashboards operacionais. Substitui o reflexo de comprar Omie, Bling ou Conta Azul pra fechar o ciclo.
+
+A direção estratégica é construir infraestrutura de recorrência e pagamentos para o Brasil, com uma experiência operacional que combine controle financeiro, contratos de serviço, uso, cobrança, comunicação e automação assistida. O app atual já entrega a base operacional: dashboard autenticado, transações, contas bancárias, cartões, categorias, Centros de Custo, inbox, relatórios, configurações, API keys e Montte AI. CRM fica fora do escopo do core e vive em integração (Twenty é a primeira da fila).
+
+Sucesso significa que uma empresa consegue entender e operar sua recorrência no mesmo lugar: não apenas emitir cobrança, mas enxergar o efeito operacional, financeiro e de relacionamento por cliente, serviço e time, sem ERP separado.
 
 ## Brand Personality
 

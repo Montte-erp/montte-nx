@@ -3,7 +3,9 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
-**Montte** e uma plataforma operacional para empresas brasileiras. O produto combina financeiro, contatos, servicos, cobrancas recorrentes e assistencia por IA em um monorepo Nx com Bun.
+**Montte** e a camada de billing que falta no SaaS brasileiro: cobranca recorrente, uso medido, faturamento e estado do cliente de um jeito que o founder nao precisa montar um ERP por fora.
+
+Mentalmente o produto e uma mistura de **Autumn + Rillet**: o lado Autumn cuida do billing dev-facing (Customer como primitiva, `customers.state` agregando assinatura/uso/fatura/status numa chamada); o lado Rillet cuida do financeiro/contabil/ops AI-native (auto-categorizacao, conciliacao, dashboards). Junto fecha o ciclo sem empurrar o founder pra Omie, Bling ou Conta Azul.
 
 O app ainda esta em pre-lancamento. A base de recorrencia/cobrancas ja aparece no modelo de dados e na direcao de produto, mas a superficie principal disponivel hoje e o dashboard web com financeiro, classificacao, inbox, relatorios, configuracoes, API keys e chat do Montte AI.
 
