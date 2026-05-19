@@ -6,6 +6,8 @@ import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, envField } from "astro/config";
 
+delete process.env.is_vim;
+
 export default defineConfig({
    site: "https://montte.co",
    output: "static",
