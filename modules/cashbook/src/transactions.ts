@@ -64,7 +64,10 @@ function buildTransactionOrderBy(
    const orderBy: SQL[] = [];
 
    for (const sort of sorting) {
-      const direction = sort.desc ? desc : asc;
+      const direction = (() => {
+         if (sort.desc) return desc;
+         return asc;
+      })();
 
       switch (sort.id) {
          case "amount":
@@ -181,7 +184,10 @@ function conditionToSql(c: Condition) {
    if (!isCondColumnKey(c.field)) return null;
    const col = COND_COLUMNS[c.field];
    if (!col) return null;
-   const v = "value" in c ? c.value : undefined;
+   const v = (() => {
+      if ("value" in c) return c.value;
+      return undefined;
+   })();
    const s = String(v);
    switch (c.operator) {
       case "eq":
@@ -261,8 +267,10 @@ function conditionGroupToSql(group: ConditionGroup) {
          continue;
       }
 
-      const combined =
-         item.group.operator === "AND" ? and(...exprs) : or(...exprs);
+      const combined = (() => {
+         if (item.group.operator === "AND") return and(...exprs);
+         return or(...exprs);
+      })();
       groupExpressions.set(item.group, combined ?? null);
    }
 
@@ -271,7 +279,10 @@ function conditionGroupToSql(group: ConditionGroup) {
 
 export function buildTransactionWhere(f: TransactionFilter) {
    const c: SQL[] = [eq(t.teamId, f.teamId)];
-   const viewFilter = f.view ? VIEW_FILTERS[f.view] : undefined;
+   const viewFilter = (() => {
+      if (f.view) return VIEW_FILTERS[f.view];
+      return undefined;
+   })();
    const filtersIgnoredView = f.view === "ignored";
 
    if (f.ignored === true) c.push(eq(t.ignored, true));
@@ -289,11 +300,11 @@ export function buildTransactionWhere(f: TransactionFilter) {
    if (f.uncategorized) c.push(isNull(t.categoryId));
    if (f.paymentMethod) c.push(sql`${t.paymentMethod} = ${f.paymentMethod}`);
    if (f.status) {
-      c.push(
-         Array.isArray(f.status)
-            ? inArray(t.status, f.status)
-            : eq(t.status, f.status),
-      );
+      if (Array.isArray(f.status)) {
+         c.push(inArray(t.status, f.status));
+      } else {
+         c.push(eq(t.status, f.status));
+      }
    }
    if (f.overdueOnly) {
       c.push(eq(t.status, "pending"));

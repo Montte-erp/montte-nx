@@ -549,22 +549,23 @@ export const update = protectedProcedure
          });
       }
       const { id, tagId, items, ...data } = input;
-      const ignored = data.ignored;
-      const status = data.status;
-      const updateData = { ...data };
-      if (status !== undefined) {
-         updateData.status = status;
-      }
-      if (ignored !== undefined) {
-         updateData.ignored = ignored;
-      }
-      if (tagId !== undefined) {
-         updateData.tagId = tagId;
-         updateData.suggestedTagId = null;
-      }
-      if (data.categoryId !== undefined) {
-         updateData.suggestedCategoryId = null;
-      }
+      const updateData = (() => {
+         if (tagId !== undefined && data.categoryId !== undefined) {
+            return {
+               ...data,
+               tagId,
+               suggestedTagId: null,
+               suggestedCategoryId: null,
+            };
+         }
+         if (tagId !== undefined) {
+            return { ...data, tagId, suggestedTagId: null };
+         }
+         if (data.categoryId !== undefined) {
+            return { ...data, suggestedCategoryId: null };
+         }
+         return data;
+      })();
 
       const updated = await Result.tryPromise({
          try: () =>
