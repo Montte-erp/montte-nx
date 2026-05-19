@@ -68,4 +68,4 @@ A referência de mercado deixa de ser Bling, Omie ou Conta Azul, que jogam o jog
 
 ## O que vem por aí
 
-A waitlist do Montte Payments já está aberta. Entra em [montte.com.br](https://montte.com.br/#waitlist) e manda DM se quiser testar antes do SDK público.
+A waitlist do Montte já está aberta. Entra em [montte.com.br](https://montte.com.br/#waitlist) e manda DM se quiser testar antes do SDK público.
