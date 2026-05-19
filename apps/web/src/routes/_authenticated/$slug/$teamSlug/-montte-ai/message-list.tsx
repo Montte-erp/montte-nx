@@ -82,7 +82,11 @@ const groupAssistantParts = (
    return null;
 };
 
-export function MessageList({ compact = false }: { compact?: boolean }) {
+interface ThreadFrameProps {
+   children: ReactNode;
+}
+
+export function ThreadFrame({ children }: ThreadFrameProps) {
    return (
       <ThreadPrimitive.Root className="relative flex min-h-0 flex-1 flex-col">
          <ThreadPrimitive.Viewport
@@ -91,18 +95,33 @@ export function MessageList({ compact = false }: { compact?: boolean }) {
             scrollToBottomOnRunStart
          >
             <div className="flex min-h-full flex-col justify-end gap-4 pb-4">
-               <ThreadPrimitive.Messages>
-                  {({ message }) => {
-                     if (message.composer.isEditing) return <EditComposer />;
-                     if (message.role === "user")
-                        return <UserMessage compact={compact} />;
-                     return <AssistantMessage compact={compact} />;
-                  }}
-               </ThreadPrimitive.Messages>
-               <ThinkingIndicator />
+               {children}
             </div>
          </ThreadPrimitive.Viewport>
       </ThreadPrimitive.Root>
+   );
+}
+
+export function MessageList({
+   children,
+   compact = false,
+}: {
+   children?: ReactNode;
+   compact?: boolean;
+}) {
+   return (
+      <ThreadFrame>
+         <ThreadPrimitive.Messages>
+            {({ message }) => {
+               if (message.composer.isEditing) return <EditComposer />;
+               if (message.role === "user")
+                  return <UserMessage compact={compact} />;
+               return <AssistantMessage compact={compact} />;
+            }}
+         </ThreadPrimitive.Messages>
+         <ThinkingIndicator />
+         {children}
+      </ThreadFrame>
    );
 }
 

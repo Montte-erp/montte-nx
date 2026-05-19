@@ -7,7 +7,7 @@ import {
    useMontteMessageCount,
 } from "../../-montte-ai/chat-store";
 import { EmptyState } from "../../-montte-ai/empty-state";
-import { MessageList } from "../../-montte-ai/message-list";
+import { MessageList, ThreadFrame } from "../../-montte-ai/message-list";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 
 export const Route = createFileRoute(
@@ -38,12 +38,16 @@ function ChatIndexPage() {
 
    return (
       <div className="mx-auto flex h-[calc(100%-2rem)] w-full max-w-5xl flex-col gap-4">
-         <div className="flex min-h-0 flex-1 flex-col">
-            {hasConversation ? <MessageList /> : <EmptyState variant="page" />}
-         </div>
-         <div className="shrink-0">
-            <Composer />
-         </div>
+         {hasConversation ? (
+            <MessageList>
+               <Composer />
+            </MessageList>
+         ) : (
+            <ThreadFrame>
+               <EmptyState variant="page" />
+               <Composer />
+            </ThreadFrame>
+         )}
       </div>
    );
 }

@@ -29,7 +29,7 @@ import {
 } from "./chat-store";
 import { Composer } from "./composer";
 import { EmptyState } from "./empty-state";
-import { MessageList } from "./message-list";
+import { MessageList, ThreadFrame } from "./message-list";
 
 interface AgentPanelProps {
    onMinimize?: () => void;
@@ -137,23 +137,18 @@ function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
 
          <ContextPanelContent className="overflow-hidden">
             {hasConversation ? (
-               <>
-                  <div className="flex min-h-0 flex-1 flex-col">
-                     <MessageList compact />
-                  </div>
-                  <div className="shrink-0">
+               <div className="flex min-h-0 flex-1 flex-col">
+                  <MessageList compact>
                      <Composer />
-                  </div>
-               </>
+                  </MessageList>
+               </div>
             ) : (
-               <>
-                  <div className="flex min-h-0 flex-1 flex-col">
+               <div className="flex min-h-0 flex-1 flex-col">
+                  <ThreadFrame>
                      <EmptyState variant="panel" />
-                  </div>
-                  <div className="shrink-0">
                      <Composer />
-                  </div>
-               </>
+                  </ThreadFrame>
+               </div>
             )}
          </ContextPanelContent>
       </ContextPanel>
