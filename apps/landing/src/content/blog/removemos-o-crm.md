@@ -1,6 +1,6 @@
 ---
 title: "Removemos o CRM. Empurramos pro Twenty."
-description: "O Montte tirou o módulo de Contatos: 3.081 linhas em 37 arquivos. Relacionamento passa a viver no Twenty, que é o CRM que a gente já usa por dentro. O Customer está virando primitive de cobrança, no espírito do Autumn e do Polar. O destino é runtime de billing brasileiro."
+description: "O Montte tirou o módulo de Contatos: 3.081 linhas em 37 arquivos. Relacionamento passa a viver no Twenty, que é o CRM que a gente já usa por dentro. O Customer está virando primitive de cobrança usage-based. O destino é runtime de billing brasileiro."
 publishedAt: 2026-05-18
 author: "Manoel Neto"
 tags: ["opiniao", "crm", "billing", "twenty"]
@@ -11,7 +11,7 @@ readingMinutes: 3
 keyTakeaways:
    - "O módulo de Contatos saiu do produto: 3.081 linhas em 37 arquivos."
    - "Relacionamento passa a viver no Twenty, que é o CRM que o Montte já usa internamente. Integração com o produto é a primeira da fila."
-   - "O Customer no Montte está virando primitive de cobrança, inspirado em Autumn e Polar."
+   - "O Customer no Montte está virando primitive de cobrança usage-based."
    - "O Montte é runtime de billing usage-based brasileiro, não ERP."
 faq:
    - question: "Por que o Montte não tem mais módulo de Contatos?"
@@ -19,7 +19,7 @@ faq:
    - question: "A integração com o Twenty já está pronta?"
      answer: "Ainda não. É a primeira integração que entra no roadmap, porque o Twenty é o CRM que a gente já usa por dentro. O escopo inicial é mapear o Customer do Montte para Company ou Person no Twenty."
    - question: "Então o Montte virou o quê?"
-     answer: "Runtime de billing usage-based brasileiro, no espírito do Autumn e do Polar. O Customer vai agregar assinaturas, uso, faturas e status de pagamento numa resposta só. Tem peça por construir, e a gente conta em público."
+     answer: "Runtime de billing usage-based brasileiro. O Customer vai agregar assinaturas, uso, faturas e status de pagamento numa resposta só. Tem peça por construir, e a gente conta em público."
 ---
 
 Tinha um módulo de Contatos no Montte. Não tem mais. Saíram 3.081 linhas em 37 arquivos. Relacionamento passa a viver fora, com a integração com o Twenty no roadmap.
@@ -44,9 +44,9 @@ A escolha aqui é antiga. Ou se assume metade, ou se delega o relacionamento pra
 
 ## O Customer está virando outra coisa
 
-O `Customer` no Montte deixa de carregar endereço, telefone e histórico de visita. Vira primitive de cobrança, no espírito do [Autumn](https://useautumn.com) e do [Polar](https://polar.sh).
+O `Customer` no Montte deixa de carregar endereço, telefone e histórico de visita. Vira primitive de cobrança usage-based.
 
-O que sobra de dados pessoais é o mínimo pra emitir NFe: CPF quando o cliente é pessoa física, CNPJ quando é pessoa jurídica. Isso decide como o registro entra no Twenty: CPF vira Person, CNPJ vira Company. O resto do perfil mora lá.
+O que sobra de dados pessoais é o mínimo pra identificar o cliente brasileiro: CPF quando é pessoa física, CNPJ quando é pessoa jurídica. Isso decide como o registro entra no Twenty: CPF vira Person, CNPJ vira Company. O resto do perfil mora lá.
 
 Cinco verbos planejados pro runtime:
 
@@ -62,7 +62,7 @@ Cinco verbos planejados pro runtime:
 
 O Montte é runtime de billing usage-based brasileiro. Twenty resolve CRM por fora. Abacate Pay vai entrar como primeiro adapter de pagamento.
 
-Referência de mercado deixa de ser Bling, Omie ou Conta Azul. Passa a ser Autumn, Polar e Stripe Billing.
+Não somos Bling, Omie ou Conta Azul. Não estamos tentando ser.
 
 ## O que vem por aí
 
