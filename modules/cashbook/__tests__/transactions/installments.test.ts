@@ -39,7 +39,7 @@ describe("installments", () => {
 
       expect(result.isErr()).toBe(true);
       if (result.isOk()) return;
-      expect(result.error).toBe(
+      expect(result.error.message).toBe(
          "Valor total é baixo demais para o número de parcelas.",
       );
    });
@@ -53,6 +53,8 @@ describe("installments", () => {
 
       expect(result.isErr()).toBe(true);
       if (result.isOk()) return;
-      expect(result.error).toBe("Data deve estar no formato YYYY-MM-DD.");
+      expect(result.error.message).toBe(
+         "Data deve estar no formato YYYY-MM-DD.",
+      );
    });
 });

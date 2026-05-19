@@ -26,8 +26,10 @@
       "@f-o-t/money": "catalog:fot",
       "@modules/classification": "workspace:*",
       "@orpc/server": "catalog:orpc",
+      "better-result": "catalog:validation",
       "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
+      "evlog": "catalog:logging",
       "neverthrow": "catalog:validation",
       "zod": "catalog:validation"
    },

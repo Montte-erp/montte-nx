@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { and, eq } from "drizzle-orm";
+import { matchError } from "better-result";
 import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import {
@@ -27,6 +28,7 @@ import {
    buildInstallmentPreview,
    buildRecurrenceOccurrences,
 } from "@modules/cashbook/transactions";
+import type { CashbookError } from "@modules/cashbook/cashbook-error";
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -133,10 +135,20 @@ export const create = protectedProcedure
          );
       }
       if (installmentPreview?.isErr()) {
-         throw WebAppError.badRequest(installmentPreview.error);
+         throw matchError<CashbookError, CashbookError>(
+            installmentPreview.error,
+            {
+               CashbookError: (error) => error,
+            },
+         );
       }
       if (recurrencePreview?.isErr()) {
-         throw WebAppError.badRequest(recurrencePreview.error);
+         throw matchError<CashbookError, CashbookError>(
+            recurrencePreview.error,
+            {
+               CashbookError: (error) => error,
+            },
+         );
       }
 
       await requireValidFinancialReferences(context.db, context.teamId, {

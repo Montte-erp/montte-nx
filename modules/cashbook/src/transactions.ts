@@ -22,7 +22,7 @@ import {
    type SQL,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { err, fromThrowable, ok } from "neverthrow";
+import { Result } from "better-result";
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import type { DatabaseInstance } from "@core/database/client";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -34,6 +34,10 @@ import {
    type TransactionRecurrenceFrequency,
 } from "@core/database/schemas/transactions";
 import { isIsoDateString } from "@core/utils/dates";
+import {
+   CashbookError,
+   cashbookErrors,
+} from "@modules/cashbook/cashbook-error";
 
 export type TransactionSortId =
    | "amount"
@@ -330,20 +334,29 @@ export type InstallmentPreview = {
 const invalidMoneyMessage = "Valor deve ser um número válido maior que zero.";
 
 function parseMoneyToCents(value: string) {
-   const parsed = fromThrowable(
-      () => of(value.trim(), "BRL"),
-      () => invalidMoneyMessage,
-   )();
-   if (parsed.isErr()) return err(parsed.error);
+   const parsed = Result.try({
+      try: () => of(value.trim(), "BRL"),
+      catch: () =>
+         new CashbookError({
+            error: cashbookErrors.BAD_REQUEST(),
+            message: invalidMoneyMessage,
+         }),
+   });
+   if (Result.isError(parsed)) return Result.err(parsed.error);
 
    const normalized = toMajorUnitsString(parsed.value);
    const cents = toMinorUnits(of(normalized, "BRL"));
 
    if (!Number.isSafeInteger(cents) || cents <= 0) {
-      return err(invalidMoneyMessage);
+      return Result.err(
+         new CashbookError({
+            error: cashbookErrors.BAD_REQUEST(),
+            message: invalidMoneyMessage,
+         }),
+      );
    }
 
-   return ok(cents);
+   return Result.ok(cents);
 }
 
 function formatCents(cents: number) {
@@ -352,37 +365,69 @@ function formatCents(cents: number) {
 
 export function buildInstallmentPreview(input: InstallmentInput) {
    if (!Number.isInteger(input.count) || input.count < 2) {
-      return err("Número de parcelas deve ser maior que 1.");
+      return Result.err(
+         new CashbookError({
+            error: cashbookErrors.BAD_REQUEST(),
+            message: "Número de parcelas deve ser maior que 1.",
+         }),
+      );
    }
    if (!isIsoDateString(input.date)) {
-      return err("Data deve estar no formato YYYY-MM-DD.");
+      return Result.err(
+         new CashbookError({
+            error: cashbookErrors.BAD_REQUEST(),
+            message: "Data deve estar no formato YYYY-MM-DD.",
+         }),
+      );
    }
    if (input.dueDate && !isIsoDateString(input.dueDate)) {
-      return err("Vencimento deve estar no formato YYYY-MM-DD.");
+      return Result.err(
+         new CashbookError({
+            error: cashbookErrors.BAD_REQUEST(),
+            message: "Vencimento deve estar no formato YYYY-MM-DD.",
+         }),
+      );
    }
 
    const parsed = parseMoneyToCents(input.amount);
-   if (parsed.isErr()) return err(parsed.error);
+   if (Result.isError(parsed)) return Result.err(parsed.error);
 
    const baseAmount = Math.floor(parsed.value / input.count);
    const remainder = parsed.value % input.count;
 
    if (baseAmount <= 0) {
-      return err("Valor total é baixo demais para o número de parcelas.");
+      return Result.err(
+         new CashbookError({
+            error: cashbookErrors.BAD_REQUEST(),
+            message: "Valor total é baixo demais para o número de parcelas.",
+         }),
+      );
    }
 
-   return ok(
+   return Result.ok(
       Array.from({ length: input.count }, (_, index) => {
          const number = index + 1;
-         const amount = baseAmount + (index < remainder ? 1 : 0);
+         const amount = baseAmount + Number(index < remainder);
+         const date = dayjs(input.date)
+            .add(index, "month")
+            .format("YYYY-MM-DD");
+         if (input.dueDate) {
+            return {
+               number,
+               count: input.count,
+               amount: formatCents(amount),
+               date,
+               dueDate: dayjs(input.dueDate)
+                  .add(index, "month")
+                  .format("YYYY-MM-DD"),
+            };
+         }
          return {
             number,
             count: input.count,
             amount: formatCents(amount),
-            date: dayjs(input.date).add(index, "month").format("YYYY-MM-DD"),
-            dueDate: input.dueDate
-               ? dayjs(input.dueDate).add(index, "month").format("YYYY-MM-DD")
-               : null,
+            date,
+            dueDate: null,
          };
       }),
    );
@@ -418,21 +463,40 @@ export function addRecurrencePeriod(
 
 export function buildRecurrenceOccurrences(input: RecurrenceInput) {
    if (!isIsoDateString(input.date)) {
-      return err("Data deve estar no formato YYYY-MM-DD.");
+      return Result.err(
+         new CashbookError({
+            error: cashbookErrors.BAD_REQUEST(),
+            message: "Data deve estar no formato YYYY-MM-DD.",
+         }),
+      );
    }
    if (input.dueDate && !isIsoDateString(input.dueDate)) {
-      return err("Vencimento deve estar no formato YYYY-MM-DD.");
+      return Result.err(
+         new CashbookError({
+            error: cashbookErrors.BAD_REQUEST(),
+            message: "Vencimento deve estar no formato YYYY-MM-DD.",
+         }),
+      );
    }
 
    const nextDate = addRecurrencePeriod(input.date, input.frequency);
-   return ok([
-      { number: 1, date: input.date, dueDate: input.dueDate ?? null },
+   if (input.dueDate) {
+      return Result.ok([
+         { number: 1, date: input.date, dueDate: input.dueDate },
+         {
+            number: 2,
+            date: nextDate,
+            dueDate: addRecurrencePeriod(input.dueDate, input.frequency),
+         },
+      ]);
+   }
+
+   return Result.ok([
+      { number: 1, date: input.date, dueDate: null },
       {
          number: 2,
          date: nextDate,
-         dueDate: input.dueDate
-            ? addRecurrencePeriod(input.dueDate, input.frequency)
-            : null,
+         dueDate: null,
       },
    ]);
 }
