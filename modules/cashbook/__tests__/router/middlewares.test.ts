@@ -26,7 +26,7 @@ describe("finance router middlewares", () => {
             categoryId: category.id,
          }),
       ).rejects.toMatchObject({
-         error: { code: "cashbook.BAD_REQUEST" },
+         error: { code: "cashbook.router.middleware.BAD_REQUEST" },
          message: "Categoria arquivada.",
       });
    });

@@ -1,13 +1,54 @@
 import dayjs from "dayjs";
 import { and, eq, inArray } from "drizzle-orm";
-import { Result } from "better-result";
+import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { os } from "@orpc/server";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { transactions } from "@core/database/schemas/transactions";
-import {
-   CashbookError,
-   cashbookErrors,
-} from "@modules/cashbook/cashbook-error";
+
+const cashbookMiddlewareErrors = defineErrorCatalog(
+   "cashbook.router.middleware",
+   {
+      BAD_REQUEST: {
+         status: 400,
+         message: "Referência de caixa inválida.",
+         tags: ["cashbook"],
+      },
+      FORBIDDEN: {
+         status: 403,
+         message: "Ação não permitida em caixa.",
+         tags: ["cashbook"],
+      },
+      INTERNAL: {
+         status: 500,
+         message: "Falha interna no router de caixa.",
+         tags: ["cashbook"],
+      },
+      NOT_FOUND: {
+         status: 404,
+         message: "Registro de caixa não encontrado.",
+         tags: ["cashbook"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "cashbook.router.middleware": typeof cashbookMiddlewareErrors;
+   }
+}
+
+type CashbookMiddlewareCatalogError =
+   | ReturnType<typeof cashbookMiddlewareErrors.BAD_REQUEST>
+   | ReturnType<typeof cashbookMiddlewareErrors.FORBIDDEN>
+   | ReturnType<typeof cashbookMiddlewareErrors.INTERNAL>
+   | ReturnType<typeof cashbookMiddlewareErrors.NOT_FOUND>;
+
+class CashbookMiddlewareError extends TaggedError("CashbookMiddlewareError")<{
+   error: CashbookMiddlewareCatalogError;
+   message: string;
+}>() {}
+
 const base = os.$context<ORPCContextWithOrganization>();
 
 export const requireBankAccount = base.middleware(
@@ -18,15 +59,15 @@ export const requireBankAccount = base.middleware(
                where: (f, { eq }) => eq(f.id, id),
             }),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
                message: "Falha ao verificar permissão.",
             }),
       });
       if (Result.isError(account)) throw account.error;
       if (!account.value || account.value.teamId !== context.teamId) {
-         throw new CashbookError({
-            error: cashbookErrors.NOT_FOUND(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.NOT_FOUND(),
             message: "Conta bancária não encontrada.",
          });
       }
@@ -42,15 +83,15 @@ export const requireTransaction = base.middleware(
                where: (f, { eq }) => eq(f.id, id),
             }),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
                message: "Falha ao verificar permissão.",
             }),
       });
       if (Result.isError(transaction)) throw transaction.error;
       if (!transaction.value || transaction.value.teamId !== context.teamId) {
-         throw new CashbookError({
-            error: cashbookErrors.NOT_FOUND(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.NOT_FOUND(),
             message: "Lançamento não encontrado.",
          });
       }
@@ -66,15 +107,15 @@ export const requireTransactionRecurrence = base.middleware(
                where: (f, { eq }) => eq(f.id, id),
             }),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
                message: "Falha ao verificar recorrência.",
             }),
       });
       if (Result.isError(recurrence)) throw recurrence.error;
       if (!recurrence.value || recurrence.value.teamId !== context.teamId) {
-         throw new CashbookError({
-            error: cashbookErrors.NOT_FOUND(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.NOT_FOUND(),
             message: "Recorrência não encontrada.",
          });
       }
@@ -96,15 +137,15 @@ export const requireOwnedTransactionIds = base.middleware(
                   ),
                ),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
                message: "Falha ao verificar permissão.",
             }),
       });
       if (Result.isError(result)) throw result.error;
       if (result.value.length !== ids.length) {
-         throw new CashbookError({
-            error: cashbookErrors.NOT_FOUND(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.NOT_FOUND(),
             message: "Um ou mais lançamentos não encontrados.",
          });
       }
@@ -120,15 +161,15 @@ export const enforceCostCenterPolicy = base.middleware(
                where: (f, { eq }) => eq(f.teamId, context.teamId),
             }),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
                message: "Falha ao verificar configurações.",
             }),
       });
       if (Result.isError(result)) throw result.error;
       if (result.value?.costCenterRequired && !tagId) {
-         throw new CashbookError({
-            error: cashbookErrors.FORBIDDEN(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.FORBIDDEN(),
             message: "Centro de Custo é obrigatório para este espaço.",
          });
       }
@@ -154,8 +195,8 @@ export async function requireValidFinancialReferences(
          where: (f, { eq }) => eq(f.id, refs.bankAccountId ?? ""),
       });
       if (!account || account.teamId !== teamId) {
-         throw new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Conta bancária inválida.",
          });
       }
@@ -163,8 +204,8 @@ export async function requireValidFinancialReferences(
          const txDate = dayjs(refs.date);
          const balanceDate = dayjs(account.initialBalanceDate);
          if (txDate.isBefore(balanceDate)) {
-            throw new CashbookError({
-               error: cashbookErrors.BAD_REQUEST(),
+            throw new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.BAD_REQUEST(),
                message: `Não é possível registrar lançamentos antes da data do saldo inicial (${balanceDate.format("DD/MM/YYYY")}).`,
             });
          }
@@ -176,8 +217,8 @@ export async function requireValidFinancialReferences(
          where: (f, { eq }) => eq(f.id, refs.destinationBankAccountId ?? ""),
       });
       if (!dest || dest.teamId !== teamId) {
-         throw new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Conta de destino inválida.",
          });
       }
@@ -185,8 +226,8 @@ export async function requireValidFinancialReferences(
          const txDate = dayjs(refs.date);
          const balanceDate = dayjs(dest.initialBalanceDate);
          if (txDate.isBefore(balanceDate)) {
-            throw new CashbookError({
-               error: cashbookErrors.BAD_REQUEST(),
+            throw new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.BAD_REQUEST(),
                message: `Não é possível registrar lançamentos antes da data do saldo inicial da conta de destino (${balanceDate.format("DD/MM/YYYY")}).`,
             });
          }
@@ -198,14 +239,14 @@ export async function requireValidFinancialReferences(
          where: (f, { eq }) => eq(f.id, refs.categoryId ?? ""),
       });
       if (!cat || cat.teamId !== teamId) {
-         throw new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Categoria inválida.",
          });
       }
       if (cat.isArchived) {
-         throw new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Categoria arquivada.",
          });
       }
@@ -216,8 +257,8 @@ export async function requireValidFinancialReferences(
          where: (f, { eq }) => eq(f.id, refs.tagId ?? ""),
       });
       if (!tag || tag.teamId !== teamId) {
-         throw new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Centro de Custo inválido.",
          });
       }

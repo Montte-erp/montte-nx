@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { and, eq } from "drizzle-orm";
-import { matchError, Result } from "better-result";
+import { matchError, Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
 import {
    createTransactionSchema,
@@ -25,11 +26,51 @@ import {
    addRecurrencePeriod,
    buildInstallmentPreview,
    buildRecurrenceOccurrences,
+   type TransactionRuleError,
 } from "@modules/cashbook/transactions";
-import {
-   CashbookError,
-   cashbookErrors,
-} from "@modules/cashbook/cashbook-error";
+
+const transactionRouterErrors = defineErrorCatalog(
+   "cashbook.router.transactions",
+   {
+      BAD_REQUEST: {
+         status: 400,
+         message: "Requisição inválida em lançamentos.",
+         tags: ["cashbook"],
+      },
+      FORBIDDEN: {
+         status: 403,
+         message: "Ação não permitida em lançamentos.",
+         tags: ["cashbook"],
+      },
+      INTERNAL: {
+         status: 500,
+         message: "Falha interna em lançamentos.",
+         tags: ["cashbook"],
+      },
+      NOT_FOUND: {
+         status: 404,
+         message: "Lançamento não encontrado.",
+         tags: ["cashbook"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "cashbook.router.transactions": typeof transactionRouterErrors;
+   }
+}
+
+type TransactionRouterCatalogError =
+   | ReturnType<typeof transactionRouterErrors.BAD_REQUEST>
+   | ReturnType<typeof transactionRouterErrors.FORBIDDEN>
+   | ReturnType<typeof transactionRouterErrors.INTERNAL>
+   | ReturnType<typeof transactionRouterErrors.NOT_FOUND>;
+
+class TransactionRouterError extends TaggedError("TransactionRouterError")<{
+   error: TransactionRouterCatalogError;
+   message: string;
+}>() {}
 
 const idSchema = z.object({ id: z.string().uuid() });
 
@@ -130,30 +171,38 @@ export const create = protectedProcedure
       })();
 
       if (isInstallment && transactionData.type === "transfer") {
-         throw new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         throw new TransactionRouterError({
+            error: transactionRouterErrors.BAD_REQUEST(),
             message: "Transferências não podem ser parceladas.",
          });
       }
       if (isRecurring && isInstallment) {
-         throw new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         throw new TransactionRouterError({
+            error: transactionRouterErrors.BAD_REQUEST(),
             message: "Lançamento recorrente não pode ser parcelado.",
          });
       }
       if (installmentPreview?.isErr()) {
-         throw matchError<CashbookError, CashbookError>(
+         throw matchError<TransactionRuleError, TransactionRouterError>(
             installmentPreview.error,
             {
-               CashbookError: (error) => error,
+               TransactionRuleError: (error) =>
+                  new TransactionRouterError({
+                     error: transactionRouterErrors.BAD_REQUEST(),
+                     message: error.message,
+                  }),
             },
          );
       }
       if (recurrencePreview?.isErr()) {
-         throw matchError<CashbookError, CashbookError>(
+         throw matchError<TransactionRuleError, TransactionRouterError>(
             recurrencePreview.error,
             {
-               CashbookError: (error) => error,
+               TransactionRuleError: (error) =>
+                  new TransactionRouterError({
+                     error: transactionRouterErrors.BAD_REQUEST(),
+                     message: error.message,
+                  }),
             },
          );
       }
@@ -267,8 +316,8 @@ export const create = protectedProcedure
                   .returning();
                const [row] = rows;
                if (!row) {
-                  throw new CashbookError({
-                     error: cashbookErrors.INTERNAL(),
+                  throw new TransactionRouterError({
+                     error: transactionRouterErrors.INTERNAL(),
                      message: "Falha ao criar lançamento.",
                   });
                }
@@ -280,8 +329,8 @@ export const create = protectedProcedure
                   const lastOccurrence =
                      recurrenceOccurrences[recurrenceOccurrences.length - 1];
                   if (!lastOccurrence) {
-                     throw new CashbookError({
-                        error: cashbookErrors.INTERNAL(),
+                     throw new TransactionRouterError({
+                        error: transactionRouterErrors.INTERNAL(),
                         message: "Falha ao criar recorrência.",
                      });
                   }
@@ -311,8 +360,8 @@ export const create = protectedProcedure
                return row;
             }),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
                message: "Falha ao criar lançamento.",
             }),
       });
@@ -366,8 +415,8 @@ export const create = protectedProcedure
             },
          );
          if (isClassificationWorkflowQueueFailure(queued)) {
-            throw new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            throw new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
                message: "Falha ao enfileirar classificação de lançamentos.",
             });
          }
@@ -395,16 +444,16 @@ export const stopRecurrence = protectedProcedure
                   .returning(),
             ),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
                message: "Falha ao interromper recorrência.",
             }),
       });
       if (stopped.isErr()) throw stopped.error;
       const [row] = stopped.value;
       if (!row) {
-         throw new CashbookError({
-            error: cashbookErrors.NOT_FOUND(),
+         throw new TransactionRouterError({
+            error: transactionRouterErrors.NOT_FOUND(),
             message: "Recorrência não encontrada.",
          });
       }
@@ -445,15 +494,15 @@ export const updateRecurrence = protectedProcedure
                      ],
                   }),
                catch: () =>
-                  new CashbookError({
-                     error: cashbookErrors.INTERNAL(),
+                  new TransactionRouterError({
+                     error: transactionRouterErrors.INTERNAL(),
                      message: "Falha ao verificar lançamentos gerados.",
                   }),
             });
             if (latestOccurrence.isErr()) throw latestOccurrence.error;
             if (!latestOccurrence.value) {
-               throw new CashbookError({
-                  error: cashbookErrors.INTERNAL(),
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.INTERNAL(),
                   message: "Falha ao verificar lançamentos gerados.",
                });
             }
@@ -484,16 +533,16 @@ export const updateRecurrence = protectedProcedure
                   .returning(),
             ),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
                message: "Falha ao atualizar recorrência.",
             }),
       });
       if (updated.isErr()) throw updated.error;
       const [row] = updated.value;
       if (!row) {
-         throw new CashbookError({
-            error: cashbookErrors.NOT_FOUND(),
+         throw new TransactionRouterError({
+            error: transactionRouterErrors.NOT_FOUND(),
             message: "Recorrência não encontrada.",
          });
       }
@@ -521,15 +570,15 @@ export const update = protectedProcedure
                   where: (f, { eq }) => eq(f.teamId, context.teamId),
                }),
             catch: () =>
-               new CashbookError({
-                  error: cashbookErrors.INTERNAL(),
+               new TransactionRouterError({
+                  error: transactionRouterErrors.INTERNAL(),
                   message: "Falha ao verificar configurações.",
                }),
          });
          if (policyResult.isErr()) throw policyResult.error;
          if (policyResult.value?.costCenterRequired && !input.tagId) {
-            throw new CashbookError({
-               error: cashbookErrors.FORBIDDEN(),
+            throw new TransactionRouterError({
+               error: transactionRouterErrors.FORBIDDEN(),
                message: "Centro de Custo é obrigatório para este espaço.",
             });
          }
@@ -576,8 +625,8 @@ export const update = protectedProcedure
                   .where(eq(transactions.id, id))
                   .returning();
                if (!row) {
-                  throw new CashbookError({
-                     error: cashbookErrors.NOT_FOUND(),
+                  throw new TransactionRouterError({
+                     error: transactionRouterErrors.NOT_FOUND(),
                      message: "Lançamento não encontrado.",
                   });
                }
@@ -600,8 +649,8 @@ export const update = protectedProcedure
                return row;
             }),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
                message: "Falha ao atualizar lançamento.",
             }),
       });
@@ -619,8 +668,8 @@ export const remove = protectedProcedure
                tx.delete(transactions).where(eq(transactions.id, input.id)),
             ),
          catch: () =>
-            new CashbookError({
-               error: cashbookErrors.INTERNAL(),
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
                message: "Falha ao excluir lançamento.",
             }),
       });

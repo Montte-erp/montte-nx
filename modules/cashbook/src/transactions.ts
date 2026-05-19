@@ -22,7 +22,8 @@ import {
    type SQL,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { Result } from "better-result";
+import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import type { DatabaseInstance } from "@core/database/client";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -34,10 +35,32 @@ import {
    type TransactionRecurrenceFrequency,
 } from "@core/database/schemas/transactions";
 import { isIsoDateString } from "@core/utils/dates";
-import {
-   CashbookError,
-   cashbookErrors,
-} from "@modules/cashbook/cashbook-error";
+
+export const transactionRuleErrors = defineErrorCatalog(
+   "cashbook.transaction.rule",
+   {
+      BAD_REQUEST: {
+         status: 400,
+         message: "Regra de lançamento inválida.",
+         tags: ["cashbook"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "cashbook.transaction.rule": typeof transactionRuleErrors;
+   }
+}
+
+type TransactionRuleCatalogError = ReturnType<
+   typeof transactionRuleErrors.BAD_REQUEST
+>;
+
+export class TransactionRuleError extends TaggedError("TransactionRuleError")<{
+   error: TransactionRuleCatalogError;
+   message: string;
+}>() {}
 
 export type TransactionSortId =
    | "amount"
@@ -348,8 +371,8 @@ function parseMoneyToCents(value: string) {
    const parsed = Result.try({
       try: () => of(value.trim(), "BRL"),
       catch: () =>
-         new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         new TransactionRuleError({
+            error: transactionRuleErrors.BAD_REQUEST(),
             message: invalidMoneyMessage,
          }),
    });
@@ -360,8 +383,8 @@ function parseMoneyToCents(value: string) {
 
    if (!Number.isSafeInteger(cents) || cents <= 0) {
       return Result.err(
-         new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         new TransactionRuleError({
+            error: transactionRuleErrors.BAD_REQUEST(),
             message: invalidMoneyMessage,
          }),
       );
@@ -377,24 +400,24 @@ function formatCents(cents: number) {
 export function buildInstallmentPreview(input: InstallmentInput) {
    if (!Number.isInteger(input.count) || input.count < 2) {
       return Result.err(
-         new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         new TransactionRuleError({
+            error: transactionRuleErrors.BAD_REQUEST(),
             message: "Número de parcelas deve ser maior que 1.",
          }),
       );
    }
    if (!isIsoDateString(input.date)) {
       return Result.err(
-         new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         new TransactionRuleError({
+            error: transactionRuleErrors.BAD_REQUEST(),
             message: "Data deve estar no formato YYYY-MM-DD.",
          }),
       );
    }
    if (input.dueDate && !isIsoDateString(input.dueDate)) {
       return Result.err(
-         new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         new TransactionRuleError({
+            error: transactionRuleErrors.BAD_REQUEST(),
             message: "Vencimento deve estar no formato YYYY-MM-DD.",
          }),
       );
@@ -408,8 +431,8 @@ export function buildInstallmentPreview(input: InstallmentInput) {
 
    if (baseAmount <= 0) {
       return Result.err(
-         new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         new TransactionRuleError({
+            error: transactionRuleErrors.BAD_REQUEST(),
             message: "Valor total é baixo demais para o número de parcelas.",
          }),
       );
@@ -475,16 +498,16 @@ export function addRecurrencePeriod(
 export function buildRecurrenceOccurrences(input: RecurrenceInput) {
    if (!isIsoDateString(input.date)) {
       return Result.err(
-         new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         new TransactionRuleError({
+            error: transactionRuleErrors.BAD_REQUEST(),
             message: "Data deve estar no formato YYYY-MM-DD.",
          }),
       );
    }
    if (input.dueDate && !isIsoDateString(input.dueDate)) {
       return Result.err(
-         new CashbookError({
-            error: cashbookErrors.BAD_REQUEST(),
+         new TransactionRuleError({
+            error: transactionRuleErrors.BAD_REQUEST(),
             message: "Vencimento deve estar no formato YYYY-MM-DD.",
          }),
       );
