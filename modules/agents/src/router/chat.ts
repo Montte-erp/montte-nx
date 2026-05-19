@@ -1,4 +1,4 @@
-import { os } from "@orpc/server";
+import { eventIteratorToStream, os, streamToEventIterator } from "@orpc/server";
 import { and, asc, eq, gte, inArray, sql } from "drizzle-orm";
 import dayjs from "dayjs";
 import { defineErrorCatalog } from "evlog";
@@ -18,6 +18,7 @@ import { log } from "@core/logging";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import { createAgentChat } from "@modules/agents/agent";
+import { RunAgentInputSchema } from "@ag-ui/core";
 import { createAgentRuntimeMiddlewares } from "@modules/agents/runtime/middleware/create-agent-runtime-middlewares";
 
 export const threadErrors = defineErrorCatalog("agents.thread", {
@@ -232,8 +233,50 @@ export const chatInputSchema = z.object({
    pageContext: messagePageContextSchema.optional(),
 });
 
+const chatForwardedPropsSchema = z.object({
+   text: z.string().min(1).max(50_000).optional(),
+   replaceFromMessageId: z.string().uuid().optional(),
+   regenerate: z.boolean().optional(),
+   pageContext: messagePageContextSchema.optional(),
+});
+
+const chatRunInputSchema = z.record(z.string(), z.unknown());
+
 export type ChatInput = z.infer<typeof chatInputSchema>;
 
+type ChatRunInput = {
+   threadId: string;
+   runId: string;
+   forwardedProps: z.infer<typeof chatForwardedPropsSchema>;
+};
+
+function buildChatInputFromRun(input: ChatRunInput): ChatInput {
+   return {
+      threadId: input.threadId,
+      text: input.forwardedProps.text,
+      replaceFromMessageId: input.forwardedProps.replaceFromMessageId,
+      regenerate: input.forwardedProps.regenerate,
+      pageContext: input.forwardedProps.pageContext,
+   };
+}
+
+function parseChatRunInput(input: unknown): ChatRunInput {
+   const runInput = RunAgentInputSchema.safeParse(input);
+   if (!runInput.success) {
+      throw runInput.error;
+   }
+   const forwardedProps = chatForwardedPropsSchema.safeParse(
+      runInput.data.forwardedProps,
+   );
+   if (!forwardedProps.success) {
+      throw forwardedProps.error;
+   }
+   return {
+      threadId: runInput.data.threadId,
+      runId: runInput.data.runId,
+      forwardedProps: forwardedProps.data,
+   };
+}
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
 
 const createThreadInputSchema = insertThreadSchema
@@ -707,6 +750,7 @@ export const removeBulk = protectedProcedure
 export async function createThreadChatStream(options: {
    context: ORPCContextWithOrganization;
    input: ChatInput;
+   runId?: string;
    signal?: AbortSignal;
 }) {
    const { context, input, signal } = options;
@@ -839,6 +883,7 @@ export async function createThreadChatStream(options: {
             messages: history,
             pageContext: input.pageContext,
             reasoningEffort: chatSettings.reasoningEffort,
+            runId: options.runId,
             abortSignal: abortController.signal,
             extraMiddleware: createAgentRuntimeMiddlewares({
                db: context.db,
@@ -866,5 +911,14 @@ export async function createThreadChatStream(options: {
 }
 
 export const chat = protectedProcedure
-   .input(chatInputSchema)
-   .handler(createThreadChatStream);
+   .input(chatRunInputSchema)
+   .handler(async ({ context, input }) => {
+      const parsed = parseChatRunInput(input);
+      const stream = await createThreadChatStream({
+         context,
+         input: buildChatInputFromRun(parsed),
+         runId: parsed.runId,
+      });
+      const iterator = stream[Symbol.asyncIterator]();
+      return streamToEventIterator(eventIteratorToStream(iterator));
+   });

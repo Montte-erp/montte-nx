@@ -25,6 +25,7 @@ export interface AgentChatOptions {
    messages: UIMessage[];
    pageContext?: PageContext;
    reasoningEffort?: "high" | "xhigh";
+   runId?: string;
    abortSignal?: AbortSignal;
    extraMiddleware?: ChatMiddleware[];
 }
@@ -106,12 +107,16 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
                   teamId: options.teamId,
                   threadId: options.threadId,
                   promptName: AGENT_PROMPTS.root,
+                  runId: options.runId,
                   customProperties: {
                      agent_role: "executor",
                      agent_organization_id: options.organizationId,
                      agent_team_id: options.teamId,
                      ...(options.threadId && {
                         agent_thread_id: options.threadId,
+                     }),
+                     ...(options.runId && {
+                        agent_run_id: options.runId,
                      }),
                      agent_turn_id: turnId,
                      ...(options.pageContext?.skillHint && {
