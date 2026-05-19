@@ -11,18 +11,94 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { and, asc, eq, gte, inArray, lte, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { fromPromise } from "neverthrow";
+import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { createReportSchema, reports } from "@core/database/schemas/reports";
 import { tags } from "@core/database/schemas/tags";
 import { transactions } from "@core/database/schemas/transactions";
-import { WebAppError } from "@core/logging/errors";
 import { protectedProcedure } from "@core/orpc/server";
 import { isIsoDateString } from "@core/utils/dates";
 
 dayjs.extend(customParseFormat);
+
+const insightsRouterErrors = defineErrorCatalog("insights.router.reports", {
+   AGING_FAILED: {
+      status: 500,
+      message: "Falha ao calcular aging.",
+      tags: ["insights"],
+   },
+   CASH_FLOW_FAILED: {
+      status: 500,
+      message: "Falha ao calcular fluxo de caixa.",
+      tags: ["insights"],
+   },
+   CREATE_FAILED: {
+      status: 500,
+      message: "Falha ao criar relatório.",
+      tags: ["insights"],
+   },
+   DELETE_FAILED: {
+      status: 500,
+      message: "Falha ao excluir relatório.",
+      tags: ["insights"],
+   },
+   EXPENSES_BY_CATEGORY_FAILED: {
+      status: 500,
+      message: "Falha ao calcular despesas por categoria.",
+      tags: ["insights"],
+   },
+   EXPENSES_BY_COST_CENTER_FAILED: {
+      status: 500,
+      message: "Falha ao calcular despesas por Centro de Custo.",
+      tags: ["insights"],
+   },
+   LIST_FAILED: {
+      status: 500,
+      message: "Falha ao listar relatórios.",
+      tags: ["insights"],
+   },
+   LOAD_FAILED: {
+      status: 500,
+      message: "Falha ao carregar relatório.",
+      tags: ["insights"],
+   },
+   NOT_FOUND: {
+      status: 404,
+      message: "Relatório não encontrado.",
+      tags: ["insights"],
+   },
+   PROFIT_AND_LOSS_FAILED: {
+      status: 500,
+      message: "Falha ao calcular DRE simplificada.",
+      tags: ["insights"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "insights.router.reports": typeof insightsRouterErrors;
+   }
+}
+
+type InsightsRouterCatalogError =
+   | ReturnType<typeof insightsRouterErrors.AGING_FAILED>
+   | ReturnType<typeof insightsRouterErrors.CASH_FLOW_FAILED>
+   | ReturnType<typeof insightsRouterErrors.CREATE_FAILED>
+   | ReturnType<typeof insightsRouterErrors.DELETE_FAILED>
+   | ReturnType<typeof insightsRouterErrors.EXPENSES_BY_CATEGORY_FAILED>
+   | ReturnType<typeof insightsRouterErrors.EXPENSES_BY_COST_CENTER_FAILED>
+   | ReturnType<typeof insightsRouterErrors.LIST_FAILED>
+   | ReturnType<typeof insightsRouterErrors.LOAD_FAILED>
+   | ReturnType<typeof insightsRouterErrors.NOT_FOUND>
+   | ReturnType<typeof insightsRouterErrors.PROFIT_AND_LOSS_FAILED>;
+
+class InsightsError extends TaggedError("InsightsError")<{
+   error: InsightsRouterCatalogError;
+   message: string;
+}>() {}
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const reportStatus = z.enum(["paid", "pending", "all"]);
@@ -124,79 +200,120 @@ type BaseFilters = z.infer<typeof baseFilters>;
 export const get = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.query.reports.findFirst({
-            where: (f, { and, eq }) =>
-               and(eq(f.id, input.id), eq(f.teamId, context.teamId)),
-         }),
-         () => WebAppError.internal("Falha ao carregar relatório."),
-      );
-      if (result.isErr()) throw result.error;
-      if (!result.value)
-         throw WebAppError.notFound("Relatório não encontrado.");
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.query.reports.findFirst({
+               where: (f, { and, eq }) =>
+                  and(eq(f.id, input.id), eq(f.teamId, context.teamId)),
+            }),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.LOAD_FAILED(),
+               message: "Falha ao carregar relatório.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
+      if (!result.value) {
+         throw new InsightsError({
+            error: insightsRouterErrors.NOT_FOUND(),
+            message: "Relatório não encontrado.",
+         });
+      }
       return result.value;
    });
 
 export const list = protectedProcedure.handler(async ({ context }) => {
-   const result = await fromPromise(
-      context.db.query.reports.findMany({
-         where: (f, { eq }) => eq(f.teamId, context.teamId),
-         orderBy: (f, { desc }) => [desc(f.createdAt)],
-      }),
-      () => WebAppError.internal("Falha ao listar relatórios."),
-   );
-   if (result.isErr()) throw result.error;
+   const result = await Result.tryPromise({
+      try: () =>
+         context.db.query.reports.findMany({
+            where: (f, { eq }) => eq(f.teamId, context.teamId),
+            orderBy: (f, { desc }) => [desc(f.createdAt)],
+         }),
+      catch: () =>
+         new InsightsError({
+            error: insightsRouterErrors.LIST_FAILED(),
+            message: "Falha ao listar relatórios.",
+         }),
+   });
+   if (Result.isError(result)) throw result.error;
    return result.value;
 });
 
 export const create = protectedProcedure
    .input(createReportSchema)
    .handler(async ({ context, input }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            const [row] = await tx
-               .insert(reports)
-               .values({ ...input, teamId: context.teamId })
-               .returning();
-            return row;
-         }),
-         () => WebAppError.internal("Falha ao criar relatório."),
-      );
-      if (result.isErr()) throw result.error;
-      if (!result.value)
-         throw WebAppError.internal("Falha ao criar relatório: insert vazio.");
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) => {
+               const [row] = await tx
+                  .insert(reports)
+                  .values({ ...input, teamId: context.teamId })
+                  .returning();
+               return row;
+            }),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.CREATE_FAILED(),
+               message: "Falha ao criar relatório.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
+      if (!result.value) {
+         throw new InsightsError({
+            error: insightsRouterErrors.CREATE_FAILED(),
+            message: "Falha ao criar relatório: insert vazio.",
+         });
+      }
       return result.value;
    });
 
 export const remove = protectedProcedure
    .input(idSchema)
    .use(async ({ context, next }, input) => {
-      const existing = await fromPromise(
-         context.db.query.reports.findFirst({
-            where: (f, { and, eq }) =>
-               and(eq(f.id, input.id), eq(f.teamId, context.teamId)),
-         }),
-         () => WebAppError.internal("Falha ao verificar relatório."),
-      );
-      if (existing.isErr()) throw existing.error;
-      if (!existing.value)
-         throw WebAppError.notFound("Relatório não encontrado.");
+      const existing = await Result.tryPromise({
+         try: () =>
+            context.db.query.reports.findFirst({
+               where: (f, { and, eq }) =>
+                  and(eq(f.id, input.id), eq(f.teamId, context.teamId)),
+            }),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.LOAD_FAILED(),
+               message: "Falha ao verificar relatório.",
+            }),
+      });
+      if (Result.isError(existing)) throw existing.error;
+      if (!existing.value) {
+         throw new InsightsError({
+            error: insightsRouterErrors.NOT_FOUND(),
+            message: "Relatório não encontrado.",
+         });
+      }
 
       return next({ context: { entity: existing.value } });
    })
    .handler(async ({ context }) => {
-      const result = await fromPromise(
-         context.db.transaction(async (tx) => {
-            return tx
-               .delete(reports)
-               .where(eq(reports.id, context.entity.id))
-               .returning();
-         }),
-         () => WebAppError.internal("Falha ao excluir relatório."),
-      );
-      if (result.isErr()) throw result.error;
-      if (result.value.length === 0)
-         throw WebAppError.internal("Falha ao excluir relatório.");
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) => {
+               return tx
+                  .delete(reports)
+                  .where(eq(reports.id, context.entity.id))
+                  .returning();
+            }),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.DELETE_FAILED(),
+               message: "Falha ao excluir relatório.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
+      if (result.value.length === 0) {
+         throw new InsightsError({
+            error: insightsRouterErrors.DELETE_FAILED(),
+            message: "Falha ao excluir relatório.",
+         });
+      }
       return { success: true };
    });
 
@@ -294,36 +411,41 @@ export const profitAndLoss = protectedProcedure
       conditions.push(inArray(transactions.type, ["income", "expense"]));
       if (input.dreOnly) conditions.push(eq(categories.participatesDre, true));
 
-      const result = await fromPromise(
-         context.db
-            .select({
-               type: transactions.type,
-               groupId: sql<string>`COALESCE(${categories.dreGroupId}, ${categories.name}, 'Sem grupo')`,
-               groupName: sql<string>`COALESCE(${categories.dreGroupId}, ${categories.name}, 'Sem grupo')`,
-               categoryId: categories.id,
-               categoryName: sql<string>`COALESCE(${categories.name}, 'Sem categoria')`,
-               period: sql<string>`to_char(date_trunc('month', ${effectiveDate}::date), 'YYYY-MM-01')`,
-               amount: sql<string>`COALESCE(SUM(${transactions.amount}), 0)::text`,
-            })
-            .from(transactions)
-            .leftJoin(categories, eq(transactions.categoryId, categories.id))
-            .leftJoin(tags, eq(transactions.tagId, tags.id))
-            .where(and(...conditions))
-            .groupBy(
-               transactions.type,
-               categories.dreGroupId,
-               categories.name,
-               categories.id,
-               sql`date_trunc('month', ${effectiveDate}::date)`,
-            )
-            .orderBy(
-               asc(transactions.type),
-               asc(categories.dreGroupId),
-               asc(categories.name),
-            ),
-         () => WebAppError.internal("Falha ao calcular DRE simplificada."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({
+                  type: transactions.type,
+                  groupId: sql<string>`COALESCE(${categories.dreGroupId}, ${categories.name}, 'Sem grupo')`,
+                  groupName: sql<string>`COALESCE(${categories.dreGroupId}, ${categories.name}, 'Sem grupo')`,
+                  categoryId: categories.id,
+                  categoryName: sql<string>`COALESCE(${categories.name}, 'Sem categoria')`,
+                  period: sql<string>`to_char(date_trunc('month', ${effectiveDate}::date), 'YYYY-MM-01')`,
+                  amount: sql<string>`COALESCE(SUM(${transactions.amount}), 0)::text`,
+               })
+               .from(transactions)
+               .leftJoin(categories, eq(transactions.categoryId, categories.id))
+               .leftJoin(tags, eq(transactions.tagId, tags.id))
+               .where(and(...conditions))
+               .groupBy(
+                  transactions.type,
+                  categories.dreGroupId,
+                  categories.name,
+                  categories.id,
+                  sql`date_trunc('month', ${effectiveDate}::date)`,
+               )
+               .orderBy(
+                  asc(transactions.type),
+                  asc(categories.dreGroupId),
+                  asc(categories.name),
+               ),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.PROFIT_AND_LOSS_FAILED(),
+               message: "Falha ao calcular DRE simplificada.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
 
       const periods = listPeriods(input.dateFrom, input.dateTo);
       const groupMap = new Map<
@@ -434,8 +556,8 @@ export const cashFlow = protectedProcedure
       if (input.bankAccountId)
          accountConditions.push(eq(bankAccounts.id, input.bankAccountId));
 
-      const result = await fromPromise(
-         (async () => {
+      const result = await Result.tryPromise({
+         try: async () => {
             const accounts = await context.db
                .select({
                   id: bankAccounts.id,
@@ -504,10 +626,14 @@ export const cashFlow = protectedProcedure
                .groupBy(transactions.bankAccountId);
 
             return { accounts, movements, openings };
-         })(),
-         () => WebAppError.internal("Falha ao calcular fluxo de caixa."),
-      );
-      if (result.isErr()) throw result.error;
+         },
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.CASH_FLOW_FAILED(),
+               message: "Falha ao calcular fluxo de caixa.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
 
       const openingByAccount = new Map<string, Money>();
       for (const account of result.value.accounts) {
@@ -595,34 +721,36 @@ export const expensesByCostCenter = protectedProcedure
       );
       conditions.push(eq(transactions.type, "expense"));
 
-      const result = await fromPromise(
-         context.db
-            .select({
-               tagId: tags.id,
-               tagName: sql<string>`COALESCE(${tags.name}, 'Sem Centro de Custo')`,
-               tagColor: sql<string>`COALESCE(${tags.color}, '#6366f1')`,
-               categoryId: categories.id,
-               categoryName: sql<string>`COALESCE(${categories.name}, 'Sem categoria')`,
-               amount: sql<string>`COALESCE(SUM(${transactions.amount}), 0)::text`,
-            })
-            .from(transactions)
-            .leftJoin(tags, eq(transactions.tagId, tags.id))
-            .leftJoin(categories, eq(transactions.categoryId, categories.id))
-            .where(and(...conditions))
-            .groupBy(
-               tags.id,
-               tags.name,
-               tags.color,
-               categories.id,
-               categories.name,
-            )
-            .orderBy(asc(tags.name), asc(categories.name)),
-         () =>
-            WebAppError.internal(
-               "Falha ao calcular despesas por Centro de Custo.",
-            ),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({
+                  tagId: tags.id,
+                  tagName: sql<string>`COALESCE(${tags.name}, 'Sem Centro de Custo')`,
+                  tagColor: sql<string>`COALESCE(${tags.color}, '#6366f1')`,
+                  categoryId: categories.id,
+                  categoryName: sql<string>`COALESCE(${categories.name}, 'Sem categoria')`,
+                  amount: sql<string>`COALESCE(SUM(${transactions.amount}), 0)::text`,
+               })
+               .from(transactions)
+               .leftJoin(tags, eq(transactions.tagId, tags.id))
+               .leftJoin(categories, eq(transactions.categoryId, categories.id))
+               .where(and(...conditions))
+               .groupBy(
+                  tags.id,
+                  tags.name,
+                  tags.color,
+                  categories.id,
+                  categories.name,
+               )
+               .orderBy(asc(tags.name), asc(categories.name)),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.EXPENSES_BY_COST_CENTER_FAILED(),
+               message: "Falha ao calcular despesas por Centro de Custo.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
 
       const total = result.value.reduce(
          (acc, row) => add(acc, moneyValue(row.amount)),
@@ -699,25 +827,30 @@ export const aging = protectedProcedure
          conditions.push(eq(transactions.categoryId, input.categoryId));
       if (input.tagId) conditions.push(eq(transactions.tagId, input.tagId));
 
-      const result = await fromPromise(
-         context.db
-            .select({
-               id: transactions.id,
-               name: sql<string>`COALESCE(${transactions.name}, ${transactions.description}, 'Lançamento')`,
-               dueDate: transactions.dueDate,
-               amount: transactions.amount,
-               status: transactions.status,
-               tagName: tags.name,
-               categoryName: categories.name,
-            })
-            .from(transactions)
-            .leftJoin(tags, eq(transactions.tagId, tags.id))
-            .leftJoin(categories, eq(transactions.categoryId, categories.id))
-            .where(and(...conditions))
-            .orderBy(asc(transactions.dueDate)),
-         () => WebAppError.internal("Falha ao calcular aging."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({
+                  id: transactions.id,
+                  name: sql<string>`COALESCE(${transactions.name}, ${transactions.description}, 'Lançamento')`,
+                  dueDate: transactions.dueDate,
+                  amount: transactions.amount,
+                  status: transactions.status,
+                  tagName: tags.name,
+                  categoryName: categories.name,
+               })
+               .from(transactions)
+               .leftJoin(tags, eq(transactions.tagId, tags.id))
+               .leftJoin(categories, eq(transactions.categoryId, categories.id))
+               .where(and(...conditions))
+               .orderBy(asc(transactions.dueDate)),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.AGING_FAILED(),
+               message: "Falha ao calcular aging.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
 
       const buckets = new Map([
          ["due", zero("BRL")],
@@ -801,29 +934,33 @@ export const expensesByCategory = protectedProcedure
             ? sql<string>`COALESCE(${parentCategories.id}::text, ${categories.id}::text, 'uncategorized')`
             : sql<string>`COALESCE(${categories.id}::text, 'uncategorized')`;
 
-      const result = await fromPromise(
-         context.db
-            .select({
-               id: groupId,
-               name: groupName,
-               color: groupColor,
-               amount: sql<string>`COALESCE(SUM(${transactions.amount}), 0)::text`,
-               count: sql<number>`COUNT(*)::int`,
-            })
-            .from(transactions)
-            .leftJoin(categories, eq(transactions.categoryId, categories.id))
-            .leftJoin(
-               parentCategories,
-               eq(categories.parentId, parentCategories.id),
-            )
-            .where(and(...conditions))
-            .groupBy(groupId, groupName, groupColor)
-            .having(sql`SUM(${transactions.amount}) >= ${input.minAmount}`)
-            .orderBy(sql`SUM(${transactions.amount}) DESC`),
-         () =>
-            WebAppError.internal("Falha ao calcular despesas por categoria."),
-      );
-      if (result.isErr()) throw result.error;
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db
+               .select({
+                  id: groupId,
+                  name: groupName,
+                  color: groupColor,
+                  amount: sql<string>`COALESCE(SUM(${transactions.amount}), 0)::text`,
+                  count: sql<number>`COUNT(*)::int`,
+               })
+               .from(transactions)
+               .leftJoin(categories, eq(transactions.categoryId, categories.id))
+               .leftJoin(
+                  parentCategories,
+                  eq(categories.parentId, parentCategories.id),
+               )
+               .where(and(...conditions))
+               .groupBy(groupId, groupName, groupColor)
+               .having(sql`SUM(${transactions.amount}) >= ${input.minAmount}`)
+               .orderBy(sql`SUM(${transactions.amount}) DESC`),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.EXPENSES_BY_CATEGORY_FAILED(),
+               message: "Falha ao calcular despesas por categoria.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
 
       const total = result.value.reduce(
          (acc, row) => add(acc, moneyValue(row.amount)),
