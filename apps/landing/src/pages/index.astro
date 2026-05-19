@@ -1,56 +1,46 @@
 ---
 export const prerender = true;
 import BaseLayout from "../layouts/base-layout.astro";
-import { ArrowRight } from "@lucide/astro";
-import { Button } from "@packages/ui/components/button";
-import { AnimatedTexture } from "../components/animated-texture";
 import { HeroCarousel } from "../blocks/hero-carousel";
 import SocialProofBlock from "../blocks/social-proof-block.astro";
+import OperationsPillarsBlock from "../blocks/operations-pillars-block.astro";
 import WaitlistBlock from "../blocks/waitlist-block.astro";
 import FooterBlock from "../blocks/footer-block.astro";
 ---
 
 <BaseLayout
-   title="Montte: Plataforma operacional para empresas brasileiras"
-   description="Entre na waitlist do Montte e organize financeiro, contatos, serviços e cobranças em uma plataforma operacional feita para empresas brasileiras."
+   title="Montte: recorrência para empresas brasileiras"
+   description="Conecte assinatura, uso, cobrança, cliente e financeiro em uma operação recorrente feita para empresas brasileiras."
 >
    <section
       class="relative isolate flex min-h-screen flex-col overflow-hidden"
       aria-label="Apresentação"
    >
+      <img
+         src="/videos/montte-hero-bg.webp"
+         alt=""
+         class="absolute inset-0 -z-30 size-full object-cover"
+         loading="eager"
+         aria-hidden="true"
+      />
       <div
-         class="absolute inset-0 -z-20"
-         style="background: linear-gradient(to bottom, color-mix(in oklch, var(--secondary) 35%, var(--background)) 0%, color-mix(in oklch, var(--background) 88%, var(--secondary)) 42%, var(--background) 100%);"
+         class="absolute inset-0 -z-20 bg-gradient-to-r from-background/40 via-background/10 to-transparent"
          aria-hidden="true"
       >
       </div>
-      <AnimatedTexture section="hero" client:load />
       <div
          class="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-b from-transparent to-background"
          aria-hidden="true"
       >
       </div>
 
-      <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-8 overflow-hidden px-2 py-4 sm:px-4">
+      <div class="flex w-full flex-1 flex-col justify-center gap-4">
          <HeroCarousel client:load />
-
-         <p class="max-w-xl text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Controle clientes, receita, uso e pendências em uma operação feita
-            para SaaS e serviços recorrentes no Brasil.
-         </p>
-
-         <div class="flex flex-wrap items-center justify-center gap-2">
-            <a href="#waitlist" data-ph-cta="hero_waitlist">
-               <Button size="lg" variant="default">
-                  Entrar na lista
-                  <ArrowRight data-icon="inline-end" aria-hidden="true" />
-               </Button>
-            </a>
-         </div>
       </div>
    </section>
 
    <SocialProofBlock />
+   <OperationsPillarsBlock />
    <WaitlistBlock />
 
    <FooterBlock />

@@ -1,0 +1,239 @@
+---
+import {
+   ArrowRight,
+   BarChart3,
+   CircleCheck,
+   FileText,
+   MessageSquareText,
+   Upload,
+} from "@lucide/astro";
+import { Reveal } from "../components/reveal";
+---
+
+<section
+   id="operacao"
+   class="relative isolate overflow-hidden bg-background py-[6rem]"
+   aria-label="Operação recorrente"
+>
+   <div class="mx-auto flex w-full max-w-7xl flex-col gap-[4rem] px-2 sm:px-4">
+      <Reveal client:visible>
+         <div class="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
+            <p class="text-sm font-medium uppercase tracking-[0.08em] text-muted-foreground">
+               Operação nativa para recorrência
+            </p>
+            <h2 class="text-3xl leading-tight font-black text-foreground text-balance sm:text-4xl md:text-5xl">
+               Do contrato ao caixa, com o contexto do cliente no meio
+            </h2>
+            <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+               Montte combina cobrança, uso medido e financeiro em fluxos de trabalho que
+               mostram o que aconteceu, o que precisa de cobrança e qual ação vem depois.
+            </p>
+         </div>
+      </Reveal>
+
+      <div class="grid gap-[3rem] lg:grid-cols-6">
+         <Reveal className="lg:col-span-4" client:visible>
+            <article class="flex h-full min-h-[330px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
+               <div class="flex flex-col gap-2">
+                  <h3 class="text-xl font-semibold text-foreground">Selecione um contexto</h3>
+                  <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                     Use o seletor no canto para escolher o contexto da resposta.
+                     Escolha uma área da plataforma ou deixe em Auto para o padrão.
+                  </p>
+               </div>
+
+               <div class="mx-auto flex w-full max-w-3xl flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-2xl shadow-background/60">
+                  <div class="grid gap-4 md:grid-cols-3">
+                     <div class="flex flex-col gap-2 rounded-lg border border-primary/60 bg-primary/10 p-4">
+                        <div class="inline-flex items-center justify-center p-2 rounded-md bg-primary/15 text-primary">
+                           <BarChart3 class="size-4" />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                           <p class="text-sm font-semibold text-foreground">Cobrança</p>
+                           <p class="text-xs leading-relaxed text-muted-foreground">
+                              Gera cobrança a partir de contrato, uso e estado do cliente.
+                           </p>
+                        </div>
+                     </div>
+                     <div class="flex flex-col gap-2 rounded-lg border border-border/70 bg-background/70 p-4">
+                        <div class="inline-flex items-center justify-center p-2 rounded-md bg-secondary text-muted-foreground">
+                           <FileText class="size-4" />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                           <p class="text-sm font-semibold text-foreground">Financeiro</p>
+                           <p class="text-xs leading-relaxed text-muted-foreground">
+                              Reconcilia receita, pendências e Centros de Custo.
+                           </p>
+                        </div>
+                     </div>
+                     <div class="flex flex-col gap-2 rounded-lg border border-border/70 bg-background/70 p-4">
+                        <div class="inline-flex items-center justify-center p-2 rounded-md bg-secondary text-muted-foreground">
+                           <CircleCheck class="size-4" />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                           <p class="text-sm font-semibold text-foreground">Acompanhamento</p>
+                           <p class="text-xs leading-relaxed text-muted-foreground">
+                              Mostra assinatura, uso, fatura e próxima ação.
+                           </p>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-2">
+                     <span class="flex-1 text-xs text-muted-foreground">Pergunte sobre uso, cobrança ou caixa...</span>
+                     <span class="rounded-full border border-border/70 px-2 py-2 text-xs text-muted-foreground">
+                        Auto
+                     </span>
+                     <span class="inline-flex items-center justify-center p-2 rounded-full bg-primary text-primary-foreground">
+                        <ArrowRight class="size-4" />
+                     </span>
+                  </div>
+               </div>
+            </article>
+         </Reveal>
+
+         <Reveal className="lg:col-span-2" delay={0.1} client:visible>
+            <article class="flex h-full min-h-[330px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
+               <div class="flex flex-col gap-2">
+                  <h3 class="text-xl font-semibold text-foreground">Pergunte sobre a operação</h3>
+                  <p class="text-sm leading-relaxed text-muted-foreground">
+                     Respostas claras com base no estado real do cliente.
+                  </p>
+               </div>
+
+               <div class="flex flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-xl shadow-background/50">
+                  <div class="rounded-lg bg-primary/10 p-4 text-xs font-medium text-foreground">
+                     Quais clientes passaram da cota este mês?
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                     <MessageSquareText class="size-4 text-primary" />
+                     Revisando uso, faturas e contratos...
+                  </div>
+                  <div class="flex items-center gap-2 rounded-lg border border-border/70 bg-background/80 p-2">
+                     <span class="flex-1 text-xs text-muted-foreground">Pergunte qualquer coisa...</span>
+                     <span class="rounded-full border border-border/70 px-2 py-2 text-xs text-muted-foreground">
+                        Acompanhamento
+                     </span>
+                  </div>
+               </div>
+            </article>
+         </Reveal>
+
+         <Reveal className="lg:col-span-2" delay={0.2} client:visible>
+            <article class="flex h-full min-h-[300px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
+               <div class="rounded-xl border border-border/70 bg-card p-4 shadow-xl shadow-background/50">
+                  <div class="grid grid-cols-[1.2fr_0.8fr_0.6fr] gap-2 border-b border-border/60 pb-2 text-xs text-muted-foreground">
+                     <span>Cliente</span>
+                     <span>Status</span>
+                     <span>Risco</span>
+                  </div>
+                  <div class="grid gap-2 pt-2 text-xs text-foreground">
+                     <div class="grid grid-cols-[1.2fr_0.8fr_0.6fr] gap-2">
+                        <span>Acme</span>
+                        <span>Uso acima</span>
+                        <span class="text-chart-3">Médio</span>
+                     </div>
+                     <div class="grid grid-cols-[1.2fr_0.8fr_0.6fr] gap-2">
+                        <span>Northwind</span>
+                        <span>Fatura aberta</span>
+                        <span class="text-primary">Baixo</span>
+                     </div>
+                     <div class="grid grid-cols-[1.2fr_0.8fr_0.6fr] gap-2">
+                        <span>Stark</span>
+                        <span>Pagamento falhou</span>
+                        <span class="text-destructive">Alto</span>
+                     </div>
+                  </div>
+               </div>
+
+               <div class="flex flex-col gap-2">
+                  <h3 class="text-xl font-semibold text-foreground">Veja o quadro completo</h3>
+                  <p class="text-sm leading-relaxed text-muted-foreground">
+                     Clientes, contratos, uso, cobrança e caixa no mesmo recorte operacional.
+                  </p>
+               </div>
+            </article>
+         </Reveal>
+
+         <Reveal className="lg:col-span-4" delay={0.3} client:visible>
+            <article class="flex h-full min-h-[300px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
+               <div class="mx-auto flex w-full max-w-md flex-col gap-4 rounded-xl border border-border/70 bg-card p-4 shadow-2xl shadow-background/60">
+                  <div class="grid grid-cols-5 gap-4">
+                     <span class="block rounded-lg p-4 bg-secondary"></span>
+                     <span class="block rounded-lg p-4 bg-primary/30"></span>
+                     <span class="flex items-center justify-center p-4 rounded-lg bg-primary/15 text-primary">
+                        <BarChart3 class="size-4" />
+                     </span>
+                     <span class="block rounded-lg p-4 bg-secondary"></span>
+                     <span class="block rounded-lg p-4 bg-secondary"></span>
+                  </div>
+                  <button class="flex items-center justify-between rounded-lg border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground">
+                     <span class="flex items-center gap-2">
+                        <Upload class="size-4 text-primary" />
+                        Enviar contrato
+                     </span>
+                     <CircleCheck class="size-4 text-primary" />
+                  </button>
+                  <button class="flex items-center justify-between rounded-lg bg-primary/15 px-4 py-2 text-sm font-semibold text-primary">
+                     <span class="flex items-center gap-2">
+                        <BarChart3 class="size-4" />
+                        Gerar análise de cobrança
+                     </span>
+                     <ArrowRight class="size-4" />
+                  </button>
+               </div>
+
+               <div class="flex flex-col gap-2">
+                  <h3 class="text-xl font-semibold text-foreground">Transforme contrato em cobrança</h3>
+                  <p class="text-sm leading-relaxed text-muted-foreground">
+                     Leia regras comerciais, compare com uso real e gere a ação financeira certa.
+                  </p>
+               </div>
+            </article>
+         </Reveal>
+
+         <Reveal className="lg:col-span-3" delay={0.4} client:visible>
+            <article class="flex h-full min-h-[300px] flex-col justify-between overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4">
+               <div class="mx-auto w-full max-w-sm rounded-xl border border-border/70 bg-card p-4 shadow-xl shadow-background/50">
+                  <div class="flex flex-col gap-4 text-xs text-muted-foreground">
+                     <p class="font-semibold text-foreground">Análise Acme · maio</p>
+                     <p><strong class="text-foreground">Uso:</strong> 18.420 eventos, 14% acima da cota.</p>
+                     <p><strong class="text-foreground">Contrato:</strong> cobrança incremental aplicável.</p>
+                     <p><strong class="text-foreground">Financeiro:</strong> reconhecer R$ 1.284,00 em receita.</p>
+                  </div>
+               </div>
+
+               <div class="flex flex-col gap-2">
+                  <h3 class="text-xl font-semibold text-foreground">Analise exceções em segundos</h3>
+                  <p class="text-sm leading-relaxed text-muted-foreground">
+                     Saia do relatório estático para uma leitura clara de contrato, uso e ação.
+                  </p>
+               </div>
+            </article>
+         </Reveal>
+
+         <Reveal className="lg:col-span-3" delay={0.5} client:visible>
+            <article class="flex h-full min-h-[300px] flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border border-border/70 bg-secondary/30 p-4 text-center">
+               <img
+                  src="/mascot.svg"
+                  alt="Mascote do Montte"
+                  style="width: 88px; height: auto;"
+               />
+               <div class="flex max-w-md flex-col items-center gap-2">
+                  <h3 class="text-xl font-semibold text-foreground">Vá mais fundo quando precisar</h3>
+                  <p class="text-sm leading-relaxed text-muted-foreground">
+                     Do resumo executivo ao dado de origem, avance sem perder contexto.
+                  </p>
+               </div>
+               <a
+                  href="#waitlist"
+                  class="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/80 px-4 py-2 text-sm font-semibold text-foreground"
+               >
+                  Conhecer o assistente
+                  <ArrowRight class="size-4" />
+               </a>
+            </article>
+         </Reveal>
+      </div>
+   </div>
+</section>
