@@ -1,3 +1,4 @@
+import arcjet, { validateEmail } from "@arcjet/astro";
 import mdx from "@astrojs/mdx";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
@@ -21,7 +22,19 @@ export default defineConfig({
          }),
       },
    },
-   integrations: [react(), sitemap(), mdx()],
+   integrations: [
+      react(),
+      sitemap(),
+      mdx(),
+      arcjet({
+         rules: [
+            validateEmail({
+               mode: "LIVE",
+               deny: ["INVALID", "DISPOSABLE"],
+            }),
+         ],
+      }),
+   ],
    prefetch: { defaultStrategy: "viewport" },
    vite: {
       resolve: {

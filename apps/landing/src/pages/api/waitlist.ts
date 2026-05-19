@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { Result, TaggedError } from "better-result";
-import { validateEmail } from "@arcjet/node";
-import arcjet from "@arcjet/node";
+import type { ArcjetDecision } from "@arcjet/protocol";
+import aj from "arcjet:client";
 import type { APIContext } from "astro";
 import { z } from "zod";
 
@@ -98,17 +98,7 @@ const disposableFallbackDomains = new Set([
    "fakeinbox.com",
 ]);
 
-const arcjetClient = arcjetKey
-   ? arcjet({
-        key: arcjetKey,
-        rules: [
-           validateEmail({
-              mode: "LIVE",
-              deny: ["INVALID", "DISPOSABLE"],
-           }),
-        ],
-     })
-   : null;
+const hasArcjetKey = Boolean(arcjetKey);
 
 function hashForLog(value: string): string {
    return createHash("sha256").update(value).digest("hex").slice(0, 10);
@@ -208,7 +198,7 @@ async function validateWithArcjet(
    context: APIContext,
    email: string,
 ): Promise<Result<string, WaitlistRouteError>> {
-   if (!arcjetClient) {
+   if (!hasArcjetKey) {
       if (isLikelyDisposable(email)) {
          return Result.err(
             new WaitlistRouteError({
@@ -226,37 +216,37 @@ async function validateWithArcjet(
       return Result.ok(email);
    }
 
-   const decision = await Result.tryPromise({
-      try: () =>
-         arcjetClient.protect(
-            {
-               headers: Object.fromEntries(context.request.headers.entries()),
-               method: context.request.method,
-               httpVersion: "1.1",
-               socket: {
-                  remoteAddress: getClientIp(context),
-               },
-               url: context.request.url,
-            },
-            { email },
-         ),
-      catch: () =>
-         new WaitlistRouteError({
-            source: "landing",
-            emailHash: hashForLog(email),
-            error: waitlistErrorCatalog.email_validation_failed(
-               "Não conseguimos validar esse e-mail agora. Tente novamente em instantes.",
-            ),
-            message:
-               "Não conseguimos validar esse e-mail agora. Tente novamente em instantes.",
-         }),
-   });
+   const decision = await Result.tryPromise<ArcjetDecision, WaitlistRouteError>(
+      {
+         try: () =>
+            aj.protect(context.request, { email }) as Promise<ArcjetDecision>,
+         catch: () =>
+            new WaitlistRouteError({
+               source: "landing",
+               emailHash: hashForLog(email),
+               error: waitlistErrorCatalog.email_validation_failed(
+                  "Não conseguimos validar esse e-mail agora. Tente novamente em instantes.",
+               ),
+               message:
+                  "Não conseguimos validar esse e-mail agora. Tente novamente em instantes.",
+            }),
+      },
+   );
 
    if (Result.isError(decision)) {
       console.warn("waitlist_arcjet_error", {
          source: "landing",
          email_hash: hashForLog(email),
          reason: "arcjet_unavailable",
+      });
+      return Result.ok(email);
+   }
+
+   if (decision.value.isErrored()) {
+      console.warn("waitlist_arcjet_error", {
+         source: "landing",
+         email_hash: hashForLog(email),
+         reason: decision.value.reason?.message,
       });
       return Result.ok(email);
    }
