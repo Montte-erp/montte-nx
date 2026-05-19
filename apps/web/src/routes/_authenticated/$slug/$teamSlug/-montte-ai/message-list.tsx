@@ -34,6 +34,14 @@ import { useMontteActions, useMontteIsRunning } from "./chat-store";
 
 const TOOL_LABELS: Record<string, string> = {
    advisor_consult: "Consultando advisor sênior",
+   generate_financial_report: "Gerando relatório financeiro",
+   get_financial_summary: "Consultando resumo financeiro",
+   list_bank_accounts: "Listando contas bancárias",
+   list_card_statements: "Listando faturas",
+   list_categories: "Listando categorias",
+   list_cost_centers: "Listando Centros de Custo",
+   list_credit_cards: "Listando cartões",
+   search_transactions: "Buscando lançamentos",
    __lazy__tool__discovery__: "Carregando ferramentas",
    catalog_search: "Consultando catálogo",
    meter_create: "Criando medidor",

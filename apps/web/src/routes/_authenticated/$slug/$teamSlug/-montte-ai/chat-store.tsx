@@ -62,10 +62,25 @@ const AUTO_SCOPE: AgentScope = { id: "auto", label: "Auto", icon: Sparkles };
 
 export const SCOPES: AgentScope[] = [
    AUTO_SCOPE,
-   { id: "categorias", label: "Centro de Custo", icon: FolderTree },
+   {
+      id: "categorias",
+      label: "Centro de Custo",
+      icon: FolderTree,
+      skillHint: "financeiro",
+   },
    { id: "estoque", label: "Estoque", icon: Tag },
-   { id: "financeiro", label: "Financeiro", icon: Wallet },
-   { id: "analises", label: "Análises", icon: Gauge },
+   {
+      id: "financeiro",
+      label: "Financeiro",
+      icon: Wallet,
+      skillHint: "financeiro",
+   },
+   {
+      id: "analises",
+      label: "Análises",
+      icon: Gauge,
+      skillHint: "financeiro",
+   },
 ];
 
 export const SCOPE_SUGGESTIONS: AgentScope[] = SCOPES.filter(

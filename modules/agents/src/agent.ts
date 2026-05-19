@@ -10,9 +10,11 @@ import type { Prompts } from "@core/posthog/server";
 import { flashModel } from "@core/ai/models";
 import { aiTraceAttributes } from "@core/ai/otel";
 import { getAiTracer } from "@core/logging";
+import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { AGENT_PROMPTS, type PageContext } from "@modules/agents/constants";
-import { buildSkillCatalog } from "@modules/agents/skills";
+import { buildSkillCatalog, getSkillPromptName } from "@modules/agents/skills";
 import { buildAdvisorTool } from "@modules/agents/tools/advisor";
+import { buildAgentReadTools } from "@modules/agents/tools/registry";
 
 export interface AgentChatOptions {
    prompts: Prompts;
@@ -21,6 +23,7 @@ export interface AgentChatOptions {
    teamId: string;
    headers: Headers;
    request: Request;
+   orpcContext: ORPCContextWithOrganization;
    threadId?: string;
    runId?: string;
    messages: UIMessage[];
@@ -71,6 +74,7 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
          threadId: options.threadId,
          turnId,
       }),
+      ...buildAgentReadTools({ context: options.orpcContext }),
    ];
 
    const rootTemplate = await options.prompts.get(AGENT_PROMPTS.root, {
@@ -80,10 +84,22 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
       skill_catalog: buildSkillCatalog(),
       page_context: formatPageContext(options.pageContext),
    });
+   const skillPromptName = getSkillPromptName(options.pageContext?.skillHint);
+   const activeSkillPrompt = await (async () => {
+      if (!skillPromptName) return undefined;
+      const template = await options.prompts.get(skillPromptName, {
+         withMetadata: false,
+      });
+      return options.prompts.compile(template, {});
+   })();
 
    return {
       adapter: flashModel,
-      systemPrompts: [systemPrompt, RENDERING_PRIMER],
+      systemPrompts: [
+         systemPrompt,
+         ...(activeSkillPrompt ? [activeSkillPrompt] : []),
+         RENDERING_PRIMER,
+      ],
       messages: convertMessagesToModelMessages(options.messages),
       tools,
       modelOptions: {
