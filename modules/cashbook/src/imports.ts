@@ -1,3 +1,5 @@
+import { of, toMajorUnitsString } from "@f-o-t/money";
+
 export function normalizeImportAmount(amount: string): string {
-   return Number.parseFloat(amount).toFixed(2);
+   return toMajorUnitsString(of(amount, "BRL"));
 }

@@ -1,5 +1,11 @@
 import dayjs from "dayjs";
 import {
+   fromMinorUnits,
+   of,
+   toMajorUnitsString,
+   toMinorUnits,
+} from "@f-o-t/money";
+import {
    and,
    asc,
    desc,
@@ -16,7 +22,7 @@ import {
    type SQL,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { err, ok, type Result } from "neverthrow";
+import { err, fromThrowable, ok } from "neverthrow";
 import type { Condition, ConditionGroup } from "@f-o-t/condition-evaluator";
 import type { DatabaseInstance } from "@core/database/client";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
@@ -163,8 +169,13 @@ const COND_COLUMNS = {
    paymentMethod: t.paymentMethod,
 } as const;
 
-function conditionToSql(c: Condition): SQL | null {
-   const col = COND_COLUMNS[c.field as keyof typeof COND_COLUMNS];
+function isCondColumnKey(value: string): value is keyof typeof COND_COLUMNS {
+   return value in COND_COLUMNS;
+}
+
+function conditionToSql(c: Condition) {
+   if (!isCondColumnKey(c.field)) return null;
+   const col = COND_COLUMNS[c.field];
    if (!col) return null;
    const v = "value" in c ? c.value : undefined;
    const s = String(v);
@@ -205,7 +216,52 @@ const VIEW_FILTERS: Record<string, SQL[]> = {
    ignored: [eq(t.ignored, true)],
 };
 
-export function buildTransactionWhere(f: TransactionFilter): SQL {
+function conditionGroupToSql(group: ConditionGroup) {
+   if (group.scoringMode === "weighted") return null;
+   const groupExpressions = new Map<ConditionGroup, SQL | null>();
+   const stack: { group: ConditionGroup; visited: boolean }[] = [
+      { group, visited: false },
+   ];
+
+   while (stack.length > 0) {
+      const item = stack.pop();
+      if (!item) continue;
+
+      if (!item.visited) {
+         stack.push({ group: item.group, visited: true });
+         for (const condition of item.group.conditions) {
+            if (
+               "conditions" in condition &&
+               condition.scoringMode !== "weighted"
+            ) {
+               stack.push({ group: condition, visited: false });
+            }
+         }
+         continue;
+      }
+
+      const exprs = item.group.conditions
+         .map((condition) =>
+            "conditions" in condition
+               ? (groupExpressions.get(condition) ?? null)
+               : conditionToSql(condition),
+         )
+         .filter((e): e is SQL => e !== null);
+
+      if (exprs.length === 0) {
+         groupExpressions.set(item.group, null);
+         continue;
+      }
+
+      const combined =
+         item.group.operator === "AND" ? and(...exprs) : or(...exprs);
+      groupExpressions.set(item.group, combined ?? null);
+   }
+
+   return groupExpressions.get(group) ?? null;
+}
+
+export function buildTransactionWhere(f: TransactionFilter) {
    const c: SQL[] = [eq(t.teamId, f.teamId)];
    if (f.ignored === true) c.push(eq(t.ignored, true));
    else if (f.ignored === false || !f.includeIgnored)
@@ -243,14 +299,8 @@ export function buildTransactionWhere(f: TransactionFilter): SQL {
 
    const cg = f.conditionGroup;
    if (cg && cg.scoringMode !== "weighted") {
-      const exprs = cg.conditions
-         .filter((x): x is Condition => !("conditions" in x))
-         .map(conditionToSql)
-         .filter((e): e is SQL => e !== null);
-      if (exprs.length > 0) {
-         const combined = cg.operator === "AND" ? and(...exprs) : or(...exprs);
-         if (combined) c.push(combined);
-      }
+      const combined = conditionGroupToSql(cg);
+      if (combined) c.push(combined);
    }
 
    return and(...c) ?? sql`true`;
@@ -271,38 +321,30 @@ export type InstallmentPreview = {
    dueDate: string | null;
 };
 
-const DECIMAL_REGEX = /^(\d+)(?:\.(\d+))?$/;
+const invalidMoneyMessage = "Valor deve ser um número válido maior que zero.";
 
-function parseMoneyToCents(value: string): Result<number, string> {
-   const normalized = value.trim();
-   const match = DECIMAL_REGEX.exec(normalized);
-   if (!match) return err("Valor deve ser um número válido maior que zero.");
+function parseMoneyToCents(value: string) {
+   const parsed = fromThrowable(
+      () => of(value.trim(), "BRL"),
+      () => invalidMoneyMessage,
+   )();
+   if (parsed.isErr()) return err(parsed.error);
 
-   const [, majorRaw, minorRaw = ""] = match;
-   if (!majorRaw) return err("Valor deve ser um número válido maior que zero.");
-
-   const major = Number(majorRaw);
-   const centsText = minorRaw.padEnd(3, "0");
-   const centsBase = Number(centsText.slice(0, 2));
-   const shouldRound = Number(centsText.slice(2, 3)) >= 5;
-   const cents = major * 100 + centsBase + (shouldRound ? 1 : 0);
+   const normalized = toMajorUnitsString(parsed.value);
+   const cents = toMinorUnits(of(normalized, "BRL"));
 
    if (!Number.isSafeInteger(cents) || cents <= 0) {
-      return err("Valor deve ser um número válido maior que zero.");
+      return err(invalidMoneyMessage);
    }
 
    return ok(cents);
 }
 
 function formatCents(cents: number) {
-   const major = Math.floor(cents / 100);
-   const minor = String(cents % 100).padStart(2, "0");
-   return `${major}.${minor}`;
+   return toMajorUnitsString(fromMinorUnits(cents, "BRL"));
 }
 
-export function buildInstallmentPreview(
-   input: InstallmentInput,
-): Result<InstallmentPreview[], string> {
+export function buildInstallmentPreview(input: InstallmentInput) {
    if (!Number.isInteger(input.count) || input.count < 2) {
       return err("Número de parcelas deve ser maior que 1.");
    }
@@ -368,9 +410,7 @@ export function addRecurrencePeriod(
    return dayjs(date).add(1, "month").format("YYYY-MM-DD");
 }
 
-export function buildRecurrenceOccurrences(
-   input: RecurrenceInput,
-): Result<RecurrenceOccurrence[], string> {
+export function buildRecurrenceOccurrences(input: RecurrenceInput) {
    if (!isIsoDateString(input.date)) {
       return err("Data deve estar no formato YYYY-MM-DD.");
    }
