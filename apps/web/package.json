@@ -15,6 +15,7 @@
    },
    "dependencies": {
       "@ag-ui/client": "catalog:ui",
+      "@ag-ui/core": "catalog:ui",
       "@assistant-ui/core": "catalog:ui",
       "@assistant-ui/react": "catalog:ui",
       "@assistant-ui/react-ag-ui": "catalog:ui",

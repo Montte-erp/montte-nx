@@ -115,6 +115,9 @@ async function buildAgentChatArgs(options: AgentChatOptions) {
                      ...(options.threadId && {
                         agent_thread_id: options.threadId,
                      }),
+                     ...(options.runId && {
+                        agent_run_id: options.runId,
+                     }),
                      agent_turn_id: turnId,
                      ...(options.pageContext?.skillHint && {
                         agent_skill: options.pageContext.skillHint,

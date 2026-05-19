@@ -19,6 +19,7 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@ag-ui/core": "catalog:ui",
       "@core/ai": "workspace:*",
       "@core/database": "workspace:*",
       "@core/dbos": "workspace:*",
