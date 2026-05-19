@@ -1,5 +1,5 @@
 import { os } from "@orpc/server";
-import { and, asc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import dayjs from "dayjs";
 import { defineErrorCatalog } from "evlog";
 import { Result, TaggedError } from "better-result";
@@ -234,6 +234,13 @@ export const chatInputSchema = z.object({
 
 export type ChatInput = z.infer<typeof chatInputSchema>;
 
+interface AgUiChatParams {
+   messages: unknown[];
+   threadId: string;
+   runId: string;
+   forwardedProps: Record<string, unknown>;
+}
+
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
 
 const createThreadInputSchema = insertThreadSchema
@@ -321,6 +328,29 @@ const messagePartSchema = z.discriminatedUnion("type", [
 const messagePartsSchema = z
    .array(messagePartSchema)
    .min(1) satisfies z.ZodType<UIMessage["parts"]>;
+
+const agUiTextContentPartSchema = z
+   .object({
+      type: z.literal("text"),
+      text: z.string(),
+   })
+   .passthrough();
+
+const agUiIncomingMessageSchema = z
+   .object({
+      id: z.string().optional(),
+      role: z.enum(["assistant", "system", "tool", "user"]),
+      content: z
+         .union([z.string(), z.array(agUiTextContentPartSchema)])
+         .optional(),
+   })
+   .passthrough();
+
+const agUiForwardedPropsSchema = z
+   .object({
+      pageContext: messagePageContextSchema.optional(),
+   })
+   .passthrough();
 
 const saveAssistantMessageInputSchema = threadIdInputSchema.extend({
    parts: messagePartsSchema,
@@ -426,6 +456,101 @@ const prepareChatHistoryWithThreadAdvisoryLock = (
          .where(eq(messages.threadId, input.threadId))
          .orderBy(asc(messages.createdAt));
    });
+
+function agUiContentText(
+   content: z.infer<typeof agUiIncomingMessageSchema>["content"],
+): string {
+   if (content === undefined) return "";
+   if (typeof content === "string") return content.trim();
+   return content
+      .map((part) => part.text)
+      .join("\n\n")
+      .trim();
+}
+
+async function prepareAgUiChatHistoryWithThreadAdvisoryLock(
+   context: ORPCContextWithOrganization,
+   params: AgUiChatParams,
+): Promise<UIMessage[]> {
+   const incoming = z.array(agUiIncomingMessageSchema).parse(params.messages);
+   const forwardedProps = agUiForwardedPropsSchema.parse(params.forwardedProps);
+
+   return context.db.transaction(async (tx) => {
+      await tx.execute(
+         sql`select pg_advisory_xact_lock(hashtext(${params.threadId}))`,
+      );
+
+      const existingRows = await tx
+         .select({
+            id: messages.id,
+            role: messages.role,
+            parts: messages.parts,
+            createdAt: messages.createdAt,
+         })
+         .from(messages)
+         .where(eq(messages.threadId, params.threadId))
+         .orderBy(asc(messages.createdAt));
+
+      const incomingIds = new Set(
+         incoming.flatMap((message) => (message.id ? [message.id] : [])),
+      );
+      const latestMatched = existingRows.reduce<
+         (typeof existingRows)[number] | undefined
+      >((matched, row) => (incomingIds.has(row.id) ? row : matched), undefined);
+
+      if (existingRows.length > 0) {
+         if (latestMatched) {
+            await tx
+               .delete(messages)
+               .where(
+                  and(
+                     eq(messages.threadId, params.threadId),
+                     gt(messages.createdAt, latestMatched.createdAt),
+                  ),
+               );
+         } else {
+            await tx
+               .delete(messages)
+               .where(eq(messages.threadId, params.threadId));
+         }
+      }
+
+      const existingIds = new Set(existingRows.map((row) => row.id));
+      const lastIncoming = incoming.at(-1);
+      if (
+         lastIncoming?.role === "user" &&
+         (!lastIncoming.id || !existingIds.has(lastIncoming.id))
+      ) {
+         const text = agUiContentText(lastIncoming.content);
+         if (text.length > 0) {
+            await tx.insert(messages).values({
+               threadId: params.threadId,
+               role: "user",
+               parts: [{ type: "text", content: text }],
+               metadata: forwardedProps.pageContext
+                  ? { pageContext: forwardedProps.pageContext }
+                  : null,
+            });
+         }
+      }
+
+      const rows = await tx
+         .select({
+            id: messages.id,
+            role: messages.role,
+            parts: messages.parts,
+         })
+         .from(messages)
+         .where(eq(messages.threadId, params.threadId))
+         .orderBy(asc(messages.createdAt));
+
+      return rows.map((row) => ({
+         id: row.id,
+         role: row.role,
+         parts: row.parts,
+      }));
+   });
+}
 
 export const list = protectedProcedure
    .input(listThreadsInputSchema)
@@ -863,6 +988,144 @@ export async function createThreadChatStream(options: {
    if (Result.isError(streamResult)) throw streamResult.error;
 
    return streamResult.value;
+}
+
+export async function createAgUiThreadChatStream(options: {
+   context: ORPCContextWithOrganization;
+   params: AgUiChatParams;
+   signal?: AbortSignal;
+}) {
+   const { context, params, signal } = options;
+   const result = await Result.gen(async function* () {
+      const input = chatInputSchema
+         .pick({ threadId: true })
+         .parse({ threadId: params.threadId });
+      const forwardedProps = agUiForwardedPropsSchema.parse(
+         params.forwardedProps,
+      );
+      const thread = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               context.db.query.threads.findFirst({
+                  where: (f, { eq: eqFn }) => eqFn(f.id, input.threadId),
+               }),
+            catch: () =>
+               new AgentThreadError({
+                  error: threadErrors.THREAD_LOOKUP_FAILED({
+                     internal: { threadId: input.threadId },
+                  }),
+                  message: threadErrors.THREAD_LOOKUP_FAILED({
+                     internal: { threadId: input.threadId },
+                  }).message,
+                  threadId: input.threadId,
+               }),
+         }),
+      );
+      if (
+         !thread ||
+         thread.teamId !== context.teamId ||
+         thread.organizationId !== context.organizationId ||
+         thread.userId !== context.userId
+      ) {
+         yield* new AgentThreadError({
+            error: threadErrors.THREAD_NOT_FOUND({
+               internal: { threadId: input.threadId },
+            }),
+            message: threadErrors.THREAD_NOT_FOUND({
+               internal: { threadId: input.threadId },
+            }).message,
+            threadId: input.threadId,
+         });
+      }
+
+      log.info({
+         module: "agents.chat",
+         message: "agent chat send start",
+         userId: context.userId,
+         threadId: input.threadId,
+      });
+
+      const history = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               prepareAgUiChatHistoryWithThreadAdvisoryLock(context, params),
+            catch: () =>
+               new AgentThreadError({
+                  error: threadErrors.CHAT_HISTORY_LOAD_FAILED({
+                     internal: { threadId: input.threadId },
+                  }),
+                  message: threadErrors.CHAT_HISTORY_LOAD_FAILED({
+                     internal: { threadId: input.threadId },
+                  }).message,
+                  threadId: input.threadId,
+               }),
+         }),
+      );
+      const settings = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               context.db.query.agentSettings.findFirst({
+                  where: (f, { eq: eqFn }) => eqFn(f.teamId, context.teamId),
+               }),
+            catch: () =>
+               new AgentThreadError({
+                  error: threadErrors.CHAT_SETTINGS_LOAD_FAILED({
+                     internal: { threadId: input.threadId },
+                  }),
+                  message: threadErrors.CHAT_SETTINGS_LOAD_FAILED({
+                     internal: { threadId: input.threadId },
+                  }).message,
+                  threadId: input.threadId,
+               }),
+         }),
+      );
+      const chatSettings = chatSettingsSchema.parse(settings);
+      const abortController = new AbortController();
+      signal?.addEventListener("abort", () => abortController.abort(), {
+         once: true,
+      });
+      const stream = yield* Result.await(
+         Result.tryPromise({
+            try: () =>
+               createAgentChat({
+                  prompts: context.posthogPrompts,
+                  userId: context.userId,
+                  organizationId: context.organizationId,
+                  teamId: context.teamId,
+                  headers: context.headers,
+                  request: context.request,
+                  threadId: params.threadId,
+                  runId: params.runId,
+                  messages: history,
+                  pageContext: forwardedProps.pageContext,
+                  reasoningEffort: chatSettings.reasoningEffort,
+                  abortSignal: abortController.signal,
+                  extraMiddleware: createAgentRuntimeMiddlewares({
+                     db: context.db,
+                     pgBoss: context.pgBoss,
+                     threadId: params.threadId,
+                     teamId: context.teamId,
+                     organizationId: context.organizationId,
+                     history,
+                  }),
+               }),
+            catch: () =>
+               new AgentThreadError({
+                  error: threadErrors.CHAT_STREAM_CREATE_FAILED({
+                     internal: { threadId: input.threadId },
+                  }),
+                  message: threadErrors.CHAT_STREAM_CREATE_FAILED({
+                     internal: { threadId: input.threadId },
+                  }).message,
+                  threadId: input.threadId,
+               }),
+         }),
+      );
+
+      return Result.ok(stream);
+   });
+   if (Result.isError(result)) throw result.error;
+   return result.value;
 }
 
 export const chat = protectedProcedure

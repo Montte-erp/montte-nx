@@ -12,7 +12,12 @@ import { useState } from "react";
 import { cn } from "@packages/ui/lib/utils";
 import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
-import { SCOPES, selectScope, useSelectedScope } from "./chat-store";
+import {
+   SCOPES,
+   selectScope,
+   useMontteSuggestions,
+   useSelectedScope,
+} from "./chat-store";
 
 type Effort = "high" | "xhigh";
 
@@ -35,26 +40,31 @@ export function Composer({
    className,
    placeholder = "Faça uma pergunta ou / para comandos",
 }: ComposerProps) {
+   const suggestions = useMontteSuggestions();
+
    return (
       <div className={cn("flex flex-col gap-2", className)}>
-         <ThreadPrimitive.Suggestions>
-            {({ suggestion }) => (
-               <ThreadPrimitive.Suggestion
-                  asChild
-                  prompt={suggestion.prompt}
-                  send
-               >
-                  <Button
-                     className="h-auto whitespace-normal rounded-full border-dashed p-2 text-left text-xs"
-                     size="sm"
-                     type="button"
-                     variant="outline"
+         {suggestions.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+               {suggestions.map((prompt) => (
+                  <ThreadPrimitive.Suggestion
+                     asChild
+                     key={prompt}
+                     prompt={prompt}
+                     send
                   >
-                     {suggestion.prompt}
-                  </Button>
-               </ThreadPrimitive.Suggestion>
-            )}
-         </ThreadPrimitive.Suggestions>
+                     <Button
+                        className="h-auto whitespace-normal rounded-full border-dashed p-2 text-left text-xs"
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                     >
+                        {prompt}
+                     </Button>
+                  </ThreadPrimitive.Suggestion>
+               ))}
+            </div>
+         ) : null}
 
          <ComposerPrimitive.Root className="w-full rounded-lg border bg-background/95 shadow-sm">
             <ComposerPrimitive.Input

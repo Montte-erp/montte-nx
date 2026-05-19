@@ -58,8 +58,10 @@ function ChatLayoutDesktop({ children }: ChatLayoutProps) {
             </Sidebar>
          </SidebarManager>
          <SidebarInset className="flex-1 overflow-hidden">
-            <main className="flex h-full justify-center">
-               <RouteTransition>{children}</RouteTransition>
+            <main className="flex h-full px-4 py-2">
+               <div className="mx-auto flex h-full w-full max-w-5xl">
+                  <RouteTransition>{children}</RouteTransition>
+               </div>
             </main>
          </SidebarInset>
       </SidebarProvider>
