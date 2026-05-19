@@ -26,6 +26,7 @@
       "@types/react-dom": "catalog:react",
       "astro": "catalog:astro",
       "astro-og-canvas": "catalog:astro",
+      "better-result": "catalog:validation",
       "dayjs": "catalog:ui",
       "foxact": "catalog:ui",
       "motion": "catalog:ui",

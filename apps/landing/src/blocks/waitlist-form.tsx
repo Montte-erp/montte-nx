@@ -20,7 +20,7 @@ import { z } from "zod";
 const STORAGE_KEY = "montte:waitlist:email";
 
 const waitlistSchema = z.object({
-   email: z.email("E-mail inválido."),
+   email: z.email("Informe um e-mail válido."),
 });
 
 export function WaitlistForm() {
@@ -32,16 +32,49 @@ export function WaitlistForm() {
    const form = useForm({
       defaultValues: { email: "" },
       validators: { onSubmit: waitlistSchema },
-      onSubmit: ({ value }) => {
+      onSubmit: async ({ value }: { value: { email: string } }) => {
          const email = value.email.trim().toLowerCase();
-         const ph = window.posthog;
+         try {
+            const response = await fetch("/api/waitlist", {
+               method: "POST",
+               headers: {
+                  "content-type": "application/json",
+               },
+               body: JSON.stringify({ email }),
+            });
 
-         if (ph?.__loaded) {
-            ph.identify(email, { email, waitlist_source: "landing" });
-            ph.capture("waitlist", { email, source: "landing" });
+            const payload = await response
+               .json()
+               .catch(() => ({
+                  ok: false,
+                  message: "Não foi possível registrar agora.",
+               }));
+
+            if (!response.ok || payload.ok === false) {
+               form.setFieldMeta("email", (previous) => ({
+                  ...previous,
+                  errors: [
+                     payload.message ??
+                        "Não foi possível registrar seu e-mail.",
+                  ],
+               }));
+               return;
+            }
+
+            form.setFieldMeta("email", (previous) => ({
+               ...previous,
+               errors: [],
+            }));
+
+            setStoredEmail(payload.email ?? email);
+         } catch {
+            form.setFieldMeta("email", (previous) => ({
+               ...previous,
+               errors: [
+                  "Não foi possível registrar seu e-mail. Tente novamente.",
+               ],
+            }));
          }
-
-         setStoredEmail(email);
       },
    });
 
