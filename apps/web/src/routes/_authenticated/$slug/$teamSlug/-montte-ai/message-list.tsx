@@ -10,7 +10,6 @@ import {
 } from "@assistant-ui/react";
 import { StreamdownTextPrimitive } from "@assistant-ui/react-streamdown";
 import { Button } from "@packages/ui/components/button";
-import { ScrollBar } from "@packages/ui/components/scroll-area";
 import { cn } from "@packages/ui/lib/utils";
 import {
    ArrowDown,
@@ -22,9 +21,7 @@ import {
    ThumbsDown,
    ThumbsUp,
    Trash2,
-   Wrench,
 } from "lucide-react";
-import { ScrollArea as ScrollAreaPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 import { z } from "zod";
 import { EditComposer } from "./composer";
@@ -88,22 +85,9 @@ interface ThreadFrameProps {
 
 export function ThreadFrame({ children }: ThreadFrameProps) {
    return (
-      <ScrollAreaPrimitive.Root asChild>
-         <ThreadPrimitive.Root className="aui-root relative flex min-h-0 flex-1 flex-col overflow-hidden">
-            <ScrollAreaPrimitive.Viewport asChild>
-               <ThreadPrimitive.Viewport
-                  autoScroll
-                  className="flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth"
-                  scrollToBottomOnRunStart
-                  turnAnchor="top"
-               >
-                  <div className="flex min-h-full flex-col p-4">{children}</div>
-               </ThreadPrimitive.Viewport>
-            </ScrollAreaPrimitive.Viewport>
-            <ScrollBar />
-            <ScrollAreaPrimitive.Corner />
-         </ThreadPrimitive.Root>
-      </ScrollAreaPrimitive.Root>
+      <ThreadPrimitive.Root className="aui-root aui-thread-root relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+         {children}
+      </ThreadPrimitive.Root>
    );
 }
 
@@ -118,37 +102,45 @@ export function Thread({
 }) {
    return (
       <ThreadFrame>
-         <AuiIf condition={(s) => s.thread.isEmpty}>
-            <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-6">
-               {empty}
-               <div className="w-full max-w-3xl">{children}</div>
-            </div>
-         </AuiIf>
-         <AuiIf condition={(s) => !s.thread.isEmpty}>
-            <div className="flex min-h-full flex-1 flex-col gap-4">
-               <div className="flex flex-col gap-4">
-                  <ThreadPrimitive.Messages>
-                     {() => <ThreadMessage compact={compact} />}
-                  </ThreadPrimitive.Messages>
-               </div>
-               <ThinkingIndicator />
+         <ThreadPrimitive.Viewport
+            autoScroll
+            className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-scroll scroll-smooth"
+            scrollToBottomOnRunStart
+            turnAnchor="top"
+         >
+            <div className="mx-auto flex min-h-full w-full max-w-5xl flex-1 flex-col p-4">
+               <AuiIf condition={(s) => s.thread.isEmpty}>
+                  <div className="flex grow flex-col items-center justify-center gap-6 p-4">
+                     {empty}
+                  </div>
+               </AuiIf>
+               <AuiIf condition={(s) => !s.thread.isEmpty}>
+                  <div className="flex flex-col gap-4 empty:hidden">
+                     <ThreadPrimitive.Messages>
+                        {() => <ThreadMessage compact={compact} />}
+                     </ThreadPrimitive.Messages>
+                     <ThinkingIndicator />
+                  </div>
+               </AuiIf>
                <div className="flex-1" />
-               <ThreadPrimitive.ViewportFooter className="sticky bottom-0 flex flex-col gap-2 bg-background/95 pb-4">
-                  <ThreadPrimitive.ScrollToBottom asChild>
-                     <Button
-                        aria-label="Ir para o final"
-                        className="self-center rounded-full"
-                        size="icon"
-                        type="button"
-                        variant="outline"
-                     >
-                        <ArrowDownIcon />
-                     </Button>
-                  </ThreadPrimitive.ScrollToBottom>
+               <ThreadPrimitive.ViewportFooter className="sticky bottom-0 z-10 flex flex-col gap-2 bg-transparent pb-4">
+                  <AuiIf condition={(s) => !s.thread.isEmpty}>
+                     <ThreadPrimitive.ScrollToBottom asChild>
+                        <Button
+                           aria-label="Ir para o final"
+                           className="self-center rounded-full"
+                           size="icon"
+                           type="button"
+                           variant="outline"
+                        >
+                           <ArrowDownIcon />
+                        </Button>
+                     </ThreadPrimitive.ScrollToBottom>
+                  </AuiIf>
                   {children}
                </ThreadPrimitive.ViewportFooter>
             </div>
-         </AuiIf>
+         </ThreadPrimitive.Viewport>
       </ThreadFrame>
    );
 }
@@ -320,7 +312,7 @@ function ToolPart({
    const label = TOOL_LABELS[part.toolName] ?? "Executando ferramenta";
 
    return (
-      <div className="flex w-full flex-col gap-2 rounded-lg p-2 text-muted-foreground hover:bg-muted/30 hover:text-foreground">
+      <div className="flex w-full flex-col gap-2 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground">
          <div className="flex min-w-0 items-center gap-2">
             <span
                className={cn(
@@ -337,11 +329,13 @@ function ToolPart({
                ) : completed ? (
                   <Check className="size-2" />
                ) : (
-                  <Wrench className="size-2" />
+                  <Loader2 className="size-2 animate-spin" />
                )}
             </span>
-            <Wrench className="size-4 shrink-0" />
-            <span className="truncate">{label}</span>
+            <span className="min-w-0 flex-1 truncate">{label}</span>
+            <span className="shrink-0 text-xs">
+               {running ? "Em andamento" : completed ? "Concluída" : "Na fila"}
+            </span>
          </div>
          {needsDecision ? (
             <div className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-2">

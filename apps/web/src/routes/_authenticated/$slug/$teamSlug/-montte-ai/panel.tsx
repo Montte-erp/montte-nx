@@ -28,7 +28,6 @@ import {
 import { Composer } from "./composer";
 import { EmptyState } from "./empty-state";
 import { Thread } from "./message-list";
-import { ThreadList } from "./thread-list";
 
 interface AgentPanelProps {
    onMinimize?: () => void;
@@ -133,15 +132,10 @@ function AgentPanelContent({ onMinimize, onClose }: AgentPanelProps) {
          </ContextPanelHeader>
 
          <ContextPanelContent className="overflow-hidden">
-            <div className="grid min-h-0 flex-1 grid-cols-[150px_1fr] gap-2">
-               <div className="min-h-0 border-r pr-2">
-                  <ThreadList />
-               </div>
-               <div className="flex min-h-0 flex-1 flex-col">
-                  <Thread compact empty={<EmptyState variant="panel" />}>
-                     <Composer />
-                  </Thread>
-               </div>
+            <div className="flex min-h-0 flex-1 flex-col">
+               <Thread compact empty={<EmptyState variant="panel" />}>
+                  <Composer />
+               </Thread>
             </div>
          </ContextPanelContent>
       </ContextPanel>

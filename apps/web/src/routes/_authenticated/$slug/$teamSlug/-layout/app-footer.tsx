@@ -14,6 +14,11 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+} from "@packages/ui/components/popover";
+import {
    ExternalLink,
    HelpCircle,
    History,
@@ -26,6 +31,7 @@ import { LogoDevAttribution } from "@/components/logo-dev-attribution";
 import { useSurveyModal } from "@/hooks/use-survey-modal";
 import { useCurrentRemoteThreadId } from "../-montte-ai/chat-runtime";
 import { AgentPanel } from "../-montte-ai/panel";
+import { ThreadList } from "../-montte-ai/thread-list";
 import { openKeyboardShortcuts } from "./keyboard-shortcuts-sheet";
 
 function HelpMenu() {
@@ -86,22 +92,42 @@ function HelpMenu() {
    );
 }
 
-function HistoryButton({ onOpen }: { onOpen: () => void }) {
+function HistoryButton({ onSelectThread }: { onSelectThread: () => void }) {
+   const [open, setOpen] = useState(false);
+
    return (
-      <Tooltip>
-         <TooltipTrigger asChild>
-            <Button
-               aria-label="Histórico de conversas"
-               className="size-7"
-               onClick={onOpen}
-               size="icon"
-               variant="ghost"
-            >
-               <History className="size-4" />
-            </Button>
-         </TooltipTrigger>
-         <TooltipContent side="top">Conversas recentes</TooltipContent>
-      </Tooltip>
+      <Popover onOpenChange={setOpen} open={open}>
+         <Tooltip>
+            <TooltipTrigger asChild>
+               <PopoverTrigger asChild>
+                  <Button
+                     aria-label="Histórico de conversas"
+                     className="size-7"
+                     size="icon"
+                     variant="ghost"
+                  >
+                     <History className="size-4" />
+                  </Button>
+               </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="top">Conversas recentes</TooltipContent>
+         </Tooltip>
+         <PopoverContent
+            align="end"
+            className="flex h-80 w-64 flex-col overflow-hidden p-2"
+            side="top"
+            sideOffset={8}
+         >
+            <ThreadList
+               onSelectThread={() => {
+                  setOpen(false);
+                  onSelectThread();
+               }}
+               showActions={false}
+               showNew={false}
+            />
+         </PopoverContent>
+      </Popover>
    );
 }
 
@@ -148,7 +174,7 @@ function MontteAITrigger() {
                </Activity>
             </AssistantModalPrimitive.Content>
          </AssistantModalPrimitive.Root>
-         <HistoryButton onOpen={() => setOpen(true)} />
+         <HistoryButton onSelectThread={() => setOpen(true)} />
          <HelpMenu />
       </div>
    );

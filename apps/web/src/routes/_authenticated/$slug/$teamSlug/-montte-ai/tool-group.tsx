@@ -36,7 +36,7 @@ export function ToolGroupRoot({
    return (
       <Collapsible
          className={cn(
-            "group/tool-group w-full rounded-lg border p-2",
+            "group/tool-group w-full rounded-lg border bg-muted/10 p-2",
             className,
          )}
          onOpenChange={handleOpenChange}
@@ -58,11 +58,14 @@ export function ToolGroupTrigger({
    count,
 }: ToolGroupTriggerProps) {
    const label = `${count} ${count === 1 ? "ferramenta" : "ferramentas"}`;
+   const stateLabel = active ? "executando" : "concluídas";
 
    return (
       <CollapsibleTrigger className="flex w-full items-center gap-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground">
          {active ? <Loader2 className="size-4 shrink-0 animate-spin" /> : null}
-         <span className="flex-1 font-medium">{label}</span>
+         <span className="flex-1 font-medium">
+            {label} {stateLabel}
+         </span>
          <ChevronDown className="size-4 shrink-0 transition-transform group-data-[state=closed]/tool-group:-rotate-90" />
       </CollapsibleTrigger>
    );

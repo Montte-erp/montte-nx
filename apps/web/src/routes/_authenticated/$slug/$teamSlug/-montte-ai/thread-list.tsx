@@ -27,30 +27,47 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-export function ThreadList() {
+interface ThreadListProps {
+   onSelectThread?: () => void;
+   showActions?: boolean;
+   showNew?: boolean;
+}
+
+export function ThreadList({
+   onSelectThread,
+   showActions = true,
+   showNew = true,
+}: ThreadListProps = {}) {
    const isRunning = useAuiState((s) => s.thread.isRunning);
    const threadCount = useAuiState((s) => s.threads.threadIds.length);
    const loading = useAuiState((s) => s.threads.isLoading);
 
    return (
-      <ThreadListPrimitive.Root className="aui-root flex min-h-0 flex-col gap-2">
-         <ThreadListPrimitive.New asChild>
-            <Button
-               className="h-8 justify-start gap-2 px-2 text-xs"
-               disabled={isRunning}
-               size="sm"
-               type="button"
-               variant="outline"
-            >
-               <Plus className="size-4" />
-               Nova conversa
-            </Button>
-         </ThreadListPrimitive.New>
+      <ThreadListPrimitive.Root className="aui-root flex min-h-0 flex-col gap-2 p-2">
+         {showNew ? (
+            <ThreadListPrimitive.New asChild>
+               <Button
+                  className="h-8 w-full justify-start gap-2 px-2 text-xs"
+                  disabled={isRunning}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+               >
+                  <Plus className="size-4" />
+                  Nova conversa
+               </Button>
+            </ThreadListPrimitive.New>
+         ) : null}
          {loading && threadCount === 0 ? <ThreadListSkeleton /> : null}
          <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
             <ThreadListPrimitive.Items>
                {({ threadListItem }) =>
-                  threadListItem.remoteId ? <ThreadListItem /> : null
+                  threadListItem.remoteId ? (
+                     <ThreadListItem
+                        onSelect={onSelectThread}
+                        showActions={showActions}
+                     />
+                  ) : null
                }
             </ThreadListPrimitive.Items>
          </div>
@@ -58,7 +75,13 @@ export function ThreadList() {
    );
 }
 
-function ThreadListItem() {
+function ThreadListItem({
+   onSelect,
+   showActions,
+}: {
+   onSelect?: () => void;
+   showActions: boolean;
+}) {
    const aui = useAui();
    const title = useAuiState((s) => s.threadListItem.title);
    const [renameOpen, setRenameOpen] = useState(false);
@@ -75,7 +98,8 @@ function ThreadListItem() {
       <ThreadListItemPrimitive.Root className="group/thread flex items-center gap-2 rounded-md data-[active=true]:bg-accent">
          <ThreadListItemPrimitive.Trigger asChild>
             <Button
-               className="h-auto min-w-0 flex-1 justify-start gap-2 p-2 text-left text-xs"
+               className="h-8 min-w-0 flex-1 justify-start gap-2 px-2 text-left text-xs"
+               onClick={onSelect}
                type="button"
                variant="ghost"
             >
@@ -85,70 +109,72 @@ function ThreadListItem() {
                </span>
             </Button>
          </ThreadListItemPrimitive.Trigger>
-         <Popover onOpenChange={setRenameOpen} open={renameOpen}>
-            <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                  <Button
-                     aria-label="Ações da conversa"
-                     className="h-8 w-8 shrink-0 opacity-0 group-hover/thread:opacity-100 data-[state=open]:opacity-100"
-                     size="icon"
-                     type="button"
-                     variant="ghost"
-                  >
-                     <MoreHorizontal className="size-4" />
-                  </Button>
-               </DropdownMenuTrigger>
-               <DropdownMenuContent align="end">
-                  <PopoverTrigger asChild>
-                     <DropdownMenuItem
-                        onSelect={(event) => {
-                           event.preventDefault();
-                           setNextTitle(title ?? "");
-                           setRenameOpen(true);
-                        }}
-                     >
-                        <Pencil className="size-4" />
-                        Renomear
-                     </DropdownMenuItem>
-                  </PopoverTrigger>
-                  <ThreadListItemPrimitive.Delete asChild>
-                     <DropdownMenuItem className="text-destructive focus:text-destructive">
-                        <Trash2 className="size-4" />
-                        Excluir
-                     </DropdownMenuItem>
-                  </ThreadListItemPrimitive.Delete>
-               </DropdownMenuContent>
-            </DropdownMenu>
-            <PopoverContent align="end" className="w-64 p-4">
-               <form
-                  className="flex flex-col gap-4"
-                  onSubmit={(event) => {
-                     event.preventDefault();
-                     void rename();
-                  }}
-               >
-                  <Input
-                     autoFocus
-                     onChange={(event) => setNextTitle(event.target.value)}
-                     placeholder="Título da conversa"
-                     value={nextTitle}
-                  />
-                  <div className="flex justify-end gap-2">
+         {showActions ? (
+            <Popover onOpenChange={setRenameOpen} open={renameOpen}>
+               <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                      <Button
-                        onClick={() => setRenameOpen(false)}
-                        size="sm"
+                        aria-label="Ações da conversa"
+                        className="h-8 w-8 shrink-0 opacity-0 group-hover/thread:opacity-100 data-[state=open]:opacity-100"
+                        size="icon"
                         type="button"
                         variant="ghost"
                      >
-                        Cancelar
+                        <MoreHorizontal className="size-4" />
                      </Button>
-                     <Button size="sm" type="submit">
-                        Salvar
-                     </Button>
-                  </div>
-               </form>
-            </PopoverContent>
-         </Popover>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                     <PopoverTrigger asChild>
+                        <DropdownMenuItem
+                           onSelect={(event) => {
+                              event.preventDefault();
+                              setNextTitle(title ?? "");
+                              setRenameOpen(true);
+                           }}
+                        >
+                           <Pencil className="size-4" />
+                           Renomear
+                        </DropdownMenuItem>
+                     </PopoverTrigger>
+                     <ThreadListItemPrimitive.Delete asChild>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                           <Trash2 className="size-4" />
+                           Excluir
+                        </DropdownMenuItem>
+                     </ThreadListItemPrimitive.Delete>
+                  </DropdownMenuContent>
+               </DropdownMenu>
+               <PopoverContent align="end" className="w-64 p-4">
+                  <form
+                     className="flex flex-col gap-4"
+                     onSubmit={(event) => {
+                        event.preventDefault();
+                        void rename();
+                     }}
+                  >
+                     <Input
+                        autoFocus
+                        onChange={(event) => setNextTitle(event.target.value)}
+                        placeholder="Título da conversa"
+                        value={nextTitle}
+                     />
+                     <div className="flex justify-end gap-2">
+                        <Button
+                           onClick={() => setRenameOpen(false)}
+                           size="sm"
+                           type="button"
+                           variant="ghost"
+                        >
+                           Cancelar
+                        </Button>
+                        <Button size="sm" type="submit">
+                           Salvar
+                        </Button>
+                     </div>
+                  </form>
+               </PopoverContent>
+            </Popover>
+         ) : null}
       </ThreadListItemPrimitive.Root>
    );
 }

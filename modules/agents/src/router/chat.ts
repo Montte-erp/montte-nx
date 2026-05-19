@@ -3,7 +3,7 @@ import { and, asc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import dayjs from "dayjs";
 import { defineErrorCatalog } from "evlog";
 import { Result, TaggedError } from "better-result";
-import type { UIMessage } from "@tanstack/ai";
+import type { ModelMessage, StreamChunk, UIMessage } from "@tanstack/ai";
 import { z } from "zod";
 import {
    messagePageContextSchema,
@@ -235,10 +235,55 @@ export const chatInputSchema = z.object({
 export type ChatInput = z.infer<typeof chatInputSchema>;
 
 interface AgUiChatParams {
-   messages: unknown[];
+   messages: Array<UIMessage | ModelMessage>;
    threadId: string;
    runId: string;
    forwardedProps: Record<string, unknown>;
+}
+
+async function* strictAgUiLifecycleStream(
+   stream: AsyncIterable<StreamChunk>,
+): AsyncGenerator<StreamChunk> {
+   const activeToolCalls = new Set<string>();
+   const completedToolCalls = new Set<string>();
+   let terminalChunk: StreamChunk | undefined;
+   let runStarted = false;
+
+   for await (const chunk of stream) {
+      if (chunk.type === "RUN_STARTED") {
+         if (runStarted) continue;
+         runStarted = true;
+         yield chunk;
+         continue;
+      }
+
+      if (chunk.type === "RUN_FINISHED" || chunk.type === "RUN_ERROR") {
+         terminalChunk = chunk;
+         continue;
+      }
+
+      if (chunk.type === "TOOL_CALL_START") {
+         activeToolCalls.add(chunk.toolCallId);
+         completedToolCalls.delete(chunk.toolCallId);
+         yield chunk;
+         continue;
+      }
+
+      if (chunk.type === "TOOL_CALL_END") {
+         if (!activeToolCalls.has(chunk.toolCallId)) {
+            continue;
+         } else {
+            activeToolCalls.delete(chunk.toolCallId);
+         }
+         completedToolCalls.add(chunk.toolCallId);
+         yield chunk;
+         continue;
+      }
+
+      yield chunk;
+   }
+
+   if (terminalChunk) yield terminalChunk;
 }
 
 const threadIdInputSchema = z.object({ threadId: threadSchema.shape.id });
@@ -1124,7 +1169,7 @@ export async function createAgUiThreadChatStream(options: {
          }),
       );
 
-      return Result.ok(stream);
+      return Result.ok(strictAgUiLifecycleStream(stream));
    });
    if (Result.isError(result)) throw result.error;
    return result.value;

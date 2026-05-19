@@ -33,7 +33,7 @@ function ChatIndexPage() {
    }, [activeThreadId, isRunning, slug, teamSlug, navigate]);
 
    return (
-      <div className="mx-auto flex h-[calc(100%-2rem)] w-full max-w-5xl flex-col gap-4">
+      <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4">
          <Thread empty={<EmptyState variant="page" />}>
             <Composer />
          </Thread>
