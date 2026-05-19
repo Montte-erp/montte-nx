@@ -40,42 +40,52 @@ export function WaitlistForm() {
       validators: { onSubmit: waitlistSchema },
       onSubmit: async ({ value }: { value: { email: string } }) => {
          const email = value.email.trim().toLowerCase();
-         const response = await fetch("/api/waitlist", {
-            method: "POST",
-            headers: {
-               "content-type": "application/json",
-            },
-            body: JSON.stringify({ email }),
-         });
 
-         const parsedPayload: unknown = await response.json();
-         const parseResult = waitlistResponseSchema.safeParse(parsedPayload);
+         try {
+            const response = await fetch("/api/waitlist", {
+               method: "POST",
+               headers: {
+                  "content-type": "application/json",
+               },
+               body: JSON.stringify({ email }),
+            });
 
-         if (!parseResult.success) {
+            const parsedPayload: unknown = await response.json();
+            const parseResult = waitlistResponseSchema.safeParse(parsedPayload);
+            if (!parseResult.success) {
+               form.setFieldMeta("email", (previous) => ({
+                  ...previous,
+                  errors: ["Não foi possível registrar seu e-mail."],
+               }));
+               return;
+            }
+
+            const payload = parseResult.data;
+            if (!response.ok || payload.ok === false) {
+               form.setFieldMeta("email", (previous) => ({
+                  ...previous,
+                  errors: [
+                     payload.message ??
+                        "Não foi possível registrar seu e-mail.",
+                  ],
+               }));
+               return;
+            }
+
             form.setFieldMeta("email", (previous) => ({
                ...previous,
-               errors: ["Não foi possível registrar seu e-mail."],
+               errors: [],
             }));
-            return;
-         }
 
-         const payload = parseResult.data;
-         if (!response.ok || payload.ok === false) {
+            setStoredEmail(payload.email ?? email);
+         } catch {
             form.setFieldMeta("email", (previous) => ({
                ...previous,
                errors: [
-                  payload.message ?? "Não foi possível registrar seu e-mail.",
+                  "Não foi possível registrar seu e-mail. Tente novamente.",
                ],
             }));
-            return;
          }
-
-         form.setFieldMeta("email", (previous) => ({
-            ...previous,
-            errors: [],
-         }));
-
-         setStoredEmail(payload.email ?? email);
       },
    });
 

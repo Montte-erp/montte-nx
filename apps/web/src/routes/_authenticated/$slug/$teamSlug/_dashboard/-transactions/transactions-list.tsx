@@ -493,7 +493,7 @@ export function TransactionsList() {
 
    const handleReactivate = useCallback(
       (tx: TransactionRow) => {
-         reactivateMutation.mutate({ id: tx.id, paid: false });
+         reactivateMutation.mutate({ id: tx.id });
       },
       [reactivateMutation],
    );

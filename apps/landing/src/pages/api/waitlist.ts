@@ -8,7 +8,11 @@ import { z } from "zod";
 export const prerender = false;
 
 const waitlistSchema = z.object({
-   email: z.email("Informe um e-mail válido."),
+   email: z.preprocess(
+      (value) =>
+         typeof value === "string" ? value.trim().toLowerCase() : value,
+      z.email("Informe um e-mail válido."),
+   ),
 });
 
 type WaitlistPayload = z.output<typeof waitlistSchema>;
@@ -166,10 +170,7 @@ function parsePayload(
       );
    }
 
-   return Result.ok({
-      ...payload.data,
-      email: payload.data.email.toLowerCase().trim(),
-   });
+   return Result.ok(payload.data);
 }
 
 async function readRequestBody(
@@ -311,34 +312,42 @@ async function captureWaitlistLead(
 
    const result = await Result.tryPromise({
       try: async () => {
-         const response = await fetch(
-            `${posthogHost.replace(/\/$/, "")}/capture/`,
-            {
-               method: "POST",
-               headers: {
-                  "content-type": "application/json",
-               },
-               body: JSON.stringify({
-                  api_key: posthogApiKey,
-                  event: "waitlist",
-                  distinct_id: email,
-                  properties: {
-                     email,
-                     source,
-                     waitlist_source: "landing",
+         const controller = new AbortController();
+         const timeout = setTimeout(() => controller.abort(), 2_000);
+
+         try {
+            const response = await fetch(
+               `${posthogHost.replace(/\/$/, "")}/capture/`,
+               {
+                  method: "POST",
+                  headers: {
+                     "content-type": "application/json",
                   },
-                  timestamp: dayjs().toISOString(),
-                  ip: getClientIp(context) ?? undefined,
-               }),
-            },
-         );
+                  signal: controller.signal,
+                  body: JSON.stringify({
+                     api_key: posthogApiKey,
+                     event: "waitlist",
+                     distinct_id: email,
+                     properties: {
+                        email,
+                        source,
+                        waitlist_source: "landing",
+                     },
+                     timestamp: dayjs().toISOString(),
+                     ip: getClientIp(context) ?? undefined,
+                  }),
+               },
+            );
 
-         if (!response.ok) {
-            const details = await response.text().catch(() => "");
-            throw new Error(`${response.status} ${details.slice(0, 80)}`);
+            if (!response.ok) {
+               const details = await response.text().catch(() => "");
+               throw new Error(`${response.status} ${details.slice(0, 80)}`);
+            }
+
+            return undefined;
+         } finally {
+            clearTimeout(timeout);
          }
-
-         return undefined;
       },
       catch: () =>
          new WaitlistRouteError({
