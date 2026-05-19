@@ -1,6 +1,6 @@
 ---
 title: "Removemos o CRM. Empurramos pro Twenty."
-description: "O Montte nunca foi ERP, mas mantinha um módulo de Contatos que dava essa impressão. Tiramos 3.081 linhas. Relacionamento vai pro Twenty quando a integração ficar pronta. O Customer está virando primitive de cobrança, no estilo Autumn e Polar. O destino é runtime de billing brasileiro."
+description: "O Montte tirou o módulo de Contatos do produto: 3.081 linhas em 37 arquivos. Relacionamento agora aponta pra fora, com a integração com o Twenty planejada como fronteira oficial. O Customer está virando primitive de cobrança, no espírito do Autumn e do Polar. O destino é runtime de billing brasileiro."
 publishedAt: 2026-05-18
 author: "Manoel Neto"
 tags: ["opiniao", "crm", "billing", "twenty"]
@@ -9,65 +9,63 @@ coverImage: "../../assets/blog/removemos-o-crm-cover.png"
 featured: false
 readingMinutes: 3
 keyTakeaways:
-  - "O módulo de Contatos saiu do Montte (3.081 linhas, 37 arquivos)."
-  - "O destino do relacionamento é o Twenty, que é open-source e nasceu pra isso. Integração no roadmap."
-  - "O Customer no Montte está virando primitive de cobrança, inspirado em Autumn e Polar."
-  - "Posição: o Montte é runtime de billing usage-based brasileiro, não ERP."
+   - "O módulo de Contatos saiu do produto: 3.081 linhas em 37 arquivos."
+   - "Relacionamento aponta pra fora. Integração com o Twenty está no roadmap como fronteira oficial."
+   - "O Customer no Montte está virando primitive de cobrança, inspirado em Autumn e Polar."
+   - "Posição: o Montte é runtime de billing usage-based brasileiro, não ERP."
 faq:
-  - question: "Por que o Montte não tem mais módulo de Contatos?"
-    answer: "Porque CRM dentro de produto que não é CRM é CRM ruim. A gente passou meses costurando properties panel, form sheet e ownership de contato achando que era diferencial. No fim, era cópia fraca de Pipedrive. Tiramos do produto e o destino do relacionamento é o Twenty."
-  - question: "A integração com o Twenty já está pronta?"
-    answer: "Ainda não. Está planejada como fronteira oficial do Montte, junto do PostHog. O escopo inicial é mapear o Customer do Montte pra Company ou Person do Twenty, sem trazer CRM de volta pra dentro."
-  - question: "Então o Montte virou o quê?"
-    answer: "Está virando runtime de billing usage-based brasileiro, no espírito do Autumn e do Polar. O Customer vai agregar assinaturas, uso, faturas e status de pagamento numa resposta só. Tem peça por construir, e a gente vai contando em público conforme entrega."
+   - question: "Por que o Montte não tem mais módulo de Contatos?"
+     answer: "Porque CRM dentro de produto que não é CRM acaba virando CRM pela metade. O lugar do relacionamento é em ferramenta dedicada. No Montte, o destino do Customer é cobrança, não pipeline."
+   - question: "A integração com o Twenty já está pronta?"
+     answer: "Ainda não. Está planejada como fronteira oficial do Montte, ao lado do PostHog. O escopo inicial é mapear o Customer do Montte para Company ou Person no Twenty, sem trazer CRM de volta pra dentro."
+   - question: "Então o Montte virou o quê?"
+     answer: "Runtime de billing usage-based brasileiro, no espírito do Autumn e do Polar. O Customer vai agregar assinaturas, uso, faturas e status de pagamento numa resposta só. Tem peça por construir, e a gente conta em público conforme entrega."
 ---
 
-Quase todo ERP brasileiro tem CRM nativo. O Montte nunca foi ERP, mas mantinha um módulo de Contatos por dentro. Era o tipo de coisa que dava margem pra confusão. Não está mais lá.
+O Montte tirou o módulo de Contatos do produto. Foram 3.081 linhas em 37 arquivos. O lugar do relacionamento agora é fora do Montte, com a integração com o Twenty planejada como fronteira oficial. Por dentro, o Customer está mudando de natureza: deixa de ser entidade de CRM e vira primitive de cobrança.
 
-A gente passou meses construindo properties panel, form sheet, ownership middleware e a aba de contatos dentro de transações. Era CRM lite. CRM lite é CRM ruim.
+## O que saiu
 
-## A tentação do CRM lite
+Saíram da superfície router de contatos, formulário, painel de propriedades, listagem, colunas, settings de contato, aba de contatos dentro de transações e o passo correspondente no onboarding. A coluna `contactId` em transações fica como resíduo de schema pra ser removida em seguida.
 
-Bling, Omie, Conta Azul e Tiny tratam relacionamento como parte do pacote. Faz sentido pra eles, é o jogo que jogam.
+A decisão é de produto, não de bug. O módulo funcionava. Não era o lugar certo pra ele viver.
 
-A gente olhou pro lado e seguiu o padrão por um tempo. A conta não fechou.
+## CRM dentro do Montte virou ruído
 
-Cada release puxava regra nova, migração, fila de suporte, mais tela pra revisar. O módulo crescia e nunca chegava num CRM de verdade. Pintou o dilema: dobrar a aposta e virar metade Pipedrive, ou aceitar que o lugar do relacionamento não era dentro do Montte.
+CRM dentro de produto que não é CRM acaba virando CRM pela metade. A cada ajuste em outra área, o módulo de Contatos puxava regra nova, migração, fila de suporte e mais tela pra revisar. Crescia, e nunca alcançava um Pipedrive de verdade.
 
-Aceitamos. Tiramos 3.081 linhas em 37 arquivos. Doeu menos do que devia.
+Levou alguns meses pra confirmar. A primeira aposta foi reforçar properties panel, form sheet e ownership middleware achando que esse seria um diferencial real. Não era. Tiramos.
 
-## O destino do relacionamento é o Twenty
+## Para onde o relacionamento vai
 
-[Twenty](https://twenty.com) é open-source, escrito em TypeScript, e foi desenhado pra ser CRM. Não pra ser apêndice de outro produto. Pessoas, empresas, oportunidades, pipeline, responsável comercial, tudo lá.
+A direção é [Twenty](https://twenty.com). Open-source, escrito em TypeScript, desenhado pra ser CRM e não apêndice. Pessoas, empresas, oportunidades, pipeline e responsável comercial vivem lá.
 
-A integração com o Twenty ainda não foi construída. Está planejada como fronteira oficial do Montte, ao lado do PostHog. Nada de marketplace de CRMs. Nada de "também temos pipeline aqui". Quando entrar, o Customer do Montte vai apontar pra Company ou Person do Twenty, e o que é CRM nunca volta pra dentro.
+A integração ainda não foi construída. Está planejada como fronteira oficial do Montte, ao lado do PostHog. Quando entrar, o Customer do Montte vai apontar pra Company ou Person no Twenty, e o que é CRM nunca volta pra dentro.
 
-A regra interna é curta: integrações oficiais são duas, PostHog e Twenty. O resto é adapter técnico.
+Integrações oficiais são duas: PostHog e Twenty. O resto entra como adapter técnico.
 
-## Customer está virando primitive de cobrança
+## O que o Customer está virando
 
-A parte que ficou no Montte está mudando de natureza. `Customer` deixa de ser entidade de CRM com endereço, telefone e histórico de visita. Vira primitive de billing, no estilo do [Autumn](https://useautumn.com) e do [Polar](https://polar.sh).
+A parte que ficou no Montte muda de natureza. O `Customer` deixa de ser entidade de CRM com endereço, telefone e histórico de visita. Vira primitive de cobrança, no espírito do [Autumn](https://useautumn.com) e do [Polar](https://polar.sh).
 
-O desenho que está sendo construído tem cinco verbos:
+O desenho do runtime tem cinco verbos planejados:
 
 - `customers.getOrCreate` no signup ou login.
-- `billing.attach` pra plugar plano ou produto.
+- `billing.attach` pra plugar plano ou produto no cliente.
 - `entitlements.check` pra liberar funcionalidade por contrato.
 - `usage.track` pra contar uso medido.
 - `customers.state` pra puxar tudo numa chamada.
 
-`customers.state` é a peça central planejada. A ideia é devolver assinaturas ativas, balances por meter, uso do período, faturas recentes, status de pagamento, próximo reset e URL do portal. Quem integrar renderiza uma billing page com uma query.
+`customers.state` é a peça central. Devolve assinaturas ativas, balances por meter, uso do período, faturas recentes, status de pagamento, próximo reset e URL do portal. Quem integrar renderiza uma página de billing com uma query.
 
-Esse é o desenho que faltava. CRM nunca foi.
+Essa é a forma do Customer que faltava. CRM nunca foi.
 
-## O destino é o Autumn brasileiro
+## Posição
 
-Em uma frase: o Montte é runtime de billing usage-based brasileiro. O gateway inicial vai ser o Abacate Pay, plugado como adapter de pagamento. Twenty fica como CRM oficial fora dele.
+O Montte é runtime de billing usage-based brasileiro. Twenty resolve CRM por fora. Quando o gateway entrar, vai ser via adapter de pagamento, começando pelo Abacate Pay.
 
-Concorrente real não é Bling, Omie ou Conta Azul. É Autumn, Polar e Stripe Billing. É o terreno onde queremos brigar, e onde ainda não existe opção brasileira nativa.
-
-ERP genérico, plataforma faz-tudo, "também temos CRM": passamos longe. Quem quer pipeline abre o Twenty. Quem precisa cobrar uso, recorrência ou plano gradeado, vai poder abrir o Montte.
+A referência de mercado deixa de ser Bling, Omie ou Conta Azul, que jogam o jogo de ERP completo. Passa a ser Autumn, Polar e Stripe Billing. É o terreno onde queremos competir, e onde ainda não existe opção brasileira nativa.
 
 ## O que vem por aí
 
-A waitlist do Montte Payments já está aberta. O próximo passo é publicar o SDK em fases. Se quiser entrar primeiro, [entra na fila em montte.com.br](https://montte.com.br/#waitlist).
+A waitlist do Montte Payments já está aberta. Entra em [montte.com.br](https://montte.com.br/#waitlist) e manda DM se quiser testar antes do SDK público.
