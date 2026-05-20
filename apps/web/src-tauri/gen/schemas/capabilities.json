@@ -1,0 +1,9 @@
+{
+   "default": {
+      "identifier": "default",
+      "description": "Permissoes minimas para a janela principal.",
+      "local": true,
+      "windows": ["main"],
+      "permissions": ["core:default"]
+   }
+}

@@ -47,6 +47,9 @@
             "typescript": "6.0.3",
             "babel-plugin-react-compiler": "^1.0.0"
          },
+         "desktop": {
+            "@tauri-apps/cli": "2.11.2"
+         },
          "dnd": {
             "@dnd-kit/core": "^6.3.1",
             "@dnd-kit/modifiers": "^9.0.0",
@@ -234,6 +237,7 @@
       "db:studio:local": "nx run core/database:db-studio-local",
       "db:studio:prod": "nx run core/database:db-studio-prod",
       "dev": "bun run scripts/dev-init.ts; nx run-many -t dev --parallel=3 -p web worker landing",
+      "dev:desktop": "bun run scripts/dev-init.ts; nx run-many -t desktop:dev --parallel=3 -p web worker landing",
       "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
       "setup": "bun run scripts/setup.ts",
       "dev:all": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=6",
@@ -259,6 +263,8 @@
       "test:coverage": "nx run-many -t test --parallel=3 -- --coverage",
       "typecheck": "nx run-many -t typecheck --parallel=8",
       "web:build": "nx run web:build",
+      "web:desktop:build": "nx run web:desktop:build",
+      "web:desktop:dev": "nx run web:desktop:dev",
       "web:start": "bun run --filter=web start",
       "worker:build": "nx run worker:build",
       "worker:start": "bun run --filter=worker start"

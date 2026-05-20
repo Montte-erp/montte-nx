@@ -6,6 +6,7 @@
       "build": "bun build src/index.ts --outdir dist --target bun --packages external",
       "start": "bun run dist/index.js",
       "dev": "dotenv -e ../web/.env.local -- bun run src/index.ts",
+      "desktop:dev": "bun run dev",
       "typecheck": "tsgo"
    },
    "dependencies": {
