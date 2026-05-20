@@ -144,6 +144,7 @@
         "@tanstack/router-plugin": "catalog:tanstack",
         "@tanstack/store": "catalog:tanstack",
         "better-auth": "catalog:auth",
+        "better-result": "catalog:validation",
         "browser-image-compression": "^2.0.2",
         "clsx": "catalog:ui",
         "color": "catalog:ui",

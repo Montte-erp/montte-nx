@@ -22,7 +22,6 @@ import {
    type ColumnDef,
    type SortingState,
 } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Result } from "better-result";
 import { Landmark, Plus, ReceiptText, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
@@ -78,6 +77,8 @@ const TYPE_LABELS: Record<(typeof TYPES)[number], string> = {
    payment: "Conta Pagamento",
    cash: "Caixa Físico",
 };
+
+const BANK_CODE_PATTERN = /^\d{1,3}$/;
 
 function normalizeImportLabel(raw: unknown): string {
    return String(raw ?? "")
@@ -353,25 +354,28 @@ function BankAccountsList() {
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
+         importColumns: [
+            { key: "bankCode", label: "Código do Banco" },
+            { key: "bankName", label: "Banco" },
+            { key: "branch", label: "Agência" },
+            { key: "accountNumber", label: "Conta" },
+         ],
          mapRow: (row, i) => ({
             id: `__import_${i + 1}`,
-            teamId: activeTeamId ?? "",
             name: String(row.name ?? "").trim(),
-            type: resolveType(row.type),
+            type: row.type,
             color: "#6366f1",
-            iconUrl: null,
-            bankCode: null,
-            bankName: null,
+            bankCode: String(row.bankCode ?? "").trim(),
+            bankName: String(row.bankName ?? "").trim(),
+            branch: String(row.branch ?? "").trim(),
+            accountNumber: String(row.accountNumber ?? "").trim(),
             initialBalance: String(row.initialBalance ?? "0"),
-            currentBalance: "0",
-            projectedBalance: "0",
-            createdAt: dayjs().toISOString(),
-            updatedAt: dayjs().toISOString(),
+            iconUrl: null,
          }),
          template: {
             label: "Baixar modelo",
             description:
-               "Inclui Nome, Tipo e Saldo Inicial. Use Tipo como Conta Corrente, Conta Poupança, Conta Investimento, Conta Pagamento ou Caixa Físico.",
+               "Inclui Nome, Tipo, Saldo Inicial, Código do Banco, Banco, Agência e Conta. Para tipos de conta fora do Caixa Físico, preencha Banco e Código do Banco.",
             formats: [
                {
                   filename: "modelo-contas-bancarias.csv",
@@ -383,19 +387,39 @@ function BankAccountsList() {
                               Nome: "Conta Corrente Principal",
                               Tipo: "Conta Corrente",
                               "Saldo Inicial": "1500.00",
+                              "Código do Banco": "341",
+                              Banco: "Itaú",
+                              Agência: "0001",
+                              Conta: "12345-6",
                            },
                            {
                               Nome: "Reserva de Emergência",
                               Tipo: "Conta Poupança",
                               "Saldo Inicial": "2500.00",
+                              "Código do Banco": "237",
+                              Banco: "Bradesco",
+                              Agência: "1203",
+                              Conta: "98765-4",
                            },
                            {
                               Nome: "Caixa da Loja",
                               Tipo: "Caixa Físico",
                               "Saldo Inicial": "300.00",
+                              "Código do Banco": "",
+                              Banco: "",
+                              Agência: "",
+                              Conta: "",
                            },
                         ],
-                        ["Nome", "Tipo", "Saldo Inicial"],
+                        [
+                           "Nome",
+                           "Tipo",
+                           "Saldo Inicial",
+                           "Código do Banco",
+                           "Banco",
+                           "Agência",
+                           "Conta",
+                        ],
                      ),
                },
                {
@@ -408,19 +432,39 @@ function BankAccountsList() {
                               Nome: "Conta Corrente Principal",
                               Tipo: "Conta Corrente",
                               "Saldo Inicial": "1500.00",
+                              "Código do Banco": "341",
+                              Banco: "Itaú",
+                              Agência: "0001",
+                              Conta: "12345-6",
                            },
                            {
                               Nome: "Reserva de Emergência",
                               Tipo: "Conta Poupança",
                               "Saldo Inicial": "2500.00",
+                              "Código do Banco": "237",
+                              Banco: "Bradesco",
+                              Agência: "1203",
+                              Conta: "98765-4",
                            },
                            {
                               Nome: "Caixa da Loja",
                               Tipo: "Caixa Físico",
                               "Saldo Inicial": "300.00",
+                              "Código do Banco": "",
+                              Banco: "",
+                              Agência: "",
+                              Conta: "",
                            },
                         ],
-                        ["Nome", "Tipo", "Saldo Inicial"],
+                        [
+                           "Nome",
+                           "Tipo",
+                           "Saldo Inicial",
+                           "Código do Banco",
+                           "Banco",
+                           "Agência",
+                           "Conta",
+                        ],
                      ),
                },
             ],
@@ -437,6 +481,37 @@ function BankAccountsList() {
                throw new Error("Time ativo não encontrado.");
             }
 
+            const normalizedRows = rows
+               .map((r) => {
+                  const type = resolveType(r.type);
+                  if (!type) return null;
+                  return {
+                     r,
+                     type,
+                     bankCode: String(r.bankCode ?? "").trim(),
+                     bankName: String(r.bankName ?? "").trim(),
+                     branch: String(r.branch ?? "").trim(),
+                     accountNumber: String(r.accountNumber ?? "").trim(),
+                  };
+               })
+               .filter((entry): entry is NonNullable<typeof entry> =>
+                  Boolean(entry),
+               );
+
+            const invalidBankCode = normalizedRows.some((entry) => {
+               if (entry.type === "cash") return false;
+               return (
+                  !entry.bankCode ||
+                  !BANK_CODE_PATTERN.test(entry.bankCode) ||
+                  !entry.bankName
+               );
+            });
+            if (invalidBankCode) {
+               throw new Error(
+                  "Para tipos sem Caixa Físico, preencha Banco e Código do Banco (1 a 3 dígitos).",
+               );
+            }
+
             const importedRows: Array<{
                row: BankAccountsCollectionRow;
                input: {
@@ -448,17 +523,24 @@ function BankAccountsList() {
                      | "payment"
                      | "cash";
                   color: string;
+                  bankCode: string | null;
+                  bankName: string | null;
+                  branch: string | null;
+                  accountNumber: string | null;
                   initialBalance: string;
                };
-            }> = rows
-               .map((r) => {
-                  const t = resolveType(r.type);
-                  if (!t) return null;
+            }> = normalizedRows
+               .map((entry) => {
+                  const isCash = entry.type === "cash";
                   const input = {
-                     name: String(r.name ?? "").trim(),
-                     type: t,
+                     name: String(entry.r.name ?? "").trim(),
+                     type: entry.type,
                      color: "#6366f1",
-                     initialBalance: String(r.initialBalance ?? "0"),
+                     bankCode: isCash ? null : entry.bankCode,
+                     bankName: isCash ? null : entry.bankName,
+                     branch: isCash ? null : entry.branch || null,
+                     accountNumber: isCash ? null : entry.accountNumber || null,
+                     initialBalance: String(entry.r.initialBalance ?? "0"),
                   };
                   return {
                      input,
