@@ -95,7 +95,9 @@ const categoriesSearchSchema = z.object({
    pageSize: z.number().int().min(1).max(100).catch(20).default(20),
 });
 
-function parseCategoryType(raw: unknown): "income" | "expense" | "transfer" {
+function parseCategoryType(
+   raw: unknown,
+): "income" | "expense" | "transfer" | undefined {
    const str = String(raw ?? "")
       .trim()
       .toLowerCase()
@@ -105,7 +107,7 @@ function parseCategoryType(raw: unknown): "income" | "expense" | "transfer" {
    if (str === "receita") return "income";
    if (str === "despesa") return "expense";
    if (str === "transferencia") return "transfer";
-   return "expense";
+   return undefined;
 }
 
 const skeletonColumns = buildCategoryColumns();
@@ -235,9 +237,10 @@ function CategoriesList() {
          createCollection(
             categoriesCollectionOptions({
                queryClient,
+               teamId: activeTeamId ?? "no-team",
             }),
          ),
-      [queryClient],
+      [activeTeamId, queryClient],
    );
 
    const hasSearch = search.trim().length > 0;
@@ -266,7 +269,19 @@ function CategoriesList() {
       [categoriesCollection, hasSearch, includeArchived, search, type],
    );
 
+   const { data: liveParentableCategories } = useLiveQuery(
+      (q) =>
+         q
+            .from({ category: categoriesCollection })
+            .where(({ category }) => eq(category.isArchived, false))
+            .select(({ category }) => category),
+      [categoriesCollection],
+   );
+
    const categories = removeConfirmedOptimisticDuplicates(liveCategories);
+   const parentableCategories = removeConfirmedOptimisticDuplicates(
+      liveParentableCategories,
+   );
 
    const sortedCategories = useMemo(
       () => sortCategories(categories, sorting),
@@ -302,13 +317,13 @@ function CategoriesList() {
       openSheet({
          renderChildren: () => (
             <CategoryFormSheet
-               categories={categories}
+               categories={parentableCategories}
                collection={categoriesCollection}
                teamId={activeTeamId}
             />
          ),
       });
-   }, [activeTeamId, categories, categoriesCollection, openSheet]);
+   }, [activeTeamId, categoriesCollection, openSheet, parentableCategories]);
 
    const handleUpdateCategory = useCallback(
       async (
@@ -393,22 +408,40 @@ function CategoriesList() {
             ],
          },
          onImport: async (importedRows) => {
+            const invalidRows = importedRows.filter(
+               (row) => parseCategoryType(row.type) === undefined,
+            );
+            if (invalidRows.length > 0) {
+               const message = `Planilha inválida: ${invalidRows.length} linha(s) com tipo ausente ou inválido.`;
+               return Promise.reject({ message });
+            }
+
             const importCategories =
                importCategoriesAction(categoriesCollection);
+            const categoriesPayload = importedRows
+               .map((row) => {
+                  const type = parseCategoryType(row.type);
+                  if (!type) return null;
+                  return {
+                     name: String(row.name ?? "").trim(),
+                     type,
+                     participatesDre: false,
+                  };
+               })
+               .filter((entry) => entry !== null);
+
             const result = await fromPromise(
                importCategories({
-                  categories: importedRows.map((r) => ({
-                     name: String(r.name ?? ""),
-                     type: parseCategoryType(r.type),
-                     participatesDre: false,
-                  })),
+                  categories: categoriesPayload,
                }),
                (error) => error,
             );
             if (result.isErr()) {
-               toast.error(
-                  getErrorMessage(result.error, "Erro ao importar categorias."),
+               const message = getErrorMessage(
+                  result.error,
+                  "Erro ao importar categorias.",
                );
+               return Promise.reject({ message });
             }
          },
       }),

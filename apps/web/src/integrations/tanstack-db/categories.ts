@@ -17,6 +17,7 @@ type CategoryImportInput = Inputs["categoriesBulk"]["importBatch"];
 
 type CategoriesCollectionOptionsParams = {
    queryClient: QueryClient;
+   teamId: string;
 };
 
 type CategoriesWhereInput = {
@@ -46,6 +47,8 @@ type CategoriesBulkIdsInput = {
 };
 
 type CategoriesImportActionInput = CategoryImportInput;
+
+type CategoryCollection = Collection<CategoriesCollectionRow, string>;
 
 const categoryCollectionSchema = z.object({
    id: z.string(),
@@ -126,15 +129,24 @@ function hasLoadSubsetOptions(options: LoadSubsetOptions | undefined) {
    return Boolean(options?.where || options?.orderBy?.length);
 }
 
+async function safeRefetchCategories(collection: CategoryCollection) {
+   await collection.utils.refetch().catch(() => {});
+}
+
 export function categoriesCollectionOptions({
    queryClient,
+   teamId,
 }: CategoriesCollectionOptionsParams) {
    return queryCollectionOptions({
-      id: "categories",
+      id: `categories:${teamId}`,
       queryKey: (options) =>
          hasLoadSubsetOptions(options)
-            ? ["categories", categoriesInputFromLoadSubsetOptions(options)]
-            : ["categories"],
+            ? [
+                 "categories",
+                 teamId,
+                 categoriesInputFromLoadSubsetOptions(options),
+              ]
+            : ["categories", teamId],
       queryFn: async (ctx) =>
          orpc.categories.getAll.call(
             categoriesInputFromLoadSubsetOptions(ctx.meta?.loadSubsetOptions),
@@ -147,24 +159,20 @@ export function categoriesCollectionOptions({
    });
 }
 
-export function createCategoryAction(
-   collection: Collection<CategoriesCollectionRow, string>,
-) {
+export function createCategoryAction(collection: CategoryCollection) {
    return createOptimisticAction<CategoryCreateActionInput>({
       onMutate: ({ row }) => {
          collection.insert(row);
       },
       mutationFn: async ({ input }) => {
          const created = await orpc.categories.create.call(input);
-         await collection.utils.refetch();
+         await safeRefetchCategories(collection);
          return created;
       },
    });
 }
 
-export function updateCategoryAction(
-   collection: Collection<CategoriesCollectionRow, string>,
-) {
+export function updateCategoryAction(collection: CategoryCollection) {
    return createOptimisticAction<CategoryUpdateActionInput>({
       onMutate: ({ id, patch }) => {
          collection.update(id, (draft) => {
@@ -187,15 +195,13 @@ export function updateCategoryAction(
       },
       mutationFn: async ({ id, patch }) => {
          const updated = await orpc.categories.update.call({ id, ...patch });
-         await collection.utils.refetch();
+         await safeRefetchCategories(collection);
          return updated;
       },
    });
 }
 
-export function archiveCategoryAction(
-   collection: Collection<CategoriesCollectionRow, string>,
-) {
+export function archiveCategoryAction(collection: CategoryCollection) {
    return createOptimisticAction<CategoryIdInput>({
       onMutate: ({ id }) => {
          collection.update(id, (draft) => {
@@ -204,15 +210,13 @@ export function archiveCategoryAction(
       },
       mutationFn: async ({ id }) => {
          const archived = await orpc.categories.archive.call({ id });
-         await collection.utils.refetch();
+         await safeRefetchCategories(collection);
          return archived;
       },
    });
 }
 
-export function unarchiveCategoryAction(
-   collection: Collection<CategoriesCollectionRow, string>,
-) {
+export function unarchiveCategoryAction(collection: CategoryCollection) {
    return createOptimisticAction<CategoryIdInput>({
       onMutate: ({ id }) => {
          collection.update(id, (draft) => {
@@ -221,30 +225,26 @@ export function unarchiveCategoryAction(
       },
       mutationFn: async ({ id }) => {
          const unarchived = await orpc.categories.unarchive.call({ id });
-         await collection.utils.refetch();
+         await safeRefetchCategories(collection);
          return unarchived;
       },
    });
 }
 
-export function deleteCategoryAction(
-   collection: Collection<CategoriesCollectionRow, string>,
-) {
+export function deleteCategoryAction(collection: CategoryCollection) {
    return createOptimisticAction<CategoryIdInput>({
       onMutate: ({ id }) => {
          collection.delete(id);
       },
       mutationFn: async ({ id }) => {
          const removed = await orpc.categories.remove.call({ id });
-         await collection.utils.refetch();
+         await safeRefetchCategories(collection);
          return removed;
       },
    });
 }
 
-export function bulkArchiveCategoriesAction(
-   collection: Collection<CategoriesCollectionRow, string>,
-) {
+export function bulkArchiveCategoriesAction(collection: CategoryCollection) {
    return createOptimisticAction<CategoriesBulkIdsInput>({
       onMutate: ({ ids }) => {
          collection.update(ids, (drafts) => {
@@ -255,33 +255,29 @@ export function bulkArchiveCategoriesAction(
       },
       mutationFn: async ({ ids }) => {
          const archived = await orpc.categoriesBulk.bulkArchive.call({ ids });
-         await collection.utils.refetch();
+         await safeRefetchCategories(collection);
          return archived;
       },
    });
 }
 
-export function bulkDeleteCategoriesAction(
-   collection: Collection<CategoriesCollectionRow, string>,
-) {
+export function bulkDeleteCategoriesAction(collection: CategoryCollection) {
    return createOptimisticAction<CategoriesBulkIdsInput>({
       onMutate: ({ ids }) => {
          collection.delete(ids);
       },
       mutationFn: async ({ ids }) => {
          const removed = await orpc.categoriesBulk.bulkRemove.call({ ids });
-         await collection.utils.refetch();
+         await safeRefetchCategories(collection);
          return removed;
       },
    });
 }
 
-export function importCategoriesAction(
-   collection: Collection<CategoriesCollectionRow, string>,
-) {
+export function importCategoriesAction(collection: CategoryCollection) {
    return async (input: CategoriesImportActionInput) => {
       const imported = await orpc.categoriesBulk.importBatch.call(input);
-      await collection.utils.refetch();
+      await safeRefetchCategories(collection);
       return imported;
    };
 }

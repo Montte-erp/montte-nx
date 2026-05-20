@@ -151,6 +151,7 @@ const classifyBatchOptionSchema = z.object({
    id: z.string(),
    name: z.string(),
    path: z.string(),
+   type: z.enum(["income", "expense", "transfer"]),
    hasChildren: z.boolean(),
 });
 
@@ -177,6 +178,7 @@ type CategoryRow = {
    parentId: string | null;
    level: number;
    dreGroupId: string | null;
+   type: "income" | "expense" | "transfer";
 };
 
 type LoadedTransaction = {
@@ -238,6 +240,7 @@ function buildCategoryOptions(rows: CategoryRow[]): ClassifyBatchOption[] {
          id: row.id,
          name: row.name,
          path: buildPath(row),
+         type: row.type,
          hasChildren: parentIds.has(row.id),
       }))
       .sort((a, b) => a.path.localeCompare(b.path, "pt-BR"));
@@ -247,14 +250,26 @@ function formatCategory(c: ClassifyBatchOption) {
    const hint = c.hasChildren
       ? " (categoria pai/grupo; use apenas se nenhuma subcategoria for segura)"
       : "";
-   return `- [id=${c.id}] ${c.path}${hint}`;
+   const translatedType =
+      c.type === "income"
+         ? "receita"
+         : c.type === "expense"
+           ? "despesa"
+           : "transferência";
+   return `- [id=${c.id}] (${translatedType}) ${c.path}${hint}`;
 }
 
 function formatTransaction(tx: ClassifyBatchInput) {
+   const translatedType =
+      tx.type === "income"
+         ? "Receita"
+         : tx.type === "expense"
+           ? "Despesa"
+           : "Transferência";
    const parts = [
       `[id=${tx.id}]`,
       `Nome: ${tx.name}`,
-      `Tipo: ${tx.type === "income" ? "Receita" : "Despesa"}`,
+      `Tipo: ${translatedType}`,
    ];
    if (tx.contactName) parts.push(`Contato: ${tx.contactName}`);
    return parts.join("\n");
@@ -270,20 +285,50 @@ function resolveAiResults(
    inputCategories: ClassifyBatchOption[],
 ): ClassifyBatchResult[] {
    const inputIds = new Set(inputTransactions.map((tx) => tx.id));
-   const categoryIds = new Set(inputCategories.map((c) => c.id));
-   const categoryByPath = new Map(inputCategories.map((c) => [c.path, c.id]));
-   const categoryByName = new Map(inputCategories.map((c) => [c.name, c.id]));
+   const transactionTypeById = new Map(
+      inputTransactions.map((tx) => [tx.id, tx.type]),
+   );
+   const categoryById = new Map(inputCategories.map((c) => [c.id, c]));
+   const categoryByTypePath = new Map<string, string>();
+   const categoryIdsByTypeName = new Map<string, string[]>();
+
+   for (const category of inputCategories) {
+      const typePathKey = `${category.type}:${category.path.trim().toLocaleLowerCase()}`;
+      categoryByTypePath.set(typePathKey, category.id);
+      const typeNameKey = `${category.type}:${category.name
+         .trim()
+         .toLocaleLowerCase()}`;
+      const list = categoryIdsByTypeName.get(typeNameKey);
+      if (list) {
+         list.push(category.id);
+      } else {
+         categoryIdsByTypeName.set(typeNameKey, [category.id]);
+      }
+   }
 
    return raw.flatMap((entry) => {
       if (!inputIds.has(entry.id)) return [];
+      const txType = transactionTypeById.get(entry.id);
+      if (!txType) return [];
+
       const categoryId = entry.categoryId?.trim();
-      if (categoryId && categoryIds.has(categoryId)) {
-         return [{ transactionId: entry.id, categoryId }];
+      if (categoryId) {
+         const candidate = categoryById.get(categoryId);
+         if (candidate && candidate.type === txType) {
+            return [{ transactionId: entry.id, categoryId }];
+         }
       }
+
       if (!entry.categoryName) return [];
-      const resolvedId =
-         categoryByPath.get(entry.categoryName) ??
-         categoryByName.get(entry.categoryName);
+      const normalized = entry.categoryName.trim().toLocaleLowerCase();
+      const pathMatch = categoryByTypePath.get(`${txType}:${normalized}`);
+      if (pathMatch) {
+         return [{ transactionId: entry.id, categoryId: pathMatch }];
+      }
+
+      const candidates = categoryIdsByTypeName.get(`${txType}:${normalized}`);
+      if (!candidates || candidates.length !== 1) return [];
+      const resolvedId = candidates[0];
       if (!resolvedId) return [];
       return [{ transactionId: entry.id, categoryId: resolvedId }];
    });
@@ -399,6 +444,7 @@ const stepLoadInputs = (input: ClassifyTransactionsBatchInput) =>
                      name: categories.name,
                      parentId: categories.parentId,
                      level: categories.level,
+                     type: categories.type,
                      dreGroupId: categories.dreGroupId,
                   })
                   .from(categories)
