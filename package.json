@@ -205,9 +205,9 @@
             "vite-tsconfig-paths": "^6.1.1"
          },
          "tanstack-ai": {
-            "@tanstack/ai": "0.18.0",
-            "@tanstack/ai-react": "0.10.0",
-            "@tanstack/ai-openrouter": "0.9.1"
+            "@tanstack/ai": "0.20.1",
+            "@tanstack/ai-react": "0.11.3",
+            "@tanstack/ai-openrouter": "0.9.5"
          },
          "workers": {
             "@dbos-inc/dbos-sdk": "^4.18.10",
