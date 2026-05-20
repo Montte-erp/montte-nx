@@ -36,10 +36,6 @@ export const categories = financeSchema.table(
       color: text("color"),
       icon: text("icon"),
       isArchived: boolean("is_archived").notNull().default(false),
-      keywords: text("keywords").array(),
-      keywordsUpdatedAt: timestamp("keywords_updated_at", {
-         withTimezone: true,
-      }),
       notes: text("notes"),
       participatesDre: boolean("participates_dre").notNull().default(false),
       dreGroupId: text("dre_group_id"),
@@ -89,7 +85,6 @@ const baseCategorySchema = createInsertSchema(categories).pick({
    description: true,
    color: true,
    icon: true,
-   keywords: true,
    notes: true,
    participatesDre: true,
    dreGroupId: true,
@@ -117,11 +112,6 @@ export const createCategorySchema = baseCategorySchema
       description: z.string().max(255).nullable().optional(),
       color: colorSchema,
       icon: z.string().max(50).nullable().optional(),
-      keywords: z
-         .array(z.string().min(1).max(60))
-         .max(20)
-         .nullable()
-         .optional(),
       notes: z.string().max(500).nullable().optional(),
       participatesDre: z.boolean().default(false),
       dreGroupId: z.string().max(60).nullable().optional(),
@@ -135,11 +125,6 @@ export const updateCategorySchema = baseCategorySchema
       description: z.string().max(255).nullable().optional(),
       color: colorSchema,
       icon: z.string().max(50).nullable().optional(),
-      keywords: z
-         .array(z.string().min(1).max(60))
-         .max(20)
-         .nullable()
-         .optional(),
       notes: z.string().max(500).nullable().optional(),
       participatesDre: z.boolean(),
       dreGroupId: z.string().max(60).nullable().optional(),

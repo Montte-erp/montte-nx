@@ -43,7 +43,6 @@ describe("createCategorySchema", () => {
          description: "Receita de serviços",
          color: "#FF5733",
          icon: "briefcase",
-         keywords: ["serviço", "consultoria"],
          notes: "Nota importante",
          participatesDre: true,
          dreGroupId: "receita-operacional",
@@ -88,18 +87,6 @@ describe("createCategorySchema", () => {
          type: "income",
          description: "A".repeat(256),
       });
-   });
-
-   it("rejects keywords array with more than 20 items", () => {
-      expectFail({
-         name: "Teste",
-         type: "income",
-         keywords: Array.from({ length: 21 }, (_, i) => `kw${i}`),
-      });
-   });
-
-   it("rejects empty string in keywords", () => {
-      expectFail({ name: "Teste", type: "income", keywords: [""] });
    });
 
    it("accepts valid parentId UUID", () => {

@@ -1,7 +1,7 @@
 import { os } from "@orpc/server";
 import { Result, TaggedError, type Result as ResultType } from "better-result";
 import { defineErrorCatalog } from "evlog";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { categories, type Category } from "@core/database/schemas/categories";
 import { transactions } from "@core/database/schemas/transactions";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
@@ -154,48 +154,6 @@ export const blockDefaultCategories = os
       }
       return next();
    });
-
-export const requireKeywordsUnique = base.middleware(
-   async (
-      { context, next },
-      args: { keywords: string[] | null | undefined; excludeId?: string },
-   ) => {
-      const { keywords, excludeId } = args;
-      if (!keywords?.length) return next();
-
-      const conds = [
-         eq(categories.teamId, context.teamId),
-         eq(categories.isArchived, false),
-         sql`${categories.keywords} && ARRAY[${sql.join(
-            keywords.map((k) => sql`${k}`),
-            sql`,`,
-         )}]::text[]`,
-      ];
-      if (excludeId) conds.push(sql`${categories.id} != ${excludeId}`);
-
-      const countResult = await Result.tryPromise({
-         try: () =>
-            context.db
-               .select({ count: sql<number>`count(*)::int` })
-               .from(categories)
-               .where(and(...conds))
-               .then((rows) => rows[0]?.count ?? 0),
-         catch: () =>
-            new ClassificationRouterError({
-               error: classificationRouterErrors.INTERNAL(),
-               message: "Falha ao validar palavras-chave.",
-            }),
-      });
-      if (Result.isError(countResult)) throw countResult.error;
-      if (countResult.value > 0) {
-         throw new ClassificationRouterError({
-            error: classificationRouterErrors.CONFLICT(),
-            message: "Palavras-chave já utilizadas em outra categoria ativa.",
-         });
-      }
-      return next();
-   },
-);
 
 export const requireResolvedCategoryParent = base.middleware(
    async (

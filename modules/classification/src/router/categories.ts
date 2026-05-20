@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Result, type Result as ResultType } from "better-result";
+import { Result } from "better-result";
 import { and, asc, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
@@ -13,15 +13,10 @@ import {
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import {
-   DeriveKeywordsJobError,
-   enqueueDeriveKeywordsJob,
-} from "@modules/classification/jobs/derive-keywords-job";
-import {
    ClassificationRouterError,
    classificationRouterErrors,
    requireCategory,
    requireEmptyCategoryTree,
-   requireKeywordsUnique,
    requireResolvedCategoryUpdateParent,
    requireResolvedCategoryParent,
    withCategoryDescendants,
@@ -45,35 +40,6 @@ const ensureRow = <T>(row: T | undefined, msg: string) =>
               message: msg,
            }),
         );
-
-type CategoryKeywordsSource = {
-   id: string;
-   name: string;
-   description: string | null;
-};
-
-async function enqueueCategoryKeywordsDerivation(
-   context: Pick<
-      ORPCContextWithOrganization,
-      "organizationId" | "teamId" | "userId" | "pgBoss"
-   >,
-   category: CategoryKeywordsSource,
-): Promise<ResultType<void, DeriveKeywordsJobError>> {
-   const queued = await enqueueDeriveKeywordsJob({
-      boss: await context.pgBoss,
-      input: {
-         categoryId: category.id,
-         teamId: context.teamId,
-         organizationId: context.organizationId,
-         userId: context.userId,
-         name: category.name,
-         description: category.description,
-      },
-   });
-
-   if (Result.isError(queued)) return Result.err(queued.error);
-   return Result.ok(undefined);
-}
 
 async function checkCategoryUniqueConflict(
    db: ORPCContextWithOrganization["db"],
@@ -105,7 +71,6 @@ export const create = protectedProcedure
          subcategories: z.array(subcategoryInputSchema).optional(),
       }),
    )
-   .use(requireKeywordsUnique, (input) => ({ keywords: input.keywords }))
    .use(requireResolvedCategoryParent, (input) => ({
       parentId: input.parentId,
       type: input.type,
@@ -128,6 +93,7 @@ export const create = protectedProcedure
                   })
                   .returning();
                if (!parent) return undefined;
+
                for (const sub of subcategories ?? []) {
                   await tx.insert(categories).values({
                      name: sub.name,
@@ -153,11 +119,6 @@ export const create = protectedProcedure
       );
       if (Result.isError(result)) throw result.error;
 
-      const queued = await enqueueCategoryKeywordsDerivation(
-         context,
-         result.value,
-      );
-      if (Result.isError(queued)) throw queued.error;
       return result.value;
    });
 
@@ -340,10 +301,6 @@ export const getPaginated = protectedProcedure
 export const update = protectedProcedure
    .input(idSchema.merge(updateCategorySchema))
    .use(requireCategory, (input) => input.id)
-   .use(requireKeywordsUnique, (input) => ({
-      keywords: input.keywords,
-      excludeId: input.id,
-   }))
    .use(requireResolvedCategoryUpdateParent, (input) => ({
       parentId: input.parentId,
    }))
@@ -483,26 +440,7 @@ export const update = protectedProcedure
       );
       if (Result.isError(result)) throw result.error;
 
-      if (data.keywords === undefined) {
-         const queued = await enqueueCategoryKeywordsDerivation(
-            context,
-            result.value,
-         );
-         if (Result.isError(queued)) throw queued.error;
-      }
       return result.value;
-   });
-
-export const regenerateKeywords = protectedProcedure
-   .input(idSchema)
-   .use(requireCategory, (input) => input.id)
-   .handler(async ({ context }) => {
-      const queued = await enqueueCategoryKeywordsDerivation(
-         context,
-         context.category,
-      );
-      if (Result.isError(queued)) throw queued.error;
-      return { success: true };
    });
 
 export const remove = protectedProcedure

@@ -15,10 +15,6 @@ import {
    registerAgentPgBossJobs,
 } from "@modules/agents/jobs/setup";
 import {
-   classificationPgBossQueues,
-   registerClassificationPgBossJobs,
-} from "@modules/classification/jobs/derive-keywords-job";
-import {
    cardsPgBossQueues,
    registerCardsPgBossJobs,
 } from "@modules/cards/jobs/close-statements-job";
@@ -85,17 +81,8 @@ async function initWorker() {
 
    const pgBossWorker = await startPgBossWorker({
       connectionString: env.DATABASE_URL,
-      queues: [
-         ...agentPgBossQueues,
-         ...classificationPgBossQueues,
-         ...cardsPgBossQueues,
-      ],
+      queues: [...agentPgBossQueues, ...cardsPgBossQueues],
       register: async (boss) => {
-         await registerClassificationPgBossJobs({
-            boss,
-            db: setup.value.db,
-            prompts: setup.value.promptsClient,
-         });
          await registerAgentPgBossJobs({
             boss,
             db: setup.value.db,
