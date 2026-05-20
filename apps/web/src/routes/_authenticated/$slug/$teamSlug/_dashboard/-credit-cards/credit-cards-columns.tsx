@@ -128,6 +128,7 @@ export function buildCreditCardColumns(options?: {
          meta: {
             label: "Limite",
             align: "right",
+            headerAlign: "left",
             cellComponent: "money",
             isEditable: true,
             editMode: "inline",
@@ -208,6 +209,7 @@ export function buildCreditCardColumns(options?: {
          header: "Banco",
          meta: {
             label: "Banco",
+            pinnable: false,
             exportValue: (row) => {
                const account = bankAccountsById.get(row.bankAccountId);
                if (!account) return "";

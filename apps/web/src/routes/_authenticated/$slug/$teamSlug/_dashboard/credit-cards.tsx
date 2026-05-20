@@ -22,6 +22,9 @@ import {
    useReactTable,
    type ColumnDef,
    type ColumnFiltersState,
+   type ColumnOrderState,
+   type ColumnPinningState,
+   type OnChangeFn,
    type SortingState,
 } from "@tanstack/react-table";
 import {
@@ -101,6 +104,24 @@ function normalizeCreditCardSorting(sorting: SortingState) {
       normalized.push({ id: result.data, desc: rule.desc });
    }
    return normalized;
+}
+
+function normalizeCreditCardColumnOrder(order: ColumnOrderState) {
+   if (order.length === 0) return order;
+   const next = order.filter((id) => id !== "__actions");
+   return [...next, "__actions"];
+}
+
+function normalizeCreditCardColumnPinning(
+   pinning: ColumnPinningState,
+): ColumnPinningState {
+   const left = (pinning.left ?? []).filter(
+      (id) => id !== "__actions" && id !== "bankIssuer",
+   );
+   const right = (pinning.right ?? []).filter(
+      (id) => id !== "__actions" && id !== "bankIssuer",
+   );
+   return { left, right: [...right, "__actions"] };
 }
 
 type CreditCardBrand =
@@ -219,6 +240,14 @@ function CreditCardsList() {
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout("credit-cards");
+   const columnOrder = useMemo(
+      () => normalizeCreditCardColumnOrder(layout.state.columnOrder),
+      [layout.state.columnOrder],
+   );
+   const columnPinning = useMemo(
+      () => normalizeCreditCardColumnPinning(layout.state.columnPinning),
+      [layout.state.columnPinning],
+   );
 
    const searchInput = useDebouncedSearch({
       value: search,
@@ -562,6 +591,30 @@ function CreditCardsList() {
       totalRows: result.totalCount,
    });
 
+   const handleColumnOrderChange = useCallback<OnChangeFn<ColumnOrderState>>(
+      (updater) => {
+         layout.onColumnOrderChange((prev) =>
+            normalizeCreditCardColumnOrder(
+               typeof updater === "function" ? updater(prev) : updater,
+            ),
+         );
+      },
+      [layout.onColumnOrderChange],
+   );
+
+   const handleColumnPinningChange = useCallback<
+      OnChangeFn<ColumnPinningState>
+   >(
+      (updater) => {
+         layout.onColumnPinningChange((prev) =>
+            normalizeCreditCardColumnPinning(
+               typeof updater === "function" ? updater(prev) : updater,
+            ),
+         );
+      },
+      [layout.onColumnPinningChange],
+   );
+
    const table = useReactTable({
       data: result.data,
       columns,
@@ -572,15 +625,15 @@ function CreditCardsList() {
       manualFiltering: true,
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
-      state: { ...urlState.state, ...layout.state },
+      state: { ...urlState.state, ...layout.state, columnOrder, columnPinning },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: handleColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
       onRowSelectionChange: urlState.onRowSelectionChange,
       onColumnSizingChange: layout.onColumnSizingChange,
-      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnOrderChange: handleColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
-      onColumnPinningChange: layout.onColumnPinningChange,
+      onColumnPinningChange: handleColumnPinningChange,
       getCoreRowModel: getCoreRowModel(),
       getExpandedRowModel: getExpandedRowModel(),
       getRowCanExpand: () => true,
