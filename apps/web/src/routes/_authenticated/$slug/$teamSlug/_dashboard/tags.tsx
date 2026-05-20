@@ -26,11 +26,19 @@ import {
    type ColumnDef,
    type SortingState,
 } from "@tanstack/react-table";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import {
+   createCollection,
+   eq,
+   ilike,
+   or,
+   useLiveQuery,
+} from "@tanstack/react-db";
 import { createFileRoute } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { Archive, ArchiveRestore, Plus, Tag, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
+import { fromPromise } from "neverthrow";
 import { z } from "zod";
 
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
@@ -48,12 +56,20 @@ import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { PageFilter } from "@/components/page-filters/page-filter";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
-import { orpc } from "@/integrations/orpc/client";
+import {
+   bulkArchiveTagsAction,
+   bulkCreateTagsAction,
+   bulkDeleteTagsAction,
+   tagsCollectionOptions,
+   unarchiveTagAction,
+   updateTagAction,
+} from "@/integrations/tanstack-db/tags";
 import { useContextPanelInfo } from "../-context-panel/use-context-panel";
 import { DefaultHeader } from "../-layout/default-header";
 import { buildTagColumns, type TagRow } from "./-tags/tags-columns";
@@ -108,34 +124,42 @@ function normalizeTagSorting(sorting: SortingState) {
    return normalized;
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return fallback;
+}
+
+type LiveTagRow = TagRow & {
+   $synced: boolean;
+};
+
+function tagDedupeKey(tag: TagRow) {
+   return `${tag.teamId}:${tag.name.trim().toLocaleLowerCase()}`;
+}
+
+function removeConfirmedOptimisticDuplicates(tags: LiveTagRow[]) {
+   const syncedKeys = new Set<string>();
+   for (const tag of tags) {
+      if (!tag.$synced) continue;
+      syncedKeys.add(tagDedupeKey(tag));
+   }
+   return tags.filter(
+      (tag) => tag.$synced || !syncedKeys.has(tagDedupeKey(tag)),
+   );
+}
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/tags",
 )({
    validateSearch: tagsSearchSchema,
-   loaderDeps: ({
-      search: { search, includeArchived, page, pageSize, sorting },
-   }) => ({
-      search,
-      includeArchived,
-      page,
-      pageSize,
-      sorting,
-   }),
-   loader: ({ context, deps }) => {
-      context.queryClient.prefetchQuery(
-         orpc.tags.getAll.queryOptions({
-            input: {
-               search: deps.search || undefined,
-               includeArchived: deps.includeArchived || undefined,
-               page: deps.page,
-               pageSize: deps.pageSize,
-               sorting: normalizeTagSorting(deps.sorting),
-            },
-         }),
-      );
-   },
-   pendingMs: 300,
-   pendingComponent: TagsSkeleton,
    head: () => ({
       meta: [{ title: "Centros de Custo — Montte" }],
    }),
@@ -149,6 +173,8 @@ function TagsSkeleton() {
 function TagsList() {
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
+   const { activeTeamId } = useActiveTeam();
+   const { queryClient } = Route.useRouteContext();
    const navigate = Route.useNavigate();
    const { sorting, columnFilters, search, includeArchived, page, pageSize } =
       Route.useSearch();
@@ -165,65 +191,69 @@ function TagsList() {
          }),
    });
 
-   const { data: result } = useSuspenseQuery(
-      orpc.tags.getAll.queryOptions({
-         input: {
-            search: search || undefined,
-            includeArchived: includeArchived || undefined,
-            page,
-            pageSize,
-            sorting: normalizeTagSorting(sorting),
-         },
-      }),
+   const tagsCollection = useMemo(
+      () =>
+         createCollection(
+            tagsCollectionOptions({
+               queryClient,
+            }),
+         ),
+      [queryClient],
    );
-   const { data: tags, total } = result;
+   const { data: liveTags, isLoading } = useLiveQuery(
+      (q) => {
+         const pattern = `%${search.trim()}%`;
+         const normalizedSorting = normalizeTagSorting(sorting);
+         let query = q.from({ tag: tagsCollection });
 
-   const deleteMutation = useMutation(
-      orpc.tags.remove.mutationOptions({
-         onSuccess: () =>
-            toast.success("Centro de custo excluído com sucesso."),
-         onError: (e) =>
-            toast.error(e.message || "Erro ao excluir centro de custo."),
-      }),
+         if (!includeArchived) {
+            query = query.where(({ tag }) => eq(tag.isArchived, false));
+         }
+
+         if (search.trim()) {
+            query = query.where(({ tag }) =>
+               or(ilike(tag.name, pattern), ilike(tag.description, pattern)),
+            );
+         }
+
+         if (normalizedSorting.length > 0) {
+            for (const rule of normalizedSorting) {
+               switch (rule.id) {
+                  case "description":
+                     query = query.orderBy(
+                        ({ tag }) => tag.description,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "isDefault":
+                     query = query.orderBy(
+                        ({ tag }) => tag.isDefault,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "name":
+                     query = query.orderBy(
+                        ({ tag }) => tag.name,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+               }
+            }
+         } else {
+            query = query
+               .orderBy(({ tag }) => tag.dreOrder, "asc")
+               .orderBy(({ tag }) => tag.name, "asc")
+               .orderBy(({ tag }) => tag.createdAt, "asc");
+         }
+
+         return query
+            .limit(pageSize)
+            .offset((page - 1) * pageSize)
+            .select(({ tag }) => tag);
+      },
+      [includeArchived, page, pageSize, search, sorting, tagsCollection],
    );
-   const bulkDeleteMutation = useMutation(
-      orpc.tags.bulkRemove.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao excluir centros de custo."),
-      }),
-   );
-   const bulkArchiveMutation = useMutation(
-      orpc.tags.bulkArchive.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao arquivar centros de custo."),
-      }),
-   );
-   const archiveMutation = useMutation(
-      orpc.tags.archive.mutationOptions({
-         onSuccess: () => toast.success("Centro de custo arquivado."),
-         onError: (e) =>
-            toast.error(e.message || "Erro ao arquivar centro de custo."),
-      }),
-   );
-   const unarchiveMutation = useMutation(
-      orpc.tags.unarchive.mutationOptions({
-         onSuccess: () => toast.success("Centro de custo reativado."),
-         onError: (e) =>
-            toast.error(e.message || "Erro ao reativar centro de custo."),
-      }),
-   );
-   const bulkCreateMutation = useMutation(
-      orpc.tags.bulkCreate.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao importar centros de custo."),
-      }),
-   );
-   const updateMutation = useMutation(
-      orpc.tags.update.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao atualizar centro de custo."),
-      }),
-   );
+   const tags = removeConfirmedOptimisticDuplicates(liveTags);
 
    const importConfig: DataImportConfig = useMemo(
       () => ({
@@ -235,44 +265,72 @@ function TagsList() {
          mapRow: (row, i) => ({
             id: `__import_${i + 1}`,
             name: row.name ?? "",
-            description: row.description?.trim() || null,
             isArchived: false,
             isDefault: false,
          }),
          template: {
             filename: "modelo-centros-de-custo.csv",
             label: "Baixar modelo CSV",
-            description:
-               "Inclui as colunas Nome e Descrição com exemplos de preenchimento.",
+            description: "Inclui a coluna Nome com exemplos de preenchimento.",
             createBlob: () =>
                generateCsv(
                   [
                      {
                         Nome: "Marketing",
-                        Descrição: "Campanhas, mídia paga e eventos",
                      },
                      {
                         Nome: "Operações",
-                        Descrição: "Custos recorrentes da operação",
                      },
                   ],
-                  ["Nome", "Descrição"],
+                  ["Nome"],
                ),
          },
          onImport: async (rows) => {
-            const items = rows.map((r) => ({
+            if (!activeTeamId) {
+               toast.error("Time ativo não encontrado.");
+               return;
+            }
+            const now = dayjs().toDate();
+            const items: TagRow[] = rows.map((r) => ({
+               id: crypto.randomUUID(),
+               teamId: activeTeamId,
                name: String(r.name ?? ""),
-               description: r.description ? String(r.description).trim() : null,
+               color: "#6366f1",
+               description: null,
+               isDefault: false,
+               isArchived: false,
+               dreType: null,
+               dreOrder: null,
+               createdAt: now,
+               updatedAt: now,
             }));
-            await bulkCreateMutation.mutateAsync({ items });
+            const bulkCreateTags = bulkCreateTagsAction(tagsCollection);
+            const transaction = bulkCreateTags({ rows: items });
+            const result = await fromPromise(
+               transaction.isPersisted.promise,
+               (error) => error,
+            );
+            if (result.isErr()) {
+               toast.error(
+                  getErrorMessage(
+                     result.error,
+                     "Erro ao importar centros de custo.",
+                  ),
+               );
+               return;
+            }
          },
       }),
-      [bulkCreateMutation, generateCsv, parseCsv, parseXlsx],
+      [activeTeamId, generateCsv, parseCsv, parseXlsx, tagsCollection],
    );
 
    const handleCreate = useCallback(() => {
-      openSheet({ renderChildren: () => <TagsFormSheet /> });
-   }, [openSheet]);
+      openSheet({
+         renderChildren: () => (
+            <TagsFormSheet collection={tagsCollection} teamId={activeTeamId} />
+         ),
+      });
+   }, [activeTeamId, openSheet, tagsCollection]);
 
    const handleDelete = useCallback(
       (tag: TagRow) => {
@@ -283,13 +341,27 @@ function TagsList() {
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               await deleteMutation.mutateAsync({ id: tag.id });
+               const bulkDeleteTags = bulkDeleteTagsAction(tagsCollection);
+               const transaction = bulkDeleteTags({ ids: [tag.id] });
+               const result = await fromPromise(
+                  transaction.isPersisted.promise,
+                  (error) => error,
+               );
+               if (result.isErr()) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao excluir centro de custo.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Centro de custo excluído com sucesso.");
             },
          });
       },
-      [openAlertDialog, deleteMutation],
+      [openAlertDialog, tagsCollection],
    );
-
    const handleArchive = useCallback(
       (tag: TagRow) => {
          openAlertDialog({
@@ -298,11 +370,26 @@ function TagsList() {
             actionLabel: "Arquivar",
             cancelLabel: "Cancelar",
             onAction: async () => {
-               await archiveMutation.mutateAsync({ id: tag.id });
+               const bulkArchiveTags = bulkArchiveTagsAction(tagsCollection);
+               const transaction = bulkArchiveTags({ ids: [tag.id] });
+               const result = await fromPromise(
+                  transaction.isPersisted.promise,
+                  (error) => error,
+               );
+               if (result.isErr()) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao arquivar centro de custo.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Centro de custo arquivado.");
             },
          });
       },
-      [openAlertDialog, archiveMutation],
+      [openAlertDialog, tagsCollection],
    );
 
    const handleUnarchive = useCallback(
@@ -313,17 +400,45 @@ function TagsList() {
             actionLabel: "Reativar",
             cancelLabel: "Cancelar",
             onAction: async () => {
-               await unarchiveMutation.mutateAsync({ id: tag.id });
+               const unarchiveTag = unarchiveTagAction(tagsCollection);
+               const transaction = unarchiveTag({ id: tag.id });
+               const result = await fromPromise(
+                  transaction.isPersisted.promise,
+                  (error) => error,
+               );
+               if (result.isErr()) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao reativar centro de custo.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Centro de custo reativado.");
             },
          });
       },
-      [openAlertDialog, unarchiveMutation],
+      [openAlertDialog, tagsCollection],
    );
 
    const columns = useMemo<ColumnDef<TagRow>[]>(() => {
+      const updateTag = updateTagAction(tagsCollection);
       const base = buildTagColumns({
          onUpdate: async (id, patch) => {
-            await updateMutation.mutateAsync({ id, ...patch });
+            const transaction = updateTag({ id, patch });
+            const result = await fromPromise(
+               transaction.isPersisted.promise,
+               (error) => error,
+            );
+            if (result.isErr()) {
+               toast.error(
+                  getErrorMessage(
+                     result.error,
+                     "Erro ao atualizar centro de custo.",
+                  ),
+               );
+            }
          },
       });
       const selectColumn: ColumnDef<TagRow> = {
@@ -409,7 +524,7 @@ function TagsList() {
          },
       };
       return [selectColumn, ...base, actionsColumn];
-   }, [updateMutation, handleArchive, handleDelete, handleUnarchive]);
+   }, [tagsCollection, handleArchive, handleDelete, handleUnarchive]);
 
    const urlState = useTableUrlState({
       search: { sorting, columnFilters, page, pageSize },
@@ -418,7 +533,7 @@ function TagsList() {
             search: (prev) => ({ ...prev, ...next }),
             replace: true,
          }),
-      totalRows: total,
+      totalRows: tags.length,
    });
 
    const table = useReactTable({
@@ -459,54 +574,81 @@ function TagsList() {
       onClear: clearSelection,
       children: (
          <>
-            {archivableIds.length > 0 && (
-               <SelectionActionButton
-                  icon={<Archive />}
-                  onClick={async () => {
-                     await bulkArchiveMutation.mutateAsync({
-                        ids: archivableIds,
-                     });
-                     toast.success(
-                        `${archivableIds.length} ${archivableIds.length === 1 ? "centro de custo arquivado" : "centros de custo arquivados"}.`,
+            <SelectionActionButton
+               disabled={archivableIds.length === 0}
+               icon={<Archive />}
+               onClick={async () => {
+                  const bulkArchiveTags = bulkArchiveTagsAction(tagsCollection);
+                  const transaction = bulkArchiveTags({ ids: archivableIds });
+                  const result = await fromPromise(
+                     transaction.isPersisted.promise,
+                     (error) => error,
+                  );
+                  if (result.isErr()) {
+                     toast.error(
+                        getErrorMessage(
+                           result.error,
+                           "Erro ao arquivar centros de custo.",
+                        ),
                      );
-                     clearSelection();
-                  }}
-               >
-                  Arquivar
-               </SelectionActionButton>
-            )}
-            {deletableIds.length > 0 && (
-               <SelectionActionButton
-                  icon={<Trash2 />}
-                  onClick={() => {
-                     openAlertDialog({
-                        title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo" : "centros de custo"}`,
-                        description:
-                           "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
-                        actionLabel: "Excluir",
-                        cancelLabel: "Cancelar",
-                        variant: "destructive",
-                        onAction: async () => {
-                           await bulkDeleteMutation.mutateAsync({
-                              ids: deletableIds,
-                           });
-                           toast.success(
-                              `${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo excluído" : "centros de custo excluídos"} com sucesso.`,
+                     return;
+                  }
+                  toast.success(
+                     `${archivableIds.length} ${archivableIds.length === 1 ? "centro de custo arquivado" : "centros de custo arquivados"}.`,
+                  );
+                  clearSelection();
+               }}
+            >
+               Arquivar
+            </SelectionActionButton>
+            <SelectionActionButton
+               disabled={deletableIds.length === 0}
+               icon={<Trash2 />}
+               onClick={() => {
+                  openAlertDialog({
+                     title: `Excluir ${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo" : "centros de custo"}`,
+                     description:
+                        "Tem certeza que deseja excluir os centros de custo selecionados? Esta ação não pode ser desfeita.",
+                     actionLabel: "Excluir",
+                     cancelLabel: "Cancelar",
+                     variant: "destructive",
+                     onAction: async () => {
+                        const bulkDeleteTags =
+                           bulkDeleteTagsAction(tagsCollection);
+                        const transaction = bulkDeleteTags({
+                           ids: deletableIds,
+                        });
+                        const result = await fromPromise(
+                           transaction.isPersisted.promise,
+                           (error) => error,
+                        );
+                        if (result.isErr()) {
+                           toast.error(
+                              getErrorMessage(
+                                 result.error,
+                                 "Erro ao excluir centros de custo.",
+                              ),
                            );
-                           clearSelection();
-                        },
-                     });
-                  }}
-                  variant="destructive"
-               >
-                  Excluir
-               </SelectionActionButton>
-            )}
+                           return;
+                        }
+                        toast.success(
+                           `${deletableIds.length} ${deletableIds.length === 1 ? "centro de custo excluído" : "centros de custo excluídos"} com sucesso.`,
+                        );
+                        clearSelection();
+                     },
+                  });
+               }}
+               variant="destructive"
+            >
+               Excluir
+            </SelectionActionButton>
          </>
       ),
    });
 
    useContextPanelInfo(() => <TagsInfoContent />);
+
+   if (isLoading) return <TagsSkeleton />;
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">
