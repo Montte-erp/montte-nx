@@ -9,15 +9,31 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
-import { ArrowRight, Check, ChevronDown } from "lucide-react";
+import { Skeleton } from "@packages/ui/components/skeleton";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { ArrowRight, Brain, Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@packages/ui/lib/utils";
+import { QueryBoundary } from "@/components/query-boundary";
+import { orpc } from "@/integrations/orpc/client";
 import {
    SCOPES,
    selectScope,
    useMontteSuggestions,
    useSelectedScope,
 } from "./chat-runtime";
+
+type Effort = "high" | "xhigh";
+
+const EFFORTS = [
+   { id: "high", label: "Profundo" },
+   { id: "xhigh", label: "Máximo" },
+] satisfies Array<{ id: Effort; label: string }>;
+
+const EFFORT_LABELS = {
+   high: "Profundo",
+   xhigh: "Máximo",
+} satisfies Record<Effort, string>;
 
 interface ComposerProps {
    className?: string;
@@ -65,6 +81,7 @@ export function Composer({
             <div className="flex items-center justify-between gap-2 px-2 pb-2">
                <div className="flex items-center gap-2">
                   <ScopePicker />
+                  <EffortPicker />
                </div>
                <ComposerPrimitive.Send asChild>
                   <Button
@@ -138,6 +155,69 @@ function ScopePicker() {
                   <scope.icon className="size-4 text-muted-foreground" />
                   <span>{scope.label}</span>
                   {selected.id === scope.id ? (
+                     <Check className="size-4 text-primary" />
+                  ) : null}
+               </Button>
+            ))}
+         </PopoverContent>
+      </Popover>
+   );
+}
+
+function EffortPicker() {
+   return (
+      <QueryBoundary
+         fallback={<Skel />}
+         errorTitle="Erro ao carregar configurações da Montte AI"
+      >
+         <EffortPickerContent />
+      </QueryBoundary>
+   );
+}
+
+function Skel() {
+   return <Skeleton className="h-7 w-24 rounded-full" />;
+}
+
+function EffortPickerContent() {
+   const [open, setOpen] = useState(false);
+   const { data: settings } = useSuspenseQuery(
+      orpc.agentSettings.getSettings.queryOptions(),
+   );
+   const update = useMutation(
+      orpc.agentSettings.upsertSettings.mutationOptions(),
+   );
+
+   const selected = settings.reasoningEffort ?? "high";
+
+   return (
+      <Popover onOpenChange={setOpen} open={open}>
+         <PopoverTrigger asChild>
+            <Button
+               className="h-7 gap-2 rounded-full px-2 text-xs font-normal text-muted-foreground"
+               size="sm"
+               type="button"
+               variant="outline"
+            >
+               <Brain className="size-4" />
+               {EFFORT_LABELS[selected]}
+               <ChevronDown className="size-4" />
+            </Button>
+         </PopoverTrigger>
+         <PopoverContent align="start" className="w-40 p-2" sideOffset={4}>
+            {EFFORTS.map((effort) => (
+               <Button
+                  className="flex w-full items-center justify-start gap-2 rounded-sm p-2 text-xs"
+                  key={effort.id}
+                  onClick={() => {
+                     update.mutate({ reasoningEffort: effort.id });
+                     setOpen(false);
+                  }}
+                  variant="ghost"
+               >
+                  <Brain className="size-4 text-muted-foreground" />
+                  <span>{effort.label}</span>
+                  {selected === effort.id ? (
                      <Check className="size-4 text-primary" />
                   ) : null}
                </Button>
