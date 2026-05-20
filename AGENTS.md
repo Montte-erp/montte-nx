@@ -38,13 +38,16 @@ Gotchas:
 
 Skills live in `.agents/skills/<name>/SKILL.md`.
 
-Before creating, migrating, refactoring, reviewing, or testing code in `apps/`, `modules/`, `core/`, `packages/`, or `tooling/`, open `.agents/skills/implementation/SKILL.md`. It contains the implementation rules and explains which domain reference to load for each kind of task.
+Before creating, migrating, refactoring, reviewing, or testing code in `apps/`, `modules/`, `core/`, `packages/`, or `tooling/`, open [implementation](.agents/skills/implementation/SKILL.md). It contains the implementation rules and explains which domain reference to load for each kind of task.
+
+Before handling review comments, PR findings, reported bugs, or review-only audits, open [code-review](.agents/skills/code-review/SKILL.md). It contains the verify-first workflow and explains which review reference to load for each surface.
 
 Other operational skills:
 
+- Code review / review comments / reported bugs: [code-review](.agents/skills/code-review/SKILL.md)
 - CI checks: `monitor-ci`
 - Linear (`MON-*`): `linear-cli`
-- UI/product design review: `montte-design` when the task is primarily visual/product polish
+- UI/product design review: [montte-design](.agents/skills/montte-design/SKILL.md) when the task is primarily visual/product polish
 
 Skill content supersedes anything stale in this file.
 
