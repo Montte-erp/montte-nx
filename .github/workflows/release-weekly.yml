@@ -73,145 +73,26 @@ jobs:
            uses: anomalyco/opencode/github@latest
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              SKILL_FILE: .agents/skills/release/SKILL.md
+              RELEASE_NOTES_REFERENCE: .agents/skills/release/references/release-notes.md
+              VALIDATION_REFERENCE: .agents/skills/release/references/release-validation.md
               CHANGES_FILE: changes.md
               OUTPUT_FILE: RELEASE_NOTES.md
               RELEASE_VERSION: ${{ steps.version.outputs.version }}
            with:
               model: opencode-go/deepseek-v4-flash
               prompt: |
-                 Você gera release notes semanais do **Montte** (ERP brasileiro, SaaS, pt-BR). Audiência principal: usuários finais (donos de negócio, financeiro, operações). Time interno é audiência secundária — detalhes técnicos vão em seção colapsável, nunca poluem o leitor não-técnico.
+                 Leia `$SKILL_FILE`, `$RELEASE_NOTES_REFERENCE` e `$VALIDATION_REFERENCE`.
 
-                 Modelo mental: changelog estilo **Linear/Stripe** — público, curado, agrupado por área de produto, lead com benefício, técnico escondido em `<details>`. A release deve parecer um comunicado finalizado, não um rascunho interno.
+                 Depois leia `$CHANGES_FILE` e gere as release notes semanais do Montte em `$OUTPUT_FILE` para a versão `$RELEASE_VERSION`.
 
-                 ## Entrada
-
-                 Arquivo `$CHANGES_FILE` contém duas seções:
-                 - `## Commits` — saída de `git log` no formato `- <subject> (<sha>) by <autor>`
-                 - `## Merged PRs` — PRs mergeados no GitHub no formato `- #<num> <título> by @<autor> — <url>`
-
-                 Os mesmos trabalhos aparecem nos dois lados (PR + commits do PR). **Use o PR como unidade canônica** quando existir; consolide os commits relacionados nele. Commits soltos sem PR viram itens próprios.
-
-                 ## Saída
-
-                 Escreva em `$OUTPUT_FILE` um Markdown com a estrutura abaixo. Seções vazias devem ser **omitidas inteiras** (não escreva "Nenhuma alteração"). Não inclua título H1 com o nome/versão da release: o GitHub já renderiza o título via `gh release create --title`.
-
-                 ```
-                 <Resumo executivo: 2-3 frases em pt-BR descrevendo o que essa release entrega para o usuário. Foque em 1-2 mudanças visíveis e/ou breaking change crítico. Não mencione refactor interno, PR, MON, pacote, tecnologia ou implementação aqui. Tom de comunicado de produto.>
-
-                 ## Em destaque
-
-                 <Liste 1-3 mudanças visíveis em ordem de impacto. Só destaque o que um usuário final realmente perceberia. Cada destaque tem o formato:
-
-                 ### <Nome curto da feature> ([#PR](url))
-
-                 <1-2 frases descrevendo o **benefício concreto ao usuário**, com linguagem específica e verificável. Exemplos bons:
-                 - "Montte AI mostra a resposta enquanto processa, reduzindo a espera em conversas longas."
-                 - "Importação de extratos OFX aceita Itaú e Santander direto, sem conversão."
-
-                 Exemplos ruins (não fazer):
-                 - "Adiciona streaming na Montte AI" (descreve implementação)
-                 - "Refatora chat" (sem valor pro usuário)
-                 - "mais inteligência" (vago)
-                 - "foco no que importa" (marketing sem evidência)>
-
-                 ## Ação necessária
-
-                 <Apenas se houver breaking change. Para cada um:
-
-                 ### <O que mudou> ([#PR](url))
-
-                 **Quem é afetado:** <perfil de usuário ou plano>
-                 **O que fazer:** <ação concreta, com prazo se aplicável>
-                 **Documentação:** <link se existir. Omita esta linha se não houver link real. Nunca escreva TODO.>
-
-                 Detecte breaking por: títulos com `!`, texto "BREAKING CHANGE", remoção de rotas/campos/endpoints, migrations destrutivas, remoção de feature.>
-
-                 ## Novidades por área
-
-                 <Tudo que é `feat:` agrupado por **área de produto** (Montte AI, Financeiro, Contatos, Inbox, Plataforma, Auth, etc). Use `### <Área>` como subtítulo. Pule áreas com 0 itens. Cada item é 1 linha começando em letra minúscula, descrevendo benefício, terminando com link do PR. Não liste micro-mudanças que não ajudam o usuário a entender a release.>
-
-                 ## Correções
-
-                 <Tudo que é `fix:` com efeito visível. Mesma regra de agrupamento por área. Bugs internos sem efeito perceptível vão em Notas técnicas. Se houver muitas correções pequenas, agrupe por tema em vez de listar cada detalhe.>
-
-                 ## Melhorias
-
-                 <`perf:` e melhorias visíveis (`refactor:`/`style:` que mudam UX). Refactor puramente interno NÃO entra aqui — vai em Notas técnicas. Omita ajustes cosméticos muito pequenos, como ordem de ícones ou placeholder encurtado, salvo se destravarem um fluxo relevante.>
-
-                 <details>
-                 <summary><strong>Notas técnicas</strong> (para o time)</summary>
-
-                 <Refatorações estruturais, mudanças de infra, schemas, workflows DBOS, dependências relevantes, observabilidade. Pode usar jargão técnico. Tom curto, agrupado por subsistema. Inclui aqui: barrel files, repository layer, oRPC routers, módulos, DBOS, RLS.>
-
-                 </details>
-
-                 <details>
-                 <summary><strong>Manutenção</strong></summary>
-
-                 <`chore:`, `docs:`, `test:`, `ci:`. 1 linha por item. Se 15+ itens, resuma: "Atualização de dependências (X PRs)" + lista os principais.>
-
-                 </details>
-                 ```
-
-                 ## Regras por item de lista
-
-                 - Cada item: **1 linha** começando em letra minúscula, descrevendo o **benefício ou efeito** em pt-BR claro.
-                 - Priorize curadoria: se a release tiver muitos itens, mantenha o corpo público curto e mova detalhes menores para `<details>`.
-                 - **Lead com valor, não implementação.** Reescreva sempre. Exemplos:
-                   - `feat(agent): wrap oRPC procedures` → "Montte AI respeita permissões e validações da plataforma em todas as operações"
-                   - `refactor(finance): drop barrel` → mover pra Notas técnicas, não destacar
-                   - `feat(billing): add ttp loop` → "cobrança recorrente automática para clientes em trial"
-                 - **NUNCA mencione no corpo principal** (apenas em Notas técnicas): refactor, barrel, repository, router interno, schema, migração de domínio, oRPC, Drizzle, DBOS, módulo, layer, service.
-                 - No corpo público, use no máximo uma referência por item: `([#PR](url))`. Se houver MON-XXX, prefira o link do PR no corpo público e deixe Linear nas notas técnicas, exceto quando o issue for indispensável para rastreio.
-                 - **Não inclua SHAs nem nomes de autores em itens** (autores vão no rodapé).
-                 - **Não inclua** commits de merge, commits de versão, commits do dependabot/renovate sem efeito.
-                 - **Sem emojis. Sem "apenas"/"just"/"simply". Sem "estamos animados". Sem badges. Sem TODO. Sem placeholders de imagem.**
-                 - **Não inclua imagens, GIFs ou `![Demo]`** a menos que exista URL real no input. Nunca invente mídia.
-
-                 ## Detecção de tipo
-
-                 Use o prefixo Conventional Commits no título do PR/commit. Se não tiver prefixo, infira: PR que adiciona arquivos sob `apps/web/src/routes/` é `feat`; mudança em `*.test.ts` puro é `test`; bump de `package.json` é `chore(deps)`.
-
-                 ## Decisão: destaque vs área vs notas técnicas
-
-                 Pergunta-chave: **um usuário final percebe a diferença?**
-
-                 - **Sim, e é uma mudança visível de alto impacto** → "Em destaque"
-                 - **Sim, mas é menor (campo novo, novo banco suportado, novo filtro)** → "Novidades por área"
-                 - **Não, é refactor/migração/limpeza interna** → `<details>` Notas técnicas
-                 - **Não, é doc/test/ci** → `<details>` Manutenção
-
-                 Refactor de domínio (finance/insights/account moving to @modules/) NUNCA é destaque. NUNCA é novidade. É notas técnicas.
-
-                 ## Regras de qualidade pública
-
-                 - Não copie texto da UI do GitHub como "Latest", "Assets", "Source code" ou "Contributors".
-                 - Não repita o título da release no corpo. O arquivo não deve começar com `# Montte`.
-                 - Não publique itens com `TODO`, links ausentes, imagens sem URL real ou documentação inexistente.
-                 - Evite frases genéricas como "mais inteligência", "mais robusto", "melhor experiência" sem dizer o que mudou.
-                 - Se uma rota foi removida ou substituída, diga se existe redirecionamento automático. Se não houver evidência, escreva a ação concreta sem afirmar redirect.
-                 - Use "Montte AI", nunca "Rubi", salvo se a mudança for explicitamente uma migração de nome e isso for útil para usuários existentes.
-                 - O corpo público deve ser escaneável: normalmente 3 destaques, até 6-10 novidades por área no total, correções agrupadas e detalhes técnicos em `<details>`.
-
-                 ## Rodapé
-
-                 ```
-                 ---
-
-                 **Contribuíram nesta release:** @autor1, @autor2 (ordenado por nº de PRs, sem bots)
-                 ```
-
-                 ## Validação final antes de salvar
-
-                 - Resumo executivo fala de **valor pro usuário**, não de arquitetura?
-                 - O corpo não começa com `# Montte` nem repete o título?
-                 - "Em destaque" só tem features que usuário vê na tela?
-                 - Nenhuma menção a "refactor", "barrel", "repository", "módulo", "router" no corpo principal (só dentro de `<details>`)?
-                 - Breaking changes têm "Quem é afetado" + "O que fazer"?
-                 - Não há `TODO`, `![Demo]`, placeholder de mídia ou link fictício?
-                 - Notas técnicas e Manutenção estão dentro de `<details>`?
-                 - Nenhum item duplicado entre seções?
-                 - Seções vazias removidas?
+                 Regras absolutas:
+                 - siga a estrutura e a classificação de `$RELEASE_NOTES_REFERENCE`;
+                 - use PR como unidade canônica quando existir;
+                 - escreva em pt-BR com foco em valor para usuário;
+                 - não inclua H1 com o nome ou versão da release;
+                 - não invente links, imagens, documentação, números ou funcionalidades;
+                 - não escreva nada fora de `$OUTPUT_FILE`.
 
          - name: Verify release notes
            if: steps.version.outputs.skip != 'true'

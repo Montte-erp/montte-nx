@@ -114,6 +114,10 @@ jobs:
            uses: anomalyco/opencode/github@latest
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              SKILL_FILE: .agents/skills/docs/SKILL.md
+              DOMAIN_DOCS_REFERENCE: .agents/skills/docs/references/domain-docs.md
+              STYLE_REFERENCE: .agents/skills/docs/references/documentation-style.md
+              VALIDATION_REFERENCE: .agents/skills/docs/references/docs-validation.md
               CONTEXT_FILE: documentation-context.md
               OUTPUT_DIR: docs/project
               PROJECT_NAME: ${{ steps.context.outputs.project_name }}
@@ -121,62 +125,19 @@ jobs:
            with:
               model: opencode-go/deepseek-v4-flash
               prompt: |
-                 Você é um engenheiro senior documentando o projeto `$PROJECT_NAME` a partir do monorepo Montte.
+                 Leia `$SKILL_FILE`, `$DOMAIN_DOCS_REFERENCE`, `$STYLE_REFERENCE` e `$VALIDATION_REFERENCE`.
 
-                 Leia `$CONTEXT_FILE` e escreva um arquivo Markdown por domínio dentro de `$OUTPUT_DIR`. Crie diretórios quando necessário.
+                 Depois leia `$CONTEXT_FILE` e escreva a documentacao tecnica do projeto `$PROJECT_NAME` dentro de `$OUTPUT_DIR` para a versao `$RELEASE_VERSION`.
 
-                 Objetivo: manter uma documentação técnica de projeto que ajude um dev novo ou um agente de IA a entender arquitetura, comandos, fluxos críticos e pontos de atenção sem precisar garimpar o repositório inteiro.
-
-                 Arquivos obrigatórios:
-                 - `$OUTPUT_DIR/platform.md` — arquitetura do monorepo, apps, core, modules, packages, tooling, oRPC, Drizzle, TanStack Start, PostHog e padrões transversais.
-                 - `$OUTPUT_DIR/auth-organizations.md` — Better Auth, organizações, times, sessão, permissões e onboarding de organização/time.
-                 - `$OUTPUT_DIR/finance.md` — financeiro, transações, categorias, bancos, cartões, configurações financeiras e integrações relacionadas.
-                 - `$OUTPUT_DIR/crm-services.md` — contatos, serviços, benefícios, tags/Centro de Custo, assinaturas e domínio comercial.
-                 - `$OUTPUT_DIR/billing.md` — cobrança, HyprPay, usage events, meters, subscriptions, invoices e regras de billing.
-                 - `$OUTPUT_DIR/ai-agents.md` — Rubi, agentes, ferramentas, skill catalog, OpenRouter/TanStack AI e analytics de IA.
-                 - `$OUTPUT_DIR/frontend.md` — rotas, loaders, TanStack Query, forms, tabelas, estado, UI conventions, SSR e a11y.
-                 - `$OUTPUT_DIR/workflows.md` — DBOS, worker, filas, workflows existentes, startup, scheduling e testes de workflow.
-                 - `$OUTPUT_DIR/operations.md` — setup local, comandos, CI, release weekly, documentação automática, troubleshooting e validações.
-                 - `$OUTPUT_DIR/recent-changes.md` — mudanças recentes desde a última release agrupadas por domínio.
-
-                 Estrutura obrigatória em cada arquivo:
-
-                 ```markdown
-                 # <Domínio> — $PROJECT_NAME
-
-                 Última atualização: $RELEASE_VERSION
-
-                 ## Escopo
-                 <O que este domínio cobre e quais partes do repositório pertencem a ele.>
-
-                 ## Mapa do código
-                 <Tabela com caminho, responsabilidade e observações. Foque só nos caminhos relevantes ao domínio.>
-
-                 ## Fluxos principais
-                 <Entrada, processamento e saída dos fluxos relevantes.>
-
-                 ## APIs e dados
-                 <Routers, schemas, tabelas, ownership, transações e contratos importantes quando existirem.>
-
-                 ## Operação e validação
-                 <Comandos, testes, checks, riscos e troubleshooting específicos do domínio.>
-
-                 ## Checklist de manutenção
-                 <Lista objetiva antes de alterar este domínio.>
-                 ```
-
-                 Regras:
-                 - pt-BR claro e direto.
-                 - Não invente funcionalidades fora do contexto.
-                 - Prefira caminhos reais do repositório.
-                 - Use bullets e tabelas quando melhorarem leitura.
-                 - Não inclua segredos, tokens, valores de env ou conteúdo sensível.
-                 - Não use emojis.
-                 - Não crie documentação genérica: amarre cada seção ao que existe no Montte.
-                 - Se uma área não aparecer no contexto, diga que ela não foi identificada no contexto coletado.
-                 - Mantenha o arquivo útil para manutenção contínua, não como release notes.
-                 - Não crie `$OUTPUT_DIR/PROJECT_DOCUMENTATION.md`.
-                 - Não concentre tudo em um único arquivo. Cada domínio obrigatório deve ter seu próprio arquivo.
+                 Regras absolutas:
+                 - siga a lista de arquivos e estrutura de `$DOMAIN_DOCS_REFERENCE`;
+                 - use somente fatos presentes em `$CONTEXT_FILE`;
+                 - escreva em pt-BR claro e tecnico;
+                 - use caminhos reais do repositorio;
+                 - nao inclua segredos, tokens, valores de env ou conteudo sensivel;
+                 - nao crie `$OUTPUT_DIR/PROJECT_DOCUMENTATION.md`;
+                 - nao concentre tudo em um unico arquivo;
+                 - nao escreva nada fora de `$OUTPUT_DIR`.
 
          - name: Verify project documentation
            run: |

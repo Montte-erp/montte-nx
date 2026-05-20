@@ -1,9 +1,9 @@
 ---
-name: montte-social
+name: marketing
 description: Write marketing content for Montte across blog, LinkedIn, and X (Twitter). Founder-led, pt-BR, Zed/PostHog voice, anti-AI-tells, hook formulas com track-record verificado em 2025-2026. Use ao escrever blog post, LinkedIn post, tweet, thread X, ou repurpose entre canais. Canais ativos hoje: blog (canônico) + LinkedIn + X. Instagram fora de escopo.
 ---
 
-# Montte Social, Marketing Skill
+# Marketing
 
 Skill única de marketing Montte. Cobre **blog, LinkedIn e X**. Voz canônica, regras de humanização, anti-AI-tells e convenções pt-BR vivem em [`references/blog.md`](references/blog.md) — qualquer canal herda. Hook formulas e algoritmo de cada plataforma ficam nos refs específicos.
 
@@ -14,6 +14,7 @@ Curadoria de hook formulas adaptada de [sergebulaev/linkedin-skills](https://git
 ## Quando usar
 
 - Escrever blog post Montte (canônico)
+- Escrever post de blog a partir de GitHub Release publicada
 - Escrever post LinkedIn (curto/médio/longo) ou comentário
 - Escrever tweet único ou thread X
 - Repurpose de blog post Montte → LinkedIn + X
@@ -27,6 +28,7 @@ Não usar pra: legenda Instagram, e-mail marketing, copy de landing — fora de 
 | Tarefa | Abrir antes |
 |--------|-------------|
 | Blog post novo (canônico) | `references/blog.md` (skill completa de escrita + distribuição) |
+| Blog post de release publicada | [`references/blog.md`](references/blog.md) + [`references/release-post.md`](references/release-post.md) |
 | Post LinkedIn | `references/blog.md` §Voz + §Humanização → `references/linkedin.md` |
 | Tweet ou thread X | `references/blog.md` §Voz + §Humanização → `references/x.md` |
 | Repurpose blog → LinkedIn + X | `references/blog.md` §Cadeia de distribuição → `references/linkedin.md` + `references/x.md` |
@@ -85,6 +87,7 @@ Detalhes completos (frases canônicas, banidas, hierarquia de menção, vocabul�
 ## Resources
 
 - `references/blog.md` — voz canônica Montte (vale pra todo canal) + humanização + templates de blog + frontmatter SEO/AEO/GEO + cadeia de distribuição blog→LinkedIn→X
+- `references/release-post.md` — regras para transformar release notes publicadas em post de blog canônico
 - `references/linkedin.md` — hook formulas, algoritmo 2026, char rules, anti-padrões LinkedIn
 - `references/x.md` — formatos de tweet, arquitetura de thread, algoritmo X, regras anti-padrão
 - `references/hooks-cross-channel.md` — biblioteca de hook patterns reusáveis (blog/LinkedIn/X)

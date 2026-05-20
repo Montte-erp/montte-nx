@@ -38,16 +38,23 @@ Gotchas:
 
 Skills live in `.agents/skills/<name>/SKILL.md`.
 
-Before creating, migrating, refactoring, reviewing, or testing code in `apps/`, `modules/`, `core/`, `packages/`, or `tooling/`, open [implementation](.agents/skills/implementation/SKILL.md). It contains the implementation rules and explains which domain reference to load for each kind of task.
+Before working in any Montte area, open the skill for that area first. The skill is the source of truth for current rules, references, workflow, and validation.
 
-Before handling review comments, PR findings, reported bugs, or review-only audits, open [code-review](.agents/skills/code-review/SKILL.md). It contains the verify-first workflow and explains which review reference to load for each surface.
+| Area | Open this skill |
+|------|-----------------|
+| Implementation in `apps/`, `modules/`, `core/`, `packages/`, or `tooling/` | [implementation](.agents/skills/implementation/SKILL.md) |
+| Review comments, PR findings, reported bugs, diffs, CI findings | [code-review](.agents/skills/code-review/SKILL.md) |
+| UI, UX, product copy, layout, dashboards, forms, sheets, authenticated surfaces | [design](.agents/skills/design/SKILL.md) |
+| Release workflows, release notes, tags, GitHub Releases, Linear Releases, recovery | [release](.agents/skills/release/SKILL.md) |
+| Project documentation, `docs/project`, documentation automation | [docs](.agents/skills/docs/SKILL.md) |
+| Blog, LinkedIn, X, release blog posts, marketing drafts | [marketing](.agents/skills/marketing/SKILL.md) |
 
-Other operational skills:
+When a task crosses areas, open each relevant skill. For example, a UI bug fix uses [code-review](.agents/skills/code-review/SKILL.md), [implementation](.agents/skills/implementation/SKILL.md), and [design](.agents/skills/design/SKILL.md); a release blog automation change uses [release](.agents/skills/release/SKILL.md), [marketing](.agents/skills/marketing/SKILL.md), and [implementation](.agents/skills/implementation/SKILL.md).
 
-- Code review / review comments / reported bugs: [code-review](.agents/skills/code-review/SKILL.md)
+Other operational tools:
+
 - CI checks: `monitor-ci`
 - Linear (`MON-*`): `linear-cli`
-- UI/product design review: [montte-design](.agents/skills/montte-design/SKILL.md) when the task is primarily visual/product polish
 
 Skill content supersedes anything stale in this file.
 
@@ -71,4 +78,6 @@ The product language is pt-BR. User-visible messages should stay in Brazilian Po
 
 ## Releases
 
-Produto unico (`apps/web`) usa CalVer `YYYY.MM.DD` com tag `vYYYY.MM.DD`. Workflow `.github/workflows/release-weekly.yml` roda toda sexta 21:00 UTC: coleta commits + PRs mergeados desde a ultima tag, gera release notes em pt-BR, cria tag + GitHub Release + Linear Release. Manual via `workflow_dispatch` com `dry_run` opcional. Sem libraries publicadas; todo codigo vive no monorepo.
+Produto unico (`apps/web`) usa CalVer `YYYY.MM.DD` com tag `vYYYY.MM.DD`. Workflow [.github/workflows/release-weekly.yml](.github/workflows/release-weekly.yml) coleta commits + PRs mergeados desde a ultima tag, gera release notes em pt-BR via [release](.agents/skills/release/SKILL.md), cria tag + GitHub Release + Linear Release. Manual via `workflow_dispatch` com `dry_run` opcional. Sem libraries publicadas; todo codigo vive no monorepo.
+
+Workflow [.github/workflows/blog-post-from-release.yml](.github/workflows/blog-post-from-release.yml) transforma releases publicadas em PR de post usando [marketing](.agents/skills/marketing/SKILL.md). Workflow [.github/workflows/project-documentation.yml](.github/workflows/project-documentation.yml) atualiza `docs/project` usando [docs](.agents/skills/docs/SKILL.md).

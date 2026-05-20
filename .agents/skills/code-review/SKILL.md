@@ -33,7 +33,7 @@ Leia somente as referencias envolvidas:
 
 Se a tarefa envolve codigo em `apps/`, `modules/`, `core/`, `packages/` ou `tooling/`, abra tambem [implementation](../implementation/SKILL.md) e suas referencias pertinentes.
 
-Se a tarefa e principalmente visual/produto, abra tambem [montte-design](../montte-design/SKILL.md).
+Se a tarefa e principalmente visual/produto, abra tambem [design](../design/SKILL.md).
 
 ## Nao fazer
 

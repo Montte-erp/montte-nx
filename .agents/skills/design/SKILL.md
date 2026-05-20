@@ -1,9 +1,9 @@
 ---
-name: montte-design
+name: design
 description: Aplica o design system, produto e padroes de UI do Montte para dashboards, landing, tabelas, forms, sheets e superficies autenticadas. Use ao criar ou revisar UI, UX, copy de produto, layout, componentes, estados visuais ou design de telas no Montte.
 ---
 
-# Montte Design
+# Design
 
 Use esta skill antes de criar ou revisar qualquer interface do Montte.
 

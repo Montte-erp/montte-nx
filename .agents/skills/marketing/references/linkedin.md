@@ -2,7 +2,7 @@
 
 Voz e regras pt-BR: ver [`blog.md`](blog.md). Esta ref cobre só o que é específico de LinkedIn.
 
-Curado de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-skills) (MIT). Mantive as 6 fórmulas que batem com pillars Montte (`montte-social/SKILL.md` §Pillars) e descartei as orientadas a lead-magnet / engagement-bait que conflitam com voz founder-led.
+Curado de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-skills) (MIT). Mantive as 6 formulas que batem com pillars Montte (`marketing/SKILL.md` §Pillars) e descartei as orientadas a lead-magnet / engagement-bait que conflitam com voz founder-led.
 
 ---
 

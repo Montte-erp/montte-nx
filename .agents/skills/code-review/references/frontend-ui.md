@@ -5,7 +5,7 @@ Use para comments em `apps/web`, `apps/landing`, `packages/ui`, rotas TanStack, 
 Abra tambem:
 
 - [implementation](../../implementation/SKILL.md) para regras tecnicas.
-- [montte-design](../../montte-design/SKILL.md) quando houver layout, produto, copy ou polish visual.
+- [design](../../design/SKILL.md) quando houver layout, produto, copy ou polish visual.
 
 ## Checklist
 

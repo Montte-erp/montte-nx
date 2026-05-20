@@ -144,7 +144,9 @@ jobs:
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               RELEASE_NOTES_FILE: release-notes.md
-              SKILL_FILE: .agents/skills/montte-blog/SKILL.md
+              MARKETING_SKILL_FILE: .agents/skills/marketing/SKILL.md
+              BLOG_REFERENCE: .agents/skills/marketing/references/blog.md
+              RELEASE_POST_REFERENCE: .agents/skills/marketing/references/release-post.md
               OUTPUT_FILE: ${{ steps.meta.outputs.post_path }}
               RELEASE_TAG: ${{ steps.meta.outputs.tag }}
               RELEASE_VERSION: ${{ steps.meta.outputs.version }}
@@ -154,103 +156,18 @@ jobs:
            with:
               model: opencode-go/deepseek-v4-flash
               prompt: |
-                 Você escreve um post de blog do **Montte** a partir das release notes de uma versão recém-publicada.
+                 Leia `$MARKETING_SKILL_FILE`, `$BLOG_REFERENCE` e `$RELEASE_POST_REFERENCE`.
 
-                 ## Entrada
-                 - `$RELEASE_NOTES_FILE`: corpo bruto da release no GitHub (já curado, em pt-BR, com seções "Em destaque", "Novidades por área", "Correções", `<details>` Notas técnicas e Manutenção).
-                 - `$SKILL_FILE`: skill `montte-blog` com toda a regra de voz, frontmatter, anti-padrão e humanização. **Leia o skill inteiro antes de escrever.** Ele é a fonte de verdade.
+                 Depois leia `$RELEASE_NOTES_FILE` e escreva em `$OUTPUT_FILE` um post de blog do Montte para `$RELEASE_TAG`.
 
-                 ## Saída
-                 Escreva em `$OUTPUT_FILE` um arquivo Markdown com frontmatter YAML válido + corpo. Path = `apps/landing/src/content/blog/$RELEASE_SLUG.md`. Sem H1 no corpo (renderer gera).
-
-                 ## Frontmatter obrigatório
-
-                 ```yaml
-                 ---
-                 title: "<até 60 chars, verbo presente, sem travessão, sem emoji>"
-                 description: "<40 a 60 palavras, 1ª frase = TL;DR direto. Sem travessão. Sem anglicismo evitável.>"
-                 publishedAt: $PUBLISHED_AT
-                 author: "Manoel Neto"
-                 tags: ["release", "<2 a 3 tags adicionais kebab-case relevantes da release>"]
-                 category: "Notas de release"
-                 coverImage: "../../assets/blog/$RELEASE_SLUG.svg"
-                 featured: true
-                 releaseUrl: "$RELEASE_URL"
-                 releaseVersion: "$RELEASE_TAG"
-                 readingMinutes: <inteiro estimado, 3 a 8>
-                 keyTakeaways:
-                    - "<3 a 5 bullets densos com nome de feature e benefício>"
-                 faq:
-                    - question: "<pergunta literal que usuário faz>"
-                      answer: "<resposta direta em 1 a 2 frases>"
-                 ---
-                 ```
-
-                 ## Corpo (template release notes do skill)
-
-                 ```
-                 <1 parágrafo lede, 2 a 3 frases. Sem "Estamos animados", sem "Hoje viemos", sem travessão. Diz o tema central da release em linguagem de produto, não de implementação.>
-
-                 ## <Feature mais impactante da release>
-                 <2 parágrafos. 1ª frase responde literal à pergunta implícita do H2 (AEO).>
-
-                 ## <Feature 2>
-                 ## <Feature 3>
-                 ## Ação necessária  (somente se a release tem breaking change com seção "Ação necessária")
-                 ## Outras melhorias
-                 - **<nome>:** <1 linha de benefício>
-                 - ...
-                 ## Correções
-                 <1 parágrafo corrido OU bullets curtos agrupando por tema>
-                 ## Bastidores  (opcional, somente se a release tem mudança técnica interessante em Notas técnicas)
-                 ## O que vem por aí
-                 <1 parágrafo + CTA em 1 linha (ex: "Manda DM se quiser testar antes.")>
-                 ```
-
-                 Total: 3 a 6 H2 + bastidores opcional. Última H2 é sempre "O que vem por aí" com CTA curto.
-
-                 ## Regras absolutas (do skill)
-
-                 - **Zero travessão longo (—) ou médio (–).** Substitua por vírgula, ponto, parênteses ou dois pontos.
-                 - **Anglicismos evitáveis traduzidos**: deployar→publicar, dashboard→painel, insight→descoberta, framework→estrutura (em copy geral), workflow→fluxo, performance→desempenho, ship→entregar, feedback ok, bug ok.
-                 - **Burstiness**: alterne frase curta (3 a 8 palavras) com média (10 a 20) e longa ocasional. Não 3 médias seguidas.
-                 - **Detalhe específico** em cada H2: tempo, número, nome próprio, marca.
-                 - **1 cicatriz**: cite ao menos 1 momento em que algo não funcionou de primeira (use linguagem como "levou duas tentativas", "refizemos depois que", "tentamos primeiro com X e voltamos pra Y").
-                 - **Pronome:** "nós" / "a gente" como time. Nunca "os usuários". "você" direto pro leitor.
-                 - **Marca:** "no Montte", "do Montte". Nunca "na Montte". "Montte AI" não "Rubi".
-                 - **Lançamento** = transação financeira (não release de software). Pra release de produto: "release" ou "atualização".
-
-                 ## AI-tells banidos em pt-BR
-
-                 Nunca abra frase com: "Estamos animados", "Hoje viemos", "No mundo acelerado", "Em um cenário", "É importante notar que", "Vale ressaltar", "Cabe destacar", "Ademais", "Outrossim", "Em suma", "Em síntese", "Por outro lado" (mais de 1x), "Não apenas X, mas também Y", "Vamos mergulhar fundo", "Desbravar", "Jornada" como metáfora, "Empoderar", "Sinergia", "Robusto" como adjetivo de produto.
-
-                 Nunca feche com: "Em conclusão", "Por fim", "Para finalizar", "Resumindo", "E é isso!", "Espero que tenha gostado", "Até a próxima".
-
-                 ## Adjetivo vago → fato concreto
-
-                 - "muito rápido" → "carrega em 200ms"
-                 - "vários clientes" → "12 clientes do lote beta"
-                 - "grande melhoria" → "30% menos cliques no fluxo X"
-
-                 Se a release notes não fornece o número, use o nome próprio da feature ou um efeito específico observável ("você reconhece a conta pela cor antes de ler o nome").
-
-                 ## Fonte de fato
-
-                 Tudo no post precisa vir da release notes. **Não invente PRs, números, prazos, nomes que não estejam no input.** Se a release notes diz "30% mais rápido", use 30%. Se não diz, não invente número.
-
-                 ## Validação antes de salvar
-
-                 - [ ] Título ≤ 60 chars, sem travessão, sem emoji
-                 - [ ] Description 40 a 60 palavras, sem travessão, 1ª frase = TL;DR
-                 - [ ] Frontmatter completo (todos os campos do bloco acima)
-                 - [ ] H1 não está no markdown (vem do frontmatter)
-                 - [ ] 3 a 6 H2 + Bastidores opcional + "O que vem por aí"
-                 - [ ] Zero travessão `—` ou `–` em todo o arquivo
-                 - [ ] Cada H2 tem 1 detalhe específico (número, nome, marca)
-                 - [ ] 1 cicatriz/imperfeição no corpo
-                 - [ ] Nenhuma frase da lista de AI-tells
-                 - [ ] "no Montte", nunca "na Montte"
-                 - [ ] Última frase é ação ou afirmação, nunca despedida formal
+                 Regras absolutas:
+                 - release notes sao a unica fonte factual;
+                 - siga o frontmatter e o corpo definidos em `$RELEASE_POST_REFERENCE`;
+                 - aplique a voz, humanizacao e anti-padroes de `$BLOG_REFERENCE`;
+                 - nao inclua H1 no markdown;
+                 - nao use travessao longo ou medio;
+                 - nao invente numeros, PRs, prazos, nomes, cicatrizes ou funcionalidades;
+                 - nao escreva nada fora de `$OUTPUT_FILE`.
 
          - name: Validate generated post
            if: steps.meta.outputs.skip != 'true' && steps.check.outputs.skip != 'true'
@@ -321,7 +238,7 @@ jobs:
 
               ### Checklist antes de mergear
 
-              - [ ] Revisei o conteúdo, voz bate com o skill \`montte-blog\`
+              - [ ] Revisei o conteúdo, voz bate com o skill \`marketing\`
               - [ ] Substitui o cover SVG placeholder por design final em \`$COVER_PATH\` (ou .jpg)
               - [ ] Confiro que descrição tem 40 a 60 palavras e 1ª frase é TL;DR
               - [ ] Confiro que keyTakeaways e faq estão preenchidos
@@ -331,7 +248,7 @@ jobs:
               ### O que o workflow fez
 
               1. Buscou release notes via \`gh release view $TAG\`
-              2. Rodou opencode com skill \`.agents/skills/montte-blog/SKILL.md\` como referência
+              2. Rodou opencode com skill \`.agents/skills/marketing/SKILL.md\` como referência
               3. Gerou cover SVG placeholder com a versão
               4. Validou frontmatter + ausência de travessão
               5. Buildou \`apps/landing\` pra garantir schema válido
