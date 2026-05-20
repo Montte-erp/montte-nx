@@ -4,6 +4,7 @@
    "type": "module",
    "scripts": {
       "dev": "astro dev --port 3001",
+      "desktop:dev": "bun run dev",
       "build": "astro build",
       "start": "astro preview --host 0.0.0.0 --port ${PORT:-3001}",
       "preview": "astro preview --port 3001",

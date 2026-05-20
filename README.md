@@ -38,6 +38,14 @@ bun dev
 
 `bun dev` roda `scripts/dev-init.ts`, garante `apps/web/.env.local`, instala dependencias quando necessario, tenta subir os containers locais, aplica o schema com `db:push` e inicia `web`, `worker` e `landing` em paralelo.
 
+Para abrir o app desktop local via Tauri, use:
+
+```bash
+bun run dev:desktop
+```
+
+`bun run dev:desktop` roda o mesmo bootstrap, inicia `worker` e `landing`, e troca o `web:dev` por `web:desktop:dev`. O Tauri abre o shell desktop e sobe o runtime web em `http://localhost:3000`.
+
 - App web: `http://localhost:3000`
 - Landing Astro: `http://localhost:3001`
 - Worker DBOS: processo separado em `apps/worker`
@@ -181,6 +189,7 @@ montte-nx/
 
 ```bash
 bun dev                  # dev-init + web + worker + landing
+bun run dev:desktop      # dev-init + desktop Tauri + worker + landing
 bun dev:all              # todos os apps/pacotes com target dev
 bun run build            # build via Nx
 bun run typecheck        # typecheck via Nx
