@@ -53,7 +53,9 @@ Importe apenas o que usar. Nao adicione barrel para reexportar `Result`, `Tagged
 
 ## Catalogo de erro
 
-O erro esperado pertence ao arquivo ou bounded context dono da falha. Defina o catalogo perto do router, job, workflow, provider adapter ou runtime que realmente conhece o contrato.
+Leia `evlog.md` para regras completas de `defineErrorCatalog`, `RegisteredErrorCatalogs`, tags, status, drains e logging.
+
+Resumo para `better-result`: o erro esperado deve carregar um catalog error concreto do owner. Defina o catalogo perto do router, job, workflow, provider adapter ou runtime que realmente conhece o contrato.
 
 Padrao:
 
@@ -62,21 +64,24 @@ import { defineErrorCatalog } from "evlog";
 
 const tagRouterErrors = defineErrorCatalog("classification.tags.router", {
   CREATE_FAILED: {
-    severity: "error",
     status: 500,
+    message: "Falha ao criar centro de custo.",
+    tags: ["classification", "tags", "router"],
   },
   DUPLICATE_NAME: {
-    severity: "warn",
     status: 409,
+    message: "Ja existe um centro de custo com esse nome.",
+    tags: ["classification", "tags", "router"],
   },
   NOT_FOUND: {
-    severity: "warn",
     status: 404,
+    message: "Centro de custo nao encontrado.",
+    tags: ["classification", "tags", "router"],
   },
 });
 
 declare module "evlog" {
-  interface ErrorCatalogRegistry {
+  interface RegisteredErrorCatalogs {
     "classification.tags.router": typeof tagRouterErrors;
   }
 }
