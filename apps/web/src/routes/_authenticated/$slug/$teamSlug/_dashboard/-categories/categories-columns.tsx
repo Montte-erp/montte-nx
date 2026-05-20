@@ -21,13 +21,8 @@ import {
    PopoverContent,
    PopoverTrigger,
 } from "@packages/ui/components/popover";
-import type { Outputs } from "@/integrations/orpc/client";
+import type { CategoriesCollectionRow } from "@/integrations/tanstack-db/categories";
 import { z } from "zod";
-import {
-   Announcement,
-   AnnouncementTag,
-   AnnouncementTitle,
-} from "@/components/blocks/announcement";
 import {
    Tooltip,
    TooltipContent,
@@ -39,9 +34,7 @@ import {
    ArrowUpDown,
    Check,
    CornerDownRight,
-   Tags,
    TextCursorInput,
-   TriangleAlert,
 } from "lucide-react";
 import { useState } from "react";
 import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
@@ -54,7 +47,7 @@ const TYPE_OPTIONS = [
    { value: "transfer", label: "Transferência" },
 ];
 
-export type CategoryRow = Outputs["categories"]["getPaginated"]["data"][number];
+export type CategoryRow = CategoriesCollectionRow;
 type CategoryType = "income" | "expense" | "transfer";
 type CategoryUpdateData = {
    name?: string;
@@ -447,87 +440,6 @@ export function buildCategoryColumns(options?: {
             if (type === "transfer")
                return <Badge variant="secondary">Transferência</Badge>;
             return <span className="text-sm text-muted-foreground">—</span>;
-         },
-      },
-      {
-         id: "keywords",
-         header: "Palavras-chave",
-         meta: {
-            label: "Palavras-chave",
-            exportValue: (row) => row.keywords?.join(", ") ?? "",
-         },
-         cell: ({ row }) => {
-            if (row.original.parentId !== null)
-               return <span className="text-sm text-muted-foreground">—</span>;
-            const { keywords, keywordsUpdatedAt, updatedAt } = row.original;
-            const count = keywords?.length ?? 0;
-            const isStale =
-               !keywordsUpdatedAt ||
-               new Date(updatedAt) > new Date(keywordsUpdatedAt);
-
-            if (count === 0) {
-               if (isStale) {
-                  return (
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                           <span className="inline-flex items-center gap-2 text-sm text-amber-500 cursor-default">
-                              <TriangleAlert className="size-3.5" />
-                              Não geradas
-                           </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                           Palavras-chave ainda não foram geradas para esta
-                           categoria. Use "Regerar palavras-chave" para gerar.
-                        </TooltipContent>
-                     </Tooltip>
-                  );
-               }
-               return <span className="text-sm text-muted-foreground">—</span>;
-            }
-
-            return (
-               <div className="flex items-center gap-2">
-                  <Tooltip>
-                     <TooltipTrigger asChild>
-                        <Announcement className="cursor-default w-fit">
-                           <AnnouncementTag>
-                              <Tags className="size-3" />
-                           </AnnouncementTag>
-                           <AnnouncementTitle className="text-xs">
-                              {count} {count === 1 ? "palavra" : "palavras"}
-                           </AnnouncementTitle>
-                        </Announcement>
-                     </TooltipTrigger>
-                     <TooltipContent className="max-w-72">
-                        <p className="font-semibold text-sm">
-                           Palavras-chave IA
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                           Geradas automaticamente com base no nome e descrição
-                           da categoria.
-                        </p>
-                        <p className="text-xs">{keywords!.join(", ")}</p>
-                     </TooltipContent>
-                  </Tooltip>
-                  {isStale && (
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                           <span
-                              className="inline-flex cursor-default"
-                              tabIndex={0}
-                           >
-                              <TriangleAlert className="size-3.5 text-amber-500" />
-                           </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                           Categoria foi atualizada desde a última geração de
-                           palavras-chave. Use "Regerar palavras-chave" para
-                           atualizar.
-                        </TooltipContent>
-                     </Tooltip>
-                  )}
-               </div>
-            );
          },
       },
    ];

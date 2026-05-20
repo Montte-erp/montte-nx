@@ -4,8 +4,8 @@ Processo worker standalone responsável por executar workflows DBOS em backgroun
 
 ## Responsabilidades
 
-- Processa filas DBOS nativas (`workflow:categorize`, `workflow:derive-keywords`) — sem loop de consumo, DBOS gerencia automaticamente
-- Executa workflows de categorização de transações e derivação de keywords
+- Processa filas DBOS nativas de categorização — sem loop de consumo, DBOS gerencia automaticamente
+- Executa workflows de categorização de transações
 - Envia logs e telemetria para PostHog via OTel
 
 ## Separação do processo web

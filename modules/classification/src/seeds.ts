@@ -89,7 +89,6 @@ type TagSeed = {
 type LeafSeed = {
    name: string;
    description?: string;
-   keywords: string[];
 };
 
 type ParentSeed = {
@@ -189,58 +188,22 @@ const CATEGORIES: ParentSeed[] = [
          {
             name: "Vendas de Produtos",
             description: "Receita de venda de mercadorias.",
-            keywords: [
-               "venda de produto",
-               "nf produto",
-               "nota fiscal produto",
-               "marketplace",
-               "mercado livre",
-               "shopee",
-               "shopify",
-               "loja virtual",
-            ],
          },
          {
             name: "Prestação de Serviços",
             description: "Receita de prestação de serviços.",
-            keywords: [
-               "prestação de serviço",
-               "nfs-e",
-               "nota fiscal serviço",
-               "honorários recebidos",
-               "consultoria",
-               "contrato de serviço",
-            ],
          },
          {
             name: "Receita Cartão / Maquininha",
             description: "Vendas processadas por cartão / adquirente.",
-            keywords: [
-               "stone",
-               "cielo",
-               "rede",
-               "getnet",
-               "pagseguro",
-               "infinitepay",
-               "maquininha",
-               "adquirente",
-               "venda no cartão",
-            ],
          },
          {
             name: "Receita PIX",
             description: "Recebimentos via PIX.",
-            keywords: [
-               "pix recebido",
-               "pix de cliente",
-               "transferência pix",
-               "pix in",
-            ],
          },
          {
             name: "Receita em Dinheiro",
             description: "Vendas em espécie.",
-            keywords: ["depósito em dinheiro", "venda em dinheiro", "espécie"],
          },
       ],
    },
@@ -256,31 +219,21 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Devoluções de Vendas",
-            keywords: [
-               "devolução de venda",
-               "estorno de venda",
-               "cancelamento de venda",
-            ],
          },
          {
             name: "Descontos Concedidos",
-            keywords: ["desconto concedido", "abatimento", "rebate"],
          },
          {
             name: "ICMS sobre Vendas",
-            keywords: ["icms", "icms st", "icms sobre vendas"],
          },
          {
             name: "ISS sobre Faturamento",
-            keywords: ["iss", "iss sobre faturamento", "iss sobre serviço"],
          },
          {
             name: "Simples Nacional - DAS",
-            keywords: ["das", "simples nacional", "guia simples"],
          },
          {
             name: "PIS/COFINS sobre Vendas",
-            keywords: ["pis", "cofins", "pis cofins", "pis/cofins"],
          },
       ],
    },
@@ -296,26 +249,15 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Rendimentos de Aplicações",
-            keywords: [
-               "rendimento de aplicação",
-               "cdb",
-               "lci",
-               "lca",
-               "tesouro",
-               "fundo de investimento",
-            ],
          },
          {
             name: "Juros Recebidos",
-            keywords: ["juros recebidos", "juros sobre atraso"],
          },
          {
             name: "Aluguéis Ativos",
-            keywords: ["aluguel recebido", "locação recebida"],
          },
          {
             name: "Ganhos em Venda de Ativo",
-            keywords: ["venda de ativo", "ganho em ativo"],
          },
       ],
    },
@@ -330,29 +272,18 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Compra de Mercadorias",
-            keywords: [
-               "compra de mercadoria",
-               "reposição de estoque",
-               "atacado",
-               "distribuidora",
-               "importação",
-            ],
          },
          {
             name: "Matéria-Prima",
-            keywords: ["matéria-prima", "insumo", "compra de insumo"],
          },
          {
             name: "Materiais Aplicados em Serviços",
-            keywords: ["material aplicado", "consumível", "peças aplicadas"],
          },
          {
             name: "Frete sobre Compras",
-            keywords: ["frete de entrada", "frete sobre compra"],
          },
          {
             name: "Fornecedores",
-            keywords: ["fornecedor", "pagamento fornecedor"],
          },
       ],
    },
@@ -367,29 +298,24 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Salários",
-            keywords: ["salário", "folha de pagamento", "holerite"],
          },
          {
             name: "Pró-labore",
-            keywords: ["pro-labore", "pró-labore", "retirada sócio"],
          },
-         { name: "Horistas", keywords: ["horista", "pagamento por hora"] },
-         { name: "Estagiários", keywords: ["estagiário", "estágio"] },
-         { name: "13º Salário", keywords: ["13o salário", "décimo terceiro"] },
-         { name: "Férias", keywords: ["férias"] },
-         { name: "INSS", keywords: ["inss", "guia gps", "inss patronal"] },
-         { name: "FGTS", keywords: ["fgts", "guia fgts"] },
+         { name: "Horistas" },
+         { name: "Estagiários" },
+         { name: "13º Salário" },
+         { name: "Férias" },
+         { name: "INSS" },
+         { name: "FGTS" },
          {
             name: "IRRF sobre Salários",
-            keywords: ["irrf folha", "darf 0561", "irrf sobre salário"],
          },
          {
             name: "Horas Extras",
-            keywords: ["hora extra", "adicional noturno"],
          },
          {
             name: "Adiantamento Salarial",
-            keywords: ["adiantamento salarial", "vale"],
          },
       ],
    },
@@ -404,15 +330,12 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Verbas Rescisórias",
-            keywords: ["verba rescisória", "rescisão", "trct"],
          },
          {
             name: "Indenizações Trabalhistas",
-            keywords: ["indenização trabalhista", "ação trabalhista"],
          },
          {
             name: "Exames Admissionais e Demissionais",
-            keywords: ["exame admissional", "exame demissional", "asas"],
          },
       ],
    },
@@ -427,30 +350,24 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Vale-Alimentação",
-            keywords: ["vale alimentação", "vr", "alelo va", "sodexo va"],
          },
          {
             name: "Vale-Transporte",
-            keywords: ["vale transporte", "vt", "alelo vt"],
          },
          {
             name: "Plano de Saúde",
-            keywords: ["plano de saúde", "convênio médico", "unimed", "amil"],
          },
          {
             name: "Plano Odontológico",
-            keywords: ["plano odontológico", "odontoprev"],
          },
-         { name: "Seguro de Vida", keywords: ["seguro de vida"] },
+         { name: "Seguro de Vida" },
          {
             name: "Cursos e Treinamentos",
-            keywords: ["curso", "treinamento", "capacitação"],
          },
          {
             name: "Confraternizações",
-            keywords: ["confraternização", "happy hour", "festa empresa"],
          },
-         { name: "Uniformes", keywords: ["uniforme", "epi"] },
+         { name: "Uniformes" },
       ],
    },
    {
@@ -464,11 +381,9 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "PLR",
-            keywords: ["plr", "participação nos lucros"],
          },
          {
             name: "Bônus / Gratificações",
-            keywords: ["bônus", "gratificação", "premiação"],
          },
       ],
    },
@@ -481,25 +396,21 @@ const CATEGORIES: ParentSeed[] = [
       dreGroupId: "Despesa Administrativa",
       participatesDre: true,
       children: [
-         { name: "Aluguel", keywords: ["aluguel", "locação imóvel"] },
-         { name: "Condomínio", keywords: ["condomínio", "taxa condominial"] },
-         { name: "IPTU", keywords: ["iptu"] },
+         { name: "Aluguel" },
+         { name: "Condomínio" },
+         { name: "IPTU" },
          {
             name: "Energia Elétrica",
-            keywords: ["energia elétrica", "luz", "enel", "cemig", "cpfl"],
          },
          {
             name: "Água e Esgoto",
-            keywords: ["água", "saneamento", "sabesp", "saae"],
          },
          {
             name: "Manutenção Predial",
-            keywords: ["manutenção predial", "reforma", "pintura"],
          },
-         { name: "Seguro de Imóveis", keywords: ["seguro imóvel"] },
+         { name: "Seguro de Imóveis" },
          {
             name: "Alvará de Funcionamento",
-            keywords: ["alvará", "alvará de funcionamento"],
          },
       ],
    },
@@ -514,25 +425,20 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Combustível",
-            keywords: ["combustível", "gasolina", "diesel", "etanol", "posto"],
          },
          {
             name: "Manutenção de Veículos",
-            keywords: ["manutenção veículo", "oficina", "mecânica"],
          },
          {
             name: "IPVA / Licenciamento",
-            keywords: ["ipva", "licenciamento", "dpvat"],
          },
          {
             name: "Pedágios e Estacionamento",
-            keywords: ["pedágio", "estacionamento", "zona azul"],
          },
          {
             name: "Multas de Trânsito",
-            keywords: ["multa de trânsito", "detran"],
          },
-         { name: "Seguro de Veículos", keywords: ["seguro veículo"] },
+         { name: "Seguro de Veículos" },
       ],
    },
    {
@@ -546,19 +452,15 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Material de Escritório",
-            keywords: ["material de escritório", "papelaria"],
          },
          {
             name: "Material de Informática",
-            keywords: ["material de informática", "cabos", "periféricos"],
          },
          {
             name: "Suprimentos de Limpeza",
-            keywords: ["limpeza", "produtos de limpeza"],
          },
          {
             name: "Copa e Cozinha",
-            keywords: ["copa", "café", "água mineral", "lanche"],
          },
       ],
    },
@@ -571,30 +473,18 @@ const CATEGORIES: ParentSeed[] = [
       dreGroupId: "Despesa Administrativa",
       participatesDre: true,
       children: [
-         { name: "Telefone", keywords: ["telefone", "vivo", "claro", "tim"] },
+         { name: "Telefone" },
          {
             name: "Internet",
-            keywords: ["internet", "provedor", "banda larga"],
          },
          {
             name: "Software / Licenças (SaaS)",
-            keywords: [
-               "saas",
-               "assinatura software",
-               "licença",
-               "google workspace",
-               "microsoft 365",
-               "aws",
-               "vercel",
-            ],
          },
          {
             name: "Manutenção de Computadores",
-            keywords: ["manutenção computador", "suporte técnico"],
          },
          {
             name: "Correios",
-            keywords: ["correios", "sedex", "envio postal"],
          },
       ],
    },
@@ -609,19 +499,15 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Honorários Contábeis",
-            keywords: ["contabilidade", "honorário contábil", "contador"],
          },
          {
             name: "Honorários Advocatícios",
-            keywords: ["advogado", "honorário advocatício", "jurídico"],
          },
          {
             name: "Consultoria",
-            keywords: ["consultoria", "consultor", "assessoria"],
          },
          {
             name: "Cartório",
-            keywords: ["cartório", "reconhecimento de firma"],
          },
       ],
    },
@@ -636,34 +522,21 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Comissões de Vendedores",
-            keywords: ["comissão de venda", "comissão vendedor"],
          },
          {
             name: "Marketing e Publicidade",
-            keywords: [
-               "marketing",
-               "google ads",
-               "meta ads",
-               "facebook ads",
-               "agência de marketing",
-               "publicidade",
-            ],
          },
          {
             name: "Brindes para Clientes",
-            keywords: ["brinde cliente", "presente cliente"],
          },
          {
             name: "Viagens e Representações",
-            keywords: ["viagem", "passagem aérea", "hospedagem", "uber"],
          },
          {
             name: "Frete sobre Vendas",
-            keywords: ["frete de saída", "frete de venda", "transportadora"],
          },
          {
             name: "Taxa de Maquininha / Adquirência",
-            keywords: ["taxa maquininha", "taxa cartão", "antecipação cartão"],
          },
       ],
    },
@@ -678,24 +551,16 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Tarifas Bancárias",
-            keywords: ["tarifa bancária", "manutenção de conta"],
          },
          {
             name: "Tarifas de Boletos",
-            keywords: ["tarifa boleto", "emissão boleto"],
          },
-         { name: "IOF", keywords: ["iof"] },
+         { name: "IOF" },
          {
             name: "Taxas Municipais Diversas",
-            keywords: ["taxa municipal", "sindicato", "jucea"],
          },
          {
             name: "Multas por Infração à Legislação",
-            keywords: [
-               "multa receita federal",
-               "multa fiscal",
-               "auto infração",
-            ],
          },
       ],
    },
@@ -708,18 +573,15 @@ const CATEGORIES: ParentSeed[] = [
       dreGroupId: "Despesa Não Operacional",
       participatesDre: true,
       children: [
-         { name: "Juros Pagos", keywords: ["juros pagos", "juros de mora"] },
+         { name: "Juros Pagos" },
          {
             name: "Empréstimos (Juros)",
-            keywords: ["juros de empréstimo", "encargos empréstimo"],
          },
          {
             name: "Factoring / Antecipação",
-            keywords: ["factoring", "antecipação", "desconto duplicata"],
          },
          {
             name: "Outras Despesas Bancárias",
-            keywords: ["despesa bancária", "encargos bancários"],
          },
       ],
    },
@@ -732,14 +594,12 @@ const CATEGORIES: ParentSeed[] = [
       dreGroupId: "Despesa Não Operacional",
       participatesDre: true,
       children: [
-         { name: "Doações", keywords: ["doação"] },
+         { name: "Doações" },
          {
             name: "Despesas Pessoais dos Sócios",
-            keywords: ["despesa pessoal sócio", "antecipação sócio"],
          },
          {
             name: "Despesas a Identificar",
-            keywords: ["despesa a identificar", "lançamento pendente"],
          },
       ],
    },
@@ -754,25 +614,20 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Compra de Equipamentos",
-            keywords: ["equipamento", "máquina industrial", "ferramenta"],
          },
          {
             name: "Compra de Móveis e Utensílios",
-            keywords: ["móvel", "utensílio", "mobiliário"],
          },
          {
             name: "Compra de Veículos",
-            keywords: ["compra veículo", "carro empresa"],
          },
          {
             name: "Software / Licença de Uso",
-            keywords: ["licença perpétua", "compra de software"],
          },
          {
             name: "Construções e Benfeitorias",
-            keywords: ["construção", "benfeitoria", "reforma estrutural"],
          },
-         { name: "Leasing", keywords: ["leasing", "arrendamento"] },
+         { name: "Leasing" },
       ],
    },
    {
@@ -783,11 +638,7 @@ const CATEGORIES: ParentSeed[] = [
       description: "IRPJ e CSLL.",
       dreGroupId: "Imposto sobre o Lucro",
       participatesDre: true,
-      children: [
-         { name: "IRPJ", keywords: ["irpj", "imposto de renda pj"] },
-         { name: "CSLL", keywords: ["csll", "contribuição social"] },
-         { name: "MEI", keywords: ["das mei", "guia mei"] },
-      ],
+      children: [{ name: "IRPJ" }, { name: "CSLL" }, { name: "MEI" }],
    },
    {
       name: "Retirada de Lucro",
@@ -800,11 +651,9 @@ const CATEGORIES: ParentSeed[] = [
       children: [
          {
             name: "Distribuição de Lucros aos Sócios",
-            keywords: ["distribuição de lucro", "lucros aos sócios"],
          },
          {
             name: "Antecipação de Lucros",
-            keywords: ["antecipação de lucro"],
          },
       ],
    },
@@ -855,7 +704,6 @@ export function seedClassificationDefaults(
                         name: child.name,
                         type: root.type,
                         description: child.description ?? null,
-                        keywords: child.keywords,
                         parentId: parent.id,
                         level: 2,
                         isDefault: true,

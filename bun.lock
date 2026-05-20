@@ -471,10 +471,11 @@
         "@core/utils": "workspace:*",
         "@modules/classification": "workspace:*",
         "@orpc/server": "catalog:orpc",
+        "better-result": "catalog:validation",
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
         "drizzle-zod": "catalog:database",
-        "neverthrow": "catalog:validation",
+        "evlog": "catalog:logging",
         "posthog-node": "catalog:analytics-client",
         "zod": "catalog:validation",
       },
@@ -580,7 +581,6 @@
         "@core/utils": "workspace:*",
         "@dbos-inc/dbos-sdk": "catalog:workers",
         "@dbos-inc/drizzle-datasource": "catalog:workers",
-        "@f-o-t/condition-evaluator": "catalog:fot",
         "@orpc/server": "catalog:orpc",
         "@tanstack/ai": "catalog:tanstack-ai",
         "@tanstack/ai-openrouter": "catalog:tanstack-ai",
@@ -880,9 +880,9 @@
       "@tanstack/store": "^0.11.0",
     },
     "tanstack-ai": {
-      "@tanstack/ai": "0.18.0",
-      "@tanstack/ai-openrouter": "0.9.1",
-      "@tanstack/ai-react": "0.10.0",
+      "@tanstack/ai": "0.20.1",
+      "@tanstack/ai-openrouter": "0.9.5",
+      "@tanstack/ai-react": "0.11.3",
     },
     "telemetry": {
       "@opentelemetry/api": "^1.9.0",
@@ -2384,17 +2384,17 @@
 
     "@tailwindcss/vite": ["@tailwindcss/vite@4.3.0", "", { "dependencies": { "@tailwindcss/node": "4.3.0", "@tailwindcss/oxide": "4.3.0", "tailwindcss": "4.3.0" }, "peerDependencies": { "vite": "^5.2.0 || ^6 || ^7 || ^8" } }, "sha512-t6J3OrB5Fc0ExuhohouH0fWUGMYL6PTLhW+E7zIk/pdbnJARZDCwjBznFnkh5ynRnIRSI4YjtTH0t6USjJISrw=="],
 
-    "@tanstack/ai": ["@tanstack/ai@0.18.0", "", { "dependencies": { "@ag-ui/core": "^0.0.52", "@tanstack/ai-event-client": "0.3.2", "partial-json": "^0.1.7" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-RIS9dwPBOErob2i62ppie5GnxvzzI+PNZY8yy5bv2mmwPCoJp82qLdDxDC9T+GHQv+63g/xQUH69st+fK1u5lA=="],
+    "@tanstack/ai": ["@tanstack/ai@0.20.1", "", { "dependencies": { "@ag-ui/core": "^0.0.52", "@tanstack/ai-event-client": "0.3.6", "partial-json": "^0.1.7" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-cv+OiqeDjtvt1WOw7VlY3V5LODBvMHhFGv0+hxgr8Wj4n0c29mI8IEja2490kS1PAaYuq92FQKVVX1PxEM/VCg=="],
 
-    "@tanstack/ai-client": ["@tanstack/ai-client@0.10.0", "", { "dependencies": { "@tanstack/ai": "0.18.0", "@tanstack/ai-event-client": "0.3.2" } }, "sha512-I5Ec0c81JsliGk+opc59cjMr8cQftQ8mc41mcRl7lY/sySFA2yPHZfCAiOwFq5Jq2zC6ZRviRBvZgYgXbXtOSQ=="],
+    "@tanstack/ai-client": ["@tanstack/ai-client@0.11.3", "", { "dependencies": { "@tanstack/ai": "0.20.1", "@tanstack/ai-event-client": "0.3.6" } }, "sha512-mUjKdbMIjNg9AcxsFi2YgT75oWBajZI9KJn4AzseWJwWxoVdZItmZZ1yyuFKMPJHy8LmB6H7XwWcPZbigjNazw=="],
 
     "@tanstack/ai-devtools-core": ["@tanstack/ai-devtools-core@0.3.29", "", { "dependencies": { "@tanstack/ai": "0.18.0", "@tanstack/ai-event-client": "0.3.2", "@tanstack/devtools-ui": "^0.5.1", "@tanstack/devtools-utils": "^0.4.0", "goober": "^2.1.18", "solid-js": "^1.9.10" } }, "sha512-SVjV9a/1SHSrmGCuGNt7REwtXieb1nlkn9JI9cyJwwE4lHnX+S5Rnan11/fdFvfrAffmP+tTNfZ5r+c9fuxduQ=="],
 
-    "@tanstack/ai-event-client": ["@tanstack/ai-event-client@0.3.2", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.4.1" }, "peerDependencies": { "@tanstack/ai": "0.18.0" } }, "sha512-4GhqHFU6W00Uo10dgKZyHKwtTENtpIFmqy6jW2HmZpW6NrOBhwG71dspiwmQ+4NPn4foADfbEBnzdt0W5Ik0Jw=="],
+    "@tanstack/ai-event-client": ["@tanstack/ai-event-client@0.3.6", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.4.1" }, "peerDependencies": { "@tanstack/ai": "0.20.1" } }, "sha512-hqjdzj0eNaej5I+skPv2v4Tdg3F0+1tUmopuFVcPEb8kMX3zlvTCmN4R9symFJavW43ApVboVrL3G+7Sl4Iq9A=="],
 
-    "@tanstack/ai-openrouter": ["@tanstack/ai-openrouter@0.9.1", "", { "dependencies": { "@openrouter/sdk": "0.12.14", "@tanstack/ai-utils": "0.2.0" }, "peerDependencies": { "@tanstack/ai": "^0.18.0" } }, "sha512-dPcX4Dqy1e3na/M31WDLQ769JRAhtjx2/VqMZvEJZBgnG1bt2h2iY28gC0uXqxSmoCm4UMxWDwZ/HSb4R/oisg=="],
+    "@tanstack/ai-openrouter": ["@tanstack/ai-openrouter@0.9.5", "", { "dependencies": { "@openrouter/sdk": "0.12.14", "@tanstack/ai-utils": "0.2.0" }, "peerDependencies": { "@tanstack/ai": "^0.20.1" } }, "sha512-5Qk3fjVHzGemQWfnugVPgM8V+bbXWLQjNJQQw2lL6Rptj1gvRC/15lUcixIciWSsR0XuC2Uv1h0N16K/X3lQ1A=="],
 
-    "@tanstack/ai-react": ["@tanstack/ai-react@0.10.0", "", { "dependencies": { "@tanstack/ai-client": "0.10.0" }, "peerDependencies": { "@tanstack/ai": "^0.18.0", "@types/react": ">=18.0.0", "react": ">=18.0.0" } }, "sha512-OmY0buHaHG0GxL0xvDQ4yUtI2JAE0A2b/hlxOQq6qKOsWMgECZ/QiEXyXGwgkLgMS9xQ30LXSVYZ3AnXolfU/w=="],
+    "@tanstack/ai-react": ["@tanstack/ai-react@0.11.3", "", { "dependencies": { "@tanstack/ai-client": "0.11.3" }, "peerDependencies": { "@tanstack/ai": "^0.20.1", "@types/react": ">=18.0.0", "react": ">=18.0.0" } }, "sha512-zEvaQBBncgTSWKgQ0BYpqRRdQ9sZ/1ra86migRjZMrxkl7FOZAV1lP2dcV5wPRMFGvE+wRNu2sWboNRbbSjitg=="],
 
     "@tanstack/ai-utils": ["@tanstack/ai-utils@0.2.0", "", {}, "sha512-ttFkUEg60sAUHPZZ9bwDuJS0K2pcI6JLpRcJS7FAiqD3+h3CtJZaF38eWG5nBy1w6fJ9zfaG7ExZf2AQpcyzDw=="],
 
@@ -4950,6 +4950,10 @@
 
     "@tanstack/ai/@ag-ui/core": ["@ag-ui/core@0.0.52", "", { "dependencies": { "zod": "^3.22.4" } }, "sha512-Xo0bUaNV56EqylzcrAuhUkQX7et7+SZIrqZZtEByGwEq/I1EHny6ZMkWHLkKR7UNi0FJZwJyhKYmKJS3B2SEgA=="],
 
+    "@tanstack/ai-devtools-core/@tanstack/ai": ["@tanstack/ai@0.18.0", "", { "dependencies": { "@ag-ui/core": "^0.0.52", "@tanstack/ai-event-client": "0.3.2", "partial-json": "^0.1.7" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-RIS9dwPBOErob2i62ppie5GnxvzzI+PNZY8yy5bv2mmwPCoJp82qLdDxDC9T+GHQv+63g/xQUH69st+fK1u5lA=="],
+
+    "@tanstack/ai-devtools-core/@tanstack/ai-event-client": ["@tanstack/ai-event-client@0.3.2", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.4.1" }, "peerDependencies": { "@tanstack/ai": "0.18.0" } }, "sha512-4GhqHFU6W00Uo10dgKZyHKwtTENtpIFmqy6jW2HmZpW6NrOBhwG71dspiwmQ+4NPn4foADfbEBnzdt0W5Ik0Jw=="],
+
     "@tanstack/devtools-vite/@babel/parser": ["@babel/parser@7.29.3", "", { "dependencies": { "@babel/types": "^7.29.0" }, "bin": "./bin/babel-parser.js" }, "sha512-b3ctpQwp+PROvU/cttc4OYl4MzfJUWy6FZg+PMXfzmt/+39iHVF0sDfqay8TQM3JA2EUOyKcFZt75jWriQijsA=="],
 
     "@tanstack/devtools-vite/@babel/traverse": ["@babel/traverse@7.29.0", "", { "dependencies": { "@babel/code-frame": "^7.29.0", "@babel/generator": "^7.29.0", "@babel/helper-globals": "^7.28.0", "@babel/parser": "^7.29.0", "@babel/template": "^7.28.6", "@babel/types": "^7.29.0", "debug": "^4.3.1" } }, "sha512-4HPiQr0X7+waHfyXPZpWPfWL/J7dcN1mx9gL6WdQVMbPnF3+ZhSMs8tCxN7oHddJE9fhNE7+lxdnlyemKfJRuA=="],
@@ -5306,6 +5310,8 @@
 
     "@swc-node/sourcemap-support/source-map-support/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
 
+    "@tanstack/ai-devtools-core/@tanstack/ai/@ag-ui/core": ["@ag-ui/core@0.0.52", "", { "dependencies": { "zod": "^3.22.4" } }, "sha512-Xo0bUaNV56EqylzcrAuhUkQX7et7+SZIrqZZtEByGwEq/I1EHny6ZMkWHLkKR7UNi0FJZwJyhKYmKJS3B2SEgA=="],
+
     "@tanstack/ai/@ag-ui/core/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@tanstack/react-form/@tanstack/react-store/@tanstack/store": ["@tanstack/store@0.9.3", "", {}, "sha512-8reSzl/qGWGGVKhBoxXPMWzATSbZLZFWhwBAFO9NAyp0TxzfBP0mIrGb8CP8KrQTmvzXlR/vFPPUrHTLBGyFyw=="],
@@ -5617,6 +5623,8 @@
     "@astrojs/react/vite/esbuild/@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.27.5", "", { "os": "win32", "cpu": "ia32" }, "sha512-5nlJ3AeJWCTSzR7AEqVjT/faWyqKU86kCi1lLmxVqmNR+j4HrYdns+eTGjS/vmrzCIe8inGQckUadvS0+JkKdQ=="],
 
     "@astrojs/react/vite/esbuild/@esbuild/win32-x64": ["@esbuild/win32-x64@0.27.5", "", { "os": "win32", "cpu": "x64" }, "sha512-PWypQR+d4FLfkhBIV+/kHsUELAnMpx1bRvvsn3p+/sAERbnCzFrtDRG2Xw5n+2zPxBK2+iaP+vetsRl4Ti7WgA=="],
+
+    "@tanstack/ai-devtools-core/@tanstack/ai/@ag-ui/core/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@tanstack/router-plugin/chokidar/readdirp/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="],
 

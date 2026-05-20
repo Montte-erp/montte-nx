@@ -205,9 +205,9 @@
             "vite-tsconfig-paths": "^6.1.1"
          },
          "tanstack-ai": {
-            "@tanstack/ai": "0.18.0",
-            "@tanstack/ai-react": "0.10.0",
-            "@tanstack/ai-openrouter": "0.9.1"
+            "@tanstack/ai": "0.20.1",
+            "@tanstack/ai-react": "0.11.3",
+            "@tanstack/ai-openrouter": "0.9.5"
          },
          "workers": {
             "@dbos-inc/dbos-sdk": "^4.18.10",
@@ -238,6 +238,7 @@
       "db:studio:prod": "nx run core/database:db-studio-prod",
       "dev": "bun run scripts/dev-init.ts; nx run-many -t dev --parallel=3 -p web worker landing",
       "dev:desktop": "bun run scripts/dev-init.ts; nx run-many -t desktop:dev --parallel=3 -p web worker landing",
+      "dev:pgboss-dashboard": "DATABASE_URL=${DATABASE_URL:-postgres://postgres:password@localhost:5432/montte} PGBOSS_SCHEMA=${PGBOSS_SCHEMA:-pgboss} PORT=${PGBOSS_DASHBOARD_PORT:-3010} bunx @pg-boss/dashboard",
       "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
       "setup": "bun run scripts/setup.ts",
       "dev:all": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=6",

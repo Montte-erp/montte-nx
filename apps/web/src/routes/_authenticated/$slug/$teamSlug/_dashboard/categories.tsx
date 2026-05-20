@@ -14,8 +14,9 @@ import {
    SelectionActionButton,
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
-import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
+import { createCollection, eq, ilike, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import {
    getCoreRowModel,
    getExpandedRowModel,
@@ -32,7 +33,6 @@ import {
    ChevronRight,
    FolderOpen,
    Plus,
-   RefreshCw,
    Trash2,
    TrendingDown,
    TrendingUp,
@@ -62,7 +62,17 @@ import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
-import { orpc } from "@/integrations/orpc/client";
+import { useActiveTeam } from "@/hooks/use-active-team";
+import {
+   archiveCategoryAction,
+   bulkArchiveCategoriesAction,
+   bulkDeleteCategoriesAction,
+   categoriesCollectionOptions,
+   deleteCategoryAction,
+   importCategoriesAction,
+   unarchiveCategoryAction,
+   updateCategoryAction,
+} from "@/integrations/tanstack-db/categories";
 import { CategoryFormSheet } from "./-categories/category-form-sheet";
 import {
    buildCategoryColumns,
@@ -85,7 +95,9 @@ const categoriesSearchSchema = z.object({
    pageSize: z.number().int().min(1).max(100).catch(20).default(20),
 });
 
-function parseCategoryType(raw: unknown): "income" | "expense" | "transfer" {
+function parseCategoryType(
+   raw: unknown,
+): "income" | "expense" | "transfer" | undefined {
    const str = String(raw ?? "")
       .trim()
       .toLowerCase()
@@ -95,7 +107,7 @@ function parseCategoryType(raw: unknown): "income" | "expense" | "transfer" {
    if (str === "receita") return "income";
    if (str === "despesa") return "expense";
    if (str === "transferencia") return "transfer";
-   return "expense";
+   return undefined;
 }
 
 const skeletonColumns = buildCategoryColumns();
@@ -115,30 +127,71 @@ function normalizeCategorySorting(sorting: SortingState) {
    return normalized;
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return fallback;
+}
+
+function compareCategoryValues(
+   left: CategoryRow,
+   right: CategoryRow,
+   sortId: z.infer<typeof categorySortIdSchema>,
+) {
+   switch (sortId) {
+      case "isDefault":
+         return Number(left.isDefault) - Number(right.isDefault);
+      case "name":
+         return left.name.localeCompare(right.name, "pt-BR");
+      case "type":
+         return left.type.localeCompare(right.type, "pt-BR");
+   }
+}
+
+type LiveCategoryRow = CategoryRow & {
+   $synced: boolean;
+};
+
+function categoryDedupeKey(category: CategoryRow) {
+   return `${category.teamId}:${category.type}:${category.parentId ?? "root"}:${category.name.trim().toLocaleLowerCase()}`;
+}
+
+function removeConfirmedOptimisticDuplicates(categories: LiveCategoryRow[]) {
+   const syncedKeys = new Set<string>();
+   for (const category of categories) {
+      if (!category.$synced) continue;
+      syncedKeys.add(categoryDedupeKey(category));
+   }
+   return categories.filter(
+      (category) =>
+         category.$synced || !syncedKeys.has(categoryDedupeKey(category)),
+   );
+}
+
+function sortCategories(rows: CategoryRow[], sorting: SortingState) {
+   const normalized = normalizeCategorySorting(sorting);
+   return [...rows].sort((left, right) => {
+      for (const rule of normalized) {
+         const result = compareCategoryValues(left, right, rule.id);
+         if (result !== 0) return rule.desc ? -result : result;
+      }
+      const nameResult = left.name.localeCompare(right.name, "pt-BR");
+      if (nameResult !== 0) return nameResult;
+      return dayjs(right.createdAt).valueOf() - dayjs(left.createdAt).valueOf();
+   });
+}
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/categories",
 )({
    validateSearch: categoriesSearchSchema,
-   loaderDeps: ({
-      search: { type, includeArchived, search, page, pageSize, sorting },
-   }) => ({ type, includeArchived, search, page, pageSize, sorting }),
-   loader: ({ context, deps }) => {
-      context.queryClient.prefetchQuery(
-         orpc.categories.getPaginated.queryOptions({
-            input: {
-               type: deps.type,
-               includeArchived: deps.includeArchived || undefined,
-               search: deps.search || undefined,
-               page: deps.page,
-               pageSize: deps.pageSize,
-               sorting: normalizeCategorySorting(deps.sorting),
-            },
-         }),
-      );
-      context.queryClient.prefetchQuery(
-         orpc.categories.getAll.queryOptions({}),
-      );
-   },
    pendingMs: 300,
    pendingComponent: CategoriesSkeleton,
    head: () => ({
@@ -166,6 +219,8 @@ function CategoriesList() {
    } = Route.useSearch();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
+   const { activeTeamId } = useActiveTeam();
+   const { queryClient } = Route.useRouteContext();
    const layout = useDataTableLayout("categories");
 
    const searchInput = useDebouncedSearch({
@@ -177,127 +232,122 @@ function CategoriesList() {
          }),
    });
 
-   const [{ data: result }, { data: categoryOptions }] = useSuspenseQueries({
-      queries: [
-         orpc.categories.getPaginated.queryOptions({
-            input: {
-               type,
-               includeArchived: includeArchived || undefined,
-               search: search || undefined,
-               page,
-               pageSize,
-               sorting: normalizeCategorySorting(sorting),
-            },
-         }),
-         orpc.categories.getAll.queryOptions({}),
-      ],
-   });
-   const { data: rows, total } = result;
-   const hasSearch = search.trim().length > 0;
+   const categoriesCollection = useMemo(
+      () =>
+         createCollection(
+            categoriesCollectionOptions({
+               queryClient,
+               teamId: activeTeamId ?? "no-team",
+            }),
+         ),
+      [activeTeamId, queryClient],
+   );
 
+   const hasSearch = search.trim().length > 0;
+   const { data: liveCategories, isLoading } = useLiveQuery(
+      (q) => {
+         let query = q.from({ category: categoriesCollection });
+
+         if (!includeArchived) {
+            query = query.where(({ category }) =>
+               eq(category.isArchived, false),
+            );
+         }
+
+         if (type) {
+            query = query.where(({ category }) => eq(category.type, type));
+         }
+
+         if (hasSearch) {
+            query = query.where(({ category }) =>
+               ilike(category.name, `%${search.trim()}%`),
+            );
+         }
+
+         return query.select(({ category }) => category);
+      },
+      [categoriesCollection, hasSearch, includeArchived, search, type],
+   );
+
+   const { data: liveParentableCategories } = useLiveQuery(
+      (q) =>
+         q
+            .from({ category: categoriesCollection })
+            .where(({ category }) => eq(category.isArchived, false))
+            .select(({ category }) => category),
+      [categoriesCollection],
+   );
+
+   const categories = removeConfirmedOptimisticDuplicates(liveCategories);
+   const parentableCategories = removeConfirmedOptimisticDuplicates(
+      liveParentableCategories,
+   );
+
+   const sortedCategories = useMemo(
+      () => sortCategories(categories, sorting),
+      [categories, sorting],
+   );
+   const rootCandidates = useMemo(
+      () =>
+         hasSearch
+            ? sortedCategories
+            : sortedCategories.filter((category) => !category.parentId),
+      [hasSearch, sortedCategories],
+   );
+   const total = rootCandidates.length;
    const rootCategories = useMemo(
-      () => (hasSearch ? rows : rows.filter((c) => !c.parentId)),
-      [hasSearch, rows],
+      () => rootCandidates.slice((page - 1) * pageSize, page * pageSize),
+      [page, pageSize, rootCandidates],
    );
    const childrenByParent = useMemo(() => {
       const m = new Map<string, CategoryRow[]>();
       if (hasSearch) return m;
-      for (const cat of rows) {
+      for (const cat of sortedCategories) {
          if (!cat.parentId) continue;
          const list = m.get(cat.parentId);
          if (list) list.push(cat);
          else m.set(cat.parentId, [cat]);
       }
       return m;
-   }, [hasSearch, rows]);
+   }, [hasSearch, sortedCategories]);
 
    const [expanded, setExpanded] = useState<ExpandedState>({});
-
-   const deleteMutation = useMutation(
-      orpc.categories.remove.mutationOptions({
-         onSuccess: () => toast.success("Categoria excluída com sucesso."),
-         onError: (e) => toast.error(e.message || "Erro ao excluir categoria."),
-      }),
-   );
-
-   const bulkDeleteMutation = useMutation(
-      orpc.categoriesBulk.bulkRemove.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao excluir categorias."),
-      }),
-   );
-
-   const archiveMutation = useMutation(
-      orpc.categories.archive.mutationOptions({
-         onSuccess: () => toast.success("Categoria arquivada."),
-         onError: (e) =>
-            toast.error(e.message || "Erro ao arquivar categoria."),
-      }),
-   );
-
-   const bulkArchiveMutation = useMutation(
-      orpc.categoriesBulk.bulkArchive.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao arquivar categorias."),
-      }),
-   );
-
-   const unarchiveMutation = useMutation(
-      orpc.categories.unarchive.mutationOptions({
-         onSuccess: () => toast.success("Categoria desarquivada."),
-         onError: (e) =>
-            toast.error(e.message || "Erro ao desarquivar categoria."),
-      }),
-   );
-
-   const regenerateKeywordsMutation = useMutation(
-      orpc.categories.regenerateKeywords.mutationOptions({
-         meta: { skipGlobalInvalidation: true },
-         onSuccess: () =>
-            toast.success(
-               "Geração de palavras-chave iniciada. Isso pode levar alguns segundos.",
-            ),
-         onError: (e) =>
-            toast.error(e.message || "Erro ao gerar palavras-chave."),
-      }),
-   );
-
-   const importBatchMutation = useMutation(
-      orpc.categoriesBulk.importBatch.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao importar categorias."),
-      }),
-   );
-
-   const updateMutation = useMutation(
-      orpc.categories.update.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao atualizar categoria."),
-      }),
-   );
 
    const handleCreate = useCallback(() => {
       openSheet({
          renderChildren: () => (
-            <CategoryFormSheet categories={categoryOptions} />
+            <CategoryFormSheet
+               categories={parentableCategories}
+               collection={categoriesCollection}
+               teamId={activeTeamId}
+            />
          ),
       });
-   }, [categoryOptions, openSheet]);
+   }, [activeTeamId, categoriesCollection, openSheet, parentableCategories]);
 
    const handleUpdateCategory = useCallback(
       async (
          rowId: string,
          data: {
             name?: string;
-            type?: "income" | "expense" | "transfer";
             parentId?: string | null;
             icon?: string | null;
             color?: string | null;
          },
       ) => {
-         await updateMutation.mutateAsync({ id: rowId, ...data });
+         const updateCategory = updateCategoryAction(categoriesCollection);
+         const transaction = updateCategory({ id: rowId, patch: data });
+         const result = await fromPromise(
+            transaction.isPersisted.promise,
+            (error) => error,
+         );
+         if (result.isErr()) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao atualizar categoria."),
+            );
+         }
       },
-      [updateMutation],
+      [categoriesCollection],
    );
 
    const importConfig: DataImportConfig = useMemo(
@@ -358,16 +408,44 @@ function CategoriesList() {
             ],
          },
          onImport: async (importedRows) => {
-            await importBatchMutation.mutateAsync({
-               categories: importedRows.map((r) => ({
-                  name: String(r.name ?? ""),
-                  type: parseCategoryType(r.type),
-                  participatesDre: false,
-               })),
-            });
+            const invalidRows = importedRows.filter(
+               (row) => parseCategoryType(row.type) === undefined,
+            );
+            if (invalidRows.length > 0) {
+               const message = `Planilha inválida: ${invalidRows.length} linha(s) com tipo ausente ou inválido.`;
+               return Promise.reject({ message });
+            }
+
+            const importCategories =
+               importCategoriesAction(categoriesCollection);
+            const categoriesPayload = importedRows
+               .map((row) => {
+                  const type = parseCategoryType(row.type);
+                  if (!type) return null;
+                  return {
+                     name: String(row.name ?? "").trim(),
+                     type,
+                     participatesDre: false,
+                  };
+               })
+               .filter((entry) => entry !== null);
+
+            const result = await fromPromise(
+               importCategories({
+                  categories: categoriesPayload,
+               }),
+               (error) => error,
+            );
+            if (result.isErr()) {
+               const message = getErrorMessage(
+                  result.error,
+                  "Erro ao importar categorias.",
+               );
+               return Promise.reject({ message });
+            }
          },
       }),
-      [importBatchMutation, generateCsv, generateXlsx, parseCsv, parseXlsx],
+      [categoriesCollection, generateCsv, generateXlsx, parseCsv, parseXlsx],
    );
 
    const handleDelete = useCallback(
@@ -379,11 +457,27 @@ function CategoriesList() {
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               await deleteMutation.mutateAsync({ id: category.id });
+               const deleteCategory =
+                  deleteCategoryAction(categoriesCollection);
+               const transaction = deleteCategory({ id: category.id });
+               const result = await fromPromise(
+                  transaction.isPersisted.promise,
+                  (error) => error,
+               );
+               if (result.isErr()) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao excluir categoria.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Categoria excluída com sucesso.");
             },
          });
       },
-      [openAlertDialog, deleteMutation],
+      [categoriesCollection, openAlertDialog],
    );
 
    const handleArchive = useCallback(
@@ -394,11 +488,27 @@ function CategoriesList() {
             actionLabel: "Arquivar",
             cancelLabel: "Cancelar",
             onAction: async () => {
-               await archiveMutation.mutateAsync({ id: category.id });
+               const archiveCategory =
+                  archiveCategoryAction(categoriesCollection);
+               const transaction = archiveCategory({ id: category.id });
+               const result = await fromPromise(
+                  transaction.isPersisted.promise,
+                  (error) => error,
+               );
+               if (result.isErr()) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao arquivar categoria.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Categoria arquivada.");
             },
          });
       },
-      [openAlertDialog, archiveMutation],
+      [categoriesCollection, openAlertDialog],
    );
 
    const handleUnarchive = useCallback(
@@ -409,16 +519,32 @@ function CategoriesList() {
             actionLabel: "Desarquivar",
             cancelLabel: "Cancelar",
             onAction: async () => {
-               await unarchiveMutation.mutateAsync({ id: category.id });
+               const unarchiveCategory =
+                  unarchiveCategoryAction(categoriesCollection);
+               const transaction = unarchiveCategory({ id: category.id });
+               const result = await fromPromise(
+                  transaction.isPersisted.promise,
+                  (error) => error,
+               );
+               if (result.isErr()) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao desarquivar categoria.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Categoria desarquivada.");
             },
          });
       },
-      [openAlertDialog, unarchiveMutation],
+      [categoriesCollection, openAlertDialog],
    );
 
    const columns = useMemo<ColumnDef<CategoryRow>[]>(() => {
       const base = buildCategoryColumns({
-         categories: categoryOptions,
+         categories,
          onUpdate: handleUpdateCategory,
       });
       const expandColumn: ColumnDef<CategoryRow> = {
@@ -505,21 +631,6 @@ function CategoriesList() {
             }
             return (
                <div className="flex justify-end gap-2">
-                  {category.parentId === null && (
-                     <Button
-                        disabled={regenerateKeywordsMutation.isPending}
-                        onClick={() =>
-                           regenerateKeywordsMutation.mutate({
-                              id: category.id,
-                           })
-                        }
-                        size="icon-sm"
-                        tooltip="Regerar palavras-chave"
-                        variant="outline"
-                     >
-                        <RefreshCw />
-                     </Button>
-                  )}
                   <Button
                      onClick={() => handleArchive(category)}
                      size="icon-sm"
@@ -543,12 +654,12 @@ function CategoriesList() {
       };
       return [selectColumn, expandColumn, ...base, actionsColumn];
    }, [
-      categoryOptions,
+      categoriesCollection,
+      categories,
       handleUpdateCategory,
       handleArchive,
       handleDelete,
       handleUnarchive,
-      regenerateKeywordsMutation,
    ]);
 
    const urlState = useTableUrlState({
@@ -605,11 +716,24 @@ function CategoriesList() {
                <SelectionActionButton
                   icon={<Archive />}
                   onClick={async () => {
-                     const res = await fromPromise(
-                        bulkArchiveMutation.mutateAsync({ ids: archivableIds }),
-                        (e) => e,
+                     const bulkArchiveCategories =
+                        bulkArchiveCategoriesAction(categoriesCollection);
+                     const transaction = bulkArchiveCategories({
+                        ids: archivableIds,
+                     });
+                     const result = await fromPromise(
+                        transaction.isPersisted.promise,
+                        (error) => error,
                      );
-                     if (res.isErr()) return;
+                     if (result.isErr()) {
+                        toast.error(
+                           getErrorMessage(
+                              result.error,
+                              "Erro ao arquivar categorias.",
+                           ),
+                        );
+                        return;
+                     }
                      toast.success(
                         `${archivableIds.length} ${archivableIds.length === 1 ? "categoria arquivada" : "categorias arquivadas"}.`,
                      );
@@ -631,9 +755,24 @@ function CategoriesList() {
                         cancelLabel: "Cancelar",
                         variant: "destructive",
                         onAction: async () => {
-                           await bulkDeleteMutation.mutateAsync({
+                           const bulkDeleteCategories =
+                              bulkDeleteCategoriesAction(categoriesCollection);
+                           const transaction = bulkDeleteCategories({
                               ids: deletableIds,
                            });
+                           const result = await fromPromise(
+                              transaction.isPersisted.promise,
+                              (error) => error,
+                           );
+                           if (result.isErr()) {
+                              toast.error(
+                                 getErrorMessage(
+                                    result.error,
+                                    "Erro ao excluir categorias.",
+                                 ),
+                              );
+                              return;
+                           }
                            toast.success(
                               `${deletableIds.length} ${deletableIds.length === 1 ? "categoria excluída" : "categorias excluídas"} com sucesso.`,
                            );
@@ -649,6 +788,8 @@ function CategoriesList() {
          </>
       ),
    });
+
+   if (isLoading) return <CategoriesSkeleton />;
 
    return (
       <div className="flex flex-1 flex-col gap-4 min-h-0">

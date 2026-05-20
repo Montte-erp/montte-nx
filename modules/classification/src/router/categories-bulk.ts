@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Result, type Result as ResultType } from "better-result";
+import { Result } from "better-result";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -7,11 +7,6 @@ import {
    categorySchema,
    createCategorySchema,
 } from "@core/database/schemas/categories";
-import {
-   DeriveKeywordsJobError,
-   enqueueDeriveKeywordsJob,
-} from "@modules/classification/jobs/derive-keywords-job";
-import type { ORPCContextWithOrganization } from "@core/orpc/context";
 import { protectedProcedure } from "@core/orpc/server";
 import {
    ClassificationRouterError,
@@ -23,46 +18,7 @@ import {
 
 const idsSchema = z.object({ ids: z.array(z.string().uuid()).min(1) });
 
-const importSubcategoryInputSchema = categorySchema
-   .pick({ name: true })
-   .extend({ keywords: z.array(z.string()).optional() });
-
-type CategoryKeywordsSource = {
-   id: string;
-   name: string;
-   description: string | null;
-};
-
-async function enqueueCategoryKeywordsDerivations(
-   context: Pick<
-      ORPCContextWithOrganization,
-      "organizationId" | "teamId" | "userId" | "pgBoss"
-   >,
-   rows: CategoryKeywordsSource[],
-): Promise<ResultType<void, DeriveKeywordsJobError>> {
-   const boss = await context.pgBoss;
-   const queued = await Promise.all(
-      rows.map((row) =>
-         enqueueDeriveKeywordsJob({
-            boss,
-            input: {
-               categoryId: row.id,
-               teamId: context.teamId,
-               organizationId: context.organizationId,
-               userId: context.userId,
-               name: row.name,
-               description: row.description,
-            },
-         }),
-      ),
-   );
-
-   for (const result of queued) {
-      if (Result.isError(result)) return Result.err(result.error);
-   }
-
-   return Result.ok(undefined);
-}
+const importSubcategoryInputSchema = categorySchema.pick({ name: true });
 
 export const exportAll = protectedProcedure.handler(async ({ context }) => {
    const result = await Result.tryPromise({
@@ -98,7 +54,7 @@ export const importBatch = protectedProcedure
          try: () =>
             context.db.transaction(async (tx) => {
                const all: CategoryRow[] = [];
-               const parents: CategoryRow[] = [];
+
                for (const item of input.categories) {
                   const { subcategories, ...data } = item;
                   const [parent] = await tx
@@ -111,7 +67,6 @@ export const importBatch = protectedProcedure
                      })
                      .returning();
                   if (!parent) return undefined;
-                  parents.push(parent);
                   all.push(parent);
                   for (const sub of subcategories ?? []) {
                      const [child] = await tx
@@ -123,14 +78,13 @@ export const importBatch = protectedProcedure
                            level: 2,
                            teamId: context.teamId,
                            participatesDre: false,
-                           keywords: sub.keywords ?? null,
                         })
                         .returning();
                      if (!child) return undefined;
                      all.push(child);
                   }
                }
-               return { all, parents };
+               return { all };
             }),
          catch: () =>
             new ClassificationRouterError({
@@ -146,10 +100,7 @@ export const importBatch = protectedProcedure
          });
       }
 
-      const { all, parents } = result.value;
-      const queued = await enqueueCategoryKeywordsDerivations(context, parents);
-      if (Result.isError(queued)) throw queued.error;
-      return all;
+      return result.value.all;
    });
 
 export const bulkRemove = protectedProcedure

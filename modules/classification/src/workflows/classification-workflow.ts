@@ -20,10 +20,6 @@ import { transactions } from "@core/database/schemas/transactions";
 import { getAiTracer } from "@core/logging";
 import type { Prompts } from "@core/posthog/server";
 import {
-   matchByKeywords,
-   type KeywordMatchResult,
-} from "@modules/classification/utils";
-import {
    buildClassifyTransactionsBatchWorkflowId,
    CLASSIFICATION_WORKFLOW_QUEUES,
    CLASSIFICATION_WORKFLOWS,
@@ -154,13 +150,16 @@ const classifyBatchInputSchema = z.object({
 const classifyBatchOptionSchema = z.object({
    id: z.string(),
    name: z.string(),
-   keywords: z.array(z.string()).nullish(),
+   path: z.string(),
+   type: z.enum(["income", "expense", "transfer"]),
+   hasChildren: z.boolean(),
 });
 
 const classifyBatchOutputSchema = z.object({
    results: z.array(
       z.object({
          id: z.string(),
+         categoryId: z.string().nullable(),
          categoryName: z.string().nullable(),
       }),
    ),
@@ -176,8 +175,10 @@ type ClassifyBatchResult = {
 type CategoryRow = {
    id: string;
    name: string;
-   keywords: string[] | null;
+   parentId: string | null;
+   level: number;
    dreGroupId: string | null;
+   type: "income" | "expense" | "transfer";
 };
 
 type LoadedTransaction = {
@@ -217,36 +218,119 @@ function resolveTagId(
    return tagByName.get(dreGroupId) ?? null;
 }
 
+function buildCategoryOptions(rows: CategoryRow[]): ClassifyBatchOption[] {
+   const byId = new Map(rows.map((row) => [row.id, row]));
+   const parentIds = new Set(
+      rows.flatMap((row) => (row.parentId ? [row.parentId] : [])),
+   );
+   const buildPath = (row: CategoryRow): string => {
+      const names = [row.name];
+      let parentId = row.parentId;
+      while (parentId) {
+         const parent = byId.get(parentId);
+         if (!parent) break;
+         names.unshift(parent.name);
+         parentId = parent.parentId;
+      }
+      return names.join(" > ");
+   };
+
+   return rows
+      .map((row) => ({
+         id: row.id,
+         name: row.name,
+         path: buildPath(row),
+         type: row.type,
+         hasChildren: parentIds.has(row.id),
+      }))
+      .sort((a, b) => a.path.localeCompare(b.path, "pt-BR"));
+}
+
 function formatCategory(c: ClassifyBatchOption) {
-   const keywords = c.keywords?.length
-      ? ` (palavras: ${c.keywords.join(", ")})`
+   const hint = c.hasChildren
+      ? " (categoria pai/grupo; use apenas se nenhuma subcategoria for segura)"
       : "";
-   return `- ${c.name}${keywords}`;
+   const translatedType =
+      c.type === "income"
+         ? "receita"
+         : c.type === "expense"
+           ? "despesa"
+           : "transferência";
+   return `- [id=${c.id}] (${translatedType}) ${c.path}${hint}`;
 }
 
 function formatTransaction(tx: ClassifyBatchInput) {
+   const translatedType =
+      tx.type === "income"
+         ? "Receita"
+         : tx.type === "expense"
+           ? "Despesa"
+           : "Transferência";
    const parts = [
       `[id=${tx.id}]`,
       `Nome: ${tx.name}`,
-      `Tipo: ${tx.type === "income" ? "Receita" : "Despesa"}`,
+      `Tipo: ${translatedType}`,
    ];
    if (tx.contactName) parts.push(`Contato: ${tx.contactName}`);
    return parts.join("\n");
 }
 
 function resolveAiResults(
-   raw: { id: string; categoryName: string | null }[],
+   raw: {
+      id: string;
+      categoryId: string | null;
+      categoryName: string | null;
+   }[],
    inputTransactions: ClassifyBatchInput[],
    inputCategories: ClassifyBatchOption[],
 ): ClassifyBatchResult[] {
    const inputIds = new Set(inputTransactions.map((tx) => tx.id));
-   const categoryByName = new Map(inputCategories.map((c) => [c.name, c.id]));
+   const transactionTypeById = new Map(
+      inputTransactions.map((tx) => [tx.id, tx.type]),
+   );
+   const categoryById = new Map(inputCategories.map((c) => [c.id, c]));
+   const categoryByTypePath = new Map<string, string>();
+   const categoryIdsByTypeName = new Map<string, string[]>();
+
+   for (const category of inputCategories) {
+      const typePathKey = `${category.type}:${category.path.trim().toLocaleLowerCase()}`;
+      categoryByTypePath.set(typePathKey, category.id);
+      const typeNameKey = `${category.type}:${category.name
+         .trim()
+         .toLocaleLowerCase()}`;
+      const list = categoryIdsByTypeName.get(typeNameKey);
+      if (list) {
+         list.push(category.id);
+      } else {
+         categoryIdsByTypeName.set(typeNameKey, [category.id]);
+      }
+   }
 
    return raw.flatMap((entry) => {
-      if (!inputIds.has(entry.id) || !entry.categoryName) return [];
-      const categoryId = categoryByName.get(entry.categoryName);
-      if (!categoryId) return [];
-      return [{ transactionId: entry.id, categoryId }];
+      if (!inputIds.has(entry.id)) return [];
+      const txType = transactionTypeById.get(entry.id);
+      if (!txType) return [];
+
+      const categoryId = entry.categoryId?.trim();
+      if (categoryId) {
+         const candidate = categoryById.get(categoryId);
+         if (candidate && candidate.type === txType) {
+            return [{ transactionId: entry.id, categoryId }];
+         }
+      }
+
+      if (!entry.categoryName) return [];
+      const normalized = entry.categoryName.trim().toLocaleLowerCase();
+      const pathMatch = categoryByTypePath.get(`${txType}:${normalized}`);
+      if (pathMatch) {
+         return [{ transactionId: entry.id, categoryId: pathMatch }];
+      }
+
+      const candidates = categoryIdsByTypeName.get(`${txType}:${normalized}`);
+      if (!candidates || candidates.length !== 1) return [];
+      const resolvedId = candidates[0];
+      if (!resolvedId) return [];
+      return [{ transactionId: entry.id, categoryId: resolvedId }];
    });
 }
 
@@ -290,6 +374,7 @@ async function classifyTransactionsBatch(options: {
                            .map(formatCategory)
                            .join("\n"),
                      }),
+                     "Escolha sempre uma categoria existente da lista e retorne preferencialmente categoryId. Quando uma categoria pai tiver subcategorias adequadas, prefira a subcategoria mais específica; use a categoria pai apenas quando nenhuma subcategoria for segura.",
                   ],
                   messages: [
                      {
@@ -357,7 +442,9 @@ const stepLoadInputs = (input: ClassifyTransactionsBatchInput) =>
                   .select({
                      id: categories.id,
                      name: categories.name,
-                     keywords: categories.keywords,
+                     parentId: categories.parentId,
+                     level: categories.level,
+                     type: categories.type,
                      dreGroupId: categories.dreGroupId,
                   })
                   .from(categories)
@@ -395,7 +482,7 @@ const stepLoadInputs = (input: ClassifyTransactionsBatchInput) =>
 
 const stepAiChunk = (
    chunkItems: (LoadedTransaction & { name: string })[],
-   options: CategoryRow[],
+   options: ClassifyBatchOption[],
    teamId: string,
    organizationId: string,
    index: number,
@@ -488,29 +575,14 @@ async function classifyTransactionsBatchWorkflowFn(
    }
 
    const categoryById = new Map(loaded.categories.map((c) => [c.id, c]));
+   const categoryOptions = buildCategoryOptions(loaded.categories);
    const named = loaded.transactions.filter(
       (t): t is LoadedTransaction & { name: string } => t.name !== null,
    );
 
-   const matched: KeywordMatchResult[] = matchByKeywords(
-      named.map((t) => ({
-         id: t.id,
-         name: t.name,
-         contactName: t.contactName,
-      })),
-      loaded.categories,
-   );
-
-   const keywordHits = matched.filter(
-      (r): r is KeywordMatchResult & { matchedCategoryId: string } =>
-         r.matchedCategoryId !== null,
-   );
-   const matchedIds = new Set(keywordHits.map((r) => r.transactionId));
-   const unmatched = named.filter((t) => !matchedIds.has(t.id));
-
    const aiResults: ClassifyBatchResult[] = [];
-   if (unmatched.length > 0 && loaded.categories.length > 0) {
-      const chunks = chunk(unmatched, AI_CHUNK_SIZE);
+   if (named.length > 0 && categoryOptions.length > 0) {
+      const chunks = chunk(named, AI_CHUNK_SIZE);
       for (let i = 0; i < chunks.length; i += 1) {
          const chunkItems = chunks[i];
          if (!chunkItems) continue;
@@ -518,7 +590,7 @@ async function classifyTransactionsBatchWorkflowFn(
             try: () =>
                stepAiChunk(
                   chunkItems,
-                  loaded.categories,
+                  categoryOptions,
                   input.teamId,
                   input.organizationId,
                   i,
@@ -540,15 +612,6 @@ async function classifyTransactionsBatchWorkflowFn(
    }
 
    const writes: ClassificationWrite[] = [
-      ...keywordHits.map((r) => ({
-         transactionId: r.transactionId,
-         categoryId: r.matchedCategoryId,
-         tagId: resolveTagId(
-            r.matchedCategoryId,
-            categoryById,
-            loaded.tagByName,
-         ),
-      })),
       ...aiResults.map((r) => ({
          transactionId: r.transactionId,
          categoryId: r.categoryId,
@@ -577,7 +640,7 @@ async function classifyTransactionsBatchWorkflowFn(
    if (Result.isError(writeResult)) throw writeResult.error;
 
    DBOS.logger.info(
-      `${log} completed — keyword=${keywordHits.length} ai=${aiResults.length} written=${writes.length}`,
+      `${log} completed — ai=${aiResults.length} written=${writes.length}`,
    );
 }
 

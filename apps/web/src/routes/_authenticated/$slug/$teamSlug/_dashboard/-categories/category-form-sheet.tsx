@@ -52,20 +52,24 @@ import {
    SheetTitle,
 } from "@packages/ui/components/sheet";
 import { toast } from "@packages/ui/hooks/use-toast";
+import type { Collection } from "@tanstack/react-db";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Check, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { useState } from "react";
 import { z } from "zod";
 import { cn } from "@packages/ui/lib/utils";
 import { useSheet } from "@/hooks/use-sheet";
-import { orpc, type Outputs } from "@/integrations/orpc/client";
+import {
+   createCategoryAction,
+   type CategoriesCollectionRow,
+} from "@/integrations/tanstack-db/categories";
 import { CATEGORY_ICON_MAP, CATEGORY_ICON_OPTIONS } from "./category-icons";
 
 const CATEGORY_TYPES = ["income", "expense", "transfer"] as const;
 type CategoryType = (typeof CATEGORY_TYPES)[number];
-type CategoryOption = Outputs["categories"]["getAll"][number];
+type CategoryOption = CategoriesCollectionRow;
 
 const NO_PARENT_VALUE = "sem-categoria-pai";
 
@@ -138,10 +142,27 @@ function isFieldInvalid(field: {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
 }
 
+function getErrorMessage(error: unknown) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return "Erro ao criar categoria.";
+}
+
 export function CategoryFormSheet({
    categories,
+   collection,
+   teamId,
 }: {
    categories: CategoryOption[];
+   collection: Collection<CategoryOption, string>;
+   teamId: string | null;
 }) {
    const { closeTopSheet } = useSheet();
    const [isSubcategory, setIsSubcategory] = useState(false);
@@ -154,20 +175,14 @@ export function CategoryFormSheet({
       color: randomPresetColor(),
    }));
 
-   const createMutation = useMutation(
-      orpc.categories.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Categoria criada com sucesso.");
-            closeTopSheet();
-         },
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
    const form = useForm({
       defaultValues,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
+         if (!teamId) {
+            toast.error("Time ativo não encontrado.");
+            return;
+         }
          const selectedParent = categories.find(
             (category) =>
                category.id === value.parentId &&
@@ -175,18 +190,46 @@ export function CategoryFormSheet({
                category.level < 3 &&
                !category.isArchived,
          );
-         const result = await fromPromise(
-            createMutation.mutateAsync({
+         const now = dayjs().toDate();
+         const createCategory = createCategoryAction(collection);
+         const transaction = createCategory({
+            row: {
+               id: crypto.randomUUID(),
+               teamId,
+               parentId: selectedParent?.id ?? null,
+               name: value.name.trim(),
+               type: value.type,
+               level: selectedParent ? selectedParent.level + 1 : 1,
+               description: null,
+               isDefault: false,
+               color: selectedParent ? null : (value.color ?? null),
+               icon: selectedParent ? null : value.icon,
+               isArchived: false,
+               notes: null,
+               participatesDre: false,
+               dreGroupId: null,
+               createdAt: now,
+               updatedAt: now,
+            },
+            input: {
                name: value.name.trim(),
                type: value.type,
                parentId: selectedParent?.id ?? null,
                icon: selectedParent ? null : value.icon,
                color: selectedParent ? null : (value.color ?? null),
                participatesDre: false,
-            }),
+            },
+         });
+         const result = await fromPromise(
+            transaction.isPersisted.promise,
             (e) => e,
          );
-         if (result.isErr()) return;
+         if (result.isErr()) {
+            toast.error(getErrorMessage(result.error));
+            return;
+         }
+         toast.success("Categoria criada com sucesso.");
+         closeTopSheet();
       },
    });
 

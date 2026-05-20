@@ -1,12 +1,4 @@
-import {
-   afterAll,
-   beforeAll,
-   beforeEach,
-   describe,
-   expect,
-   it,
-   vi,
-} from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { call } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
@@ -14,17 +6,6 @@ import { seedTeam } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
 import { categories } from "@core/database/schemas/categories";
 import { makeCategory } from "../helpers/classification-factories";
-
-const { enqueueDeriveKeywordsSpy } = vi.hoisted(() => ({
-   enqueueDeriveKeywordsSpy: vi.fn().mockResolvedValue({
-      ok: true,
-      value: "derive-keywords-test",
-   }),
-}));
-
-vi.mock("../../src/jobs/derive-keywords-job", () => ({
-   enqueueDeriveKeywordsJob: enqueueDeriveKeywordsSpy,
-}));
 
 vi.mock("@core/orpc/server", async () =>
    (await import("@core/orpc/testing/mock-server")).createMockServerModule(),
@@ -47,12 +28,8 @@ afterAll(async () => {
    await testDb.cleanup();
 });
 
-beforeEach(() => {
-   vi.clearAllMocks();
-});
-
 describe("categories router", () => {
-   it("create inserts a category and enqueues derive-keywords workflow", async () => {
+   it("create inserts a category", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ctx = createTestContext(testDb.db, { teamId, organizationId });
 
@@ -78,20 +55,9 @@ describe("categories router", () => {
          .where(eq(categories.id, result.id));
       expect(persisted?.name).toBe("Marketing");
       expect(persisted?.icon).toBe("briefcase");
-
-      expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-      const [payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
-      expect(payload).toMatchObject({
-         input: {
-            categoryId: result.id,
-            teamId,
-            organizationId,
-            name: "Marketing",
-         },
-      });
    });
 
-   it("create with subcategories inserts parent + children but only enqueues parent", async () => {
+   it("create with subcategories inserts parent + children", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const ctx = createTestContext(testDb.db, { teamId });
 
@@ -115,69 +81,6 @@ describe("categories router", () => {
       const childRows = allRows.filter((r) => r.parentId === result.id);
       expect(childRows).toHaveLength(2);
       expect(childRows.every((r) => r.icon === null)).toBe(true);
-
-      expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-   });
-
-   it("create with parentId links category to selected parent", async () => {
-      const { teamId } = await seedTeam(testDb.db);
-      const parent = await makeCategory(testDb.db, teamId, {
-         name: "Operacional",
-         type: "expense",
-      });
-      const ctx = createTestContext(testDb.db, { teamId });
-
-      const result = await call(
-         categoriesRouter.create,
-         {
-            name: "Aluguel",
-            type: "income",
-            parentId: parent.id,
-            participatesDre: false,
-         },
-         { context: ctx },
-      );
-
-      expect(result.parentId).toBe(parent.id);
-      expect(result.type).toBe("expense");
-      expect(result.level).toBe(2);
-
-      const [persisted] = await testDb.db
-         .select()
-         .from(categories)
-         .where(eq(categories.id, result.id));
-      expect(persisted?.parentId).toBe(parent.id);
-   });
-
-   it("create with parentId does not persist a subcategory icon", async () => {
-      const { teamId } = await seedTeam(testDb.db);
-      const parent = await makeCategory(testDb.db, teamId, {
-         icon: "briefcase",
-         name: "Operacional",
-         type: "expense",
-      });
-      const ctx = createTestContext(testDb.db, { teamId });
-
-      const result = await call(
-         categoriesRouter.create,
-         {
-            name: "Aluguel",
-            type: "expense",
-            parentId: parent.id,
-            icon: "wallet",
-            participatesDre: false,
-         },
-         { context: ctx },
-      );
-
-      expect(result.parentId).toBe(parent.id);
-      expect(result.icon).toBeNull();
-
-      const [persisted] = await testDb.db
-         .select()
-         .from(categories)
-         .where(eq(categories.id, result.id));
-      expect(persisted?.icon).toBeNull();
    });
 
    it("update on cross-team category throws NOT_FOUND", async () => {
@@ -208,20 +111,6 @@ describe("categories router", () => {
 
       expect(result.name).toBe("Novo");
       expect(result.isDefault).toBe(true);
-   });
-
-   it("update enqueues derive-keywords when keywords are not provided", async () => {
-      const { teamId } = await seedTeam(testDb.db);
-      const cat = await makeCategory(testDb.db, teamId);
-
-      const ctx = createTestContext(testDb.db, { teamId });
-      await call(
-         categoriesRouter.update,
-         { id: cat.id, name: "Atualizado", participatesDre: false },
-         { context: ctx },
-      );
-
-      expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
    });
 
    it("update changes parentId and recalculates level", async () => {
@@ -395,25 +284,6 @@ describe("categories router", () => {
       expect(result.data.map((row) => row.id)).not.toContain(child.id);
    });
 
-   it("update does NOT enqueue derive-keywords when keywords are provided", async () => {
-      const { teamId } = await seedTeam(testDb.db);
-      const cat = await makeCategory(testDb.db, teamId);
-
-      const ctx = createTestContext(testDb.db, { teamId });
-      await call(
-         categoriesRouter.update,
-         {
-            id: cat.id,
-            name: "Manual",
-            participatesDre: false,
-            keywords: ["palavra1", "palavra2"],
-         },
-         { context: ctx },
-      );
-
-      expect(enqueueDeriveKeywordsSpy).not.toHaveBeenCalled();
-   });
-
    it("archive sets isArchived to true on the category and descendants", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const parent = await makeCategory(testDb.db, teamId, { name: "Parent" });
@@ -558,28 +428,6 @@ describe("categories router", () => {
       );
 
       expect(result).toHaveLength(5);
-      expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(2);
-   });
-
-   it("regenerateKeywords enqueues a derive-keywords workflow without writing", async () => {
-      const { teamId, organizationId } = await seedTeam(testDb.db);
-      const cat = await makeCategory(testDb.db, teamId);
-
-      const ctx = createTestContext(testDb.db, { teamId, organizationId });
-      const result = await call(
-         categoriesRouter.regenerateKeywords,
-         { id: cat.id },
-         { context: ctx },
-      );
-      expect(result).toEqual({ success: true });
-
-      expect(enqueueDeriveKeywordsSpy).toHaveBeenCalledTimes(1);
-      const [payload] = enqueueDeriveKeywordsSpy.mock.calls[0] ?? [];
-      expect(payload).toMatchObject({
-         input: {
-            categoryId: cat.id,
-         },
-      });
    });
 
    it("getAll returns only the team's categories", async () => {

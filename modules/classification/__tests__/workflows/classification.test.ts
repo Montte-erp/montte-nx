@@ -94,12 +94,11 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(llmMock.getRequests()).toHaveLength(0);
    });
 
-   it("classifies all by keyword match — no LLM call, suggestedCategoryId set, tag auto-resolved via category.dreGroupId", async () => {
+   it("classifies by AI and sets suggestedCategoryId with tag auto-resolved via category.dreGroupId", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
-         keywords: ["uber eats", "burger", "ifood"],
          dreGroupId: "Operacional",
       });
 
@@ -111,6 +110,17 @@ describe("classifyTransactionsBatchWorkflow", () => {
       });
       const tx3 = await makeTransaction(testDb.db, teamId, {
          name: "Burger King Uber Eats",
+      });
+
+      llmMock.onMessage(/Uber Eats Burger/, {
+         content: JSON.stringify({
+            results: [
+               { id: tx1.id, categoryId: food.id, categoryName: null },
+               { id: tx2.id, categoryId: food.id, categoryName: null },
+               { id: tx3.id, categoryId: food.id, categoryName: null },
+            ],
+         }),
+         systemFingerprint: "fp_test",
       });
 
       await classifyTransactionsBatchWorkflow({
@@ -129,10 +139,10 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t2?.suggestedTagId).toBe(ops.id);
       expect(t3?.suggestedTagId).toBe(ops.id);
 
-      expect(llmMock.getRequests()).toHaveLength(0);
+      expect(llmMock.getRequests().length).toBeGreaterThan(0);
    });
 
-   it("classifies by AI when no keyword match — tag resolved from category.dreGroupId, null when category has no group", async () => {
+   it("classifies by AI — tag resolved from category.dreGroupId, null when category has no group", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
@@ -154,8 +164,8 @@ describe("classifyTransactionsBatchWorkflow", () => {
       llmMock.onMessage(/Loja Random A/, {
          content: JSON.stringify({
             results: [
-               { id: tx1.id, categoryName: "Alimentação" },
-               { id: tx2.id, categoryName: "Diversos" },
+               { id: tx1.id, categoryId: food.id, categoryName: null },
+               { id: tx2.id, categoryId: misc.id, categoryName: null },
             ],
          }),
          systemFingerprint: "fp_test",
@@ -175,12 +185,11 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(t2?.suggestedTagId).toBeNull();
    });
 
-   it("mixes keyword + AI — keyword writes 2, AI writes 3, all 5 go through", async () => {
+   it("classifies all rows by AI", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ops = await makeTag(testDb.db, teamId, { name: "Operacional" });
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
-         keywords: ["uber eats", "burger", "ifood"],
          dreGroupId: "Operacional",
       });
       const fuel = await makeCategory(testDb.db, teamId, {
@@ -207,9 +216,11 @@ describe("classifyTransactionsBatchWorkflow", () => {
       llmMock.onMessage(/Posto Shell Centro/, {
          content: JSON.stringify({
             results: [
-               { id: txAi1.id, categoryName: "Combustível" },
-               { id: txAi2.id, categoryName: "Combustível" },
-               { id: txAi3.id, categoryName: "Combustível" },
+               { id: txKw1.id, categoryId: food.id, categoryName: null },
+               { id: txKw2.id, categoryId: food.id, categoryName: null },
+               { id: txAi1.id, categoryId: fuel.id, categoryName: null },
+               { id: txAi2.id, categoryId: fuel.id, categoryName: null },
+               { id: txAi3.id, categoryId: fuel.id, categoryName: null },
             ],
          }),
          systemFingerprint: "fp_test",
@@ -233,7 +244,6 @@ describe("classifyTransactionsBatchWorkflow", () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const food = await makeCategory(testDb.db, teamId, {
          name: "Alimentação",
-         keywords: ["uber eats", "burger"],
       });
       const other = await makeCategory(testDb.db, teamId, {
          name: "Outros",
@@ -245,6 +255,15 @@ describe("classifyTransactionsBatchWorkflow", () => {
       });
       const txPending = await makeTransaction(testDb.db, teamId, {
          name: "Burger Uber Eats",
+      });
+
+      llmMock.onMessage(/Burger Uber Eats/, {
+         content: JSON.stringify({
+            results: [
+               { id: txPending.id, categoryId: food.id, categoryName: null },
+            ],
+         }),
+         systemFingerprint: "fp_test",
       });
 
       await classifyTransactionsBatchWorkflow({
@@ -259,7 +278,7 @@ describe("classifyTransactionsBatchWorkflow", () => {
       expect(done?.suggestedCategoryId).toBeNull();
       expect(pending?.suggestedCategoryId).toBe(food.id);
 
-      expect(llmMock.getRequests()).toHaveLength(0);
+      expect(llmMock.getRequests().length).toBeGreaterThan(0);
    });
 
    it("chunks AI calls when unmatched > 20 — makes 2 distinct LLM calls for 25 unmatched", async () => {
@@ -297,7 +316,8 @@ describe("classifyTransactionsBatchWorkflow", () => {
             content: JSON.stringify({
                results: allIds.slice(0, 20).map((id) => ({
                   id,
-                  categoryName: "Alimentação",
+                  categoryId: food.id,
+                  categoryName: null,
                })),
             }),
             systemFingerprint: "fp_test",
@@ -322,7 +342,8 @@ describe("classifyTransactionsBatchWorkflow", () => {
             content: JSON.stringify({
                results: allIds.slice(20).map((id) => ({
                   id,
-                  categoryName: "Alimentação",
+                  categoryId: food.id,
+                  categoryName: null,
                })),
             }),
             systemFingerprint: "fp_test",
@@ -377,8 +398,8 @@ describe("classifyTransactionsBatchWorkflow", () => {
       llmMock.onMessage(/Random A/, {
          content: JSON.stringify({
             results: [
-               { id: tx1.id, categoryName: "Alimentação" },
-               { id: tx2.id, categoryName: "Alimentação" },
+               { id: tx1.id, categoryId: food.id, categoryName: null },
+               { id: tx2.id, categoryId: food.id, categoryName: null },
             ],
          }),
          systemFingerprint: "fp_test",
