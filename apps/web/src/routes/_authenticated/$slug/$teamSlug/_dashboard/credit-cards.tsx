@@ -106,22 +106,38 @@ function normalizeCreditCardSorting(sorting: SortingState) {
    return normalized;
 }
 
-function normalizeCreditCardColumnOrder(order: ColumnOrderState) {
+function normalizeCreditCardColumnOrder(
+   order: ColumnOrderState,
+   allColumnIds: ColumnOrderState,
+) {
    if (order.length === 0) return order;
-   const next = order.filter((id) => id !== "__actions");
-   return [...next, "__actions"];
+   const next = order.filter(
+      (id) => id !== "__actions" && allColumnIds.includes(id),
+   );
+   const missing = allColumnIds.filter(
+      (id) => id !== "__actions" && !next.includes(id),
+   );
+   return [...next, ...missing, "__actions"];
 }
 
 function normalizeCreditCardColumnPinning(
    pinning: ColumnPinningState,
 ): ColumnPinningState {
-   const left = (pinning.left ?? []).filter(
-      (id) => id !== "__actions" && id !== "bankIssuer",
-   );
-   const right = (pinning.right ?? []).filter(
-      (id) => id !== "__actions" && id !== "bankIssuer",
-   );
+   const left = (pinning.left ?? []).filter((id) => id !== "__actions");
+   const right = (pinning.right ?? []).filter((id) => id !== "__actions");
    return { left, right: [...right, "__actions"] };
+}
+
+function getCreditCardColumnId(column: ColumnDef<CreditCardRow>) {
+   if (column.id) return column.id;
+   if ("accessorKey" in column && typeof column.accessorKey === "string") {
+      return column.accessorKey;
+   }
+   return undefined;
+}
+
+function isDefined(value: string | undefined): value is string {
+   return typeof value === "string";
 }
 
 type CreditCardBrand =
@@ -240,10 +256,6 @@ function CreditCardsList() {
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout("credit-cards");
-   const columnOrder = useMemo(
-      () => normalizeCreditCardColumnOrder(layout.state.columnOrder),
-      [layout.state.columnOrder],
-   );
    const columnPinning = useMemo(
       () => normalizeCreditCardColumnPinning(layout.state.columnPinning),
       [layout.state.columnPinning],
@@ -555,6 +567,16 @@ function CreditCardsList() {
       handleInlineUpdate,
    ]);
 
+   const columnIds = useMemo(
+      () => columns.map(getCreditCardColumnId).filter(isDefined),
+      [columns],
+   );
+
+   const columnOrder = useMemo(
+      () => normalizeCreditCardColumnOrder(layout.state.columnOrder, columnIds),
+      [layout.state.columnOrder, columnIds],
+   );
+
    const handleColumnFiltersChange = useCallback(
       (
          updater:
@@ -596,10 +618,11 @@ function CreditCardsList() {
          layout.onColumnOrderChange((prev) =>
             normalizeCreditCardColumnOrder(
                typeof updater === "function" ? updater(prev) : updater,
+               columnIds,
             ),
          );
       },
-      [layout.onColumnOrderChange],
+      [layout.onColumnOrderChange, columnIds],
    );
 
    const handleColumnPinningChange = useCallback<

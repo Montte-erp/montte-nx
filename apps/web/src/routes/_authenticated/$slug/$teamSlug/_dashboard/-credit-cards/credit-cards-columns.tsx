@@ -209,7 +209,6 @@ export function buildCreditCardColumns(options?: {
          header: "Banco",
          meta: {
             label: "Banco",
-            pinnable: false,
             exportValue: (row) => {
                const account = bankAccountsById.get(row.bankAccountId);
                if (!account) return "";
