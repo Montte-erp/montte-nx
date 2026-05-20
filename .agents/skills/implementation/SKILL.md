@@ -11,7 +11,7 @@ Use esta skill antes de implementar mudancas no Montte. Ela roteia para referenc
 
 Leia so as referencias envolvidas na tarefa:
 
-- CRUD frontend, DataTable, forms, importacao, bulk actions, optimistic UI: `references/tanstack-db.md`.
+- CRUD frontend, live queries, mutations, schemas, DataTable, forms, importacao, bulk actions, optimistic UI: `references/tanstack-db.md`.
 - Domain errors, recoverable failures, provider calls, jobs, workflows, serialization: `references/better-result.md`.
 - oRPC router, input/output contracts, ownership, typed errors, transport: `references/orpc.md`.
 - Durable workflows, replay, DBOS transactions/steps, self-rescheduling: `references/dbos.md`.

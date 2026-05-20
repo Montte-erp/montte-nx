@@ -14,7 +14,7 @@ import {
    SelectionActionButton,
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { createCollection, eq, ilike, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
    getCoreRowModel,
@@ -23,6 +23,7 @@ import {
    type SortingState,
 } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { Result } from "better-result";
 import { Landmark, Plus, ReceiptText, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
@@ -44,12 +45,22 @@ import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSheet } from "@/hooks/use-sheet";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
-import { orpc } from "@/integrations/orpc/client";
+import {
+   bankAccountsCollectionOptions,
+   bulkCreateBankAccountsAction,
+   bulkDeleteBankAccountsAction,
+   buildOptimisticBankAccountRow,
+   deleteBankAccountAction,
+   type BankAccountUpdateInput,
+   type BankAccountsCollectionRow,
+   updateBankAccountAction,
+} from "@/integrations/tanstack-db/bank-accounts";
 import { DefaultHeader } from "../-layout/default-header";
 import { BankAccountFormSheet } from "./-bank-accounts/bank-account-form-sheet";
 import {
@@ -129,30 +140,133 @@ function normalizeBankAccountSorting(sorting: SortingState) {
 
 const skeletonColumns = buildBankAccountColumns();
 
+function getErrorMessage(error: unknown, fallback: string) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return fallback;
+}
+
+type LiveBankAccountRow = BankAccountRow & {
+   $synced: boolean;
+};
+
+function bankAccountDedupeKey(account: BankAccountRow) {
+   return `${account.teamId}:${account.type}:${account.name.trim().toLocaleLowerCase()}:${account.bankCode ?? ""}`;
+}
+
+function removeConfirmedOptimisticDuplicates(accounts: LiveBankAccountRow[]) {
+   const syncedKeys = new Set<string>();
+   for (const account of accounts) {
+      if (!account.$synced) continue;
+      syncedKeys.add(bankAccountDedupeKey(account));
+   }
+
+   return accounts.filter(
+      (account) =>
+         account.$synced || !syncedKeys.has(bankAccountDedupeKey(account)),
+   );
+}
+
+function compareBankAccountValues(
+   left: BankAccountRow,
+   right: BankAccountRow,
+   sortId: z.infer<typeof bankAccountSortIdSchema>,
+) {
+   switch (sortId) {
+      case "currentBalance":
+         return Number(left.currentBalance) - Number(right.currentBalance);
+      case "initialBalance":
+         return Number(left.initialBalance) - Number(right.initialBalance);
+      case "name":
+         return left.name.localeCompare(right.name, "pt-BR");
+      case "projectedBalance":
+         return Number(left.projectedBalance) - Number(right.projectedBalance);
+      case "type":
+         return left.type.localeCompare(right.type, "pt-BR");
+   }
+}
+
+function sortBankAccounts(rows: BankAccountRow[], sorting: SortingState) {
+   const normalized = normalizeBankAccountSorting(sorting);
+   return [...rows].sort((left, right) => {
+      for (const rule of normalized) {
+         const result = compareBankAccountValues(left, right, rule.id);
+         if (result !== 0) return rule.desc ? -result : result;
+      }
+      return left.name.localeCompare(right.name, "pt-BR");
+   });
+}
+
+type BankAccountUpdatePatch = Omit<BankAccountUpdateInput, "id">;
+
+function getBankAccountRowPatch(
+   payload: Record<string, unknown>,
+): BankAccountUpdatePatch {
+   const patch: BankAccountUpdatePatch = {};
+
+   if (typeof payload.name === "string") {
+      patch.name = payload.name;
+   }
+   if (payload.type === "checking") {
+      patch.type = payload.type;
+   }
+   if (payload.type === "savings") {
+      patch.type = payload.type;
+   }
+   if (payload.type === "investment") {
+      patch.type = payload.type;
+   }
+   if (payload.type === "payment") {
+      patch.type = payload.type;
+   }
+   if (payload.type === "cash") {
+      patch.type = payload.type;
+   }
+   if (typeof payload.initialBalance === "number") {
+      patch.initialBalance = String(payload.initialBalance);
+   }
+   if (typeof payload.initialBalance === "string") {
+      patch.initialBalance = payload.initialBalance;
+   }
+   if (typeof payload.color === "string") {
+      patch.color = payload.color;
+   }
+   if (payload.iconUrl === null || typeof payload.iconUrl === "string") {
+      patch.iconUrl = payload.iconUrl;
+   }
+   if (payload.bankCode === null || typeof payload.bankCode === "string") {
+      patch.bankCode = payload.bankCode;
+   }
+   if (payload.bankName === null || typeof payload.bankName === "string") {
+      patch.bankName = payload.bankName;
+   }
+   if (payload.branch === null || typeof payload.branch === "string") {
+      patch.branch = payload.branch;
+   }
+   if (
+      payload.accountNumber === null ||
+      typeof payload.accountNumber === "string"
+   ) {
+      patch.accountNumber = payload.accountNumber;
+   }
+   if (payload.notes === null || typeof payload.notes === "string") {
+      patch.notes = payload.notes;
+   }
+
+   return patch;
+}
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts",
 )({
    validateSearch: searchSchema,
-   loaderDeps: ({ search: { page, pageSize, search, sorting, type } }) => ({
-      page,
-      pageSize,
-      search,
-      sorting,
-      type,
-   }),
-   loader: ({ context, deps }) => {
-      context.queryClient.prefetchQuery(
-         orpc.bankAccounts.list.queryOptions({
-            input: {
-               page: deps.page,
-               pageSize: deps.pageSize,
-               search: deps.search || undefined,
-               sorting: normalizeBankAccountSorting(deps.sorting),
-               type: deps.type,
-            },
-         }),
-      );
-   },
    pendingMs: 300,
    pendingComponent: BankAccountsSkeleton,
    head: () => ({
@@ -168,11 +282,12 @@ function BankAccountsSkeleton() {
 function BankAccountsList() {
    const navigate = Route.useNavigate();
    const { slug, teamSlug } = useDashboardSlugs();
+   const { activeTeamId } = useActiveTeam();
+   const { queryClient, publicEnv } = Route.useRouteContext();
    const { sorting, columnFilters, type, search, page, pageSize } =
       Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
-   const { publicEnv } = Route.useRouteContext();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout("bank-accounts");
@@ -186,61 +301,50 @@ function BankAccountsList() {
          }),
    });
 
-   const { data: result } = useSuspenseQuery(
-      orpc.bankAccounts.list.queryOptions({
-         input: {
-            page,
-            pageSize,
-            search: search || undefined,
-            sorting: normalizeBankAccountSorting(sorting),
-            type,
-         },
-      }),
+   const bankAccountsCollection = useMemo(
+      () =>
+         createCollection(
+            bankAccountsCollectionOptions({
+               queryClient,
+               teamId: activeTeamId ?? "no-team",
+            }),
+         ),
+      [activeTeamId, queryClient],
    );
 
-   const bulkCreateMutation = useMutation(
-      orpc.bankAccounts.bulkCreate.mutationOptions({
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-   const updateMutation = useMutation(
-      orpc.bankAccounts.update.mutationOptions({
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-   const deleteMutation = useMutation(
-      orpc.bankAccounts.remove.mutationOptions({
-         onSuccess: () => toast.success("Conta excluída com sucesso."),
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-   const bulkDeleteMutation = useMutation(
-      orpc.bankAccounts.bulkRemove.mutationOptions({
-         onSuccess: ({ deleted }) =>
-            toast.success(
-               `${deleted} ${deleted === 1 ? "conta excluída" : "contas excluídas"} com sucesso.`,
-            ),
-         onError: (e) => toast.error(e.message),
-      }),
-   );
+   const { data: liveBankAccounts } = useLiveQuery(
+      (q) => {
+         let query = q.from({ bankAccount: bankAccountsCollection });
+         const pattern = `%${search.trim()}%`;
 
-   const handleRenameAccount = useCallback(
-      async (id: string, name: string) => {
-         await updateMutation.mutateAsync({ id, name });
+         if (type) {
+            query = query.where(({ bankAccount }) =>
+               eq(bankAccount.type, type),
+            );
+         }
+
+         if (search.trim()) {
+            query = query.where(({ bankAccount }) =>
+               ilike(bankAccount.name, pattern),
+            );
+         }
+
+         return query.select(({ bankAccount }) => bankAccount);
       },
-      [updateMutation],
+      [bankAccountsCollection, type, search],
    );
 
-   const handleUpdateAccount = useCallback(
-      async (id: string, patch: Record<string, unknown>) => {
-         await updateMutation.mutateAsync({ id, ...patch });
-      },
-      [updateMutation],
-   );
-
-   const handleOpenCreate = useCallback(() => {
-      openSheet({ renderChildren: () => <BankAccountFormSheet /> });
-   }, [openSheet]);
+   const bankAccounts = useMemo(() => {
+      const normalized = removeConfirmedOptimisticDuplicates(
+         liveBankAccounts as LiveBankAccountRow[],
+      );
+      const sorted = sortBankAccounts(normalized, sorting);
+      const start = (page - 1) * pageSize;
+      return {
+         all: sorted,
+         rows: sorted.slice(start, start + pageSize),
+      };
+   }, [liveBankAccounts, page, pageSize, sorting]);
 
    const importConfig: DataImportConfig = useMemo(
       () => ({
@@ -251,7 +355,7 @@ function BankAccountsList() {
          },
          mapRow: (row, i) => ({
             id: `__import_${i + 1}`,
-            teamId: "",
+            teamId: activeTeamId ?? "",
             name: String(row.name ?? "").trim(),
             type: resolveType(row.type),
             color: "#6366f1",
@@ -328,26 +432,138 @@ function BankAccountsList() {
                   "Arquivo contém tipo de conta inválido. Use Conta Corrente, Conta Poupança, Conta Investimento, Conta Pagamento ou Caixa Físico.",
                );
             }
-            const accounts = rows.flatMap((r) => {
-               const t = resolveType(r.type);
-               if (!t) return [];
-               return [
-                  {
+
+            if (!activeTeamId) {
+               throw new Error("Time ativo não encontrado.");
+            }
+
+            const importedRows: Array<{
+               row: BankAccountsCollectionRow;
+               input: {
+                  name: string;
+                  type:
+                     | "checking"
+                     | "savings"
+                     | "investment"
+                     | "payment"
+                     | "cash";
+                  color: string;
+                  initialBalance: string;
+               };
+            }> = rows
+               .map((r) => {
+                  const t = resolveType(r.type);
+                  if (!t) return null;
+                  const input = {
                      name: String(r.name ?? "").trim(),
                      type: t,
                      color: "#6366f1",
                      initialBalance: String(r.initialBalance ?? "0"),
-                  },
-               ];
+                  };
+                  return {
+                     input,
+                     row: buildOptimisticBankAccountRow({
+                        id: `__bank_account_${Math.random().toString(36).slice(2, 10)}`,
+                        input,
+                        teamId: activeTeamId,
+                     }),
+                  };
+               })
+               .filter((entry): entry is NonNullable<typeof entry> =>
+                  Boolean(entry),
+               );
+
+            const bulkCreate = bulkCreateBankAccountsAction(
+               bankAccountsCollection,
+            );
+            const transaction = bulkCreate({ rows: importedRows });
+            const result = await Result.tryPromise({
+               try: () => transaction.isPersisted.promise,
+               catch: (error) => error,
             });
-            await bulkCreateMutation.mutateAsync({ accounts });
+            if (Result.isError(result)) {
+               throw new Error(
+                  getErrorMessage(
+                     result.error,
+                     "Erro ao importar contas bancárias.",
+                  ),
+               );
+            }
          },
       }),
-      [bulkCreateMutation, generateCsv, generateXlsx, parseCsv, parseXlsx],
+      [
+         activeTeamId,
+         bankAccountsCollection,
+         generateCsv,
+         generateXlsx,
+         parseCsv,
+         parseXlsx,
+      ],
    );
+
+   const handleRenameAccount = useCallback(
+      async (id: string, name: string) => {
+         const update = updateBankAccountAction(bankAccountsCollection);
+         const transaction = update({ id, patch: { name } });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(
+                  result.error,
+                  "Erro ao atualizar conta bancária.",
+               ),
+            );
+         }
+      },
+      [bankAccountsCollection],
+   );
+
+   const handleUpdateAccount = useCallback(
+      async (id: string, patch: Record<string, unknown>) => {
+         const update = updateBankAccountAction(bankAccountsCollection);
+         const transaction = update({
+            id,
+            patch: getBankAccountRowPatch(patch),
+         });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(
+                  result.error,
+                  "Erro ao atualizar conta bancária.",
+               ),
+            );
+         }
+      },
+      [bankAccountsCollection],
+   );
+
+   const handleOpenCreate = useCallback(() => {
+      if (!activeTeamId) {
+         toast.error("Time ativo não encontrado.");
+         return;
+      }
+      openSheet({
+         renderChildren: () => (
+            <BankAccountFormSheet
+               collection={bankAccountsCollection}
+               teamId={activeTeamId}
+            />
+         ),
+      });
+   }, [activeTeamId, bankAccountsCollection, openSheet]);
 
    const handleDelete = useCallback(
       (account: BankAccountRow) => {
+         const deleteBankAccount = deleteBankAccountAction(
+            bankAccountsCollection,
+         );
          openAlertDialog({
             title: "Excluir conta",
             description: `Tem certeza que deseja excluir a conta "${account.name}"? Esta ação não pode ser desfeita.`,
@@ -355,11 +571,25 @@ function BankAccountsList() {
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               await deleteMutation.mutateAsync({ id: account.id });
+               const transaction = deleteBankAccount({ id: account.id });
+               const result = await Result.tryPromise({
+                  try: () => transaction.isPersisted.promise,
+                  catch: (error) => error,
+               });
+               if (Result.isError(result)) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao excluir conta bancária.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Conta excluída com sucesso.");
             },
          });
       },
-      [openAlertDialog, deleteMutation],
+      [bankAccountsCollection, openAlertDialog],
    );
 
    const columns = useMemo<ColumnDef<BankAccountRow>[]>(() => {
@@ -457,13 +687,14 @@ function BankAccountsList() {
             search: (prev) => ({ ...prev, ...next }),
             replace: true,
          }),
-      totalRows: result.totalCount,
+      totalRows: bankAccounts.all.length,
    });
 
    const table = useReactTable({
-      data: result.data,
+      data: bankAccounts.rows,
       columns,
       getRowId: (row) => row.id,
+      rowCount: bankAccounts.all.length,
       pageCount: urlState.pageCount,
       manualPagination: true,
       manualSorting: true,
@@ -482,7 +713,10 @@ function BankAccountsList() {
       getCoreRowModel: getCoreRowModel(),
    });
 
-   const importApi = useDataImport({ table, config: importConfig });
+   const importApi = useDataImport({
+      table,
+      config: importConfig,
+   });
 
    const selectedRows = table.getSelectedRowModel().rows;
    const selectedIds = selectedRows.map((r) => r.original.id);
@@ -502,8 +736,28 @@ function BankAccountsList() {
                   cancelLabel: "Cancelar",
                   variant: "destructive",
                   onAction: async () => {
-                     await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+                     const bulkDelete = bulkDeleteBankAccountsAction(
+                        bankAccountsCollection,
+                     );
+                     const result = await Result.tryPromise({
+                        try: () =>
+                           bulkDelete({ ids: selectedIds }).isPersisted.promise,
+                        catch: (error) => error,
+                     });
+                     if (Result.isError(result)) {
+                        toast.error(
+                           getErrorMessage(
+                              result.error,
+                              "Erro ao excluir contas bancárias.",
+                           ),
+                        );
+                        return;
+                     }
+
                      table.resetRowSelection();
+                     toast.success(
+                        `${selectedIds.length} ${selectedIds.length === 1 ? "conta excluída" : "contas excluídas"} com sucesso.`,
+                     );
                   },
                });
             }}
@@ -586,7 +840,9 @@ function BankAccountsList() {
                   </Empty>
                )}
             </ScrollArea>
-            {result.totalCount > 0 && <DataTablePagination table={table} />}
+            {bankAccounts.all.length > 0 && (
+               <DataTablePagination table={table} />
+            )}
          </div>
       </div>
    );
