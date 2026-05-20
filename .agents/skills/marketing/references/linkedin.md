@@ -1,4 +1,4 @@
-# LinkedIn — fórmulas, algoritmo, regras Montte
+# LinkedIn - fórmulas, algoritmo, regras Montte
 
 Voz e regras pt-BR: ver [`blog.md`](blog.md). Esta ref cobre só o que é específico de LinkedIn.
 
@@ -17,7 +17,7 @@ Curado de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-
 
 **Janela de publicação (BR/global misto):** Ter, Qua, Qui entre 7:30-9:00 da manhã do fuso do público. Evitar Seg < 9h, Sex > 14h, fim de semana (corta 30-50% de reach pra B2B).
 
-**Hashtags:** **0 hashtags** performa igual ou melhor que 5+. 1-3 niche hashtags (<50k posts) dão lift marginal de ~5%. Sempre no final, nunca no meio da frase.
+**Hashtags:** **0 hashtags** é o padrão. Se o post precisa muito de descoberta, use no máximo 1 hashtag nichada (<50k posts), sempre no final, nunca no meio da frase.
 
 **Link externo:** **vai pro 1º comentário**. Link no corpo do post suprime alcance 40-60%. Frase de transição: "Link no primeiro comentário ↓".
 
@@ -39,13 +39,13 @@ Curado de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-
 **Penalidades:**
 - Mais de 2 posts/dia: canibaliza
 - "Tag alguém que…" / pods: detecção a 97%, shadowban 3-14 dias
-- Em dashes (`—`) acionam detector de AI tells
+- Em dash (U+2014) e en dash (U+2013) acionam detector de AI tells
 
 ---
 
 ## Fórmulas de hook (escolha 1)
 
-### F1 — Anáfora de risco de plataforma
+### F1 - Anáfora de risco de plataforma
 
 Quando usar: opinião contrária sobre plataforma/categoria, anúncio de mudança de produto, post de "removemos X".
 
@@ -59,12 +59,12 @@ Você não é dono de {audiência}. Você não é dono de {feed}. Você está al
 
 [Anedota concreta com número real]
 
-O que a maioria não vê: [reframe — qual é o ativo real].
+O que a maioria não vê: [reframe - qual é o ativo real].
 
 Então mudei como trabalho:
-— [tática 1]
-— [tática 2]
-— [tática 3]
+- [tática 1]
+- [tática 2]
+- [tática 3]
 
 [Metáfora de fechamento]
 [Menção ao produto como conclusão natural, 1 frase, sem verbo de pitch]
@@ -75,7 +75,7 @@ Então mudei como trabalho:
 
 ---
 
-### F2 — R.I.P. Obituário de categoria
+### F2 - R.I.P. Obituário de categoria
 
 Quando usar: declaração de "era acabou", pivot de indústria, justificar remoção de feature/módulo.
 
@@ -106,7 +106,7 @@ Os vencedores em 2026 não são {tipo-antigo}. São {tipo-novo}.
 
 ---
 
-### F3 — Pivot ano-contra-ano
+### F3 - Pivot ano-contra-ano
 
 Quando usar: reflexão de founder, mudança de identidade, transição de produto/posicionamento.
 
@@ -128,7 +128,7 @@ Aqui está o que mudou de verdade.
 
 ---
 
-### F4 — Confissão com âncora temporal
+### F4 - Confissão com âncora temporal
 
 Quando usar: post de vulnerabilidade real, reset de voz, retargeting de ICP, "errei feio".
 
@@ -156,12 +156,12 @@ O que me surpreendeu: [upside contraintuitivo, vitórias específicas]
 
 ---
 
-### F7 — Ledger de números ímpares
+### F7 - Ledger de números ímpares
 
 Quando usar: founder build-log, breakdown de custo, números reais do produto/empresa.
 
 ```
-{Número ímpar, específico — "R$ 8.732,47"}
+{Número ímpar, específico - "R$ 8.732,47"}
 
 [1 linha de contexto do que esse número cobre]
 
@@ -171,9 +171,9 @@ Aqui está cada linha do extrato, sem arredondar:
 - {ferramenta 2}: R$ X,YZ
 ...
 
-[O que esse total substitui — "R$ 142.000 de custo de time"]
+[O que esse total substitui - "R$ 142.000 de custo de time"]
 
-[O que te surpreendeu — o que quebrou, o que funcionou]
+[O que te surpreendeu - o que quebrou, o que funcionou]
 
 [Fechamento de reframe de identidade]
 ```
@@ -182,15 +182,15 @@ Aqui está cada linha do extrato, sem arredondar:
 
 ---
 
-### F10 — Contrarian + recibos históricos
+### F10 - Contrarian + recibos históricos
 
 Quando usar: vaca-sagrada (refutar consenso), ciclos de hype tech, posicionamento contra status quo.
 
 ```
 {Vaca sagrada} está morrendo desde {ano}.
 
-{Mês Ano} — {evento}. "{Predição de morte.}"
-{Mês Ano} — {evento}. "{Predição de morte.}"
+{Mês Ano} - {evento}. "{Predição de morte.}"
+{Mês Ano} - {evento}. "{Predição de morte.}"
 [6-9 entradas datadas, cada uma 1-2 linhas]
 
 Todo trimestre por N anos. Todo ciclo: o mesmo obituário.
@@ -240,8 +240,8 @@ Se você {comportamento vencedor}, você já ganhou.
 
 - Nunca enquadre LinkedIn como inferior **em um post no LinkedIn** (penalidade do algoritmo).
 - Mencionar Montte 1 vez no máximo, e só quando for conclusão natural, nunca pitch.
-- Bling/Omie/ContaAzul citados como **referência de mercado**, não ataque. Em comparação de feature, vale; em depreciação, não.
-- "Não vendemos ERP simples, vendemos plataforma operacional com IA nativa". Reforço de positioning é obrigatório em posts de produto.
+- Bling/Omie/Conta Azul só entram na negativa seca: "Não é Bling, Omie ou Conta Azul." Nunca ataque, ranking ou comparação de feature.
+- Reforço de positioning é obrigatório em posts de produto: "camada de billing pra SaaS de um jeito que o founder não precise de ERP" ou a tagline pública.
 - Pelo menos um momento de vulnerabilidade ou stake concreto por post. Insight puro não engaja em 2026.
 
 ---
@@ -249,7 +249,7 @@ Se você {comportamento vencedor}, você já ganhou.
 ## Anti-padrões (recusar antes de mostrar pro user)
 
 - All-caps na 1ª linha (`ISSO MUDOU TUDO.`)
-- Travessões (`—`) em qualquer lugar
+- Em dash (U+2014) ou en dash (U+2013) em qualquer lugar
 - "Em um mundo acelerado…", "Estou animado pra anunciar…"
 - Regra dos três abstratos sem números
 - "Game-changer", "alavancar", "fundamentalmente", "robusto"

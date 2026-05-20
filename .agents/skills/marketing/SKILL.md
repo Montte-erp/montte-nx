@@ -5,7 +5,7 @@ description: Write marketing content for Montte across blog, LinkedIn, and X (Tw
 
 # Marketing
 
-Skill única de marketing Montte. Cobre **blog, LinkedIn e X**. Voz canônica, regras de humanização, anti-AI-tells e convenções pt-BR vivem em [`references/blog.md`](references/blog.md) — qualquer canal herda. Hook formulas e algoritmo de cada plataforma ficam nos refs específicos.
+Skill única de marketing Montte. Cobre **blog, LinkedIn e X**. Voz canônica, regras de humanização, anti-AI-tells e convenções pt-BR vivem em [`references/blog.md`](references/blog.md) - qualquer canal herda. Hook formulas e algoritmo de cada plataforma ficam nos refs específicos.
 
 Curadoria de hook formulas adaptada de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-skills), [ognjengt/founder-skills](https://github.com/ognjengt/founder-skills) e [alirezarezvani X/Twitter Growth Engine](https://alirezarezvani.github.io/claude-skills/skills/marketing-skill/x-twitter-growth/) (todas MIT).
 
@@ -21,7 +21,7 @@ Curadoria de hook formulas adaptada de [sergebulaev/linkedin-skills](https://git
 - Reverse-engineer de post viral pra extrair fórmula
 - Audit de draft antes de publicar (anti-slop pass)
 
-Não usar pra: legenda Instagram, e-mail marketing, copy de landing — fora de escopo.
+Não usar pra: legenda Instagram, e-mail marketing, copy de landing - fora de escopo.
 
 ## Roteamento
 
@@ -49,15 +49,15 @@ Não usar pra: legenda Instagram, e-mail marketing, copy de landing — fora de 
 
 Cortar antes de publicar:
 
-- [ ] Travessões (`—`). Substituir por ponto, vírgula ou reescrever.
+- [ ] Em dash (U+2014) ou en dash (U+2013). Substituir por ponto, vírgula ou reescrever.
 - [ ] "No mundo acelerado…", "Estou animado pra…", "Hoje viemos compartilhar…", "Em um cenário…"
 - [ ] "Game-changer", "deep dive", "alavancar", "fundamentalmente", "robusto", "leverage", "boilerplate", "no fim do dia"
 - [ ] Regra dos três sem números/exemplos concretos
 - [ ] All-caps na primeira linha (`ISSO MUDOU TUDO.`)
 - [ ] Listas com 3 bullets onde cada bullet é abstrato ("clareza, foco, execução")
-- [ ] "Tag alguém que precisa ver isso" / "Concorda? Comenta aí" como close — engagement-bait genérico
+- [ ] "Tag alguém que precisa ver isso" / "Concorda? Comenta aí" como close - engagement-bait genérico
 - [ ] Emoji decorativo em headline
-- [ ] Mais de 1 hashtag por post LinkedIn, mais de 0 no corpo do X
+- [ ] Hashtag em LinkedIn só se for 1 nichada e no fim; no X, 0 hashtags
 - [ ] Link externo no corpo do post LinkedIn (vai pro 1º comentário)
 - [ ] Frase "como um humano cansado escreveria"? Se não, reescreve.
 
@@ -65,10 +65,10 @@ Cortar antes de publicar:
 
 Conteúdo cai num dos quatro. Se não cai, provavelmente não é pra publicar.
 
-1. **Removemos X / quebramos padrão Y** — opinião contrária baseada em decisão real do produto (ex: removemos CRM, removemos Instagram, removemos planilha de billing)
-2. **Build log** — número específico + nome próprio + lição (ex: "deletamos 3.081 linhas hoje", "consertamos N bug em M horas")
-3. **Postmortem / "errei feio"** — vulnerabilidade real com data e impacto, fechamento com aprendizado
-4. **Position: camada de billing, não ERP** — Montte é a camada que falta no SaaS brasileiro pra facilitar a vida do founder; cobra, mede, fatura e mostra saúde financeira sem ERP separado. Bling/Omie/Conta Azul aparecem como referência de mercado, não como ataque.
+1. **Removemos X / quebramos padrão Y** - opinião contrária baseada em decisão real do produto (ex: removemos CRM, removemos planilha de billing)
+2. **Build log** - número específico + nome próprio + lição (ex: "deletamos 3.081 linhas hoje", "consertamos N bug em M horas")
+3. **Postmortem / "errei feio"** - vulnerabilidade real com data e impacto, fechamento com aprendizado
+4. **Position: camada de billing, não ERP** - Montte é a camada que falta no SaaS brasileiro pra facilitar a vida do founder; cobra, mede, fatura e mostra saúde financeira sem ERP separado. Bling/Omie/Conta Azul aparecem só na negativa seca: "Não é Bling, Omie ou Conta Azul."
 
 ## Posicionamento (canônico)
 
@@ -86,15 +86,15 @@ Detalhes completos (frases canônicas, banidas, hierarquia de menção, vocabul�
 
 ## Resources
 
-- `references/blog.md` — voz canônica Montte (vale pra todo canal) + humanização + templates de blog + frontmatter SEO/AEO/GEO + cadeia de distribuição blog→LinkedIn→X
-- `references/release-post.md` — regras para transformar release notes publicadas em post de blog canônico
-- `references/linkedin.md` — hook formulas, algoritmo 2026, char rules, anti-padrões LinkedIn
-- `references/x.md` — formatos de tweet, arquitetura de thread, algoritmo X, regras anti-padrão
-- `references/hooks-cross-channel.md` — biblioteca de hook patterns reusáveis (blog/LinkedIn/X)
+- `references/blog.md` - voz canônica Montte (vale pra todo canal) + humanização + templates de blog + frontmatter SEO/AEO/GEO + cadeia de distribuição blog→LinkedIn→X
+- `references/release-post.md` - regras para transformar release notes publicadas em post de blog canônico
+- `references/linkedin.md` - hook formulas, algoritmo 2026, char rules, anti-padrões LinkedIn
+- `references/x.md` - formatos de tweet, arquitetura de thread, algoritmo X, regras anti-padrão
+- `references/hooks-cross-channel.md` - biblioteca de hook patterns reusáveis (blog/LinkedIn/X)
 
 ## Skills relacionadas
 
-- [`linear-cli`](../linear-cli/SKILL.md) — criar/atualizar issues no projeto MAR (Montte Marketing) com a proposta antes de publicar.
+- [`linear-cli`](../linear-cli/SKILL.md) - criar/atualizar issues no projeto MAR (Montte Marketing) com a proposta antes de publicar.
 
 ## Crédito
 

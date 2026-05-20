@@ -53,13 +53,13 @@ faq:
 - Ultima H2: `O que vem por aí`.
 - Incluir cicatriz somente se ela aparecer nas release notes.
 - Usar "no Montte", "do Montte" e "Montte AI".
-- Evitar travessao `—` e `–`.
+- Não usar em dash (U+2014) nem en dash (U+2013).
 - Ultima frase deve ser acao ou afirmacao, nunca despedida formal.
 
 ## Validacao
 
 - Arquivo existe e nao esta vazio.
-- Sem travessao.
+- Sem em dash (U+2014) nem en dash (U+2013).
 - Frontmatter contem campos obrigatorios.
 - H1 ausente nos primeiros 30 lines.
 - `bun run landing:build` passa antes do PR.

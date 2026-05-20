@@ -1,4 +1,4 @@
-# Hooks cross-channel — biblioteca reusável
+# Hooks cross-channel - biblioteca reusável
 
 Voz e regras pt-BR: ver [`blog.md`](blog.md). Esta ref cobre 10 hook patterns que servem pra abertura em qualquer canal (blog, LinkedIn, X).
 
@@ -29,7 +29,7 @@ Cada hook tem: **template**, **psicologia**, **quando usar**, **exemplo adaptado
 
 **Template:** `"Analisei [N] [coisa]. Aqui estão os [N] [padrões/dados]."`
 
-**Quando usar:** comparação de concorrentes, benchmark de mercado, post de dado.
+**Quando usar:** padrão de mercado sem ataque nominal, benchmark de categoria, post de dado.
 
 **Exemplo Montte:**
 > Olhei o menu dos 4 maiores ERPs brasileiros. Todos têm módulo CRM. Nenhum cliente Montte usava o nosso. Aqui está o que isso significa.
@@ -42,12 +42,12 @@ Cada hook tem: **template**, **psicologia**, **quando usar**, **exemplo adaptado
 
 **Psicologia:** quebra de padrão. Padrão interrompe scroll.
 
-**Template:** `"Todo mundo diz [X]. Estão errados — e aqui estão os números."`
+**Template:** `"Todo mundo diz [X]. Estão errados - e aqui estão os números."`
 
 **Quando usar:** opinião contrária com receipt, posicionamento contra status quo.
 
 **Exemplo Montte:**
-> ERP precisa ter CRM. Todo concorrente tem. Removemos o nosso e nenhum cliente reclamou. Aqui está o que estávamos fazendo de errado.
+> ERP precisa ter CRM, dizem. Removemos o nosso e nenhum cliente reclamou. Aqui está o que estávamos fazendo de errado.
 
 **Antipattern:** contrarianismo sem evidência ("vou ser polêmico hoje:").
 
@@ -160,7 +160,7 @@ Cada hook tem: **template**, **psicologia**, **quando usar**, **exemplo adaptado
 
 ## Como combinar com fórmulas do canal
 
-Estes hooks são **camada 0** — abertura. Depois engata na fórmula completa do canal:
+Estes hooks são **camada 0** - abertura. Depois engata na fórmula completa do canal:
 
 | Hook (camada 0) | Funde bem com (canal) |
 |------------------|------------------------|

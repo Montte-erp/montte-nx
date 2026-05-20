@@ -1,4 +1,4 @@
-# Blog — escrita, distribuição, voz canônica Montte
+# Blog - escrita, distribuição, voz canônica Montte
 
 Esta reference é a **fonte canônica de voz Montte** para todos os canais. LinkedIn, X e blog herdam voz, regras de humanização e regras de pt-BR daqui. Quando `linkedin.md` ou `x.md` silenciarem sobre voz, vale a regra deste arquivo.
 
@@ -39,7 +39,7 @@ A regra de ouro: **o texto tem que soar como se um humano cansado tivesse escrit
 
 **Pronomes:** "nós/a gente" como padrão de equipe Montte. "eu" só em post de opinião assinado por um autor. "você" direto pro leitor.
 
-**Marca:** Montte é masculino. Nome do produto é só "Montte" em copy public-facing, nunca "Montte Payments", "Montte ERP", "Montte CRM" ou qualquer sufixo (vertical interna pode aparecer no Linear, nunca no blog/landing/social). Nunca cite Bling, Omie ou Conta Azul como concorrente; cite Asaas, Stripe, Mercado Pago e Abacate Pay como gateway. Tags chamam-se "Centro de Custo".
+**Marca:** Montte é masculino. Nome do produto é só "Montte" em copy public-facing, nunca "Montte Payments", "Montte ERP", "Montte CRM" ou qualquer sufixo (vertical interna pode aparecer no Linear, nunca no blog/landing/social). Bling, Omie e Conta Azul só entram como referência negativa seca ("Não é Bling, Omie ou Conta Azul."), nunca como ataque ou comparação de feature. Cite Asaas, Stripe, Mercado Pago e Abacate Pay como gateways de referência. Tags chamam-se "Centro de Custo".
 
 ---
 
@@ -54,9 +54,9 @@ Tagline public oficial: **a camada que falta no SaaS brasileiro pra facilitar a 
 Montte é mistura de **Autumn + Rillet**. Vocabulário pra alinhamento interno, jamais em texto pro leitor:
 
 - **Lado Autumn (dev-facing billing layer):** Customer como primitiva de cobrança por uso, SDK, `customers.state` agregando assinatura/uso/fatura/status numa chamada. Plugar em qualquer SaaS substitui o trabalho de wirear Stripe Billing, Lago, Orb ou planilha caseira.
-- **Lado Rillet (founder/ops-facing financial intelligence):** contabilidade e financeiro AI-native — auto-categorização, conciliação, dashboards. Substitui o reflexo de comprar Omie/Bling/Conta Azul.
+- **Lado Rillet (founder/ops-facing financial intelligence):** contabilidade e financeiro AI-native - auto-categorização, conciliação, dashboards. Substitui o reflexo de comprar Omie/Bling/Conta Azul.
 
-Junto fecha o ciclo: cobra, mede, fatura, concilia, mostra saúde financeira, **sem ERP separado**. Quando der dúvida de escopo num post, a régua é: ou serve o dev integrando billing, ou serve o founder olhando financeiro com IA. Fora disso é Twenty (CRM), Abacate Pay (gateway), ou NFe — não core do Montte.
+Junto fecha o ciclo: cobra, mede, fatura, concilia, mostra saúde financeira, **sem ERP separado**. Quando der dúvida de escopo num post, a régua é: ou serve o dev integrando billing, ou serve o founder olhando financeiro com IA. Fora disso é Twenty (CRM), Abacate Pay (gateway), ou NFe - não core do Montte.
 
 ### O que dizer (frases canônicas)
 
@@ -77,22 +77,22 @@ Junto fecha o ciclo: cobra, mede, fatura, concilia, mostra saúde financeira, **
 |---------|---------|
 | "Montte Payments", "Montte CRM", "Montte ERP" | Produto é só Montte. Sufixos confundem posicionamento |
 | "Runtime de billing" | Termo técnico que afasta founder. Usar "camada" |
-| "ERP simples", "ERP nacional", "ERP brasileiro" | Montte não é ERP — a frase canônica é literalmente "sem ERP" |
+| "ERP simples", "ERP nacional", "ERP brasileiro" | Montte não é ERP - a frase canônica é literalmente "sem ERP" |
 | "Plataforma operacional completa" | Genérico, soa institucional. Usar a tagline |
-| "Infraestrutura de pagamentos" | Falso — Montte é camada de billing, gateway entra como adapter |
+| "Infraestrutura de pagamentos" | Falso - Montte é camada de billing, gateway entra como adapter |
 | "Stack de billing", "stack de finanças" | Anglicismo + vago |
 | "Solução all-in-one" | Pitch de SaaS dos anos 2010 |
 | "Founder-friendly", "developer-first" | Anglicismo de pitch. Mostre, não rotule |
 | "Não estamos tentando ser X" | Eco desnecessário depois de "não somos X". Afirmação seca já basta |
-| "Facilitamos a vida de empresas brasileiras" | Soft, vazio. A tagline tem alvo (founder) e domínio (SaaS) — use ela |
+| "Facilitamos a vida de empresas brasileiras" | Soft, vazio. A tagline tem alvo (founder) e domínio (SaaS) - use ela |
 
 ### Hierarquia de menção em copy public
 
 - ✅ Twenty: única integração de CRM citável. É a primeira porque Montte usa internamente.
 - ✅ Abacate Pay: primeiro adapter de pagamento. Pode citar em escopo de billing.
 - ⚠️ DocuSeal: assinatura digital, self-hosted. Citável só quando o tema for documentos.
-- ❌ Bling, Omie, Conta Azul: só como referência negativa ("não é Bling, Omie ou Conta Azul").
-- ❌ Pipedrive, HubSpot, Salesforce: não citar como integração — Twenty é o único CRM no roadmap.
+- ❌ Bling, Omie, Conta Azul: só como referência negativa seca ("Não é Bling, Omie ou Conta Azul."), nunca ataque ou comparação de feature.
+- ❌ Pipedrive, HubSpot, Salesforce: não citar como integração - Twenty é o único CRM no roadmap.
 - ❌ Autumn, Rillet, Polar, Stripe Billing, Lago, Orb: aparecem em survey/contexto técnico, nunca como comparação direta em headline. Em texto pode citar como "o que tem hoje no mercado lá fora" sem virar tese.
 - ❌ Mastra, Vercel AI SDK, `@packages/agents`: não existem no Montte. Não mencionar.
 
@@ -101,7 +101,7 @@ Junto fecha o ciclo: cobra, mede, fatura, concilia, mostra saúde financeira, **
 - "Customer" (em código e em texto técnico) ≠ "Cliente" (em copy founder-facing). Use cada um no contexto certo.
 - "Cobrança por uso" >> "usage-based billing" em copy pt-BR.
 - "Adapter de pagamento" ok (termo técnico consolidado). "Adaptador de pagamento" também aceitável.
-- "Plano", "assinatura", "fatura", "uso medido", "status de pagamento" — léxico estável.
+- "Plano", "assinatura", "fatura", "uso medido", "status de pagamento" - léxico estável.
 - "Centro de Custo" sempre que aparecer o que outros chamam de "tag".
 - "Build in public" pode aparecer; "transparência radical" não.
 - Quando NFe vier: "emissão própria, sem SaaS", não "solução de NFe integrada".
@@ -112,16 +112,16 @@ Junto fecha o ciclo: cobra, mede, fatura, concilia, mostra saúde financeira, **
 
 LLMs deixam pegadas. Detectores como GPTZero, Originality.ai e Copyleaks atrás de cinco padrões: travessões em excesso, ritmo de frase uniforme, vocabulário previsível, listas de três itens em loop, e fechamentos formais. As regras abaixo neutralizam essas pegadas e ainda melhoram a leitura.
 
-### 1. Travessão (`—`) está banido
+### 1. Travessão longo está banido
 
-O travessão longo `—` (em dash, U+2014) virou marca registrada de texto gerado por IA. Em pt-BR brasileiro, ele é raro fora de literatura e diálogos. **Não use em nenhum canal Montte (blog, LinkedIn, X).** Substitua por uma destas quatro opções, na ordem de preferência:
+O em dash (U+2014) virou marca registrada de texto gerado por IA. Em pt-BR brasileiro, ele é raro fora de literatura e diálogos. **Não use em nenhum canal Montte (blog, LinkedIn, X).** Substitua por uma destas quatro opções, na ordem de preferência:
 
 1. **Vírgula**: "A tabela virou um extrato, agora com subtotal inline."
 2. **Ponto** (quebrar em duas frases): "A tabela virou um extrato. Subtotal aparece inline."
 3. **Parênteses**: "A tabela virou um extrato (com subtotal inline)."
 4. **Dois pontos**: "A tabela tem um truque novo: subtotal inline."
 
-Travessão curto `-` (hifen) está ok em listas markdown (`- item`) e em palavras compostas ("conta-corrente"). Travessão longo `—` e travessão médio `–` (U+2013), zero. Se o linter inserir, remova.
+Hífen `-` está ok em listas markdown (`- item`) e em palavras compostas ("conta-corrente"). Em dash (U+2014) e en dash (U+2013), zero. Se o linter inserir, remova.
 
 ### 2. Anglicismos: traduza ou justifique
 
@@ -459,11 +459,11 @@ canonicalUrl: ""                              # só se canonical externo
 - [ ] Bullets com bold no termo
 - [ ] CTA final em 1 linha
 - [ ] `bun run landing:build` passa local
-- [ ] **Plano de distribuição definido** (LinkedIn + X — ver seção abaixo)
+- [ ] **Plano de distribuição definido** (LinkedIn + X - ver seção abaixo)
 
 ### Teste do humano (passe os 8)
 
-- [ ] **Zero travessões longos** (`—`) ou médios (`–`) no texto. Apenas hífens (`-`) e pontuação comum.
+- [ ] **Zero em dash (U+2014) ou en dash (U+2013)** no texto. Apenas hífens (`-`) e pontuação comum.
 - [ ] **Zero anglicismos evitáveis**. Rodei a tabela "Não use / Use" mentalmente.
 - [ ] **Ritmo varia**: tenho frase curta de até 8 palavras em pelo menos 1 das primeiras 3 seções.
 - [ ] **Nenhuma sequência de 3 frases médias seguidas** sem quebra.
@@ -490,7 +490,7 @@ canonicalUrl: ""                              # só se canonical externo
 - Screenshots sem alt text
 - Link com texto "aqui" ou "este link"
 - Promessa de roadmap sem data ("em breve" só com contexto)
-- Travessão longo (`—`) em qualquer posição
+- Em dash (U+2014) ou en dash (U+2013) em qualquer posição
 - Anglicismo gratuito quando há tradução pt-BR direta
 - Frase final do tipo "E é isso!", "Espero que tenha gostado", "Até a próxima"
 - Três bullets quando o conteúdo natural pediria 2 ou 4
@@ -500,7 +500,7 @@ canonicalUrl: ""                              # só se canonical externo
 ## Pipeline de revisão
 
 1. **Escreve o rascunho** seguindo o template.
-2. **Passa o "ctrl+F" do travessão**: busca `—` no arquivo, troca todos por vírgula, ponto, parênteses ou dois pontos.
+2. **Passa o "ctrl+F" do travessão**: busca em dash (U+2014) e en dash (U+2013) no arquivo, troca todos por vírgula, ponto, parênteses ou dois pontos.
 3. **Passa o "ctrl+F" dos anglicismos**: busca cada palavra da tabela §2 da Humanização.
 4. **Lê em voz alta**. Se travou na leitura, reescreve a frase.
 5. **Confere ritmo**: se 3 frases seguidas têm o mesmo tamanho, quebra uma em duas ou junta duas em uma.
