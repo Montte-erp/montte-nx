@@ -32,6 +32,26 @@ const ensureRow = <T>(row: T | undefined, msg: string) =>
 export const create = protectedProcedure
    .input(createTagSchema)
    .handler(async ({ context, input }) => {
+      const existing = await Result.tryPromise({
+         try: () =>
+            context.db.query.tags.findFirst({
+               where: (f, { and, eq }) =>
+                  and(eq(f.teamId, context.teamId), eq(f.name, input.name)),
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar centro de custo.",
+            }),
+      });
+      if (Result.isError(existing)) throw existing.error;
+      if (existing.value) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message: "Já existe um centro de custo com esse nome.",
+         });
+      }
+
       const created = await Result.tryPromise({
          try: () =>
             context.db.transaction(async (tx) => {
@@ -340,6 +360,38 @@ export const getStats = protectedProcedure.handler(async ({ context }) => {
 export const bulkCreate = protectedProcedure
    .input(z.object({ items: z.array(createTagSchema).min(1) }))
    .handler(async ({ context, input }) => {
+      const names = input.items.map((item) => item.name);
+      const repeatedName = names.find(
+         (name, index) => names.indexOf(name) !== index,
+      );
+      if (repeatedName) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message: `Centro de custo duplicado no arquivo: ${repeatedName}.`,
+         });
+      }
+
+      const existing = await Result.tryPromise({
+         try: () =>
+            context.db.query.tags.findMany({
+               where: (f, { and, eq, inArray }) =>
+                  and(eq(f.teamId, context.teamId), inArray(f.name, names)),
+            }),
+         catch: () =>
+            new ClassificationRouterError({
+               error: classificationRouterErrors.INTERNAL(),
+               message: "Falha ao verificar centros de custo.",
+            }),
+      });
+      if (Result.isError(existing)) throw existing.error;
+      const existingName = existing.value[0]?.name;
+      if (existingName) {
+         throw new ClassificationRouterError({
+            error: classificationRouterErrors.CONFLICT(),
+            message: `Centro de custo já existe: ${existingName}.`,
+         });
+      }
+
       const result = await Result.tryPromise({
          try: () =>
             context.db.transaction(async (tx) =>

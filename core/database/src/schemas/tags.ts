@@ -46,17 +46,16 @@ export const tagSchema = createSelectSchema(tags);
 export type Tag = z.infer<typeof tagSchema>;
 export type DreType = (typeof dreTypeEnum.enumValues)[number];
 
-const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
-
 const nameSchema = z
    .string()
    .min(2, "Nome deve ter no mínimo 2 caracteres.")
    .max(120, "Nome deve ter no máximo 120 caracteres.");
 
+const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{6})$/;
 const colorSchema = z
    .string()
-   .regex(HEX_COLOR_REGEX, "Cor inválida. Use formato hex (#RRGGBB).")
-   .optional();
+   .regex(HEX_COLOR_REGEX, "Cor inválida.")
+   .default("#6366f1");
 
 export const createTagSchema = createInsertSchema(tags)
    .pick({ name: true, color: true, description: true })

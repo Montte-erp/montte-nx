@@ -60,6 +60,16 @@ describe("tags router", () => {
       expect(persisted?.name).toBe("Operações");
    });
 
+   it("create throws CONFLICT when name already exists", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      await makeTag(testDb.db, teamId, { name: "Operações" });
+      const ctx = createTestContext(testDb.db, { teamId, organizationId });
+
+      await expect(
+         call(tagsRouter.create, { name: "Operações" }, { context: ctx }),
+      ).rejects.toSatisfy(isClassificationStatus(409));
+   });
+
    it("update on cross-team tag throws NOT_FOUND", async () => {
       const { teamId: otherTeamId } = await seedTeam(testDb.db);
       const tag = await makeTag(testDb.db, otherTeamId);
@@ -213,6 +223,20 @@ describe("tags router", () => {
          { context: ctx },
       );
       expect(result).toHaveLength(3);
+   });
+
+   it("bulkCreate throws CONFLICT when an item already exists", async () => {
+      const { teamId } = await seedTeam(testDb.db);
+      await makeTag(testDb.db, teamId, { name: "Tag1" });
+      const ctx = createTestContext(testDb.db, { teamId });
+
+      await expect(
+         call(
+            tagsRouter.bulkCreate,
+            { items: [{ name: "Tag1" }, { name: "Tag2" }] },
+            { context: ctx },
+         ),
+      ).rejects.toSatisfy(isClassificationStatus(409));
    });
 
    it("getAll returns paginated team tags", async () => {
