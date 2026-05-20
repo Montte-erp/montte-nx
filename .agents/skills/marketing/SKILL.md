@@ -1,6 +1,6 @@
 ---
 name: marketing
-description: Write marketing content for Montte across blog, LinkedIn, and X (Twitter). Founder-led, pt-BR, Zed/PostHog voice, anti-AI-tells, hook formulas com track-record verificado em 2025-2026. Use ao escrever blog post, LinkedIn post, tweet, thread X, ou repurpose entre canais. Canais ativos hoje: blog (canônico) + LinkedIn + X. Instagram fora de escopo.
+description: "Write marketing content for Montte across blog, LinkedIn, and X (Twitter). Founder-led, pt-BR, Zed/PostHog voice, anti-AI-tells, hook formulas com track-record verificado em 2025-2026. Use ao escrever blog post, LinkedIn post, tweet, thread X, ou repurpose entre canais. Canais ativos hoje: blog (canônico) + LinkedIn + X. Instagram fora de escopo."
 ---
 
 # Marketing
