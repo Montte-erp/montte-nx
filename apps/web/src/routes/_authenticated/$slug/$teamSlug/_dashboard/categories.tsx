@@ -153,6 +153,26 @@ function compareCategoryValues(
    }
 }
 
+type LiveCategoryRow = CategoryRow & {
+   $synced: boolean;
+};
+
+function categoryDedupeKey(category: CategoryRow) {
+   return `${category.teamId}:${category.type}:${category.parentId ?? "root"}:${category.name.trim().toLocaleLowerCase()}`;
+}
+
+function removeConfirmedOptimisticDuplicates(categories: LiveCategoryRow[]) {
+   const syncedKeys = new Set<string>();
+   for (const category of categories) {
+      if (!category.$synced) continue;
+      syncedKeys.add(categoryDedupeKey(category));
+   }
+   return categories.filter(
+      (category) =>
+         category.$synced || !syncedKeys.has(categoryDedupeKey(category)),
+   );
+}
+
 function sortCategories(rows: CategoryRow[], sorting: SortingState) {
    const normalized = normalizeCategorySorting(sorting);
    return [...rows].sort((left, right) => {
@@ -246,9 +266,11 @@ function CategoriesList() {
       [categoriesCollection, hasSearch, includeArchived, search, type],
    );
 
+   const categories = removeConfirmedOptimisticDuplicates(liveCategories);
+
    const sortedCategories = useMemo(
-      () => sortCategories(liveCategories, sorting),
-      [liveCategories, sorting],
+      () => sortCategories(categories, sorting),
+      [categories, sorting],
    );
    const rootCandidates = useMemo(
       () =>
@@ -280,13 +302,13 @@ function CategoriesList() {
       openSheet({
          renderChildren: () => (
             <CategoryFormSheet
-               categories={liveCategories}
+               categories={categories}
                collection={categoriesCollection}
                teamId={activeTeamId}
             />
          ),
       });
-   }, [activeTeamId, categoriesCollection, liveCategories, openSheet]);
+   }, [activeTeamId, categories, categoriesCollection, openSheet]);
 
    const handleUpdateCategory = useCallback(
       async (
@@ -489,7 +511,7 @@ function CategoriesList() {
 
    const columns = useMemo<ColumnDef<CategoryRow>[]>(() => {
       const base = buildCategoryColumns({
-         categories: liveCategories,
+         categories,
          onUpdate: handleUpdateCategory,
       });
       const expandColumn: ColumnDef<CategoryRow> = {
@@ -600,7 +622,7 @@ function CategoriesList() {
       return [selectColumn, expandColumn, ...base, actionsColumn];
    }, [
       categoriesCollection,
-      liveCategories,
+      categories,
       handleUpdateCategory,
       handleArchive,
       handleDelete,
