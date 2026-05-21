@@ -1,0 +1,172 @@
+import { Badge } from "@packages/ui/components/badge";
+import {
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
+import { Input } from "@packages/ui/components/input";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { toast } from "@packages/ui/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import type { Outputs } from "@/integrations/orpc/client";
+import { orpc } from "@/integrations/orpc/client";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
+import { closeCredenza } from "@/hooks/use-credenza";
+import {
+   BadgeDollarSign,
+   CalendarRange,
+   ChartColumn,
+   LineChart,
+   Plus,
+   Search,
+   Tags,
+   Workflow,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+
+const TEMPLATE_ICONS: Record<string, typeof Workflow> = {
+   "dre-monthly": ChartColumn,
+   "cash-flow-weekly": LineChart,
+   "cost-centers-monthly": BadgeDollarSign,
+   "aging-weekly": CalendarRange,
+   "categories-monthly": Tags,
+   "blank-workflow": Plus,
+};
+
+const BLANK_WORKFLOW_TEMPLATE_ID = "blank-workflow";
+
+type WorkflowTemplate = Outputs["workflows"]["templates"]["list"][number];
+
+export function WorkflowCreateCredenza({
+   templates,
+}: {
+   templates: WorkflowTemplate[];
+}) {
+   const [search, setSearch] = useState("");
+   const { slug, teamSlug } = useDashboardSlugs();
+   const navigate = useNavigate();
+
+   const createMutation = useMutation(
+      orpc.workflows.createFromTemplate.mutationOptions({
+         onSuccess: async (workflow) => {
+            toast.success("Workflow criado.");
+            closeCredenza();
+            await navigate({
+               to: "/$slug/$teamSlug/workflows/$workflowId",
+               params: { slug, teamSlug, workflowId: workflow.id },
+            });
+         },
+         onError: (error) => toast.error(error.message),
+      }),
+   );
+
+   const filteredTemplates = useMemo(() => {
+      const query = search.trim().toLowerCase();
+      const matchesSearch = (template: WorkflowTemplate) => {
+         if (!query) return true;
+         return [template.name, template.description].some((value) =>
+            value.toLowerCase().includes(query),
+         );
+      };
+      const blankTemplate = templates.find(
+         (template) => template.id === BLANK_WORKFLOW_TEMPLATE_ID,
+      );
+      const templateList = templates.filter(
+         (template) => template.id !== BLANK_WORKFLOW_TEMPLATE_ID,
+      );
+      return [
+         ...(blankTemplate && matchesSearch(blankTemplate)
+            ? [blankTemplate]
+            : []),
+         ...templateList.filter(matchesSearch),
+      ];
+   }, [search, templates]);
+
+   function handleCreate(template: WorkflowTemplate) {
+      createMutation.mutate({
+         templateId: template.id,
+         name: template.name,
+         schedule: {
+            cron: template.defaultCron,
+            timezone: "America/Sao_Paulo",
+         },
+      });
+   }
+
+   return (
+      <div className="flex max-h-[min(82vh,820px)] min-h-0 flex-col overflow-hidden">
+         <CredenzaHeader className="border-b px-4 pt-4 pb-3">
+            <div className="flex flex-col gap-1">
+               <CredenzaTitle>Criar workflow</CredenzaTitle>
+               <CredenzaDescription>
+                  Escolha um template pronto ou comece do zero.
+               </CredenzaDescription>
+            </div>
+         </CredenzaHeader>
+
+         <CredenzaBody className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+            <div className="relative shrink-0">
+               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+               <Input
+                  className="pl-9"
+                  placeholder="Buscar templates"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+               />
+            </div>
+
+            <ScrollArea className="min-h-0 flex-1 pr-2">
+               <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  {filteredTemplates.map((template) => {
+                     const Icon = TEMPLATE_ICONS[template.id] ?? Workflow;
+                     const isBlank = template.id === BLANK_WORKFLOW_TEMPLATE_ID;
+                     return (
+                        <button
+                           className="group min-h-[210px] overflow-hidden rounded-lg border bg-card text-left transition-colors hover:border-foreground/25 hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-60"
+                           disabled={createMutation.isPending}
+                           key={template.id}
+                           onClick={() => handleCreate(template)}
+                           type="button"
+                        >
+                           <div className="flex h-28 items-center justify-center bg-gradient-to-br from-primary/15 via-muted to-muted/40">
+                              <div className="bg-background/70 text-foreground flex size-14 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-105">
+                                 <Icon className="size-7" />
+                              </div>
+                           </div>
+                           <div className="flex flex-col gap-3 p-3">
+                              <div className="flex flex-col gap-1">
+                                 <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+                                    {template.name}
+                                 </span>
+                                 <span className="text-muted-foreground line-clamp-2 text-sm">
+                                    {template.description}
+                                 </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                 {isBlank ? (
+                                    <>
+                                       <Badge variant="outline">Do zero</Badge>
+                                       <Badge variant="secondary">
+                                          Agenda base
+                                       </Badge>
+                                    </>
+                                 ) : (
+                                    <Badge variant="outline">
+                                       {template.cadence === "weekly"
+                                          ? "Semanal"
+                                          : "Mensal"}
+                                    </Badge>
+                                 )}
+                              </div>
+                           </div>
+                        </button>
+                     );
+                  })}
+               </div>
+            </ScrollArea>
+         </CredenzaBody>
+      </div>
+   );
+}

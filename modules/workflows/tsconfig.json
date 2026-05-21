@@ -2,33 +2,24 @@
    "extends": "@tooling/typescript/core.json",
    "compilerOptions": {
       "composite": false,
+      "declaration": false,
+      "declarationMap": false,
       "noEmit": true,
       "rootDir": "../..",
       "jsx": "react-jsx",
       "paths": {
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
-         "@core/environment/worker": ["../../core/environment/src/worker.ts"],
+         "@core/dbos/*": ["../../core/dbos/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/logging": ["../../core/logging/src/logger.ts"],
          "@core/logging/*": ["../../core/logging/src/*"],
-         "@core/posthog/*": ["../../core/posthog/src/*"],
-         "@core/redis/*": ["../../core/redis/src/*"],
-         "@modules/classification/*": ["../../modules/classification/src/*"],
-         "@modules/workflows/*": ["../../modules/workflows/src/*"]
+         "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@modules/workflows/*": ["./src/*"]
       }
    },
    "include": ["src"],
    "references": [
-      {
-         "path": "../../core/redis"
-      },
-      {
-         "path": "../../core/posthog"
-      },
-      {
-         "path": "../../core/pg-boss"
-      },
       {
          "path": "../../core/logging"
       },

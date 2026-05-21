@@ -21,6 +21,7 @@
       "@modules/agents": "workspace:*",
       "@modules/cards": "workspace:*",
       "@modules/classification": "workspace:*",
+      "@modules/workflows": "workspace:*",
       "better-result": "catalog:validation"
    },
    "devDependencies": {

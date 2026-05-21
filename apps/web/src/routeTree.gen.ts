@@ -38,6 +38,7 @@ import { Route as AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport } fro
 import { Route as AuthenticatedSlugTeamSlugDashboardChatRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat'
 import { Route as AuthenticatedSlugTeamSlugDashboardCategoriesRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/categories'
 import { Route as AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/bank-accounts'
+import { Route as AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/workflows/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardReportsIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/reports/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardInboxIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/inbox/index'
@@ -50,6 +51,7 @@ import { Route as AuthenticatedSlugTeamSlugDashboardSettingsDangerZoneRouteImpor
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsCustomizationRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/customization'
 import { Route as AuthenticatedSlugTeamSlugDashboardReportsReportIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/reports/$reportId'
 import { Route as AuthenticatedSlugTeamSlugDashboardChatThreadIdRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/chat/$threadId'
+import { Route as AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/workflows/$workflowId/index'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general'
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRouteImport } from './routes/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone'
@@ -213,6 +215,12 @@ const AuthenticatedSlugTeamSlugDashboardBankAccountsRoute =
     path: '/bank-accounts',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
   } as any)
+const AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRoute =
+  AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRouteImport.update({
+    id: '/workflows/',
+    path: '/workflows/',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+  } as any)
 const AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute =
   AuthenticatedSlugTeamSlugDashboardSettingsIndexRouteImport.update({
     id: '/',
@@ -284,6 +292,12 @@ const AuthenticatedSlugTeamSlugDashboardChatThreadIdRoute =
     id: '/$threadId',
     path: '/$threadId',
     getParentRoute: () => AuthenticatedSlugTeamSlugDashboardChatRoute,
+  } as any)
+const AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRoute =
+  AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRouteImport.update({
+    id: '/workflows/$workflowId/',
+    path: '/workflows/$workflowId/',
+    getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
   } as any)
 const AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute =
   AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRouteImport.update(
@@ -394,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug/inbox/': typeof AuthenticatedSlugTeamSlugDashboardInboxIndexRoute
   '/$slug/$teamSlug/reports/': typeof AuthenticatedSlugTeamSlugDashboardReportsIndexRoute
   '/$slug/$teamSlug/settings/': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
+  '/$slug/$teamSlug/workflows/': typeof AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRoute
   '/$slug/$teamSlug/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
   '/$slug/$teamSlug/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
   '/$slug/$teamSlug/settings/organization/members': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute
@@ -402,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/$slug/$teamSlug/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/$slug/$teamSlug/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/$slug/$teamSlug/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
+  '/$slug/$teamSlug/workflows/$workflowId/': typeof AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRoute
   '/$slug/$teamSlug/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRoutesByTo {
@@ -441,6 +457,7 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug/inbox': typeof AuthenticatedSlugTeamSlugDashboardInboxIndexRoute
   '/$slug/$teamSlug/reports': typeof AuthenticatedSlugTeamSlugDashboardReportsIndexRoute
   '/$slug/$teamSlug/settings': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
+  '/$slug/$teamSlug/workflows': typeof AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRoute
   '/$slug/$teamSlug/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
   '/$slug/$teamSlug/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
   '/$slug/$teamSlug/settings/organization/members': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute
@@ -449,6 +466,7 @@ export interface FileRoutesByTo {
   '/$slug/$teamSlug/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/$slug/$teamSlug/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/$slug/$teamSlug/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
+  '/$slug/$teamSlug/workflows/$workflowId': typeof AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRoute
   '/$slug/$teamSlug/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRoutesById {
@@ -494,6 +512,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard/inbox/': typeof AuthenticatedSlugTeamSlugDashboardInboxIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/reports/': typeof AuthenticatedSlugTeamSlugDashboardReportsIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/': typeof AuthenticatedSlugTeamSlugDashboardSettingsIndexRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/workflows/': typeof AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationDangerZoneRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationGeneralRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members': typeof AuthenticatedSlugTeamSlugDashboardSettingsOrganizationMembersRoute
@@ -502,6 +521,7 @@ export interface FileRoutesById {
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectDangerZoneRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectGeneralRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectIntegrationsRoute
+  '/_authenticated/$slug/$teamSlug/_dashboard/workflows/$workflowId/': typeof AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRoute
   '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro': typeof AuthenticatedSlugTeamSlugDashboardSettingsProjectProductsFinanceiroRoute
 }
 export interface FileRouteTypes {
@@ -546,6 +566,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/inbox/'
     | '/$slug/$teamSlug/reports/'
     | '/$slug/$teamSlug/settings/'
+    | '/$slug/$teamSlug/workflows/'
     | '/$slug/$teamSlug/settings/organization/danger-zone'
     | '/$slug/$teamSlug/settings/organization/general'
     | '/$slug/$teamSlug/settings/organization/members'
@@ -554,6 +575,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/project/danger-zone'
     | '/$slug/$teamSlug/settings/project/general'
     | '/$slug/$teamSlug/settings/project/integrations'
+    | '/$slug/$teamSlug/workflows/$workflowId/'
     | '/$slug/$teamSlug/settings/project/products/financeiro'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -593,6 +615,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/inbox'
     | '/$slug/$teamSlug/reports'
     | '/$slug/$teamSlug/settings'
+    | '/$slug/$teamSlug/workflows'
     | '/$slug/$teamSlug/settings/organization/danger-zone'
     | '/$slug/$teamSlug/settings/organization/general'
     | '/$slug/$teamSlug/settings/organization/members'
@@ -601,6 +624,7 @@ export interface FileRouteTypes {
     | '/$slug/$teamSlug/settings/project/danger-zone'
     | '/$slug/$teamSlug/settings/project/general'
     | '/$slug/$teamSlug/settings/project/integrations'
+    | '/$slug/$teamSlug/workflows/$workflowId'
     | '/$slug/$teamSlug/settings/project/products/financeiro'
   id:
     | '__root__'
@@ -645,6 +669,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/inbox/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/reports/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/workflows/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/danger-zone'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/general'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/organization/members'
@@ -653,6 +678,7 @@ export interface FileRouteTypes {
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/danger-zone'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/general'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
+    | '/_authenticated/$slug/$teamSlug/_dashboard/workflows/$workflowId/'
     | '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/products/financeiro'
   fileRoutesById: FileRoutesById
 }
@@ -874,6 +900,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardBankAccountsRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
+    '/_authenticated/$slug/$teamSlug/_dashboard/workflows/': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/workflows/'
+      path: '/workflows'
+      fullPath: '/$slug/$teamSlug/workflows/'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
+    }
     '/_authenticated/$slug/$teamSlug/_dashboard/settings/': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/'
       path: '/'
@@ -957,6 +990,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$slug/$teamSlug/chat/$threadId'
       preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardChatThreadIdRouteImport
       parentRoute: typeof AuthenticatedSlugTeamSlugDashboardChatRoute
+    }
+    '/_authenticated/$slug/$teamSlug/_dashboard/workflows/$workflowId/': {
+      id: '/_authenticated/$slug/$teamSlug/_dashboard/workflows/$workflowId/'
+      path: '/workflows/$workflowId'
+      fullPath: '/$slug/$teamSlug/workflows/$workflowId/'
+      preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRouteImport
+      parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute
     }
     '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations': {
       id: '/_authenticated/$slug/$teamSlug/_dashboard/settings/project/integrations'
@@ -1111,6 +1151,8 @@ interface AuthenticatedSlugTeamSlugDashboardRouteChildren {
   AuthenticatedSlugTeamSlugDashboardHomeIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardHomeIndexRoute
   AuthenticatedSlugTeamSlugDashboardInboxIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardInboxIndexRoute
   AuthenticatedSlugTeamSlugDashboardReportsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardReportsIndexRoute
+  AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRoute
+  AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRoute: typeof AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRoute
 }
 
 const AuthenticatedSlugTeamSlugDashboardRouteChildren: AuthenticatedSlugTeamSlugDashboardRouteChildren =
@@ -1137,6 +1179,10 @@ const AuthenticatedSlugTeamSlugDashboardRouteChildren: AuthenticatedSlugTeamSlug
       AuthenticatedSlugTeamSlugDashboardInboxIndexRoute,
     AuthenticatedSlugTeamSlugDashboardReportsIndexRoute:
       AuthenticatedSlugTeamSlugDashboardReportsIndexRoute,
+    AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRoute:
+      AuthenticatedSlugTeamSlugDashboardWorkflowsIndexRoute,
+    AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRoute:
+      AuthenticatedSlugTeamSlugDashboardWorkflowsWorkflowIdIndexRoute,
   }
 
 const AuthenticatedSlugTeamSlugDashboardRouteWithChildren =
