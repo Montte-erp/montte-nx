@@ -83,8 +83,18 @@ Campos da V1:
 | Preco de venda | Nao | Usado como sugestao em saidas com receita. |
 | Estoque minimo | Nao | Default `0`. Usado para alertas. |
 | Categoria | Nao | Categoria financeira padrao. |
-| Centro de Custo | Nao | Centro de Custo padrao. |
-| Status | Sim | `active` ou `archived`. |
+| Centro de Custo | Nao | Centro de Custo padrão (`tag_id` no produto). |
+
+### Centro de Custo
+
+Nesta versão, o campo de Centro de Custo mapeia para a tabela `tags` existente (mesma fonte de centros de custo já usada no financeiro).
+
+Semântica e restrições sugeridas para `products.tag_id`:
+
+- UUID.
+- FK para `tags.id` (`ON DELETE RESTRICT` para manter o histórico da transação).
+- Opcional (`NULL` permitido quando o produto ainda não tiver centro de custo).
+- `status` da tag não impede manter referência; tags arquivadas aparecem em seletores de edição com aviso.
 
 Nao existe campo de unidade na V1. O estoque e contado sempre em unidades inteiras.
 
@@ -295,11 +305,11 @@ organization_id
 team_id
 name
 sku
+tag_id
 sale_price
 unit_cost
 minimum_stock
 category_id
-tag_id
 status
 created_at
 updated_at
@@ -345,7 +355,25 @@ Observacoes:
 - Ajuste grava a diferenca entre saldo anterior e saldo correto.
 - `previous_quantity_units` e `resulting_quantity_units` facilitam auditoria e UX.
 - Campos de embalagem sao opcionais e usados apenas na entrada inteligente.
-- `transaction_id` e opcional.
+- `transaction_id` e opcional e referencia `transactions.id` com `ON DELETE SET NULL`.
+  Isso preserva o histórico de movimentação mesmo quando o lançamento financeiro for removido, conforme decisão de auditoria.
+
+## Tipos e constraints numéricas
+
+Campos monetários recomendados:
+
+- `products.sale_price`: `NUMERIC(12,4)` com `NOT NULL DEFAULT 0`.
+- `products.unit_cost`: `NUMERIC(12,4)` com `NOT NULL DEFAULT 0`.
+- `stock_movements.package_unit_cost`: `NUMERIC(12,4)` opcional (`NULLABLE`).
+- `stock_movements.unit_cost`: `NUMERIC(12,4) NOT NULL`.
+- `stock_movements.total_amount`: `NUMERIC(12,2) NOT NULL`.
+- `stock_movements.financial_amount`: `NUMERIC(12,2)` opcional (`NULLABLE`).
+
+Notas de precisão:
+
+- `NUMERIC(12,2)` para moeda brasileira com 2 casas decimais.
+- `NUMERIC(12,4)` para custos/custos unitários por unidade com margem de precisão.
+- `NULL` permitido onde indicado (ex.: `package_unit_cost`, `financial_amount`).
 
 Indices:
 

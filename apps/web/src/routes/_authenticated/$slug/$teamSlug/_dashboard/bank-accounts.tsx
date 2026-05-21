@@ -55,6 +55,7 @@ import {
    bulkCreateBankAccountsAction,
    bulkDeleteBankAccountsAction,
    buildOptimisticBankAccountRow,
+   buildOptimisticBankAccountRowId,
    deleteBankAccountAction,
    type BankAccountUpdateInput,
    type BankAccountsCollectionRow,
@@ -545,7 +546,7 @@ function BankAccountsList() {
                   return {
                      input,
                      row: buildOptimisticBankAccountRow({
-                        id: `__bank_account_${Math.random().toString(36).slice(2, 10)}`,
+                        id: buildOptimisticBankAccountRowId(),
                         input,
                         teamId: activeTeamId,
                      }),

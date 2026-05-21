@@ -117,8 +117,7 @@ Migrar **todo** uso remanescente de `neverthrow` no projeto para `better-result`
 ## Comando de validação inicial
 
 ```bash
-cd /home/yorizel/Documents/montte-nx
-rg -l "neverthrow" --glob '!**/node_modules/**' --glob '!**/.worktrees/**' --glob '!**/.claude/**'
+(cd "$(git rev-parse --show-toplevel)" && rg -l "neverthrow" --glob '!**/node_modules/**' --glob '!**/.worktrees/**' --glob '!**/.claude/**')
 ```
 
 

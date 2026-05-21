@@ -36,7 +36,7 @@ modules/workflows/
 │   ├── compiler.ts          # graph → DBOS step
 │   ├── workflows/
 │   │   └── execute-workflow.workflow.ts   # DBOS workflow
-│   ├── scheduler.ts         # registra DBOS scheduled jobs por workflow ativo
+│   ├── scheduler.ts         # poller (DBOS scheduled + query de workflows devidos)
 │   ├── data-source.ts       # workflowsDataSource (segue padrão dos outros módulos)
 │   └── setup-workflows.ts   # setupWorkflowsWorkflows(deps) p/ worker
 └── __tests__/
@@ -59,22 +59,35 @@ export const workflows = pgTable("workflows", {
   status: text("status", { enum: ["active", "paused"] }).notNull().default("active"),
   graph: jsonb("graph").notNull().$type<WorkflowGraph>(),
   // graph = { nodes: ReactFlowNode[], edges: ReactFlowEdge[] }
+  nextRunAt: timestamp("next_run_at", { withTimezone: true }),
   createdBy: uuid("created_by").notNull().references(() => users.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("workflows_team_id_status_idx").on(table.teamId, table.status),
+  index("workflows_next_run_at_idx").on(table.nextRunAt),
+]);
 
 export const workflowRuns = pgTable("workflow_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
   workflowId: uuid("workflow_id").notNull().references(() => workflows.id, { onDelete: "cascade" }),
   status: text("status", { enum: ["pending", "running", "succeeded", "failed"] }).notNull(),
-  scheduledFor: timestamp("scheduled_for").notNull(),
-  startedAt: timestamp("started_at"),
-  endedAt: timestamp("ended_at"),
-  reportId: uuid("report_id").references(() => reports.id),   // saved report gerado
+  scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  reportId: uuid("report_id").references(() => reports.id),
+  idempotencyKey: text("idempotency_key").notNull(),
   error: text("error"),
   triggeredBy: text("triggered_by", { enum: ["schedule", "manual"] }).notNull(),
-});
+}, (table) => [
+  uniqueIndex("workflow_runs_workflow_id_scheduled_for_idempotency_key_uq").on(
+    table.workflowId,
+    table.scheduledFor,
+    table.idempotencyKey,
+  ),
+  index("workflow_runs_workflow_id_status_idx").on(table.workflowId, table.status),
+  index("workflow_runs_scheduled_for_status_idx").on(table.scheduledFor, table.status),
+]);
 ```
 
 ### Graph shape (React Flow)
@@ -85,13 +98,20 @@ type WorkflowGraph = {
   edges: [{ id: "e-trigger-action"; source: "trigger"; target: "action" }];
 };
 
+export const reports = pgTable("reports", {
+  // ... campos existentes ...
+  source: text("source", { enum: ["manual", "workflow"] })
+    .notNull()
+    .default("manual"),
+});
+
 type ScheduleTriggerNode = {
   id: "trigger";
   type: "scheduleTrigger";
   position: { x: number; y: number };
   data: {
     cron: string;                       // "0 9 1 * *"
-    timezone: string;                   // "America/Sao_Paulo"
+    timezone: "America/Sao_Paulo";     // hardcoded, with fallback/validation in backend
     humanLabel: string;                 // "Todo dia 1 às 09:00"
   };
 };
@@ -145,6 +165,9 @@ workflows.runs.get({ id })      → WorkflowRun
 workflows.templates.list        → Template[]   (static, retorna `templates.ts`)
 ```
 
+No fluxo manual de criação de relatório (`insights.create`), o `source` deve permanecer `manual` (default).
+Workflows sempre devem persistir `source: "workflow"` ao inserir na tabela `reports`.
+
 Middlewares: `teamScopedProcedure` (segue padrão atual). Ownership do workflow via middleware que injeta entity em `context`.
 
 ---
@@ -155,15 +178,20 @@ Middlewares: `teamScopedProcedure` (segue padrão atual). Ownership do workflow 
 
 DBOS suporta `@DBOS.scheduled(cron)`. Mas cron é estático por decorator — precisa registry dinâmico.
 
-**Abordagem:** tabela `scheduled_jobs` + um único DBOS scheduled workflow rodando a cada minuto, que consulta workflows ativos com `next_run_at <= now()` e dispara `executeWorkflow.workflow`. Padrão poller, simples e debugável.
+**Decisão v1:** usar um único poller com DBOS scheduled workflow a cada minuto (`DBOS.scheduled("* * * * *")`) que consulta `workflows.nextRunAt` e dispara os workflows devidos.
 
-Alternativa: registrar um DBOS scheduled workflow por workflow ativo no startup + on activate/pause. Mais elegante, mas complica reload. **Decisão v1: poller.**
+O cálculo de próximo disparo é persistido em `workflows.nextRunAt` via `cron-parser` em `createFromTemplate`, `activate` e ao final de cada execução (inclusive em falha).
 
-Add coluna `nextRunAt` em `workflows`:
-```ts
-nextRunAt: timestamp("next_run_at"),
-```
-Calculado via `cron-parser` ao criar/ativar/após cada run.
+Regras operacionais:
+
+- Query do poller deve usar `SELECT ... FOR UPDATE SKIP LOCKED` com `limit` por lote para evitar concorrência entre instâncias em HA.
+- Antes de enfileirar execução, o poller cria um registro em `workflow_runs` com idempotency key formatada como `${workflowId}-${scheduledFor.toISOString()}`.
+- O `workflow_runs` usa constraint única (`workflowId`, `scheduledFor`, `idempotencyKey`) para garantir idempotência de execução.
+- O poller passa `workflowId`, `runId`, `scheduledFor` e `triggeredBy` para a execução de workflow.
+- `computePeriod` no runtime usa `scheduledFor` (não `new Date()`) e o timezone do workflow para manter as janelas consistentes com a programação.
+- `previous-month` no dia 1/09h gera o mês **completo anterior**.
+  Ex.: execução agendada para 01/06 às 09:00 calcula `2026-05`. 
+
 
 ### Workflow body
 
@@ -171,13 +199,21 @@ Calculado via `cron-parser` ao criar/ativar/após cada run.
 // modules/workflows/src/workflows/execute-workflow.workflow.ts
 export class ExecuteWorkflowWorkflow {
   @DBOS.workflow()
-  static async run(workflowId: string, triggeredBy: "schedule" | "manual") {
+  static async run(
+    workflowId: string,
+    runId: string,
+    scheduledFor: Date,
+    triggeredBy: "schedule" | "manual",
+  ) {
     const wf = await workflowsDataSource.runTransaction(async (tx) => /* load */);
-    const runId = await createRun(wf.id, triggeredBy);
 
     try {
-      const reportNode = wf.graph.nodes.find(n => n.type === "createReport");
-      const period = computePeriod(reportNode.data.period, new Date());
+      await markRunRunning(runId);
+
+      const reportNode = wf.graph.nodes.find(
+        (n) => n.type === "createReport",
+      );
+      const period = computePeriod(reportNode.data.period, scheduledFor);
       const reportName = renderName(reportNode.data.nameTemplate, period);
 
       const report = await ExecuteWorkflowWorkflow.createReportStep({
@@ -191,16 +227,37 @@ export class ExecuteWorkflowWorkflow {
       await updateNextRunAt(wf.id);
     } catch (err) {
       await markRunFailed(runId, err);
+      await updateNextRunAt(wf.id);
     }
   }
 
   @DBOS.step()
   static async createReportStep(input) {
     return insightsDataSource.runTransaction(async (tx) => {
-      return tx.insert(reports).values({ ... }).returning();
+      return tx
+        .insert(reports)
+        .values({ ...input, source: "workflow" })
+        .returning();
     });
   }
 }
+
+function computePeriod(kind: WorkflowPeriod, scheduledFor: Date) {
+  if (kind.kind === "previous-month") {
+    const periodEnd = new Date(
+      scheduledFor.getFullYear(),
+      scheduledFor.getMonth(),
+      1,
+    );
+    return {
+      from: new Date(periodEnd.getFullYear(), periodEnd.getMonth() - 1, 1),
+      to: periodEnd,
+    };
+  }
+  // current-month, previous-week, current-week mantem implementacao atual
+  // baseado em scheduledFor (timezone de operação já normalizado)
+}
+
 ```
 
 ### Compiler v1
@@ -310,6 +367,9 @@ apps/web/src/routes/_authenticated/$slug/$teamSlug/_dashboard/workflows/
 
 Em vez de cron expression, dropdowns:
 
+- O frontend sempre grava `timezone: "America/Sao_Paulo"` na trigger.
+- O backend valida/fallback para `America/Sao_Paulo` ao persistir/ativar workflow.
+
 ```
 Repetir: [ Toda semana ▼ ]   ← uma vez / toda semana / todo mês
 Dia:     [ Segunda ▼ ]        ← se semanal
@@ -347,44 +407,38 @@ Converter pra cron internamente. `humanLabel` gerado pra exibição no node.
 5. Tests do router
 
 ### Sprint 2 — Runtime
-6. `execute-workflow.workflow.ts` (DBOS workflow + step createReport)
-7. `scheduler.ts` poller (DBOS scheduled @ cada minuto)
-8. `setupWorkflowsWorkflows(deps)` exposto pro worker
-9. Wire no apps/worker
-10. `runNow` mutation dispara DBOS workflow ad-hoc
-11. Tests do workflow
+1. `execute-workflow.workflow.ts` (DBOS workflow + step createReport)
+2. `scheduler.ts` poller (DBOS scheduled @ cada minuto)
+3. `setupWorkflowsWorkflows(deps)` exposto pro worker
+4. Wire no apps/worker
+5. `runNow` mutation dispara DBOS workflow ad-hoc
+6. Tests do workflow
 
 ### Sprint 3 — Frontend
-12. Rota `/workflows` (galeria + lista)
-13. `activate-template-drawer` + `schedule-picker`
-14. Rota `/workflows/$id` com React Flow (read-mostly, click pra editar)
-15. Custom nodes + config panel
-16. Tab `/workflows/$id/runs`
-17. Link "Ver relatório" → `/reports/$reportId`
+1. Rota `/workflows` (galeria + lista)
+2. `activate-template-drawer` + `schedule-picker`
+3. Rota `/workflows/$id` com React Flow (read-mostly, click pra editar)
+4. Custom nodes + config panel
+5. Tab `/workflows/$id/runs`
+6. Link "Ver relatório" → `/reports/$reportId`
 
 ### Sprint 4 — Polish
-18. Empty states
-19. Loading/error states
-20. Pausar/ativar inline na lista
-21. Confirm dialog em remove
-22. Docs internas
-23. Smoke test E2E (create template → ativa → runNow → vê report)
+1. Empty states
+2. Loading/error states
+3. Pausar/ativar inline na lista
+4. Confirm dialog em remove
+5. Docs internas
+6. Smoke test E2E (create template → ativa → runNow → vê report)
 
 ---
 
 ## Riscos & decisões em aberto
 
-1. **Period semantics** — "mês anterior" no dia 1 às 09:00 = mês completamente passado. Edge case: workflow ativado dia 15 → primeira execução dia 1 do mês seguinte gera relatório do mês anterior (que inclui dias antes da ativação). OK ou esperar 1 ciclo completo? **Sugestão: comportamento esperado, OK gerar.**
+1. **Falha em createReport** — retry? **Sugestão v1:** marca run failed, sem retry automático. Usuário usa "Rodar agora".
 
-2. **Falha em createReport** — retry? **Sugestão v1:** marca run failed, sem retry automático. Usuário usa "Rodar agora".
+2. **Deletar workflow com runs históricos** — `ON DELETE CASCADE` apaga runs. **OK v1**, ou soft-delete? **Sugestão:** cascade, ninguém vai auditar histórico de workflow excluído v1.
 
-3. **Timezone** — armazenar em `workflows.timezone`? **Sugestão v1:** sempre `America/Sao_Paulo` hardcoded. Multi-tz vira v2.
-
-4. **Concurrent runs** — dois schedulers (HA) podem pegar mesmo workflow. **Sugestão:** `SELECT ... FOR UPDATE SKIP LOCKED` no poller, ou DBOS idempotency key = `${workflowId}-${scheduledFor.toISOString()}`.
-
-5. **Deletar workflow com runs históricos** — `ON DELETE CASCADE` apaga runs. **OK v1**, ou soft-delete? **Sugestão:** cascade, ninguém vai auditar histórico de workflow excluído v1.
-
-6. **Saved reports gerados por workflow** — aparecem na lista `/reports` misturados com manuais. Diferenciar? **Sugestão:** coluna `source: "manual" | "workflow"` em `reports` + badge na UI. Opcional v1.
+3. **Saved reports gerados por workflow** — aparecem na lista `/reports` misturados com manuais. **Decisão v1:** coluna `source: "manual" | "workflow"` em `reports`, com badge na listagem.
 
 ---
 

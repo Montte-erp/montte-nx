@@ -126,8 +126,38 @@ const listSchema = z.object({
       .optional(),
 });
 
+const getAllSchema = z
+   .object({
+      page: z.number().int().positive().max(10000).optional(),
+      pageSize: z.number().int().positive().max(1000).optional(),
+      search: z.string().max(100).optional(),
+      status: z.enum(["active", "archived"]).optional(),
+      type: z.enum(BANK_ACCOUNT_TYPES).optional(),
+      sorting: z
+         .array(
+            z.object({
+               id: z.enum([
+                  "currentBalance",
+                  "initialBalance",
+                  "name",
+                  "projectedBalance",
+                  "type",
+                  "createdAt",
+                  "updatedAt",
+               ]),
+               desc: z.boolean(),
+            }),
+         )
+         .max(5)
+         .optional(),
+   })
+   .default({});
+
 type ListSorting = z.infer<typeof listSchema>["sorting"];
-type BankAccountSortRule = NonNullable<ListSorting>[number];
+type GetAllSorting = z.infer<typeof getAllSchema>["sorting"];
+type BankAccountSortRule =
+   | NonNullable<ListSorting>[number]
+   | NonNullable<GetAllSorting>[number];
 
 const defaultBankAccountSort: BankAccountSortRule = {
    id: "name",
@@ -137,7 +167,9 @@ const defaultBankAccountSort: BankAccountSortRule = {
 const currentBalanceSql = buildBankAccountBalanceSql(false);
 const projectedBalanceSql = buildBankAccountBalanceSql(true);
 
-function buildBankAccountOrderBy(sorting: ListSorting): SQL[] {
+function buildBankAccountOrderBy(
+   sorting: BankAccountSortRule[] | ListSorting,
+): SQL[] {
    const rules = (() => {
       if (sorting?.length) return sorting;
       return [defaultBankAccountSort];
@@ -247,31 +279,74 @@ export const list = protectedProcedure
       };
    });
 
-export const getAll = protectedProcedure.handler(async ({ context }) => {
-   const result = await Result.tryPromise({
-      try: () =>
-         context.db.query.bankAccounts.findMany({
-            where: (f, { and, eq }) =>
-               and(eq(f.teamId, context.teamId), eq(f.status, "active")),
-            orderBy: (f, { asc }) => [asc(f.name)],
-         }),
-      catch: () =>
-         new BankAccountRouterError({
-            error: bankAccountRouterErrors.INTERNAL(),
-            message: "Falha ao listar contas bancárias.",
-         }),
-   });
-   if (Result.isError(result)) throw result.error;
+export const getAll = protectedProcedure
+   .input(getAllSchema)
+   .handler(async ({ context, input }) => {
+      const { page, pageSize, search, type, status, sorting } = input;
+      const whereClause = and(
+         eq(bankAccounts.teamId, context.teamId),
+         eq(bankAccounts.status, status ?? "active"),
+         (() => {
+            if (type) return eq(bankAccounts.type, type);
+            return undefined;
+         })(),
+         (() => {
+            if (search) {
+               return ilike(bankAccounts.name, `%${search.trim()}%`);
+            }
+            return undefined;
+         })(),
+      );
 
-   const balances = await computeBankAccountBalances(context.db, result.value);
-   return result.value.map((account) => ({
-      ...account,
-      currentBalance:
-         balances.get(account.id)?.currentBalance ?? account.initialBalance,
-      projectedBalance:
-         balances.get(account.id)?.projectedBalance ?? account.initialBalance,
-   }));
-});
+      const doPaginate = page !== undefined && pageSize !== undefined;
+
+      const result = await Result.tryPromise({
+         try: async () => {
+            let query = context.db
+               .select(getTableColumns(bankAccounts))
+               .from(bankAccounts)
+               .leftJoin(
+                  transactions,
+                  and(
+                     or(
+                        eq(transactions.bankAccountId, bankAccounts.id),
+                        eq(
+                           transactions.destinationBankAccountId,
+                           bankAccounts.id,
+                        ),
+                     ),
+                     eq(transactions.ignored, false),
+                  ),
+               )
+               .where(whereClause)
+               .groupBy(bankAccounts.id)
+               .orderBy(...buildBankAccountOrderBy(sorting));
+
+            const rows = await (doPaginate
+               ? query.limit(pageSize).offset((page - 1) * pageSize)
+               : query);
+            const balances = await computeBankAccountBalances(context.db, rows);
+            return rows.map((account) => {
+               const initialBalance = account.initialBalance ?? "0";
+               return {
+                  ...account,
+                  currentBalance:
+                     balances.get(account.id)?.currentBalance ?? initialBalance,
+                  projectedBalance:
+                     balances.get(account.id)?.projectedBalance ??
+                     initialBalance,
+               };
+            });
+         },
+         catch: () =>
+            new BankAccountRouterError({
+               error: bankAccountRouterErrors.INTERNAL(),
+               message: "Falha ao listar contas bancárias.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
+      return result.value;
+   });
 
 export const getById = protectedProcedure
    .input(idSchema)

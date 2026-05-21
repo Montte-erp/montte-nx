@@ -36,6 +36,7 @@ import { Result } from "better-result";
 import type { ReactNode } from "react";
 import {
    buildOptimisticBankAccountRow,
+   buildOptimisticBankAccountRowId,
    createBankAccountAction,
    type BankAccountsCollectionRow,
 } from "@/integrations/tanstack-db/bank-accounts";
@@ -245,7 +246,7 @@ function BankAccountFormSheetContent({
          };
          const transaction = createAccount({
             row: buildOptimisticBankAccountRow({
-               id: `__bank_account_${crypto.randomUUID?.() ?? Date.now()}`,
+               id: buildOptimisticBankAccountRowId(),
                input: payload,
                teamId,
             }),
