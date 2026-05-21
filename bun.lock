@@ -110,6 +110,7 @@
         "@modules/classification": "workspace:*",
         "@modules/inbox": "workspace:*",
         "@modules/insights": "workspace:*",
+        "@modules/workflows": "workspace:*",
         "@orpc/client": "catalog:orpc",
         "@orpc/json-schema": "catalog:orpc",
         "@orpc/server": "catalog:orpc",
@@ -182,6 +183,7 @@
         "@types/react-dom": "catalog:react",
         "@vitejs/plugin-react": "catalog:vite",
         "@vitest/coverage-istanbul": "catalog:testing",
+        "@xyflow/react": "catalog:ui",
         "babel-plugin-react-compiler": "catalog:development",
         "nitro": "3.0.260415-beta",
         "typescript": "catalog:development",
@@ -216,6 +218,7 @@
         "@modules/agents": "workspace:*",
         "@modules/cards": "workspace:*",
         "@modules/classification": "workspace:*",
+        "@modules/workflows": "workspace:*",
         "better-result": "catalog:validation",
       },
       "devDependencies": {
@@ -645,6 +648,37 @@
         "vitest": "catalog:testing",
       },
     },
+    "modules/workflows": {
+      "name": "@modules/workflows",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/dbos": "workspace:*",
+        "@core/environment": "workspace:*",
+        "@core/logging": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@dbos-inc/dbos-sdk": "catalog:workers",
+        "@dbos-inc/drizzle-datasource": "catalog:workers",
+        "@orpc/server": "catalog:orpc",
+        "better-result": "catalog:validation",
+        "cron-parser": "catalog:workers",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "evlog": "catalog:logging",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@electric-sql/pglite": "^0.3.15",
+        "@electric-sql/pglite-socket": "^0.0.20",
+        "@tooling/typescript": "workspace:*",
+        "@types/pg": "catalog:database",
+        "drizzle-kit": "catalog:database",
+        "drizzle-seed": "catalog:database",
+        "pg": "catalog:database",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
     "packages/ui": {
       "name": "@packages/ui",
       "version": "0.12.0",
@@ -956,6 +990,7 @@
     "workers": {
       "@dbos-inc/dbos-sdk": "^4.18.10",
       "@dbos-inc/drizzle-datasource": "^4.18.10",
+      "cron-parser": "^5.5.0",
       "ioredis": "5.10.1",
       "pg-boss": "12.18.2",
     },
@@ -1670,6 +1705,8 @@
     "@modules/inbox": ["@modules/inbox@workspace:modules/inbox"],
 
     "@modules/insights": ["@modules/insights@workspace:modules/insights"],
+
+    "@modules/workflows": ["@modules/workflows@workspace:modules/workflows"],
 
     "@mux/mux-data-google-ima": ["@mux/mux-data-google-ima@0.3.17", "", { "dependencies": { "mux-embed": "5.18.1" } }, "sha512-4wpH6dYybyZhqLn9qGn/+67Z8MZnQRAdqTFEEZw2bx61M9q01uPYYHxd8qwOnYtUGEeafsdTwVHVxKHGD3oc1A=="],
 
