@@ -84,6 +84,7 @@ Campos da V1:
 | Estoque minimo | Nao | Default `0`. Usado para alertas. |
 | Categoria | Nao | Categoria financeira padrao. |
 | Centro de Custo | Nao | Centro de Custo padrão (`tag_id` no produto). |
+| Status | Sim | `active` ou `archived`. |
 
 ### Centro de Custo
 
@@ -92,7 +93,7 @@ Nesta versão, o campo de Centro de Custo mapeia para a tabela `tags` existente 
 Semântica e restrições sugeridas para `products.tag_id`:
 
 - UUID.
-- FK para `tags.id` (`ON DELETE RESTRICT` para manter o histórico da transação).
+- FK para `tags.id` (`ON DELETE RESTRICT` para manter o histórico de classificação do produto).
 - Opcional (`NULL` permitido quando o produto ainda não tiver centro de custo).
 - `status` da tag não impede manter referência; tags arquivadas aparecem em seletores de edição com aviso.
 
@@ -368,6 +369,7 @@ Campos monetários recomendados:
 - `stock_movements.unit_cost`: `NUMERIC(12,4) NOT NULL`.
 - `stock_movements.total_amount`: `NUMERIC(12,2) NOT NULL`.
 - `stock_movements.financial_amount`: `NUMERIC(12,2)` opcional (`NULLABLE`).
+- `CHECK`s de não-negatividade para campos monetários e estoques aplicáveis (ex.: `sale_price`, `unit_cost`, `package_unit_cost`, `total_amount`, `financial_amount`, `current_stock_units` etc.), conforme decisão de domínio.
 
 Notas de precisão:
 

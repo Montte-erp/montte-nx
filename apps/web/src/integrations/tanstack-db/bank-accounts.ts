@@ -22,21 +22,13 @@ type BankAccountsCollectionInputParams = {
    teamId: string;
 };
 
-type BankAccountSortId =
-   | "currentBalance"
-   | "initialBalance"
-   | "name"
-   | "projectedBalance"
-   | "type";
+type BankAccountsCollectionInput = NonNullable<
+   Inputs["bankAccounts"]["getAll"]
+>;
 
-type BankAccountsCollectionInput = {
-   page?: number;
-   pageSize?: number;
-   search?: string;
-   status?: "active" | "archived";
-   type?: "checking" | "savings" | "investment" | "payment" | "cash";
-   sorting?: Array<{ id: BankAccountSortId; desc: boolean }>;
-};
+type BankAccountSortId = NonNullable<
+   BankAccountsCollectionInput["sorting"]
+>[number]["id"];
 
 type BankAccountsCollectionSubset = {
    search?: string;
@@ -99,6 +91,8 @@ function parseBankAccountsSortId(value: string): BankAccountSortId | undefined {
       case "initialBalance":
       case "currentBalance":
       case "projectedBalance":
+      case "createdAt":
+      case "updatedAt":
          return value;
    }
 }
@@ -256,7 +250,7 @@ export function createBankAccountAction(collection: BankAccountsCollection) {
       },
       mutationFn: async ({ input }) => {
          const created = await orpc.bankAccounts.create.call(input);
-         await collection.utils.refetch();
+         await safeRefetchBankAccounts(collection);
          return created;
       },
    });

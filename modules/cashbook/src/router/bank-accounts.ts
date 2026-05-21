@@ -197,6 +197,12 @@ function buildBankAccountOrderBy(
          case "type":
             orderBy.push(direction(bankAccounts.type));
             break;
+         case "createdAt":
+            orderBy.push(direction(bankAccounts.createdAt));
+            break;
+         case "updatedAt":
+            orderBy.push(direction(bankAccounts.updatedAt));
+            break;
       }
    }
 
