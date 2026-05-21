@@ -15,14 +15,12 @@ import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
-import { meters } from "@core/database/schemas/meters";
 import { tags } from "@core/database/schemas/tags";
 import {
    transactionRecurrences,
    transactionItems,
    transactions,
 } from "@core/database/schemas/transactions";
-import { usageEvents } from "@core/database/schemas/usage-events";
 
 export const userRelations = relations(user, ({ many }) => ({
    sessions: many(session),
@@ -112,10 +110,6 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
    }),
 }));
 
-export const metersRelations = relations(meters, ({ many }) => ({
-   usageEvents: many(usageEvents),
-}));
-
 export const bankAccountsRelations = relations(bankAccounts, ({ many }) => ({
    transactions: many(transactions, {
       relationName: "sourceAccount",
@@ -203,14 +197,3 @@ export const transactionItemsRelations = relations(
       }),
    }),
 );
-
-export const usageEventsRelations = relations(usageEvents, ({ one }) => ({
-   team: one(team, {
-      fields: [usageEvents.teamId],
-      references: [team.id],
-   }),
-   meter: one(meters, {
-      fields: [usageEvents.meterId],
-      references: [meters.id],
-   }),
-}));

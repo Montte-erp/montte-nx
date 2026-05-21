@@ -46,6 +46,7 @@ declare module "@tanstack/react-table" {
       pinnable?: boolean;
       reorderable?: boolean;
       required?: boolean;
+      headerAlign?: "left" | "center" | "right";
       exportValue?: (row: TData, value: TValue) => string;
       exportIgnore?: boolean;
    }
@@ -133,7 +134,7 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
    const meta = col.columnDef.meta;
    const canSort = col.getCanSort();
    const sortDir = col.getIsSorted();
-   const align = meta?.align ?? "left";
+   const align = meta?.headerAlign ?? meta?.align ?? "left";
    const isSystemColumn = col.id.startsWith("__");
    const reorderable = !isSystemColumn && meta?.reorderable !== false;
    const resizable = !isSystemColumn && meta?.resizable !== false;

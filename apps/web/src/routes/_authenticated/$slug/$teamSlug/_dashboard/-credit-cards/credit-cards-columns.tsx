@@ -128,6 +128,7 @@ export function buildCreditCardColumns(options?: {
          meta: {
             label: "Limite",
             align: "right",
+            headerAlign: "left",
             cellComponent: "money",
             isEditable: true,
             editMode: "inline",

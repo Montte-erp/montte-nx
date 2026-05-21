@@ -21,8 +21,9 @@ import {
    SheetTitle,
 } from "@packages/ui/components/sheet";
 import { toast } from "@packages/ui/hooks/use-toast";
+import type { Collection } from "@tanstack/react-db";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import {
    CreditCard,
@@ -31,8 +32,14 @@ import {
    TrendingUp,
    Wallet,
 } from "lucide-react";
-import { fromPromise } from "neverthrow";
+import { Result } from "better-result";
 import type { ReactNode } from "react";
+import {
+   buildOptimisticBankAccountRow,
+   buildOptimisticBankAccountRowId,
+   createBankAccountAction,
+   type BankAccountsCollectionRow,
+} from "@/integrations/tanstack-db/bank-accounts";
 import { z } from "zod";
 import { BankLogoAvatar } from "@/components/bank-logo-avatar";
 import { QueryBoundary } from "@/components/query-boundary";
@@ -50,6 +57,25 @@ type BankAccountType = (typeof BANK_ACCOUNT_TYPES)[number];
 
 const BANK_TYPES = ["checking", "savings", "investment", "payment"] as const;
 type BankType = (typeof BANK_TYPES)[number];
+
+type BankAccountFormInput = {
+   teamId: string;
+   collection: Collection<BankAccountsCollectionRow, string>;
+};
+
+function getErrorMessage(error: unknown, fallback: string) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return fallback;
+}
+
 const isBankType = (t: BankAccountType): t is BankType =>
    BANK_TYPES.some((type) => type === t);
 
@@ -141,7 +167,10 @@ function isFieldInvalid(field: {
    return field.state.meta.isTouched && field.state.meta.errors.length > 0;
 }
 
-export function BankAccountFormSheet() {
+export function BankAccountFormSheet({
+   collection,
+   teamId,
+}: BankAccountFormInput) {
    return (
       <QueryBoundary
          fallback={
@@ -154,12 +183,15 @@ export function BankAccountFormSheet() {
          }
          errorTitle="Erro ao carregar bancos"
       >
-         <BankAccountFormSheetContent />
+         <BankAccountFormSheetContent collection={collection} teamId={teamId} />
       </QueryBoundary>
    );
 }
 
-function BankAccountFormSheetContent() {
+function BankAccountFormSheetContent({
+   collection,
+   teamId,
+}: BankAccountFormInput) {
    const { closeTopSheet } = useSheet();
    const router = useRouter();
    const logoDevToken = router.options.context.publicEnv?.LOGO_DEV_TOKEN;
@@ -193,39 +225,45 @@ function BankAccountFormSheetContent() {
       );
    };
 
-   const createMutation = useMutation(
-      orpc.bankAccounts.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Conta criada com sucesso.");
-            closeTopSheet();
-         },
-         onError: (e) => toast.error(e.message),
-      }),
-   );
+   const createAccount = createBankAccountAction(collection);
 
    const form = useForm({
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
          const isBank = isBankType(value.type);
-         const result = await fromPromise(
-            createMutation.mutateAsync({
-               name: value.name.trim(),
-               type: value.type,
-               color: "#6366f1",
-               initialBalance: toMajorUnitsString(
-                  of(String(value.initialBalance), "BRL"),
-               ),
-               bankCode: isBank ? value.bankCode : null,
-               bankName: isBank ? value.bankName.trim() : null,
-               branch: isBank ? value.branch.trim() || null : null,
-               accountNumber: isBank
-                  ? value.accountNumber.trim() || null
-                  : null,
+         const payload = {
+            name: value.name.trim(),
+            type: value.type,
+            color: "#6366f1",
+            initialBalance: toMajorUnitsString(
+               of(String(value.initialBalance), "BRL"),
+            ),
+            bankCode: isBank ? value.bankCode : null,
+            bankName: isBank ? value.bankName.trim() : null,
+            branch: isBank ? value.branch.trim() || null : null,
+            accountNumber: isBank ? value.accountNumber.trim() || null : null,
+         };
+         const transaction = createAccount({
+            row: buildOptimisticBankAccountRow({
+               id: buildOptimisticBankAccountRowId(),
+               input: payload,
+               teamId,
             }),
-            (e) => e,
-         );
-         if (result.isErr()) return;
+            input: payload,
+         });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (e) => e,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao criar conta bancária."),
+            );
+            return;
+         }
+         toast.success("Conta criada com sucesso.");
+         closeTopSheet();
       },
    });
 
