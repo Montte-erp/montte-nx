@@ -1,32 +1,57 @@
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { SearchInput } from "@packages/ui/components/search-input";
-import {
-   Table,
-   TableBody,
-   TableCell,
-   TableHead,
-   TableHeader,
-   TableRow,
-} from "@packages/ui/components/table";
+import { Table } from "@packages/ui/components/table";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+   type ColumnDef,
+   type ColumnOrderState,
+   type ColumnPinningState,
+   getCoreRowModel,
+   type OnChangeFn,
+   useReactTable,
+} from "@tanstack/react-table";
 import { Archive, FilePlus2, Plus, RotateCcw } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { z } from "zod";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
 import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
+import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
+import { ExportButton } from "@/components/export-button/export-button";
 import { DefaultHeader } from "../-layout/default-header";
 import {
+   formatDate,
    initialSuppliers,
    makeSupplierDraft,
    type DemoSupplier,
    useDemoContracts,
    useDemoSuppliers,
 } from "./-local-first-demo/demo-data";
+import {
+   InlineContactFields,
+   InlineDocumentField,
+} from "./-local-first-demo/party-inline-fields";
 
 const searchSchema = z.object({
+   sorting: z
+      .array(z.object({ id: z.string(), desc: z.boolean() }))
+      .catch([])
+      .default([]),
+   columnFilters: z
+      .array(z.object({ id: z.string(), value: z.unknown() }))
+      .catch([])
+      .default([]),
    search: z.string().catch("").default(""),
+   page: z.number().int().min(1).catch(1).default(1),
+   pageSize: z.number().int().min(1).max(100).catch(20).default(20),
 });
 
 export const Route = createFileRoute(
@@ -37,66 +62,503 @@ export const Route = createFileRoute(
    component: FornecedoresPage,
 });
 
+function getContractCount(
+   contracts: ReturnType<typeof useDemoContracts>[0] | null | undefined,
+   supplierId: string,
+) {
+   return (contracts ?? []).filter(
+      (contract) => contract.supplierId === supplierId,
+   ).length;
+}
+
+function sortSuppliers(
+   rows: DemoSupplier[],
+   contracts: ReturnType<typeof useDemoContracts>[0] | null | undefined,
+   sorting: { id: string; desc: boolean }[],
+) {
+   const first = sorting[0];
+   if (!first) return rows;
+   return [...rows].sort((left, right) => {
+      let result = 0;
+      if (first.id === "tradeName")
+         result = left.tradeName.localeCompare(right.tradeName);
+      if (first.id === "name") result = left.name.localeCompare(right.name);
+      if (first.id === "document")
+         result = left.document.localeCompare(right.document);
+      if (first.id === "email") result = left.email.localeCompare(right.email);
+      if (first.id === "city")
+         result = (left.city ?? "").localeCompare(right.city ?? "");
+      if (first.id === "category")
+         result = (left.category ?? "").localeCompare(right.category ?? "");
+      if (first.id === "owner")
+         result = (left.owner ?? "").localeCompare(right.owner ?? "");
+      if (first.id === "lastContactAt")
+         result = (left.lastContactAt ?? "").localeCompare(
+            right.lastContactAt ?? "",
+         );
+      if (first.id === "updatedAt")
+         result = left.updatedAt.localeCompare(right.updatedAt);
+      if (first.id === "status")
+         result = left.status.localeCompare(right.status);
+      if (first.id === "contractCount") {
+         result =
+            getContractCount(contracts, left.id) -
+            getContractCount(contracts, right.id);
+      }
+      return first.desc ? -result : result;
+   });
+}
+
+function normalizeSupplierColumnOrder(
+   order: ColumnOrderState,
+   allColumnIds: ColumnOrderState,
+) {
+   if (order.length === 0) return order;
+   const next = order.filter(
+      (id) => id !== "__actions" && allColumnIds.includes(id),
+   );
+   const missing = allColumnIds.filter(
+      (id) => id !== "__actions" && !next.includes(id),
+   );
+   return [...next, ...missing, "__actions"];
+}
+
+function normalizeSupplierColumnPinning(
+   pinning: ColumnPinningState,
+): ColumnPinningState {
+   const left = (pinning.left ?? []).filter((id) => id !== "__actions");
+   const right = (pinning.right ?? []).filter((id) => id !== "__actions");
+   return { left, right: [...right, "__actions"] };
+}
+
+function getSupplierColumnId(column: ColumnDef<DemoSupplier>) {
+   if (column.id) return column.id;
+   if ("accessorKey" in column && typeof column.accessorKey === "string") {
+      return column.accessorKey;
+   }
+   return undefined;
+}
+
+function isDefined(value: string | undefined): value is string {
+   return typeof value === "string";
+}
+
 function FornecedoresPage() {
    const navigate = Route.useNavigate();
    const params = Route.useParams();
-   const { search } = Route.useSearch();
+   const { sorting, columnFilters, search, page, pageSize } = Route.useSearch();
    const [suppliers, setSuppliers] = useDemoSuppliers();
    const [contracts] = useDemoContracts();
-   const data = suppliers ?? initialSuppliers;
-   const filtered = useMemo(() => {
+   const data = useMemo(
+      () =>
+         (suppliers ?? initialSuppliers).map((supplier) => ({
+            ...supplier,
+            city: supplier.city ?? "",
+            state: supplier.state ?? "",
+            category: supplier.category ?? "",
+            owner: supplier.owner ?? "",
+            lastContactAt: supplier.lastContactAt ?? supplier.updatedAt,
+         })),
+      [suppliers],
+   );
+   const {
+      state: layoutState,
+      onColumnSizingChange,
+      onColumnOrderChange,
+      onColumnVisibilityChange,
+      onColumnPinningChange,
+   } = useDataTableLayout("demo-fornecedores");
+   const columnPinning = useMemo(
+      () => normalizeSupplierColumnPinning(layoutState.columnPinning),
+      [layoutState.columnPinning],
+   );
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
+   const filteredRows = useMemo(() => {
       const term = search.trim().toLocaleLowerCase();
-      if (!term) return data;
-      return data.filter((supplier) =>
-         `${supplier.name} ${supplier.tradeName} ${supplier.document} ${supplier.email}`
-            .toLocaleLowerCase()
-            .includes(term),
-      );
-   }, [data, search]);
+      const filtered = term
+         ? data.filter((supplier) =>
+              `${supplier.name} ${supplier.tradeName} ${supplier.document} ${supplier.email} ${supplier.phone} ${supplier.city ?? ""} ${supplier.state ?? ""} ${supplier.category ?? ""} ${supplier.owner ?? ""}`
+                 .toLocaleLowerCase()
+                 .includes(term),
+           )
+         : data;
+      return sortSuppliers(filtered, contracts, sorting);
+   }, [data, contracts, search, sorting]);
+   const paginatedRows = useMemo(
+      () => filteredRows.slice((page - 1) * pageSize, page * pageSize),
+      [filteredRows, page, pageSize],
+   );
 
-   function createSupplier() {
+   const createSupplier = useCallback(() => {
       setSuppliers((current) => [
          makeSupplierDraft(),
          ...(current ?? initialSuppliers),
       ]);
       toast.success("Fornecedor criado localmente.");
-   }
+   }, [setSuppliers]);
 
-   function updateSupplier(
-      id: string,
-      patch: Partial<DemoSupplier>,
-   ): Promise<void> {
-      if (patch.name !== undefined && patch.name.trim().length < 2) {
-         toast.error("Informe o nome do fornecedor.");
+   const updateSupplier = useCallback(
+      (id: string, patch: Partial<DemoSupplier>): Promise<void> => {
+         if (patch.name !== undefined && patch.name.trim().length < 2) {
+            toast.error("Informe o nome do fornecedor.");
+            return Promise.resolve();
+         }
+
+         setSuppliers((current) => {
+            const rows = current ?? initialSuppliers;
+            return rows.map((supplier) =>
+               supplier.id === id
+                  ? { ...supplier, ...patch, updatedAt: "2026-05-22" }
+                  : supplier,
+            );
+         });
+         toast.success("Fornecedor salvo localmente.");
          return Promise.resolve();
-      }
+      },
+      [setSuppliers],
+   );
 
-      setSuppliers((current) => {
-         const rows = current ?? initialSuppliers;
-         return rows.map((supplier) =>
-            supplier.id === id
-               ? { ...supplier, ...patch, updatedAt: "2026-05-22" }
-               : supplier,
+   const setStatus = useCallback(
+      (id: string, status: DemoSupplier["status"]) => {
+         setSuppliers((current) =>
+            (current ?? initialSuppliers).map((supplier) =>
+               supplier.id === id
+                  ? { ...supplier, status, updatedAt: "2026-05-22" }
+                  : supplier,
+            ),
          );
-      });
-      toast.success("Fornecedor salvo localmente.");
-      return Promise.resolve();
-   }
+         toast.success(
+            status === "active"
+               ? "Fornecedor reativado."
+               : "Fornecedor arquivado.",
+         );
+      },
+      [setSuppliers],
+   );
 
-   function setStatus(id: string, status: DemoSupplier["status"]) {
-      setSuppliers((current) =>
-         (current ?? initialSuppliers).map((supplier) =>
-            supplier.id === id
-               ? { ...supplier, status, updatedAt: "2026-05-22" }
-               : supplier,
+   const columns = useMemo<ColumnDef<DemoSupplier>[]>(() => {
+      const selectColumn: ColumnDef<DemoSupplier> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(value) =>
+                  table.toggleAllPageRowsSelected(!!value)
+               }
+            />
          ),
-      );
-      toast.success(
-         status === "active"
-            ? "Fornecedor reativado."
-            : "Fornecedor arquivado.",
-      );
-   }
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               onCheckedChange={(value) => row.toggleSelected(!!value)}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<DemoSupplier> = {
+         id: "__actions",
+         size: 112,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { align: "right" },
+         cell: ({ row }) => {
+            const supplier = row.original;
+            return (
+               <div className="flex justify-end gap-2">
+                  <Button
+                     asChild
+                     size="icon-sm"
+                     tooltip="Criar contrato"
+                     variant="ghost"
+                  >
+                     <Link
+                        params={params}
+                        search={{ supplierId: supplier.id }}
+                        to="/$slug/$teamSlug/contratos"
+                     >
+                        <FilePlus2 />
+                        <span className="sr-only">Criar contrato</span>
+                     </Link>
+                  </Button>
+                  <Button
+                     onClick={() =>
+                        setStatus(
+                           supplier.id,
+                           supplier.status === "active" ? "archived" : "active",
+                        )
+                     }
+                     size="icon-sm"
+                     tooltip={
+                        supplier.status === "active"
+                           ? "Arquivar fornecedor"
+                           : "Reativar fornecedor"
+                     }
+                     variant="ghost"
+                  >
+                     {supplier.status === "active" ? (
+                        <Archive />
+                     ) : (
+                        <RotateCcw />
+                     )}
+                     <span className="sr-only">
+                        {supplier.status === "active"
+                           ? "Arquivar fornecedor"
+                           : "Reativar fornecedor"}
+                     </span>
+                  </Button>
+               </div>
+            );
+         },
+      };
+      return [
+         selectColumn,
+         {
+            accessorKey: "tradeName",
+            header: "Nome fantasia",
+            size: 220,
+            meta: { label: "Nome fantasia" },
+            cell: ({ row }) => (
+               <InlineEditText
+                  ariaLabel="Nome fantasia do fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, { tradeName: value })
+                  }
+                  placeholder="Nome de uso"
+                  value={row.original.tradeName}
+               />
+            ),
+         },
+         {
+            accessorKey: "name",
+            header: "Razão social",
+            size: 260,
+            meta: { label: "Razão social" },
+            cell: ({ row }) => (
+               <InlineEditText
+                  ariaLabel="Razão social do fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, { name: value })
+                  }
+                  placeholder="Razão social"
+                  value={row.original.name}
+               />
+            ),
+         },
+         {
+            accessorKey: "document",
+            header: "Documento",
+            size: 260,
+            meta: { label: "Documento" },
+            cell: ({ row }) => (
+               <InlineDocumentField
+                  document={row.original.document}
+                  documentType={row.original.documentType}
+                  onSave={(patch) => updateSupplier(row.original.id, patch)}
+               />
+            ),
+         },
+         {
+            accessorKey: "email",
+            header: "Contato",
+            size: 260,
+            meta: { label: "Contato" },
+            cell: ({ row }) => (
+               <InlineContactFields
+                  email={row.original.email}
+                  emailLabel="E-mail do fornecedor"
+                  onSave={(patch) => updateSupplier(row.original.id, patch)}
+                  phone={row.original.phone}
+                  phoneLabel="Telefone do fornecedor"
+               />
+            ),
+         },
+         {
+            accessorKey: "city",
+            header: "Cidade",
+            size: 220,
+            meta: { label: "Cidade" },
+            cell: ({ row }) => (
+               <div className="flex items-center gap-2">
+                  <InlineEditText
+                     ariaLabel="Cidade do fornecedor"
+                     onSave={(value) =>
+                        updateSupplier(row.original.id, { city: value })
+                     }
+                     placeholder="Cidade"
+                     value={row.original.city ?? ""}
+                  />
+                  <InlineEditText
+                     ariaLabel="UF do fornecedor"
+                     className="max-w-12 text-center uppercase"
+                     onSave={(value) =>
+                        updateSupplier(row.original.id, {
+                           state: value.trim().toLocaleUpperCase(),
+                        })
+                     }
+                     placeholder="UF"
+                     value={row.original.state ?? ""}
+                  />
+               </div>
+            ),
+         },
+         {
+            accessorKey: "category",
+            header: "Tipo",
+            size: 180,
+            meta: { label: "Tipo" },
+            cell: ({ row }) => (
+               <InlineEditText
+                  ariaLabel="Tipo de fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, { category: value })
+                  }
+                  placeholder="Tipo"
+                  value={row.original.category ?? ""}
+               />
+            ),
+         },
+         {
+            accessorKey: "owner",
+            header: "Responsável",
+            size: 190,
+            meta: { label: "Responsável" },
+            cell: ({ row }) => (
+               <InlineEditText
+                  ariaLabel="Responsável pelo fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, { owner: value })
+                  }
+                  placeholder="Responsável"
+                  value={row.original.owner ?? ""}
+               />
+            ),
+         },
+         {
+            id: "contractCount",
+            header: "Contratos",
+            size: 120,
+            meta: { align: "right", label: "Contratos" },
+            accessorFn: (row) => getContractCount(contracts, row.id),
+            cell: ({ row }) => (
+               <span className="tabular-nums">
+                  {getContractCount(contracts, row.original.id)}
+               </span>
+            ),
+         },
+         {
+            accessorKey: "lastContactAt",
+            header: "Último contato",
+            size: 150,
+            meta: { label: "Último contato" },
+            cell: ({ row }) =>
+               formatDate(row.original.lastContactAt ?? row.original.updatedAt),
+         },
+         {
+            accessorKey: "updatedAt",
+            header: "Atualizado",
+            size: 130,
+            meta: { label: "Atualizado" },
+            cell: ({ row }) => formatDate(row.original.updatedAt),
+         },
+         {
+            accessorKey: "status",
+            header: "Status",
+            size: 140,
+            meta: { label: "Status" },
+            cell: ({ row }) => (
+               <InlineEditSelect
+                  ariaLabel="Status do fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, {
+                        status: value === "archived" ? "archived" : "active",
+                     })
+                  }
+                  options={[
+                     { value: "active", label: "Ativo" },
+                     { value: "archived", label: "Arquivado" },
+                  ]}
+                  value={row.original.status}
+               />
+            ),
+         },
+         actionsColumn,
+      ];
+   }, [contracts, params, setStatus, updateSupplier]);
+   const columnIds = useMemo(
+      () => columns.map(getSupplierColumnId).filter(isDefined),
+      [columns],
+   );
+   const columnOrder = useMemo(
+      () => normalizeSupplierColumnOrder(layoutState.columnOrder, columnIds),
+      [layoutState.columnOrder, columnIds],
+   );
+   const handleColumnOrderChange = useCallback<OnChangeFn<ColumnOrderState>>(
+      (updater) => {
+         onColumnOrderChange((prev) =>
+            normalizeSupplierColumnOrder(
+               typeof updater === "function" ? updater(prev) : updater,
+               columnIds,
+            ),
+         );
+      },
+      [onColumnOrderChange, columnIds],
+   );
+   const handleColumnPinningChange = useCallback<
+      OnChangeFn<ColumnPinningState>
+   >(
+      (updater) => {
+         onColumnPinningChange((prev) =>
+            normalizeSupplierColumnPinning(
+               typeof updater === "function" ? updater(prev) : updater,
+            ),
+         );
+      },
+      [onColumnPinningChange],
+   );
+   const urlState = useTableUrlState({
+      search: { sorting, columnFilters, page, pageSize },
+      onUpdate: (next) =>
+         navigate({ search: (prev) => ({ ...prev, ...next }), replace: true }),
+      totalRows: filteredRows.length,
+   });
+   const table = useReactTable({
+      data: paginatedRows,
+      columns,
+      getRowId: (row) => row.id,
+      pageCount: urlState.pageCount,
+      manualPagination: true,
+      manualSorting: true,
+      manualFiltering: true,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layoutState, columnOrder, columnPinning },
+      onSortingChange: urlState.onSortingChange,
+      onColumnFiltersChange: urlState.onColumnFiltersChange,
+      onPaginationChange: urlState.onPaginationChange,
+      onRowSelectionChange: urlState.onRowSelectionChange,
+      onColumnSizingChange,
+      onColumnOrderChange: handleColumnOrderChange,
+      onColumnVisibilityChange,
+      onColumnPinningChange: handleColumnPinningChange,
+      getCoreRowModel: getCoreRowModel(),
+   });
 
    return (
       <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
@@ -109,191 +571,31 @@ function FornecedoresPage() {
                <SearchInput
                   className="max-w-sm"
                   aria-label="Buscar fornecedores"
-                  onChange={(event) =>
-                     navigate({
-                        search: { search: event.target.value },
-                        replace: true,
-                     })
-                  }
+                  onChange={(event) => searchInput.onChange(event.target.value)}
                   placeholder="Buscar fornecedores..."
-                  value={search}
+                  value={searchInput.value}
                />
-               <Button
-                  onClick={createSupplier}
-                  size="icon-sm"
-                  tooltip="Novo fornecedor"
-                  variant="outline"
-               >
-                  <Plus />
-                  <span className="sr-only">Novo fornecedor</span>
-               </Button>
+               <div className="flex flex-wrap items-center gap-2">
+                  <DataTableColumnVisibility table={table} />
+                  <ExportButton table={table} fileBase="fornecedores-demo" />
+                  <Button
+                     onClick={createSupplier}
+                     size="icon-sm"
+                     tooltip="Novo fornecedor"
+                     variant="outline"
+                  >
+                     <Plus />
+                     <span className="sr-only">Novo fornecedor</span>
+                  </Button>
+               </div>
             </div>
             <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
-                  <TableHeader>
-                     <TableRow>
-                        <TableHead>Fornecedor</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Documento</TableHead>
-                        <TableHead>E-mail</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Contratos</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                     {filtered.map((supplier) => {
-                        const contractCount = (contracts ?? []).filter(
-                           (contract) => contract.supplierId === supplier.id,
-                        ).length;
-                        return (
-                           <TableRow key={supplier.id}>
-                              <TableCell className="min-w-56">
-                                 <div className="flex flex-col gap-2">
-                                    <InlineEditText
-                                       ariaLabel="Razão social do fornecedor"
-                                       onSave={(value) =>
-                                          updateSupplier(supplier.id, {
-                                             name: value,
-                                          })
-                                       }
-                                       placeholder="Razão social"
-                                       value={supplier.name}
-                                    />
-                                    <InlineEditText
-                                       ariaLabel="Nome fantasia do fornecedor"
-                                       className="text-xs text-muted-foreground"
-                                       onSave={(value) =>
-                                          updateSupplier(supplier.id, {
-                                             tradeName: value,
-                                          })
-                                       }
-                                       placeholder="Sem nome fantasia"
-                                       value={supplier.tradeName}
-                                    />
-                                 </div>
-                              </TableCell>
-                              <TableCell className="w-28">
-                                 <InlineEditSelect
-                                    ariaLabel="Tipo de documento"
-                                    onSave={(value) =>
-                                       updateSupplier(supplier.id, {
-                                          documentType:
-                                             value === "cpf" ? "cpf" : "cnpj",
-                                       })
-                                    }
-                                    options={[
-                                       { value: "cnpj", label: "CNPJ" },
-                                       { value: "cpf", label: "CPF" },
-                                    ]}
-                                    value={supplier.documentType}
-                                 />
-                              </TableCell>
-                              <TableCell className="min-w-44">
-                                 <InlineEditText
-                                    ariaLabel="Documento do fornecedor"
-                                    onSave={(value) =>
-                                       updateSupplier(supplier.id, {
-                                          document: value,
-                                       })
-                                    }
-                                    placeholder="Não informado"
-                                    value={supplier.document}
-                                 />
-                              </TableCell>
-                              <TableCell className="min-w-52">
-                                 <InlineEditText
-                                    ariaLabel="E-mail do fornecedor"
-                                    onSave={(value) =>
-                                       updateSupplier(supplier.id, {
-                                          email: value,
-                                       })
-                                    }
-                                    placeholder="Não informado"
-                                    value={supplier.email}
-                                 />
-                              </TableCell>
-                              <TableCell className="w-32">
-                                 <InlineEditSelect
-                                    ariaLabel="Status do fornecedor"
-                                    onSave={(value) =>
-                                       updateSupplier(supplier.id, {
-                                          status:
-                                             value === "archived"
-                                                ? "archived"
-                                                : "active",
-                                       })
-                                    }
-                                    options={[
-                                       { value: "active", label: "Ativo" },
-                                       {
-                                          value: "archived",
-                                          label: "Arquivado",
-                                       },
-                                    ]}
-                                    value={supplier.status}
-                                 />
-                              </TableCell>
-                              <TableCell className="text-right tabular-nums">
-                                 {contractCount}
-                              </TableCell>
-                              <TableCell>
-                                 <div className="flex justify-end gap-2">
-                                    <Button
-                                       asChild
-                                       size="icon-sm"
-                                       tooltip="Criar contrato"
-                                       variant="ghost"
-                                    >
-                                       <Link
-                                          params={params}
-                                          search={{
-                                             supplierId: supplier.id,
-                                          }}
-                                          to="/$slug/$teamSlug/contratos"
-                                       >
-                                          <FilePlus2 />
-                                          <span className="sr-only">
-                                             Criar contrato
-                                          </span>
-                                       </Link>
-                                    </Button>
-                                    <Button
-                                       onClick={() =>
-                                          setStatus(
-                                             supplier.id,
-                                             supplier.status === "active"
-                                                ? "archived"
-                                                : "active",
-                                          )
-                                       }
-                                       size="icon-sm"
-                                       tooltip={
-                                          supplier.status === "active"
-                                             ? "Arquivar fornecedor"
-                                             : "Reativar fornecedor"
-                                       }
-                                       variant="ghost"
-                                    >
-                                       {supplier.status === "active" ? (
-                                          <Archive />
-                                       ) : (
-                                          <RotateCcw />
-                                       )}
-                                       <span className="sr-only">
-                                          {supplier.status === "active"
-                                             ? "Arquivar fornecedor"
-                                             : "Reativar fornecedor"}
-                                       </span>
-                                    </Button>
-                                 </div>
-                              </TableCell>
-                           </TableRow>
-                        );
-                     })}
-                  </TableBody>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<DemoSupplier> table={table} />
                </Table>
             </ScrollArea>
+            <DataTablePagination table={table} />
          </div>
       </main>
    );

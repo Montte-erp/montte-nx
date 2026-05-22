@@ -1,30 +1,26 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardHeader,
-   CardTitle,
-} from "@packages/ui/components/card";
 import { toast } from "@packages/ui/hooks/use-toast";
+import { cn } from "@packages/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { useClipboard } from "foxact/use-clipboard";
 import {
+   AlertCircle,
    AlertTriangle,
    ArrowRight,
    Bot,
+   Clock,
    Clipboard,
    FileCheck2,
    Gauge,
+   Info,
    Package,
    ReceiptText,
-   Sparkles,
    WalletCards,
    type LucideIcon,
 } from "lucide-react";
-import { useMemo } from "react";
-import { cn } from "@packages/ui/lib/utils";
+import { type ReactNode, useMemo } from "react";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import {
    deriveContractCharges,
    formatCurrency,
@@ -36,7 +32,7 @@ import {
    useDemoCustomers,
    useDemoSuppliers,
 } from "../../-local-first-demo/demo-data";
-import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
+import type { InboxSeverityFilter } from "./inbox-filters";
 
 type SignalSeverity = "critical" | "warning" | "info";
 type SignalRoute = "chat" | "transactions" | "produtos" | "nfe" | "contratos";
@@ -46,6 +42,8 @@ interface DemoSignal {
    title: string;
    description: string;
    severity: SignalSeverity;
+   source: string;
+   age: string;
    impact: string;
    icon: LucideIcon;
    route: SignalRoute;
@@ -54,17 +52,25 @@ interface DemoSignal {
    evidence: string[];
 }
 
-const SEVERITY_LABEL: Record<SignalSeverity, string> = {
-   critical: "Revisar agora",
-   warning: "Atenção",
-   info: "Monitorar",
+const SEVERITY_BADGE: Record<
+   SignalSeverity,
+   { label: string; variant: "destructive" | "default" | "secondary" }
+> = {
+   critical: { label: "Urgente", variant: "destructive" },
+   warning: { label: "Aviso", variant: "default" },
+   info: { label: "Info", variant: "secondary" },
 };
 
-const SEVERITY_CLASS: Record<SignalSeverity, string> = {
-   critical: "border-destructive/40 bg-destructive/5",
-   warning:
-      "border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/20",
-   info: "border-sky-200 bg-sky-50/60 dark:border-sky-900 dark:bg-sky-950/20",
+const SEVERITY_ICON: Record<SignalSeverity, LucideIcon> = {
+   critical: AlertCircle,
+   warning: AlertTriangle,
+   info: Info,
+};
+
+const SEVERITY_ICON_CLASS: Record<SignalSeverity, string> = {
+   critical: "text-destructive",
+   warning: "text-amber-500",
+   info: "text-sky-500",
 };
 
 const PRODUCT_EVIDENCE = [
@@ -78,7 +84,15 @@ const NFE_EVIDENCE = [
    "NF-e 1051 em contingência EPEC",
 ];
 
-export function AiCommandCenter() {
+interface InboxSuggestedSignalsProps {
+   fallback?: ReactNode;
+   severity: InboxSeverityFilter;
+}
+
+export function InboxSuggestedSignals({
+   fallback,
+   severity,
+}: InboxSuggestedSignalsProps) {
    const { slug, teamSlug } = useDashboardSlugs();
    const [contracts] = useDemoContracts();
    const [customers] = useDemoCustomers();
@@ -95,13 +109,8 @@ export function AiCommandCenter() {
    );
 
    const signals = useMemo(() => buildSignals(data), [data]);
-   const reviewCount = signals.filter(
-      (signal) =>
-         signal.severity === "critical" || signal.severity === "warning",
-   ).length;
-   const evidenceCount = signals.reduce(
-      (total, signal) => total + signal.evidence.length,
-      0,
+   const visibleSignals = signals.filter((signal) =>
+      shouldShowSignal({ filter: severity, signal }),
    );
 
    function handleCopyPrompt(prompt: string) {
@@ -109,113 +118,115 @@ export function AiCommandCenter() {
       toast.success("Prompt copiado para a Montte AI.");
    }
 
-   return (
-      <section className="flex flex-col gap-4">
-         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-col gap-1">
-               <div className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-primary" />
-                  <span className="text-muted-foreground text-sm font-medium">
-                     Centro de comando IA
-                  </span>
-               </div>
-               <h2 className="text-xl font-semibold tracking-normal">
-                  Sinais operacionais com evidência
-               </h2>
-               <p className="text-muted-foreground max-w-3xl text-sm">
-                  A demo cruza financeiro, contratos, estoque e NF-e para
-                  destacar o que precisa de revisão antes do fechamento.
-               </p>
-            </div>
-            <div className="grid grid-cols-3 gap-2 md:w-[28rem]">
-               <Metric label="sinais" value={String(signals.length)} />
-               <Metric label="revisões" value={String(reviewCount)} />
-               <Metric label="evidências" value={String(evidenceCount)} />
-            </div>
-         </div>
+   if (visibleSignals.length === 0) return fallback;
 
-         <div className="grid gap-4 xl:grid-cols-3">
-            {signals.map((signal) => (
-               <Card
-                  className={cn(
-                     "flex min-h-80 flex-col border",
-                     SEVERITY_CLASS[signal.severity],
-                  )}
-                  key={signal.id}
-               >
-                  <CardHeader className="gap-3">
-                     <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                           <span className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-background">
-                              <signal.icon className="size-4" />
-                           </span>
-                           <Badge variant="secondary">
-                              {SEVERITY_LABEL[signal.severity]}
-                           </Badge>
-                        </div>
-                        <span className="text-right text-xs font-medium text-muted-foreground">
-                           {signal.impact}
-                        </span>
-                     </div>
-                     <div className="flex flex-col gap-1">
-                        <CardTitle className="text-base">
-                           {signal.title}
-                        </CardTitle>
-                        <CardDescription>{signal.description}</CardDescription>
-                     </div>
-                  </CardHeader>
-                  <CardContent className="flex flex-1 flex-col gap-4">
-                     <div className="flex flex-col gap-2">
-                        <span className="text-xs font-medium text-muted-foreground">
-                           Evidências usadas
-                        </span>
-                        <ul className="flex flex-col gap-2 text-sm">
-                           {signal.evidence.map((item) => (
-                              <li className="flex gap-2" key={item}>
-                                 <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
-                                 <span>{item}</span>
-                              </li>
-                           ))}
-                        </ul>
-                     </div>
-                     <div className="mt-auto flex flex-col gap-3 rounded-md border bg-background p-3">
-                        <span className="text-xs font-medium text-muted-foreground">
-                           Prompt sugerido
-                        </span>
-                        <p className="text-sm">{signal.prompt}</p>
-                        <div className="flex flex-wrap gap-2">
-                           <Button
-                              className="gap-2"
-                              onClick={() => handleCopyPrompt(signal.prompt)}
-                              size="sm"
-                              type="button"
-                              variant="outline"
-                           >
-                              <Clipboard className="size-4" />
-                              Copiar
-                           </Button>
-                           <SignalLink
-                              label={signal.actionLabel}
-                              route={signal.route}
-                              slug={slug}
-                              teamSlug={teamSlug}
-                           />
-                        </div>
-                     </div>
-                  </CardContent>
-               </Card>
-            ))}
-         </div>
-      </section>
+   return (
+      <>
+         {visibleSignals.map((signal) => (
+            <SignalInboxItem
+               key={signal.id}
+               onCopyPrompt={handleCopyPrompt}
+               signal={signal}
+               slug={slug}
+               teamSlug={teamSlug}
+            />
+         ))}
+      </>
    );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function shouldShowSignal({
+   filter,
+   signal,
+}: {
+   filter: InboxSeverityFilter;
+   signal: DemoSignal;
+}) {
+   if (filter === "all") return true;
+   if (filter === "urgent") return signal.severity === "critical";
+   return signal.severity === filter;
+}
+
+function SignalInboxItem({
+   onCopyPrompt,
+   signal,
+   slug,
+   teamSlug,
+}: {
+   onCopyPrompt: (prompt: string) => void;
+   signal: DemoSignal;
+   slug: string;
+   teamSlug: string;
+}) {
+   const SeverityIcon = SEVERITY_ICON[signal.severity];
+   const badge = SEVERITY_BADGE[signal.severity];
+
    return (
-      <div className="rounded-md border bg-background p-3">
-         <div className="text-lg font-semibold leading-none">{value}</div>
-         <div className="text-muted-foreground text-xs">{label}</div>
-      </div>
+      <article className="rounded-lg border bg-card text-card-foreground shadow-sm">
+         <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
+            <SeverityIcon
+               className={cn(
+                  "size-5 shrink-0",
+                  SEVERITY_ICON_CLASS[signal.severity],
+               )}
+            />
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+               <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={badge.variant}>{badge.label}</Badge>
+                  <Badge className="gap-1" variant="outline">
+                     <Bot className="size-3" />
+                     Sugerido
+                  </Badge>
+                  <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                     <Clock className="size-3" />
+                     {signal.age}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                     {signal.source}
+                  </span>
+               </div>
+
+               <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-semibold leading-tight">
+                     {signal.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                     {signal.description}
+                  </p>
+               </div>
+
+               <div className="flex flex-wrap gap-2">
+                  {signal.evidence.slice(0, 3).map((item) => (
+                     <span
+                        className="rounded-md border bg-muted/30 px-2 py-1 text-xs"
+                        key={item}
+                     >
+                        {item}
+                     </span>
+                  ))}
+               </div>
+            </div>
+
+            <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+               <Button
+                  className="gap-2"
+                  onClick={() => onCopyPrompt(signal.prompt)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+               >
+                  <Clipboard className="size-4" />
+                  Copiar prompt
+               </Button>
+               <SignalLink
+                  label={signal.actionLabel}
+                  route={signal.route}
+                  slug={slug}
+                  teamSlug={teamSlug}
+               />
+            </div>
+         </div>
+      </article>
    );
 }
 
@@ -332,10 +343,12 @@ function buildSignals(data: {
    return [
       {
          id: "receivables-risk",
-         title: "Recebível recorrente precisa de cobrança",
+         title: "Cobrança recorrente atrasada",
          description:
-            "A IA encontrou cobrança atrasada em contrato ativo e separou os dados necessários para abordagem.",
+            "Contrato ativo tem parcela vencida e já traz o contexto para cobrança objetiva.",
          severity: "critical",
+         source: "Contratos e financeiro",
+         age: "agora",
          impact: overdueAmount,
          icon: WalletCards,
          route: "contratos",
@@ -349,10 +362,12 @@ function buildSignals(data: {
       },
       {
          id: "payables-review",
-         title: "Despesa recorrente entra no fechamento",
+         title: "Despesa entra no fechamento",
          description:
-            "A IA marcou fornecedor ativo com pagamento em aberto para evitar surpresa no caixa projetado.",
+            "Fornecedor recorrente aparece em aberto e pode mudar a leitura do caixa projetado.",
          severity: "warning",
+         source: "Fornecedores e transações",
+         age: "11min",
          impact: payableAmount,
          icon: ReceiptText,
          route: "transactions",
@@ -368,8 +383,10 @@ function buildSignals(data: {
          id: "inventory-reorder",
          title: "Estoque abaixo do mínimo",
          description:
-            "Produtos físicos da demo ficaram abaixo do nível mínimo e já podem virar tarefa de reposição.",
+            "Itens físicos ficaram abaixo do nível mínimo e pedem reposição antes da próxima venda.",
          severity: "warning",
+         source: "Produtos",
+         age: "1h",
          impact: "2 itens",
          icon: Package,
          route: "produtos",
@@ -382,8 +399,10 @@ function buildSignals(data: {
          id: "fiscal-exceptions",
          title: "NF-e com exceções fiscais",
          description:
-            "A IA agrupou rejeição, processamento e contingência para revisão antes de faturamento seguir.",
+            "Rejeição, processamento e contingência foram agrupados para revisão de faturamento.",
          severity: "critical",
+         source: "NF-e",
+         age: "2h",
          impact: "3 notas",
          icon: FileCheck2,
          route: "nfe",
@@ -394,10 +413,12 @@ function buildSignals(data: {
       },
       {
          id: "expense-flux",
-         title: "Variação de despesas merece explicação",
+         title: "Variação de despesas",
          description:
-            "A demo destaca uma leitura de variação para mostrar análise financeira pronta para reunião.",
+            "Leitura pronta para explicar a alta de despesas antes da reunião de gestão.",
          severity: "info",
+         source: "Análise financeira",
+         age: "3h",
          impact: "+42%",
          icon: Gauge,
          route: "chat",
@@ -412,10 +433,12 @@ function buildSignals(data: {
       },
       {
          id: "close-check",
-         title: "Checklist de fechamento sugerido",
+         title: "Checklist de fechamento",
          description:
-            "A IA combina exceções fiscais, caixa, contratos e estoque em uma fila curta de revisão.",
+            "Fila curta combina cobrança, despesa recorrente, NF-e pendente e estoque baixo.",
          severity: "info",
+         source: "Montte AI",
+         age: "ontem",
          impact: "4 etapas",
          icon: Bot,
          route: "chat",

@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { createLocalStorageState } from "foxact/create-local-storage-state";
-import type { Value } from "@udecode/plate";
+import type { Value } from "platejs";
 
 export type DemoStatus = "active" | "archived";
 
@@ -12,6 +12,11 @@ export type DemoCustomer = {
    documentType: "cpf" | "cnpj";
    email: string;
    phone: string;
+   city: string;
+   state: string;
+   segment: string;
+   owner: string;
+   lastContactAt: string;
    status: DemoStatus;
    notes: string;
    createdAt: string;
@@ -26,6 +31,11 @@ export type DemoSupplier = {
    documentType: "cpf" | "cnpj";
    email: string;
    phone: string;
+   city: string;
+   state: string;
+   category: string;
+   owner: string;
+   lastContactAt: string;
    status: DemoStatus;
    notes: string;
    createdAt: string;
@@ -93,6 +103,11 @@ export const initialCustomers: DemoCustomer[] = [
       documentType: "cnpj",
       email: "financeiro@clinicaaurora.com.br",
       phone: "(11) 4040-1000",
+      city: "São Paulo",
+      state: "SP",
+      segment: "Saúde",
+      owner: "Marina Costa",
+      lastContactAt: "2026-05-20",
       status: "active",
       notes: "Cliente com contrato mensal de operação financeira.",
       createdAt: today,
@@ -106,6 +121,11 @@ export const initialCustomers: DemoCustomer[] = [
       documentType: "cnpj",
       email: "ops@acme.dev",
       phone: "(31) 3555-9000",
+      city: "Belo Horizonte",
+      state: "MG",
+      segment: "Software",
+      owner: "Rafael Lima",
+      lastContactAt: "2026-05-18",
       status: "active",
       notes: "Assinatura anual com cobrança mensal.",
       createdAt: today,
@@ -119,6 +139,11 @@ export const initialCustomers: DemoCustomer[] = [
       documentType: "cnpj",
       email: "administrativo@nortecoworking.com",
       phone: "(85) 3030-2200",
+      city: "Fortaleza",
+      state: "CE",
+      segment: "Serviços",
+      owner: "Carla Nunes",
+      lastContactAt: "2026-05-14",
       status: "active",
       notes: "Revisar reajuste no próximo ciclo.",
       createdAt: today,
@@ -135,6 +160,11 @@ export const initialSuppliers: DemoSupplier[] = [
       documentType: "cnpj",
       email: "atendimento@prisma.com.br",
       phone: "(11) 3333-8080",
+      city: "São Paulo",
+      state: "SP",
+      category: "Contabilidade",
+      owner: "Marina Costa",
+      lastContactAt: "2026-05-17",
       status: "active",
       notes: "Fornecedor mensal de contabilidade.",
       createdAt: today,
@@ -148,6 +178,11 @@ export const initialSuppliers: DemoSupplier[] = [
       documentType: "cnpj",
       email: "billing@cloudbox.com",
       phone: "(41) 3020-7000",
+      city: "Curitiba",
+      state: "PR",
+      category: "Infraestrutura",
+      owner: "Rafael Lima",
+      lastContactAt: "2026-05-16",
       status: "active",
       notes: "Infraestrutura com pagamento mensal.",
       createdAt: today,
@@ -163,24 +198,49 @@ export const contractTemplates: ContractTemplate[] = [
          "Modelo para mensalidade, assessoria, consultoria e operação.",
       direction: "receita",
       document: [
-         paragraph("CONTRATO DE PRESTAÇÃO DE SERVIÇOS"),
+         heading("h1", "Contrato de prestação de serviços recorrentes"),
          paragraph(
-            "PARTES: {{empresa_nome}} e {{parte_nome}}, inscrita no documento {{parte_documento}}.",
+            "Pelo presente instrumento particular, as partes abaixo identificadas ajustam a prestação recorrente de serviços, conforme as condições comerciais e operacionais descritas neste contrato.",
+         ),
+         heading("h2", "1. Partes"),
+         clause(
+            "Contratada: ",
+            "{{empresa_nome}}, pessoa jurídica responsável pela execução dos serviços descritos neste instrumento.",
+         ),
+         clause(
+            "Contratante: ",
+            "{{parte_nome}}, inscrita no documento {{parte_documento}}, responsável pelo pagamento e pelo fornecimento das informações necessárias à execução dos serviços.",
+         ),
+         heading("h2", "2. Objeto"),
+         paragraph(
+            "A contratada prestará, de forma contínua e recorrente, {{descricao_servico}}, incluindo rotinas de acompanhamento, execução operacional, comunicação de pendências e suporte relacionado ao escopo contratado.",
+         ),
+         heading("h2", "3. Valor, frequência e vencimento"),
+         paragraph(
+            "Pelos serviços contratados, a contratante pagará à contratada o valor de {{valor_recorrente}}, com frequência {{frequencia}}, vencendo todo dia {{dia_vencimento}} de cada ciclo de cobrança.",
          ),
          paragraph(
-            "OBJETO: prestação recorrente de {{descricao_servico}}, conforme condições comerciais acordadas entre as partes.",
+            "Os pagamentos serão registrados no financeiro da contratada como cobrança recorrente, podendo gerar cobranças futuras enquanto o contrato estiver ativo.",
+         ),
+         heading("h2", "4. Vigência"),
+         paragraph(
+            "Este contrato inicia em {{data_inicio}} e permanecerá vigente até {{data_fim}}, salvo encerramento formal solicitado por uma das partes.",
+         ),
+         heading("h2", "5. Obrigações das partes"),
+         clause(
+            "Obrigações da contratada: ",
+            "executar os serviços com regularidade, comunicar pendências relevantes e manter registro das entregas acordadas.",
+         ),
+         clause(
+            "Obrigações da contratante: ",
+            "manter dados cadastrais e financeiros atualizados, fornecer informações necessárias à execução do serviço e efetuar os pagamentos nos vencimentos definidos.",
+         ),
+         heading("h2", "6. Reajuste, suspensão e rescisão"),
+         paragraph(
+            "As partes poderão revisar valores e condições mediante acordo registrado por escrito. A inadimplência poderá suspender a prestação dos serviços até a regularização dos valores em aberto.",
          ),
          paragraph(
-            "VALOR E PAGAMENTO: {{parte_nome}} pagará a {{empresa_nome}} o valor de {{valor_recorrente}}, com frequência {{frequencia}}, vencendo todo dia {{dia_vencimento}}.",
-         ),
-         paragraph(
-            "VIGÊNCIA: este contrato inicia em {{data_inicio}} e permanece vigente até {{data_fim}}, salvo encerramento formal entre as partes.",
-         ),
-         paragraph(
-            "OBRIGAÇÕES: a contratada executará os serviços com regularidade operacional, e a contratante manterá dados e pagamentos em dia.",
-         ),
-         paragraph(
-            "RESCISÃO: qualquer parte poderá encerrar o contrato mediante aviso prévio registrado por escrito.",
+            "Qualquer parte poderá encerrar este contrato mediante aviso prévio formal, preservadas as cobranças já vencidas e as obrigações assumidas até a data de encerramento.",
          ),
       ],
    },
@@ -190,13 +250,16 @@ export const contractTemplates: ContractTemplate[] = [
       description: "Modelo para suporte técnico, manutenção e SLA simples.",
       direction: "receita",
       document: [
-         paragraph("CONTRATO DE SUPORTE E MANUTENÇÃO"),
+         heading("h1", "Contrato de suporte e manutenção recorrente"),
+         heading("h2", "1. Objeto"),
          paragraph(
             "A {{empresa_nome}} prestará suporte recorrente para {{parte_nome}}, incluindo acompanhamento, correções e manutenção preventiva.",
          ),
+         heading("h2", "2. Cobrança"),
          paragraph(
             "O valor recorrente será de {{valor_recorrente}}, com cobrança {{frequencia}} e vencimento no dia {{dia_vencimento}} de cada ciclo.",
          ),
+         heading("h2", "3. Vigência e atendimento"),
          paragraph(
             "A vigência começa em {{data_inicio}} e termina em {{data_fim}}. As solicitações serão priorizadas conforme criticidade operacional.",
          ),
@@ -209,13 +272,16 @@ export const contractTemplates: ContractTemplate[] = [
          "Modelo para licença, acesso, suporte e cobrança recorrente.",
       direction: "receita",
       document: [
-         paragraph("CONTRATO DE ASSINATURA DE SOFTWARE"),
+         heading("h1", "Contrato de assinatura de software"),
+         heading("h2", "1. Licença de uso"),
          paragraph(
             "A {{empresa_nome}} disponibilizará acesso ao software para {{parte_nome}}, com uso vinculado às condições comerciais deste contrato.",
          ),
+         heading("h2", "2. Cobrança recorrente"),
          paragraph(
             "A assinatura terá valor de {{valor_recorrente}}, frequência {{frequencia}} e vencimento todo dia {{dia_vencimento}}.",
          ),
+         heading("h2", "3. Suspensão"),
          paragraph(
             "O acesso poderá ser suspenso em caso de inadimplência, sem prejuízo da cobrança dos valores em aberto.",
          ),
@@ -228,18 +294,27 @@ export const contractTemplates: ContractTemplate[] = [
          "Modelo para contabilidade, aluguel, infraestrutura e serviços tomados.",
       direction: "despesa",
       document: [
-         paragraph("CONTRATO DE FORNECIMENTO RECORRENTE"),
-         paragraph(
-            "PARTES: {{empresa_nome}} contrata {{parte_nome}}, inscrita no documento {{parte_documento}}, para {{descricao_servico}}.",
+         heading("h1", "Contrato de fornecimento recorrente"),
+         heading("h2", "1. Partes"),
+         clause(
+            "Contratante: ",
+            "{{empresa_nome}}, responsável pelo pagamento e pela gestão do contrato.",
          ),
-         paragraph(
-            "VALOR E PAGAMENTO: a {{empresa_nome}} pagará {{valor_recorrente}} com frequência {{frequencia}}, vencendo todo dia {{dia_vencimento}}.",
+         clause(
+            "Fornecedor: ",
+            "{{parte_nome}}, inscrita no documento {{parte_documento}}, responsável pela prestação de {{descricao_servico}}.",
          ),
+         heading("h2", "2. Valor e pagamento"),
          paragraph(
-            "VIGÊNCIA: o contrato começa em {{data_inicio}} e fica vigente até {{data_fim}}, com possibilidade de renovação operacional.",
+            "A {{empresa_nome}} pagará {{valor_recorrente}} com frequência {{frequencia}}, vencendo todo dia {{dia_vencimento}} de cada ciclo.",
          ),
+         heading("h2", "3. Vigência"),
          paragraph(
-            "OBRIGAÇÕES: o fornecedor manterá a prestação regular do serviço e comunicará mudanças que afetem a operação.",
+            "O contrato começa em {{data_inicio}} e fica vigente até {{data_fim}}, com possibilidade de renovação operacional.",
+         ),
+         heading("h2", "4. Obrigações"),
+         paragraph(
+            "O fornecedor manterá a prestação regular do serviço e comunicará previamente mudanças que afetem a operação, valores, prazos ou disponibilidade.",
          ),
       ],
    },
@@ -249,13 +324,16 @@ export const contractTemplates: ContractTemplate[] = [
       description: "Base curta para adaptar durante a demonstração.",
       direction: "ambos",
       document: [
-         paragraph("CONTRATO DE SERVIÇO RECORRENTE"),
+         heading("h1", "Contrato de serviço recorrente"),
+         heading("h2", "1. Objeto"),
          paragraph(
             "A {{empresa_nome}} e {{parte_nome}} ajustam a prestação de {{descricao_servico}}.",
          ),
+         heading("h2", "2. Condição comercial"),
          paragraph(
             "O valor recorrente será de {{valor_recorrente}}, com frequência {{frequencia}} e vencimento no dia {{dia_vencimento}}.",
          ),
+         heading("h2", "3. Vigência"),
          paragraph(
             "A vigência começa em {{data_inicio}} e termina em {{data_fim}}.",
          ),
@@ -349,7 +427,7 @@ const [useDemoSuppliers] = createLocalStorageState<DemoSupplier[]>(
 );
 
 const [useDemoContracts] = createLocalStorageState<DemoContract[]>(
-   "montte:demo:contracts",
+   "montte:demo:contracts:v2",
    initialContracts,
 );
 
@@ -498,6 +576,9 @@ export function replaceTemplateVariables({
             for (const replacement of replacements) {
                text = text.split(replacement.token).join(replacement.value);
             }
+            if (typeof child === "object" && child !== null) {
+               return { ...child, text };
+            }
             return { text };
          }),
       };
@@ -513,6 +594,11 @@ export function makeCustomerDraft(): DemoCustomer {
       documentType: "cnpj",
       email: "",
       phone: "",
+      city: "",
+      state: "",
+      segment: "",
+      owner: "",
+      lastContactAt: today,
       status: "active",
       notes: "",
       createdAt: today,
@@ -529,6 +615,11 @@ export function makeSupplierDraft(): DemoSupplier {
       documentType: "cnpj",
       email: "",
       phone: "",
+      city: "",
+      state: "",
+      category: "",
+      owner: "",
+      lastContactAt: today,
       status: "active",
       notes: "",
       createdAt: today,
@@ -570,6 +661,17 @@ export function makeContractDraft({
 
 function paragraph(text: string) {
    return { type: "p", children: [{ text }] };
+}
+
+function heading(type: "h1" | "h2", text: string) {
+   return { type, children: [{ text }] };
+}
+
+function clause(label: string, text: string) {
+   return {
+      type: "p",
+      children: [{ text: label, bold: true }, { text }],
+   };
 }
 
 function getNodeText(child: unknown) {

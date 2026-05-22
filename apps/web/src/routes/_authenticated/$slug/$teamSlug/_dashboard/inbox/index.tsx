@@ -5,7 +5,6 @@ import { z } from "zod";
 import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 import { DefaultHeader } from "../../-layout/default-header";
-import { AiCommandCenter } from "./-inbox/ai-command-center";
 import { QuickStartChecklist } from "./-inbox/quick-start-checklist";
 import { InboxFilters, type InboxSeverityFilter } from "./-inbox/inbox-filters";
 import { InboxList } from "./-inbox/inbox-list";
@@ -60,7 +59,6 @@ function InboxPageContent() {
             title="Inbox"
             description="Sinais acionáveis do seu negócio: vencimentos, categorização pendente e eventos do sistema."
          />
-         <AiCommandCenter />
          <QuickStartChecklist />
          <InboxFilters
             value={severity}

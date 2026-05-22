@@ -12,9 +12,12 @@
    "iconLibrary": "lucide",
    "aliases": {
       "components": "@packages/ui/components",
-      "hooks": "@packages/ui/hooks",
-      "lib": "@packages/ui/lib",
+      "utils": "@packages/ui/lib/utils",
       "ui": "@packages/ui/components",
-      "utils": "@packages/ui/lib/utils"
+      "lib": "@packages/ui/lib",
+      "hooks": "@packages/ui/hooks"
+   },
+   "registries": {
+      "@plate": "https://platejs.org/r/{name}.json"
    }
 }
