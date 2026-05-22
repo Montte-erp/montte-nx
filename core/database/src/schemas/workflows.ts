@@ -54,7 +54,7 @@ function isSupportedWorkflowCron(cron: string) {
    if (month !== "*") return false;
 
    const isMonthly = dayOfWeek === "*" && isIntegerInRange(dayOfMonth, 1, 31);
-   const isWeekly = dayOfMonth === "*" && isIntegerInRange(dayOfWeek, 0, 6);
+   const isWeekly = dayOfMonth === "*" && isIntegerInRange(dayOfWeek, 0, 7);
    return isMonthly || isWeekly;
 }
 

@@ -9,6 +9,7 @@ import {
    workflowGraphSchema,
    workflowRuns,
    workflows,
+   type Workflow,
 } from "@core/database/schemas/workflows";
 import {
    buildHumanLabel,
@@ -206,6 +207,54 @@ function buildNextRunAtOrThrow(
    return result.value;
 }
 
+function isBlankWorkflowStub(workflow: Pick<Workflow, "graph" | "templateId">) {
+   const blankTemplate = getWorkflowTemplate("blank");
+   if (!blankTemplate || workflow.templateId !== blankTemplate.id) {
+      return false;
+   }
+
+   const scheduleNode = workflow.graph.nodes.find(
+      (node) => node.type === "scheduleTrigger",
+   );
+   const reportNode = workflow.graph.nodes.find(
+      (node) => node.type === "createReport",
+   );
+   if (!scheduleNode || !reportNode) return false;
+
+   const blankScheduleNode = blankTemplate.defaultGraph.nodes[0];
+   const blankReportNode = blankTemplate.defaultGraph.nodes[1];
+   return (
+      scheduleNode.data.cron === blankScheduleNode.data.cron &&
+      scheduleNode.data.timezone === blankScheduleNode.data.timezone &&
+      scheduleNode.data.humanLabel === blankScheduleNode.data.humanLabel &&
+      reportNode.data.reportType === blankReportNode.data.reportType &&
+      reportNode.data.period.kind === blankReportNode.data.period.kind &&
+      reportNode.data.nameTemplate === blankReportNode.data.nameTemplate
+   );
+}
+
+function assertWorkflowCanActivate(
+   workflow: Pick<Workflow, "graph" | "templateId">,
+) {
+   if (!isBlankWorkflowStub(workflow)) return;
+
+   throw new WorkflowsRouterError({
+      error: workflowsRouterErrors.INVALID_GRAPH(),
+      message: "Configure este workflow antes de ativar.",
+   });
+}
+
+function assertWorkflowCanRun(
+   workflow: Pick<Workflow, "graph" | "templateId">,
+) {
+   if (!isBlankWorkflowStub(workflow)) return;
+
+   throw new WorkflowsRouterError({
+      error: workflowsRouterErrors.INVALID_GRAPH(),
+      message: "Configure este workflow antes de executar.",
+   });
+}
+
 export const templates = {
    list: protectedProcedure.handler(async () => workflowTemplates),
 };
@@ -390,6 +439,7 @@ async function activateWorkflowForTeam(
    id: string,
 ) {
    const workflow = await loadWorkflowForTeam(context, id);
+   assertWorkflowCanActivate(workflow);
    const scheduleNode = getWorkflowScheduleNode(workflow.graph);
    const nextRunAt = buildNextRunAtOrThrow(
       scheduleNode.data.cron,
@@ -510,6 +560,7 @@ export const bulkActivate = protectedProcedure
    .input(idsSchema)
    .handler(async ({ context, input }) => {
       const owned = await loadWorkflowsForTeam(context, input.ids);
+      owned.forEach(assertWorkflowCanActivate);
       const workflowIds = owned.map((workflow) => workflow.id);
       const now = dayjs().toDate();
       const nextRuns = owned.map((workflow) => {
@@ -621,6 +672,7 @@ export const runNow = protectedProcedure
    .input(idSchema)
    .handler(async ({ context, input }) => {
       const workflow = await loadWorkflowForTeam(context, input.id);
+      assertWorkflowCanRun(workflow);
       const scheduledFor = dayjs().toDate();
       const idempotencyKey = createWorkflowIdempotencyKey(
          workflow.id,

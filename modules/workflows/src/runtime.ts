@@ -25,8 +25,8 @@ dayjs.extend(timezone);
 dayjs.locale("pt-br");
 
 export const WORKFLOW_TIMEZONE = "America/Sao_Paulo";
-export const WORKFLOW_EXECUTE_QUEUE_NAME = "workflow:workflows/execute";
-export const WORKFLOW_SCHEDULER_QUEUE_NAME = "workflow:workflows/scheduler";
+export const WORKFLOW_EXECUTE_QUEUE_NAME = "workflows/execute";
+export const WORKFLOW_SCHEDULER_QUEUE_NAME = "workflows/scheduler";
 export const WORKFLOW_EXECUTE_WORKFLOW_NAME = "executeWorkflowWorkflowFn";
 export const WORKFLOW_SCHEDULER_WORKFLOW_NAME = "pollDueWorkflowsWorkflowFn";
 

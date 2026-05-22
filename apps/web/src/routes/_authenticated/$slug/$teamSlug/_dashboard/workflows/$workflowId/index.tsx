@@ -133,6 +133,7 @@ function WorkflowRunStatusBadge({ status }: { status: WorkflowRunStatus }) {
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/workflows/$workflowId/",
 )({
+   ssr: false,
    pendingMs: 300,
    pendingComponent: WorkflowDetailSkeleton,
    head: () => ({
@@ -143,6 +144,30 @@ export const Route = createFileRoute(
 
 function WorkflowDetailSkeleton() {
    return <main className="-m-4 flex flex-1 min-h-0 overflow-hidden" />;
+}
+
+function WorkflowNotFound({ onBack }: { onBack: () => void }) {
+   return (
+      <div className="flex flex-1 items-center justify-center p-4">
+         <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full border bg-muted text-muted-foreground">
+               <AlertTriangle className="size-5" />
+            </div>
+            <div className="flex flex-col gap-2">
+               <h2 className="text-lg font-semibold">
+                  Workflow não encontrado
+               </h2>
+               <p className="text-muted-foreground text-sm">
+                  Este workflow foi removido ou não pertence ao projeto atual.
+               </p>
+            </div>
+            <Button onClick={onBack} variant="outline">
+               <ArrowLeft className="size-4" />
+               Voltar para automações
+            </Button>
+         </div>
+      </div>
+   );
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -180,7 +205,7 @@ function WorkflowDetailContent() {
          ),
       [activeTeamId, queryClient],
    );
-   const { data: workflowRows } = useLiveQuery(
+   const { data: workflowRows, isLoading: isWorkflowLoading } = useLiveQuery(
       (q) =>
          q
             .from({ workflow: workflowsCollection })
@@ -189,6 +214,11 @@ function WorkflowDetailContent() {
       [workflowsCollection, workflowId],
    );
    const workflow = workflowRows[0] ?? null;
+   const navigateToWorkflows = () =>
+      navigate({
+         to: "/$slug/$teamSlug/workflows",
+         params: { slug, teamSlug },
+      });
 
    const selectedNode = selectedNodeId
       ? (workflow?.graph.nodes.find((node) => node.id === selectedNodeId) ??
@@ -405,7 +435,13 @@ function WorkflowDetailContent() {
       ) : null,
    );
 
-   if (!workflow) return <WorkflowDetailSkeleton />;
+   if (!workflow) {
+      return isWorkflowLoading ? (
+         <WorkflowDetailSkeleton />
+      ) : (
+         <WorkflowNotFound onBack={navigateToWorkflows} />
+      );
+   }
 
    return (
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -425,12 +461,7 @@ function WorkflowDetailContent() {
 
          <Button
             className="absolute top-4 left-4 z-20 size-9 rounded-full border bg-popover/85 shadow-sm backdrop-blur"
-            onClick={() =>
-               navigate({
-                  to: "/$slug/$teamSlug/workflows",
-                  params: { slug, teamSlug },
-               })
-            }
+            onClick={navigateToWorkflows}
             size="icon"
             tooltip="Voltar"
             variant="ghost"

@@ -121,6 +121,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/workflows/",
 )({
+   ssr: false,
    validateSearch: searchSchema,
    pendingMs: 300,
    pendingComponent: WorkflowIndexSkeleton,
@@ -161,7 +162,7 @@ function WorkflowsIndexContent() {
    const { openCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
    const { activeTeamId } = useActiveTeam();
-   const { queryClient } = Route.useRouteContext();
+   const { queryClient, session } = Route.useRouteContext();
    const layout = useDataTableLayout("workflows");
 
    const workflowsCollection = useMemo(
@@ -255,18 +256,30 @@ function WorkflowsIndexContent() {
    );
 
    const openCreateWorkflow = useCallback(() => {
+      if (!activeTeamId) {
+         toast.error("Não foi possível identificar o projeto ativo.");
+         return;
+      }
+
       openCredenza({
          className:
             "max-h-[90vh] flex flex-col overflow-hidden p-0 sm:max-h-[85vh] sm:max-w-[1200px]",
          renderChildren: () => (
             <WorkflowCreateCredenza
                collection={workflowsCollection}
-               teamId={activeTeamId ?? "no-team"}
+               createdBy={session.user.id}
+               teamId={activeTeamId}
                templates={templates}
             />
          ),
       });
-   }, [activeTeamId, openCredenza, templates, workflowsCollection]);
+   }, [
+      activeTeamId,
+      openCredenza,
+      session.user.id,
+      templates,
+      workflowsCollection,
+   ]);
 
    const handleRemove = useCallback(
       (workflow: WorkflowRow) => {

@@ -109,6 +109,35 @@ describe("workflows router", () => {
       expect(result.graph.nodes[1].data.period.kind).toBe("previous-month");
    });
 
+   it("bloqueia ativação de workflow vazio ainda não configurado", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+      const created = await call(
+         workflowsRouter.createFromTemplate,
+         { templateId: "blank" },
+         { context: ctx },
+      );
+
+      await expect(
+         call(workflowsRouter.activate, { id: created.id }, { context: ctx }),
+      ).rejects.toThrow("Configure este workflow antes de ativar.");
+      await expect(
+         call(
+            workflowsRouter.bulkActivate,
+            { ids: [created.id] },
+            { context: ctx },
+         ),
+      ).rejects.toThrow("Configure este workflow antes de ativar.");
+      await expect(
+         call(workflowsRouter.runNow, { id: created.id }, { context: ctx }),
+      ).rejects.toThrow("Configure este workflow antes de executar.");
+   });
+
    it("update altera nome e schedule do graph", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const userId = await seedUser(testDb.db);

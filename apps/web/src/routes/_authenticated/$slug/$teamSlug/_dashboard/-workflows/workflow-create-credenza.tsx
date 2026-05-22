@@ -38,8 +38,6 @@ const DOMAIN_FILTER_OPTIONS: { id: DomainFilterId; label: string }[] = [
    { id: "reports", label: "Relatórios" },
 ];
 
-const ILLUSTRATIONS_BASE_PATH = "/workflow-templates";
-
 function cadenceLabel(cadence: WorkflowTemplateRow["cadence"]) {
    return cadence === "weekly" ? "Semanal" : "Mensal";
 }
@@ -50,10 +48,12 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export function WorkflowCreateCredenza({
    collection,
+   createdBy,
    teamId,
    templates,
 }: {
    collection: WorkflowsCollection;
+   createdBy: string;
    teamId: string;
    templates: WorkflowTemplateRow[];
 }) {
@@ -108,6 +108,7 @@ export function WorkflowCreateCredenza({
       const workflow = create({
          input,
          row: buildOptimisticWorkflowRow({
+            createdBy,
             id: buildOptimisticWorkflowRowId(),
             input,
             teamId,
@@ -220,8 +221,6 @@ function TemplateCard({
    isLoading: boolean;
    onSelect: (template: WorkflowTemplateRow) => void;
 }) {
-   const [imageFailed, setImageFailed] = useState(false);
-
    return (
       <button
          className={cn(
@@ -234,21 +233,11 @@ function TemplateCard({
          type="button"
       >
          <div className="relative aspect-[4/3] w-full overflow-hidden">
-            {imageFailed ? (
-               <div className="from-primary/25 via-muted to-muted/40 flex size-full items-center justify-center bg-gradient-to-br">
-                  <div className="bg-background/70 text-foreground flex size-14 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-105">
-                     <Workflow className="size-7" />
-                  </div>
+            <div className="from-primary/25 via-muted to-muted/40 flex size-full items-center justify-center bg-gradient-to-br">
+               <div className="bg-background/70 text-foreground flex size-14 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-105">
+                  <Workflow className="size-7" />
                </div>
-            ) : (
-               <img
-                  alt={template.name}
-                  className="size-full object-cover transition-transform group-hover:scale-[1.02]"
-                  loading="lazy"
-                  onError={() => setImageFailed(true)}
-                  src={`${ILLUSTRATIONS_BASE_PATH}/${template.id}.png`}
-               />
-            )}
+            </div>
             {isLoading ? (
                <div className="bg-background/70 absolute inset-0 flex items-center justify-center backdrop-blur-sm">
                   <Loader2 className="size-6 animate-spin" />

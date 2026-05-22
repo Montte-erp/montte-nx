@@ -90,11 +90,13 @@ export function buildOptimisticWorkflowRowId(prefix = "__workflow_") {
 }
 
 export function buildOptimisticWorkflowRow({
+   createdBy,
    id,
    input,
    teamId,
    template,
 }: {
+   createdBy: string;
    id: string;
    input: WorkflowCreateFromTemplateInput;
    teamId: string;
@@ -109,7 +111,7 @@ export function buildOptimisticWorkflowRow({
       status: input.templateId === "blank" ? "paused" : "active",
       graph: template.defaultGraph,
       nextRunAt: null,
-      createdBy: "optimistic",
+      createdBy,
       createdAt: now,
       updatedAt: now,
       latestRun: null,
