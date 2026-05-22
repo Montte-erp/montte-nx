@@ -108,12 +108,9 @@ const trackingProps = {
    release_version: post.data.releaseVersion ?? null,
 };
 
-const ctaTitle = post.data.releaseVersion
-   ? "Quer acompanhar as próximas releases do Montte?"
-   : "Quer acompanhar o desenvolvimento do Montte?";
-const ctaDescription = post.data.releaseVersion
-   ? "Entre na lista para receber novidades e testar quando fizer sentido."
-   : "Acompanhe o projeto, teste quando fizer sentido e contribua com feedback.";
+const ctaTitle = "Acompanhe o desenvolvimento do Montte";
+const ctaDescription =
+   "Publicamos releases, decisões técnicas e postmortems conforme o produto muda.";
 ---
 
 <BaseLayout
@@ -305,22 +302,35 @@ const ctaDescription = post.data.releaseVersion
 
                   {
                      relatedPosts.length > 0 && (
-                        <section class="flex flex-col gap-3 rounded-xl border border-border/60 bg-card/30 p-5">
-                           <h2 class="font-serif text-xl font-bold text-foreground">
-                              Continue lendo
-                           </h2>
-                           <ul class="flex flex-col gap-3">
+                        <section class="flex flex-col gap-4 rounded-xl border border-border/60 bg-card/30 p-5">
+                           <div class="flex flex-col gap-1">
+                              <h2 class="font-serif text-xl font-bold text-foreground">
+                                 Leia também
+                              </h2>
+                              <p class="text-sm text-muted-foreground">
+                                 Outros posts com contexto parecido.
+                              </p>
+                           </div>
+                           <ul class="m-0 flex list-none flex-col divide-y divide-border/40 p-0">
                               {relatedPosts.map((relatedPost) => (
                                  <li>
                                     <a
                                        href={`/blog/${relatedPost.id}`}
-                                       class="group/related flex items-start justify-between gap-4 rounded-lg border border-border/40 bg-background/40 p-3 transition-colors hover:border-border hover:bg-background/70"
+                                       class="group/related flex items-center justify-between gap-4 rounded-lg px-0 py-3 transition-colors first:pt-0 last:pb-0 hover:text-primary"
                                     >
-                                       <div class="flex flex-col gap-1">
-                                          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                             {relatedPost.data.category}
-                                          </span>
-                                          <span class="text-sm font-semibold text-foreground group-hover/related:text-primary">
+                                       <div class="flex min-w-0 flex-col gap-1.5">
+                                          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                             <span class="font-semibold uppercase tracking-wider">
+                                                {relatedPost.data.category}
+                                             </span>
+                                             <span aria-hidden="true">·</span>
+                                             <time datetime={relatedPost.data.publishedAt.toISOString()}>
+                                                {dayjs(relatedPost.data.publishedAt).format(
+                                                   "DD [de] MMM, YYYY",
+                                                )}
+                                             </time>
+                                          </div>
+                                          <span class="text-sm font-semibold leading-snug text-foreground transition-colors group-hover/related:text-primary">
                                              {relatedPost.data.title}
                                           </span>
                                        </div>
@@ -337,17 +347,12 @@ const ctaDescription = post.data.releaseVersion
                   }
 
                   <a
-                     href="/#waitlist"
-                     class="group relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/10 p-5 transition-all hover:border-primary/60 hover:bg-primary/15"
+                     href="/blog"
+                     class="group relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-border/60 bg-card/30 p-5 transition-colors hover:border-border hover:bg-card/50"
                   >
-                     <div
-                        class="absolute inset-0 -z-10 opacity-0 transition-opacity group-hover:opacity-100"
-                        style="background: radial-gradient(ellipse at right, color-mix(in oklch, var(--primary) 25%, transparent), transparent 70%);"
-                        aria-hidden="true"
-                     />
                      <div class="flex flex-col gap-0.5">
-                        <span class="text-xs font-semibold uppercase tracking-wider text-primary">
-                           Waitlist
+                        <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                           Diário público
                         </span>
                         <span class="text-base font-semibold text-foreground">
                            {ctaTitle}
@@ -357,7 +362,7 @@ const ctaDescription = post.data.releaseVersion
                         </span>
                      </div>
                      <ArrowRight
-                        class="size-5 shrink-0 text-primary transition-transform group-hover:translate-x-1"
+                        class="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary"
                         aria-hidden="true"
                      />
                   </a>
@@ -395,13 +400,13 @@ const ctaDescription = post.data.releaseVersion
                      class="flex flex-col gap-2 rounded-lg border border-border/60 bg-card/40 p-4"
                   >
                      <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Acompanhe o Montte
+                        Acompanhe o projeto
                      </p>
                      <a
-                        href="/#waitlist"
+                        href="/rss.xml"
                         class="text-sm font-semibold text-primary hover:underline"
                      >
-                        Entrar na lista →
+                        RSS do blog →
                      </a>
                   </div>
                </div>

@@ -33,7 +33,7 @@ const itemListLd = getBlogItemListLd(posts, `Blog do Montte: ${categoryName}`);
 
 <BaseLayout
    title={`${categoryName} — Blog do Montte`}
-   description={`Posts de ${categoryName.toLowerCase()} sobre desenvolvimento, produto e operação no Montte.`}
+   description={`Posts de ${categoryName.toLowerCase()} sobre decisões, mudanças e aprendizados no Montte.`}
    ogImage="/open-graph/blog.png"
    jsonLd={[itemListLd]}
 >
@@ -58,7 +58,7 @@ const itemListLd = getBlogItemListLd(posts, `Blog do Montte: ${categoryName}`);
             {categoryName}
          </h1>
          <p class="max-w-2xl text-base leading-relaxed text-muted-foreground text-balance sm:text-lg">
-            Posts sobre {categoryName.toLowerCase()}, produto e operação no Montte.
+            Posts de {categoryName.toLowerCase()} sobre decisões, mudanças e aprendizados no Montte.
          </p>
       </div>
    </section>
