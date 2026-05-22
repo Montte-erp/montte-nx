@@ -56,6 +56,16 @@ faq:
 - Não usar em dash (U+2014) nem en dash (U+2013).
 - Ultima frase deve ser acao ou afirmacao, nunca despedida formal.
 
+## Links internos para decisoes ja explicadas
+
+Se a release menciona uma decisao de produto que ja tem post dedicado no blog, nao reexplique a tese inteira no post de release. Use 1 frase e um deep link para o H2 mais relevante.
+
+Caso canonico:
+
+- Remocao de contatos/CRM: linkar para `/blog/removemos-o-crm/#por-que-saiu`.
+
+Em release posts, nao repita a frase "Não é Bling, Omie ou Conta Azul." so para reforcar posicionamento quando o contexto ja esta coberto por deep link. A release continua factual; o link serve como contexto editorial, nao como licenca para inventar detalhes fora das release notes.
+
 ## Validacao
 
 - Arquivo existe e nao esta vazio.
