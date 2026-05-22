@@ -405,11 +405,13 @@ canonicalUrl: ""                              # só se canonical externo
 
 **Links:**
 - Internos pra docs/features do Montte.
+- Prefira deep link interno para decisao ja publicada em vez de repetir manifesto no post novo.
 - Externos pra fontes (sempre cite, AEO valoriza).
 - Texto descritivo, nunca "clique aqui" nem "aqui".
 
 **Imagens:**
 - Cover 1200x630 em `apps/landing/src/assets/blog/`.
+- Para otimização com Astro `<Picture>`, covers ficam em `apps/landing/src/assets/blog/` e o frontmatter usa caminho relativo `../../assets/blog/...`. Não mova covers do blog para `public`.
 - Screenshots inline com alt descritivo, não "screenshot", mas "Lista de lançamentos agrupada por categoria mostrando subtotais inline".
 - Astro `<Picture>` faz otimização, confie nele.
 
