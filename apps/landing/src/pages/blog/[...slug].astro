@@ -32,8 +32,7 @@ const author = getAuthor(post.data.author);
 
 const siteUrl = "https://montte.co";
 const canonical = new URL(`/blog/${post.id}`, siteUrl).toString();
-const generatedOgPath = `/open-graph/${post.id}.png`;
-const ogImagePath = post.data.ogImage?.src ?? generatedOgPath;
+const ogImagePath = post.data.ogImage?.src ?? post.data.coverImage.src;
 const ogImageUrl = new URL(ogImagePath, siteUrl).toString();
 const computedReading = readingTime(post.body ?? "", {
    wordsPerMinute: 220,

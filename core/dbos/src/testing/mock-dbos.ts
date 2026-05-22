@@ -62,6 +62,7 @@ export function dbosSdkMockFactory(mocks: DbosMocks) {
          },
          runStep: mocks.runStepSpy,
          sleepms: mocks.sleepSpy,
+         registerScheduled: <F extends (...args: any[]) => any>(fn: F) => fn,
          registerWorkflow: <F extends (...args: any[]) => any>(fn: F) => fn,
          startWorkflow: <Args extends unknown[], R>(
             _target: (...args: Args) => Promise<R>,

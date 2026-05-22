@@ -212,6 +212,7 @@
          "workers": {
             "@dbos-inc/dbos-sdk": "^4.18.10",
             "@dbos-inc/drizzle-datasource": "^4.18.10",
+            "cron-parser": "^5.5.0",
             "pg-boss": "12.18.2",
             "ioredis": "5.10.1"
          }

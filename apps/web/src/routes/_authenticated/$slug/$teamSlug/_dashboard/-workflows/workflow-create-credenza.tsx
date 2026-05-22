@@ -1,0 +1,307 @@
+import { Badge } from "@packages/ui/components/badge";
+import {
+   CredenzaBody,
+   CredenzaDescription,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@packages/ui/components/select";
+import { toast } from "@packages/ui/hooks/use-toast";
+import { cn } from "@packages/ui/lib/utils";
+import { useNavigate } from "@tanstack/react-router";
+import { Loader2, Plus, Workflow } from "lucide-react";
+import { useState } from "react";
+import { Result } from "better-result";
+import { closeCredenza } from "@/hooks/use-credenza";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
+import {
+   buildOptimisticWorkflowRow,
+   buildOptimisticWorkflowRowId,
+   createWorkflowFromTemplateAction,
+   type WorkflowCreateFromTemplateInput,
+   type WorkflowTemplateRow,
+   type WorkflowsCollection,
+} from "@/integrations/tanstack-db/workflows";
+
+type DomainFilterId = "all" | "reports";
+
+const DOMAIN_FILTER_OPTIONS: { id: DomainFilterId; label: string }[] = [
+   { id: "all", label: "Todos os tipos" },
+   { id: "reports", label: "Relatórios" },
+];
+
+function cadenceLabel(cadence: WorkflowTemplateRow["cadence"]) {
+   return cadence === "weekly" ? "Semanal" : "Mensal";
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+   return error instanceof Error ? error.message : fallback;
+}
+
+export function WorkflowCreateCredenza({
+   collection,
+   createdBy,
+   teamId,
+   templates,
+}: {
+   collection: WorkflowsCollection;
+   createdBy: string;
+   teamId: string;
+   templates: WorkflowTemplateRow[];
+}) {
+   const [searchInput, setSearchInput] = useState("");
+   const [domainFilter, setDomainFilter] = useState<DomainFilterId>("all");
+   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
+      null,
+   );
+
+   function handleDomainFilterChange(value: string) {
+      if (value !== "all" && value !== "reports") {
+         return;
+      }
+      setDomainFilter(value);
+   }
+
+   const { slug, teamSlug } = useDashboardSlugs();
+   const navigate = useNavigate();
+
+   const query = searchInput.trim().toLowerCase();
+   const filteredTemplates = templates.filter((template) => {
+      if (template.category === "blank") return false;
+      if (domainFilter !== "all" && template.category !== domainFilter) {
+         return false;
+      }
+      if (!query) return true;
+      return [template.name, template.description].some((value) =>
+         value.toLowerCase().includes(query),
+      );
+   });
+
+   const showEmptyCard = domainFilter === "all" && !query;
+   const isPending = pendingTemplateId !== null;
+   const blankTemplate =
+      templates.find((template) => template.id === "blank") ?? null;
+
+   async function createFromTemplate(template: WorkflowTemplateRow) {
+      if (isPending) return;
+      setPendingTemplateId(template.id);
+      const input: WorkflowCreateFromTemplateInput =
+         template.id === "blank"
+            ? { templateId: "blank" }
+            : {
+                 templateId: template.id,
+                 name: template.name,
+                 schedule: {
+                    cron: template.defaultCron,
+                    timezone: "America/Sao_Paulo",
+                 },
+              };
+      const create = createWorkflowFromTemplateAction(collection);
+      const workflow = create({
+         input,
+         row: buildOptimisticWorkflowRow({
+            createdBy,
+            id: buildOptimisticWorkflowRowId(),
+            input,
+            teamId,
+            template,
+         }),
+      });
+      const result = await Result.tryPromise({
+         try: () => workflow.createdId,
+         catch: (error) => error,
+      });
+      if (Result.isError(result)) {
+         setPendingTemplateId(null);
+         toast.error(getErrorMessage(result.error, "Erro ao criar automação."));
+         return;
+      }
+      toast.success("Automação criada.");
+      closeCredenza();
+      await navigate({
+         to: "/$slug/$teamSlug/workflows/$workflowId",
+         params: { slug, teamSlug, workflowId: result.value },
+      });
+   }
+
+   function handleSelect(template: WorkflowTemplateRow) {
+      void createFromTemplate(template);
+   }
+
+   function handleSelectBlank() {
+      if (!blankTemplate) {
+         toast.error("Modelo em branco não encontrado.");
+         return;
+      }
+      void createFromTemplate(blankTemplate);
+   }
+
+   return (
+      <>
+         <CredenzaHeader className="shrink-0 border-b px-4 py-4">
+            <div className="flex flex-col gap-1">
+               <CredenzaTitle>Criar automação</CredenzaTitle>
+               <CredenzaDescription>
+                  Escolha uma rotina pronta ou comece do zero.
+               </CredenzaDescription>
+            </div>
+         </CredenzaHeader>
+
+         <CredenzaBody className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden overflow-y-hidden px-4 pt-2 pb-4">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+               <SearchInput
+                  className="min-w-0 flex-1"
+                  placeholder="Buscar rotina"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+               />
+               <Select
+                  value={domainFilter}
+                  onValueChange={handleDomainFilterChange}
+               >
+                  <SelectTrigger className="w-[200px]">
+                     <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                     {DOMAIN_FILTER_OPTIONS.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                           {option.label}
+                        </SelectItem>
+                     ))}
+                  </SelectContent>
+               </Select>
+            </div>
+
+            <ScrollArea className="min-h-0 flex-1">
+               <div className="grid grid-cols-1 gap-4 pb-4 pr-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {showEmptyCard ? (
+                     <EmptyWorkflowCard
+                        disabled={isPending}
+                        isLoading={pendingTemplateId === "blank"}
+                        onSelect={handleSelectBlank}
+                     />
+                  ) : null}
+                  {filteredTemplates.map((template) => (
+                     <TemplateCard
+                        key={template.id}
+                        template={template}
+                        disabled={isPending}
+                        isLoading={pendingTemplateId === template.id}
+                        onSelect={handleSelect}
+                     />
+                  ))}
+               </div>
+               {filteredTemplates.length === 0 && !showEmptyCard ? (
+                  <div className="text-muted-foreground py-4 text-center text-sm">
+                     Nenhuma rotina encontrada.
+                  </div>
+               ) : null}
+            </ScrollArea>
+         </CredenzaBody>
+      </>
+   );
+}
+
+function TemplateCard({
+   template,
+   disabled,
+   isLoading,
+   onSelect,
+}: {
+   template: WorkflowTemplateRow;
+   disabled: boolean;
+   isLoading: boolean;
+   onSelect: (template: WorkflowTemplateRow) => void;
+}) {
+   return (
+      <button
+         className={cn(
+            "group bg-card relative flex flex-col overflow-hidden rounded-lg border text-left transition-all",
+            "hover:border-foreground/30 hover:shadow-md",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+         )}
+         disabled={disabled}
+         onClick={() => onSelect(template)}
+         type="button"
+      >
+         <div className="relative aspect-[4/3] w-full overflow-hidden">
+            <div className="from-primary/25 via-muted to-muted/40 flex size-full items-center justify-center bg-gradient-to-br">
+               <div className="bg-background/70 text-foreground flex size-14 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-105">
+                  <Workflow className="size-7" />
+               </div>
+            </div>
+            {isLoading ? (
+               <div className="bg-background/70 absolute inset-0 flex items-center justify-center backdrop-blur-sm">
+                  <Loader2 className="size-6 animate-spin" />
+               </div>
+            ) : null}
+         </div>
+         <div className="flex flex-col gap-2 p-4">
+            <span className="text-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+               {template.name}
+            </span>
+            <div className="flex flex-wrap gap-1">
+               <Badge variant="secondary">Modelo Montte</Badge>
+               <Badge variant="secondary">
+                  {cadenceLabel(template.cadence)}
+               </Badge>
+            </div>
+            <p className="text-muted-foreground line-clamp-2 text-sm">
+               {template.description}
+            </p>
+         </div>
+      </button>
+   );
+}
+
+function EmptyWorkflowCard({
+   disabled,
+   isLoading,
+   onSelect,
+}: {
+   disabled: boolean;
+   isLoading: boolean;
+   onSelect: () => void;
+}) {
+   return (
+      <button
+         className={cn(
+            "group bg-card relative flex flex-col overflow-hidden rounded-lg border text-left transition-all",
+            "hover:border-foreground/30 hover:shadow-md",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+         )}
+         disabled={disabled}
+         onClick={onSelect}
+         type="button"
+      >
+         <div className="from-primary/30 via-primary/15 to-primary/5 relative flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br">
+            <Plus className="text-foreground/60 size-12" />
+            {isLoading ? (
+               <div className="bg-background/70 absolute inset-0 flex items-center justify-center backdrop-blur-sm">
+                  <Loader2 className="size-6 animate-spin" />
+               </div>
+            ) : null}
+         </div>
+         <div className="flex flex-col gap-2 p-4">
+            <span className="text-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+               Automação em branco
+            </span>
+            <div className="flex flex-wrap gap-1">
+               <Badge variant="outline">rascunho</Badge>
+            </div>
+            <p className="text-muted-foreground line-clamp-2 text-sm">
+               Comece com uma automação pausada e configure agenda e relatório
+               depois.
+            </p>
+         </div>
+      </button>
+   );
+}

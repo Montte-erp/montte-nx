@@ -20,6 +20,32 @@ Chamadas diretas `orpc.*.call` ficam dentro da collection, da action otimista ou
 6. Leia com `useLiveQuery`.
 7. Filtros, sort, paginacao e tabs continuam na URL via `validateSearch`.
 
+## TanStack Start e SSR
+
+TanStack DB e client-side only. Rotas que usam collections precisam desabilitar SSR e iniciar sync no loader.
+
+Regras:
+
+- Defina `ssr: false` na rota que usa TanStack DB.
+- Chame `await collection.preload()` no `loader` quando a collection for singleton compartilhada.
+- Para collection criada com escopo de rota (`teamId`, `organizationId`, filtros), garanta que ela so exista no client e que o primeiro render tenha fallback adequado.
+- Nao rode `collection.preload()` em loader server-side com SSR ligado.
+- Quando precisar pre-carregar varias collections, use `Promise.all`.
+- Antes de alterar SSR/preload de collections, releia esta referencia e confirme se a rota precisa de `ssr: false`, `loader` e fallback de loading.
+
+Exemplo:
+
+```ts
+export const Route = createFileRoute("/feature")({
+   ssr: false,
+   loader: async () => {
+      await featureCollection.preload();
+      return null;
+   },
+   component: FeaturePage,
+});
+```
+
 ## Schemas
 
 Use `schema` no `queryCollectionOptions` para validar rows e mutations locais.
