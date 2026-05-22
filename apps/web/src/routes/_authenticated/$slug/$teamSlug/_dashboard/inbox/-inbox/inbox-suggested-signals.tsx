@@ -1,16 +1,13 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
-import { toast } from "@packages/ui/hooks/use-toast";
 import { cn } from "@packages/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { useClipboard } from "foxact/use-clipboard";
 import {
    AlertCircle,
    AlertTriangle,
    ArrowRight,
    Bot,
    Clock,
-   Clipboard,
    FileCheck2,
    Gauge,
    Info,
@@ -35,7 +32,7 @@ import {
 import type { InboxSeverityFilter } from "./inbox-filters";
 
 type SignalSeverity = "critical" | "warning" | "info";
-type SignalRoute = "chat" | "transactions" | "produtos" | "nfe" | "contratos";
+type SignalRoute = "transactions" | "produtos" | "nfe" | "contratos";
 
 interface DemoSignal {
    id: string;
@@ -48,7 +45,6 @@ interface DemoSignal {
    icon: LucideIcon;
    route: SignalRoute;
    actionLabel: string;
-   prompt: string;
    evidence: string[];
 }
 
@@ -97,7 +93,6 @@ export function InboxSuggestedSignals({
    const [contracts] = useDemoContracts();
    const [customers] = useDemoCustomers();
    const [suppliers] = useDemoSuppliers();
-   const { copy } = useClipboard({ timeout: 1800 });
 
    const data = useMemo(
       () => ({
@@ -113,11 +108,6 @@ export function InboxSuggestedSignals({
       shouldShowSignal({ filter: severity, signal }),
    );
 
-   function handleCopyPrompt(prompt: string) {
-      copy(prompt);
-      toast.success("Prompt copiado para a Montte AI.");
-   }
-
    if (visibleSignals.length === 0) return fallback;
 
    return (
@@ -125,7 +115,6 @@ export function InboxSuggestedSignals({
          {visibleSignals.map((signal) => (
             <SignalInboxItem
                key={signal.id}
-               onCopyPrompt={handleCopyPrompt}
                signal={signal}
                slug={slug}
                teamSlug={teamSlug}
@@ -148,12 +137,10 @@ function shouldShowSignal({
 }
 
 function SignalInboxItem({
-   onCopyPrompt,
    signal,
    slug,
    teamSlug,
 }: {
-   onCopyPrompt: (prompt: string) => void;
    signal: DemoSignal;
    slug: string;
    teamSlug: string;
@@ -208,16 +195,6 @@ function SignalInboxItem({
             </div>
 
             <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-               <Button
-                  className="gap-2"
-                  onClick={() => onCopyPrompt(signal.prompt)}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-               >
-                  <Clipboard className="size-4" />
-                  Copiar prompt
-               </Button>
                <SignalLink
                   label={signal.actionLabel}
                   route={signal.route}
@@ -247,15 +224,6 @@ function SignalLink({
          <ArrowRight className="size-4" />
       </>
    );
-
-   if (route === "chat")
-      return (
-         <Button asChild className="gap-2" size="sm">
-            <Link params={{ slug, teamSlug }} to="/$slug/$teamSlug/chat">
-               {content}
-            </Link>
-         </Button>
-      );
 
    if (route === "transactions")
       return (
@@ -353,7 +321,6 @@ function buildSignals(data: {
          icon: WalletCards,
          route: "contratos",
          actionLabel: "Ver contratos",
-         prompt: `Explique o risco de recebimento do contrato ${receivable?.number ?? "recorrente"} e sugira uma cobrança objetiva para ${receivableParty}.`,
          evidence: [
             `${receivable?.number ?? "Contrato ativo"}: ${receivable?.title ?? "receita recorrente"}`,
             `${receivableParty}: parcela ${overdueCharge?.competence ?? "06/2026"} em atraso`,
@@ -372,7 +339,6 @@ function buildSignals(data: {
          icon: ReceiptText,
          route: "transactions",
          actionLabel: "Ver financeiro",
-         prompt: `Revise a despesa recorrente de ${payableParty} e diga se ela deve entrar no fechamento deste mês.`,
          evidence: [
             `${payable?.number ?? "Contrato ativo"}: ${payable?.title ?? "serviço recorrente"}`,
             `${payableParty}: vencimento previsto para ${openPayable?.dueDate ?? "2026-06-08"}`,
@@ -391,8 +357,6 @@ function buildSignals(data: {
          icon: Package,
          route: "produtos",
          actionLabel: "Ver estoque",
-         prompt:
-            "Liste os produtos abaixo do mínimo, estime prioridade de reposição e gere uma recomendação curta de compra.",
          evidence: PRODUCT_EVIDENCE,
       },
       {
@@ -407,8 +371,6 @@ function buildSignals(data: {
          icon: FileCheck2,
          route: "nfe",
          actionLabel: "Ver NF-e",
-         prompt:
-            "Priorize as NF-e pendentes, explique o risco de cada status e indique a próxima ação operacional.",
          evidence: NFE_EVIDENCE,
       },
       {
@@ -421,34 +383,12 @@ function buildSignals(data: {
          age: "3h",
          impact: "+42%",
          icon: Gauge,
-         route: "chat",
-         actionLabel: "Abrir Montte AI",
-         prompt:
-            "Faça uma análise de variação das despesas do mês, cite os lançamentos que explicam a alta e escreva um resumo para gestão.",
+         route: "transactions",
+         actionLabel: "Ver financeiro",
          evidence: [
             "Infraestrutura concentrou a maior alta do período",
             "Cloudbox aparece como fornecedor recorrente relevante",
             "Revisão indicada antes do fechamento mensal",
-         ],
-      },
-      {
-         id: "close-check",
-         title: "Checklist de fechamento",
-         description:
-            "Fila curta combina cobrança, despesa recorrente, NF-e pendente e estoque baixo.",
-         severity: "info",
-         source: "Montte AI",
-         age: "ontem",
-         impact: "4 etapas",
-         icon: Bot,
-         route: "chat",
-         actionLabel: "Abrir Montte AI",
-         prompt:
-            "Monte um checklist de fechamento para esta demo com cobrança, despesa recorrente, NF-e pendente e estoque baixo.",
-         evidence: [
-            "Contratos recorrentes com cobrança e despesa",
-            "NF-e rejeitada, processando e em contingência",
-            "Produtos abaixo do mínimo operacional",
          ],
       },
    ];

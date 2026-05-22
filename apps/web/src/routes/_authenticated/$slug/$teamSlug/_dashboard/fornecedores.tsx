@@ -35,10 +35,6 @@ import {
    useDemoContracts,
    useDemoSuppliers,
 } from "./-local-first-demo/demo-data";
-import {
-   InlineContactFields,
-   InlineDocumentField,
-} from "./-local-first-demo/party-inline-fields";
 
 const searchSchema = z.object({
    sorting: z
@@ -83,11 +79,16 @@ function sortSuppliers(
       if (first.id === "tradeName")
          result = left.tradeName.localeCompare(right.tradeName);
       if (first.id === "name") result = left.name.localeCompare(right.name);
+      if (first.id === "documentType")
+         result = left.documentType.localeCompare(right.documentType);
       if (first.id === "document")
          result = left.document.localeCompare(right.document);
       if (first.id === "email") result = left.email.localeCompare(right.email);
+      if (first.id === "phone") result = left.phone.localeCompare(right.phone);
       if (first.id === "city")
          result = (left.city ?? "").localeCompare(right.city ?? "");
+      if (first.id === "state")
+         result = (left.state ?? "").localeCompare(right.state ?? "");
       if (first.id === "category")
          result = (left.category ?? "").localeCompare(right.category ?? "");
       if (first.id === "owner")
@@ -362,60 +363,107 @@ function FornecedoresPage() {
             ),
          },
          {
+            accessorKey: "documentType",
+            header: "Tipo doc.",
+            size: 110,
+            meta: { label: "Tipo doc." },
+            cell: ({ row }) => (
+               <InlineEditSelect
+                  ariaLabel="Tipo de documento do fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, {
+                        documentType: value === "cpf" ? "cpf" : "cnpj",
+                     })
+                  }
+                  options={[
+                     { value: "cnpj", label: "CNPJ" },
+                     { value: "cpf", label: "CPF" },
+                  ]}
+                  value={row.original.documentType}
+               />
+            ),
+         },
+         {
             accessorKey: "document",
             header: "Documento",
-            size: 260,
+            size: 180,
             meta: { label: "Documento" },
             cell: ({ row }) => (
-               <InlineDocumentField
-                  document={row.original.document}
-                  documentType={row.original.documentType}
-                  onSave={(patch) => updateSupplier(row.original.id, patch)}
+               <InlineEditText
+                  ariaLabel="Documento do fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, { document: value })
+                  }
+                  placeholder="Documento"
+                  value={row.original.document}
                />
             ),
          },
          {
             accessorKey: "email",
-            header: "Contato",
-            size: 260,
-            meta: { label: "Contato" },
+            header: "E-mail",
+            size: 240,
+            meta: { label: "E-mail" },
             cell: ({ row }) => (
-               <InlineContactFields
-                  email={row.original.email}
-                  emailLabel="E-mail do fornecedor"
-                  onSave={(patch) => updateSupplier(row.original.id, patch)}
-                  phone={row.original.phone}
-                  phoneLabel="Telefone do fornecedor"
+               <InlineEditText
+                  ariaLabel="E-mail do fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, { email: value })
+                  }
+                  placeholder="E-mail"
+                  value={row.original.email}
+               />
+            ),
+         },
+         {
+            accessorKey: "phone",
+            header: "Telefone",
+            size: 150,
+            meta: { label: "Telefone" },
+            cell: ({ row }) => (
+               <InlineEditText
+                  ariaLabel="Telefone do fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, { phone: value })
+                  }
+                  placeholder="Telefone"
+                  value={row.original.phone}
                />
             ),
          },
          {
             accessorKey: "city",
             header: "Cidade",
-            size: 220,
+            size: 170,
             meta: { label: "Cidade" },
             cell: ({ row }) => (
-               <div className="flex items-center gap-2">
-                  <InlineEditText
-                     ariaLabel="Cidade do fornecedor"
-                     onSave={(value) =>
-                        updateSupplier(row.original.id, { city: value })
-                     }
-                     placeholder="Cidade"
-                     value={row.original.city ?? ""}
-                  />
-                  <InlineEditText
-                     ariaLabel="UF do fornecedor"
-                     className="max-w-12 text-center uppercase"
-                     onSave={(value) =>
-                        updateSupplier(row.original.id, {
-                           state: value.trim().toLocaleUpperCase(),
-                        })
-                     }
-                     placeholder="UF"
-                     value={row.original.state ?? ""}
-                  />
-               </div>
+               <InlineEditText
+                  ariaLabel="Cidade do fornecedor"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, { city: value })
+                  }
+                  placeholder="Cidade"
+                  value={row.original.city ?? ""}
+               />
+            ),
+         },
+         {
+            accessorKey: "state",
+            header: "UF",
+            size: 80,
+            meta: { label: "UF" },
+            cell: ({ row }) => (
+               <InlineEditText
+                  ariaLabel="UF do fornecedor"
+                  className="text-center uppercase"
+                  onSave={(value) =>
+                     updateSupplier(row.original.id, {
+                        state: value.trim().toLocaleUpperCase(),
+                     })
+                  }
+                  placeholder="UF"
+                  value={row.original.state ?? ""}
+               />
             ),
          },
          {
