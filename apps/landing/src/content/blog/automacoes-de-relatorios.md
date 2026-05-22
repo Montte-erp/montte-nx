@@ -5,7 +5,7 @@ publishedAt: 2026-05-22
 author: "Manoel Neto"
 tags: ["feature", "automacoes", "relatorios", "financeiro"]
 category: "Feature"
-coverImage: "../../assets/blog/montte-2026-05-22.jpg"
+coverImage: "../../assets/blog/automacoes-de-relatorios.png"
 featured: false
 readingMinutes: 4
 keyTakeaways:
