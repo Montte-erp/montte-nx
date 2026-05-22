@@ -29,22 +29,22 @@ import {
 const workflowsRouterErrors = defineErrorCatalog("workflows.router", {
    INTERNAL: {
       status: 500,
-      message: "Falha interna em workflows.",
+      message: "Falha interna em automações.",
       tags: ["workflows", "router"],
    },
    INVALID_GRAPH: {
       status: 400,
-      message: "Graph de workflow inválido.",
+      message: "Fluxo da automação inválido.",
       tags: ["workflows", "router"],
    },
    NOT_FOUND: {
       status: 404,
-      message: "Workflow não encontrado.",
+      message: "Automação não encontrada.",
       tags: ["workflows", "router"],
    },
    TEMPLATE_NOT_FOUND: {
       status: 404,
-      message: "Template de workflow não encontrado.",
+      message: "Modelo de automação não encontrado.",
       tags: ["workflows", "router"],
    },
 });
@@ -88,7 +88,7 @@ function isSupportedWorkflowCron(cron: string) {
 const workflowCronInputSchema = z
    .string()
    .trim()
-   .refine(isSupportedWorkflowCron, "Cron de workflow inválido.");
+   .refine(isSupportedWorkflowCron, "Agenda técnica da automação inválida.");
 const workflowTimezoneInputSchema = z.literal("America/Sao_Paulo");
 const idSchema = z.object({ id: z.string().uuid() });
 const idsSchema = z.object({
@@ -127,14 +127,14 @@ async function loadWorkflowForTeam(
       catch: () =>
          new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao carregar workflow.",
+            message: "Falha ao carregar automação.",
          }),
    });
    if (Result.isError(result)) throw result.error;
    if (!result.value)
       throw new WorkflowsRouterError({
          error: workflowsRouterErrors.NOT_FOUND(),
-         message: "Workflow não encontrado.",
+         message: "Automação não encontrada.",
       });
    return result.value;
 }
@@ -153,14 +153,14 @@ async function loadWorkflowsForTeam(
       catch: () =>
          new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao carregar workflows.",
+            message: "Falha ao carregar automações.",
          }),
    });
    if (Result.isError(result)) throw result.error;
    if (result.value.length !== uniqueIds.length)
       throw new WorkflowsRouterError({
          error: workflowsRouterErrors.NOT_FOUND(),
-         message: "Um ou mais workflows não foram encontrados.",
+         message: "Uma ou mais automações não foram encontradas.",
       });
    return result.value;
 }
@@ -184,7 +184,7 @@ async function loadWorkflowRunForTeam(
    if (!result.value)
       throw new WorkflowsRouterError({
          error: workflowsRouterErrors.NOT_FOUND(),
-         message: "Execução do workflow não encontrada.",
+         message: "Execução da automação não encontrada.",
       });
    const workflow = await loadWorkflowForTeam(context, result.value.workflowId);
    return { workflow, run: result.value };
@@ -200,12 +200,14 @@ function buildNextRunAtOrThrow(
       catch: () =>
          new WorkflowsRouterError({
             error: workflowsRouterErrors.INVALID_GRAPH(),
-            message: "Agenda do workflow inválida.",
+            message: "Agenda da automação inválida.",
          }),
    });
    if (Result.isError(result)) throw result.error;
    return result.value;
 }
+
+const BLANK_WORKFLOW_NAME_TEMPLATES = ["Automação em branco", "Workflow vazio"];
 
 function isBlankWorkflowStub(workflow: Pick<Workflow, "graph" | "templateId">) {
    const blankTemplate = getWorkflowTemplate("blank");
@@ -229,7 +231,7 @@ function isBlankWorkflowStub(workflow: Pick<Workflow, "graph" | "templateId">) {
       scheduleNode.data.humanLabel === blankScheduleNode.data.humanLabel &&
       reportNode.data.reportType === blankReportNode.data.reportType &&
       reportNode.data.period.kind === blankReportNode.data.period.kind &&
-      reportNode.data.nameTemplate === blankReportNode.data.nameTemplate
+      BLANK_WORKFLOW_NAME_TEMPLATES.includes(reportNode.data.nameTemplate)
    );
 }
 
@@ -240,7 +242,7 @@ function assertWorkflowCanActivate(
 
    throw new WorkflowsRouterError({
       error: workflowsRouterErrors.INVALID_GRAPH(),
-      message: "Configure este workflow antes de ativar.",
+      message: "Configure esta automação antes de ativar.",
    });
 }
 
@@ -251,7 +253,7 @@ function assertWorkflowCanRun(
 
    throw new WorkflowsRouterError({
       error: workflowsRouterErrors.INVALID_GRAPH(),
-      message: "Configure este workflow antes de executar.",
+      message: "Configure esta automação antes de executar.",
    });
 }
 
@@ -269,7 +271,7 @@ export const list = protectedProcedure.handler(async ({ context }) => {
       catch: () =>
          new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao listar workflows.",
+            message: "Falha ao listar automações.",
          }),
    });
    if (Result.isError(result)) throw result.error;
@@ -313,7 +315,7 @@ export const list = protectedProcedure.handler(async ({ context }) => {
       catch: () =>
          new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao carregar a última execução dos workflows.",
+            message: "Falha ao carregar a última execução das automações.",
          }),
    });
    if (Result.isError(latestRunTimesResult)) throw latestRunTimesResult.error;
@@ -340,7 +342,7 @@ export const createFromTemplate = protectedProcedure
       if (!template)
          throw new WorkflowsRouterError({
             error: workflowsRouterErrors.TEMPLATE_NOT_FOUND(),
-            message: "Template de workflow não encontrado.",
+            message: "Modelo de automação não encontrado.",
          });
       const cron = input.schedule?.cron ?? template.defaultCron;
       const timezoneValue = normalizeWorkflowTimezone(
@@ -363,7 +365,7 @@ export const createFromTemplate = protectedProcedure
                      teamId: context.teamId,
                      templateId: template.id,
                      name: isBlankWorkflow
-                        ? "Workflow vazio"
+                        ? "Automação em branco"
                         : (input.name ?? template.name),
                      status: isBlankWorkflow ? "paused" : "active",
                      graph,
@@ -376,14 +378,14 @@ export const createFromTemplate = protectedProcedure
          catch: () =>
             new WorkflowsRouterError({
                error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao criar workflow.",
+               message: "Falha ao criar automação.",
             }),
       });
       if (Result.isError(result)) throw result.error;
       if (!result.value)
          throw new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao criar workflow.",
+            message: "Falha ao criar automação.",
          });
       return result.value;
    });
@@ -422,14 +424,14 @@ export const update = protectedProcedure
          catch: () =>
             new WorkflowsRouterError({
                error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao atualizar workflow.",
+               message: "Falha ao atualizar automação.",
             }),
       });
       if (Result.isError(result)) throw result.error;
       if (!result.value)
          throw new WorkflowsRouterError({
             error: workflowsRouterErrors.NOT_FOUND(),
-            message: "Workflow não encontrado.",
+            message: "Automação não encontrada.",
          });
       return result.value;
    });
@@ -463,14 +465,14 @@ async function activateWorkflowForTeam(
       catch: () =>
          new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao ativar workflow.",
+            message: "Falha ao ativar automação.",
          }),
    });
    if (Result.isError(result)) throw result.error;
    if (!result.value)
       throw new WorkflowsRouterError({
          error: workflowsRouterErrors.NOT_FOUND(),
-         message: "Workflow não encontrado.",
+         message: "Automação não encontrada.",
       });
    return result.value;
 }
@@ -497,14 +499,14 @@ async function pauseWorkflowForTeam(
       catch: () =>
          new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao pausar workflow.",
+            message: "Falha ao pausar automação.",
          }),
    });
    if (Result.isError(result)) throw result.error;
    if (!result.value)
       throw new WorkflowsRouterError({
          error: workflowsRouterErrors.NOT_FOUND(),
-         message: "Workflow não encontrado.",
+         message: "Automação não encontrada.",
       });
    return result.value;
 }
@@ -526,14 +528,14 @@ async function removeWorkflowForTeam(
       catch: () =>
          new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao excluir workflow.",
+            message: "Falha ao excluir automação.",
          }),
    });
    if (Result.isError(result)) throw result.error;
    if (!result.value)
       throw new WorkflowsRouterError({
          error: workflowsRouterErrors.NOT_FOUND(),
-         message: "Workflow não encontrado.",
+         message: "Automação não encontrada.",
       });
    return { success: true };
 }
@@ -602,7 +604,7 @@ export const bulkActivate = protectedProcedure
          catch: () =>
             new WorkflowsRouterError({
                error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao ativar workflows.",
+               message: "Falha ao ativar automações.",
             }),
       });
       if (Result.isError(result)) throw result.error;
@@ -634,7 +636,7 @@ export const bulkPause = protectedProcedure
          catch: () =>
             new WorkflowsRouterError({
                error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao pausar workflows.",
+               message: "Falha ao pausar automações.",
             }),
       });
       if (Result.isError(result)) throw result.error;
@@ -661,7 +663,7 @@ export const bulkRemove = protectedProcedure
          catch: () =>
             new WorkflowsRouterError({
                error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao excluir workflows.",
+               message: "Falha ao excluir automações.",
             }),
       });
       if (Result.isError(result)) throw result.error;
@@ -696,7 +698,7 @@ export const runNow = protectedProcedure
          catch: () =>
             new WorkflowsRouterError({
                error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao iniciar workflow agora.",
+               message: "Falha ao executar automação agora.",
             }),
       });
       if (Result.isError(runResult)) throw runResult.error;
@@ -704,7 +706,7 @@ export const runNow = protectedProcedure
       if (!run)
          throw new WorkflowsRouterError({
             error: workflowsRouterErrors.INTERNAL(),
-            message: "Falha ao iniciar workflow agora.",
+            message: "Falha ao executar automação agora.",
          });
       const enqueueResult = await Result.tryPromise({
          try: () =>
@@ -724,7 +726,7 @@ export const runNow = protectedProcedure
          catch: () =>
             new WorkflowsRouterError({
                error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao enfileirar execução do workflow.",
+               message: "Falha ao enfileirar execução da automação.",
             }),
       });
       if (Result.isError(enqueueResult)) {
@@ -745,7 +747,7 @@ export const runNow = protectedProcedure
             catch: () =>
                new WorkflowsRouterError({
                   error: workflowsRouterErrors.INTERNAL(),
-                  message: "Falha ao registrar falha da execução do workflow.",
+                  message: "Falha ao registrar falha da execução da automação.",
                }),
          });
          if (Result.isError(markFailedResult)) throw markFailedResult.error;

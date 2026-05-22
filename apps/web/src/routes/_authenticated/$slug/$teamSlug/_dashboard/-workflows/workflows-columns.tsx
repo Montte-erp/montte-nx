@@ -46,7 +46,7 @@ function WorkflowStatusBadge({ status }: { status: WorkflowStatus }) {
    return (
       <Badge variant="outline">
          <CircleDashed className="size-3" />
-         Pausado
+         Pausada
       </Badge>
    );
 }
@@ -77,9 +77,9 @@ export function buildWorkflowsColumns({
             if (onRename) {
                return (
                   <InlineEditText
-                     ariaLabel="Nome do workflow"
+                     ariaLabel="Nome da automação"
                      onSave={(value) => onRename(workflow, value)}
-                     placeholder="Nome do workflow"
+                     placeholder="Nome da automação"
                      value={workflow.name}
                   />
                );
@@ -154,7 +154,7 @@ export function buildWorkflowsColumns({
             ) : (
                <Announcement className="cursor-default shadow-none hover:shadow-none">
                   <AnnouncementTitle className="text-muted-foreground">
-                     Pausado
+                     Pausada
                   </AnnouncementTitle>
                </Announcement>
             ),
@@ -176,11 +176,11 @@ export function buildWorkflowsColumns({
                         onOpen?.(row.original);
                      }}
                      size="icon-sm"
-                     tooltip="Abrir"
+                     tooltip="Abrir automação"
                      variant="outline"
                   >
                      <Eye className="size-4" />
-                     <span className="sr-only">Abrir</span>
+                     <span className="sr-only">Abrir automação</span>
                   </Button>
                   {row.original.status === "active" ? (
                      <Button
@@ -189,11 +189,11 @@ export function buildWorkflowsColumns({
                            onPause?.(row.original);
                         }}
                         size="icon-sm"
-                        tooltip="Pausar"
+                        tooltip="Pausar automação"
                         variant="outline"
                      >
                         <Pause className="size-4" />
-                        <span className="sr-only">Pausar</span>
+                        <span className="sr-only">Pausar automação</span>
                      </Button>
                   ) : (
                      <Button
@@ -206,12 +206,12 @@ export function buildWorkflowsColumns({
                         tooltip={
                            activationBlocked
                               ? "Configure antes de ativar"
-                              : "Ativar"
+                              : "Ativar automação"
                         }
                         variant="outline"
                      >
                         <Play className="size-4" />
-                        <span className="sr-only">Ativar</span>
+                        <span className="sr-only">Ativar automação</span>
                      </Button>
                   )}
                   <Button
@@ -221,11 +221,11 @@ export function buildWorkflowsColumns({
                         onRemove?.(row.original);
                      }}
                      size="icon-sm"
-                     tooltip="Excluir"
+                     tooltip="Excluir automação"
                      variant="outline"
                   >
                      <Trash2 className="size-4" />
-                     <span className="sr-only">Excluir</span>
+                     <span className="sr-only">Excluir automação</span>
                   </Button>
                </div>
             );

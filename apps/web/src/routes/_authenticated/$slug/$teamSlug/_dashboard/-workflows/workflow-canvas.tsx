@@ -152,7 +152,7 @@ function WorkflowScheduleTriggerNodeView({
             </div>
          </div>
          <div className="mt-3 flex items-center justify-between gap-3 text-xs">
-            <span className="text-muted-foreground">Cron</span>
+            <span className="text-muted-foreground">Agenda técnica</span>
             <code className="truncate font-medium">{data.cron}</code>
          </div>
          <FlowHandle position={Position.Right} type="source" />

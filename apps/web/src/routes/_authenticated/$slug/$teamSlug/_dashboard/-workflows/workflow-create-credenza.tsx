@@ -34,7 +34,7 @@ import {
 type DomainFilterId = "all" | "reports";
 
 const DOMAIN_FILTER_OPTIONS: { id: DomainFilterId; label: string }[] = [
-   { id: "all", label: "Todos os domínios" },
+   { id: "all", label: "Todos os tipos" },
    { id: "reports", label: "Relatórios" },
 ];
 
@@ -121,10 +121,10 @@ export function WorkflowCreateCredenza({
       });
       if (Result.isError(result)) {
          setPendingTemplateId(null);
-         toast.error(getErrorMessage(result.error, "Erro ao criar workflow."));
+         toast.error(getErrorMessage(result.error, "Erro ao criar automação."));
          return;
       }
-      toast.success("Workflow criado.");
+      toast.success("Automação criada.");
       closeCredenza();
       await navigate({
          to: "/$slug/$teamSlug/workflows/$workflowId",
@@ -138,7 +138,7 @@ export function WorkflowCreateCredenza({
 
    function handleSelectBlank() {
       if (!blankTemplate) {
-         toast.error("Template vazio não encontrado.");
+         toast.error("Modelo em branco não encontrado.");
          return;
       }
       void createFromTemplate(blankTemplate);
@@ -148,9 +148,9 @@ export function WorkflowCreateCredenza({
       <>
          <CredenzaHeader className="shrink-0 border-b px-4 py-4">
             <div className="flex flex-col gap-1">
-               <CredenzaTitle>Criar workflow</CredenzaTitle>
+               <CredenzaTitle>Criar automação</CredenzaTitle>
                <CredenzaDescription>
-                  Escolha um template ou comece do zero.
+                  Escolha uma rotina pronta ou comece do zero.
                </CredenzaDescription>
             </div>
          </CredenzaHeader>
@@ -159,7 +159,7 @@ export function WorkflowCreateCredenza({
             <div className="flex shrink-0 flex-wrap items-center gap-2">
                <SearchInput
                   className="min-w-0 flex-1"
-                  placeholder="Filtrar templates"
+                  placeholder="Buscar rotina"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                />
@@ -201,7 +201,7 @@ export function WorkflowCreateCredenza({
                </div>
                {filteredTemplates.length === 0 && !showEmptyCard ? (
                   <div className="text-muted-foreground py-4 text-center text-sm">
-                     Nenhum template encontrado.
+                     Nenhuma rotina encontrada.
                   </div>
                ) : null}
             </ScrollArea>
@@ -249,7 +249,7 @@ function TemplateCard({
                {template.name}
             </span>
             <div className="flex flex-wrap gap-1">
-               <Badge variant="secondary">oficial</Badge>
+               <Badge variant="secondary">Modelo Montte</Badge>
                <Badge variant="secondary">
                   {cadenceLabel(template.cadence)}
                </Badge>
@@ -292,14 +292,14 @@ function EmptyWorkflowCard({
          </div>
          <div className="flex flex-col gap-2 p-4">
             <span className="text-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
-               Workflow vazio
+               Automação em branco
             </span>
             <div className="flex flex-wrap gap-1">
                <Badge variant="outline">rascunho</Badge>
             </div>
             <p className="text-muted-foreground line-clamp-2 text-sm">
-               Comece do zero, sem template, montando o fluxo na tela do
-               workflow.
+               Comece com uma automação pausada e configure agenda e relatório
+               depois.
             </p>
          </div>
       </button>

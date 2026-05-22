@@ -101,7 +101,7 @@ describe("workflows router", () => {
       );
 
       expect(result.templateId).toBe("blank");
-      expect(result.name).toBe("Workflow vazio");
+      expect(result.name).toBe("Automação em branco");
       expect(result.status).toBe("paused");
       expect(result.nextRunAt).toBeNull();
       expect(result.graph.nodes[0].data.cron).toBe("0 9 1 * *");
@@ -125,17 +125,17 @@ describe("workflows router", () => {
 
       await expect(
          call(workflowsRouter.activate, { id: created.id }, { context: ctx }),
-      ).rejects.toThrow("Configure este workflow antes de ativar.");
+      ).rejects.toThrow("Configure esta automação antes de ativar.");
       await expect(
          call(
             workflowsRouter.bulkActivate,
             { ids: [created.id] },
             { context: ctx },
          ),
-      ).rejects.toThrow("Configure este workflow antes de ativar.");
+      ).rejects.toThrow("Configure esta automação antes de ativar.");
       await expect(
          call(workflowsRouter.runNow, { id: created.id }, { context: ctx }),
-      ).rejects.toThrow("Configure este workflow antes de executar.");
+      ).rejects.toThrow("Configure esta automação antes de executar.");
    });
 
    it("update altera nome e schedule do graph", async () => {
@@ -472,7 +472,7 @@ describe("workflows router", () => {
 
       await expect(
          call(workflowsRouter.runNow, { id: created.id }, { context: ctx }),
-      ).rejects.toThrow("Falha ao enfileirar execução do workflow.");
+      ).rejects.toThrow("Falha ao enfileirar execução da automação.");
 
       const [persisted] = await testDb.db
          .select()
@@ -480,7 +480,7 @@ describe("workflows router", () => {
          .where(eq(workflowRuns.workflowId, created.id));
       expect(persisted?.status).toBe("failed");
       expect(persisted?.error).toBe(
-         "Falha ao enfileirar execução do workflow.",
+         "Falha ao enfileirar execução da automação.",
       );
       expect(persisted?.endedAt).not.toBeNull();
    });

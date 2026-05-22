@@ -137,7 +137,7 @@ export const Route = createFileRoute(
    pendingMs: 300,
    pendingComponent: WorkflowDetailSkeleton,
    head: () => ({
-      meta: [{ title: "Workflow - Montte" }],
+      meta: [{ title: "Automação - Montte" }],
    }),
    component: WorkflowDetailPage,
 });
@@ -155,10 +155,10 @@ function WorkflowNotFound({ onBack }: { onBack: () => void }) {
             </div>
             <div className="flex flex-col gap-2">
                <h2 className="text-lg font-semibold">
-                  Workflow não encontrado
+                  Automação não encontrada
                </h2>
                <p className="text-muted-foreground text-sm">
-                  Este workflow foi removido ou não pertence ao projeto atual.
+                  Esta automação foi removida ou não pertence ao projeto atual.
                </p>
             </div>
             <Button onClick={onBack} variant="outline">
@@ -179,7 +179,7 @@ function WorkflowDetailPage() {
       <main className="-m-4 flex flex-1 min-h-0 overflow-hidden">
          <QueryBoundary
             fallback={<WorkflowDetailSkeleton />}
-            errorTitle="Erro ao carregar workflow"
+            errorTitle="Erro ao carregar automação"
          >
             <WorkflowDetailContent />
          </QueryBoundary>
@@ -246,7 +246,7 @@ function WorkflowDetailContent() {
       });
       if (Result.isError(result)) {
          toast.error(
-            getErrorMessage(result.error, "Erro ao atualizar workflow."),
+            getErrorMessage(result.error, "Erro ao atualizar automação."),
          );
          return false;
       }
@@ -270,7 +270,7 @@ function WorkflowDetailContent() {
       });
       if (Result.isError(result)) {
          toast.error(
-            getErrorMessage(result.error, "Erro ao atualizar workflow."),
+            getErrorMessage(result.error, "Erro ao atualizar automação."),
          );
          return;
       }
@@ -320,7 +320,7 @@ function WorkflowDetailContent() {
       onSubmit: async ({ value }) => {
          if (!workflow || !scheduleNode || !reportNode) return;
          await persistWorkflowUpdate({
-            successMessage: "Workflow atualizado.",
+            successMessage: "Automação atualizada.",
             graph: {
                ...workflow.graph,
                nodes: [
@@ -477,7 +477,7 @@ function WorkflowDetailContent() {
          {isBlankDraft ? (
             <div className="absolute top-16 left-1/2 z-20 flex max-w-[520px] -translate-x-1/2 items-center gap-2 rounded-md border border-amber-500/40 bg-popover/90 px-3 py-2 text-sm shadow-sm backdrop-blur">
                <AlertTriangle className="size-4 shrink-0 text-amber-500" />
-               <span>Configure este workflow antes de ativar.</span>
+               <span>Configure esta automação antes de ativar.</span>
             </div>
          ) : null}
 
@@ -485,30 +485,32 @@ function WorkflowDetailContent() {
             <Button
                className="absolute top-4 right-4 z-20 size-9 rounded-full border bg-popover/85 shadow-sm backdrop-blur"
                onClick={() =>
-                  void persistWorkflowStatus("pause", "Workflow pausado.")
+                  void persistWorkflowStatus("pause", "Automação pausada.")
                }
                size="icon"
-               tooltip="Pausar workflow"
+               tooltip="Pausar automação"
                variant="ghost"
             >
                <Pause className="size-4" />
-               <span className="sr-only">Pausar workflow</span>
+               <span className="sr-only">Pausar automação</span>
             </Button>
          ) : (
             <Button
                className="absolute top-4 right-4 z-20 size-9 rounded-full border bg-popover/85 shadow-sm backdrop-blur"
                disabled={isBlankDraft}
                onClick={() =>
-                  void persistWorkflowStatus("activate", "Workflow ativado.")
+                  void persistWorkflowStatus("activate", "Automação ativada.")
                }
                size="icon"
                tooltip={
-                  isBlankDraft ? "Configure antes de ativar" : "Ativar workflow"
+                  isBlankDraft
+                     ? "Configure antes de ativar"
+                     : "Ativar automação"
                }
                variant="ghost"
             >
                <Play className="size-4" />
-               <span className="sr-only">Ativar workflow</span>
+               <span className="sr-only">Ativar automação</span>
             </Button>
          )}
 
@@ -605,19 +607,19 @@ function WorkflowReportFields({
    return (
       <div className="grid gap-4">
          <FieldBlock
-            description="Escolha qual relatório esta automação vai criar."
+            description="Escolha qual relatório esta automação vai gerar."
             label="Tipo de relatório"
          >
             {typeField}
          </FieldBlock>
          <FieldBlock
-            description="Define o intervalo usado na geração automática."
+            description="Define qual intervalo entra no relatório automático."
             label="Período"
          >
             {periodField}
          </FieldBlock>
          <FieldBlock
-            description="Texto usado para nomear o relatório criado."
+            description="Texto usado no nome do relatório gerado."
             label="Nome gerado"
          >
             {nameField}

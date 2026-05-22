@@ -139,7 +139,7 @@ function WorkflowsIndexPage() {
    return (
       <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
-            description="Liste workflows, acompanhe execuções e crie novas automações."
+            description="Agende relatórios, acompanhe execuções e tire tarefas recorrentes da rotina manual."
             title="Automações"
          />
          <div className="flex min-h-0 flex-1 flex-col">
@@ -284,7 +284,7 @@ function WorkflowsIndexContent() {
    const handleRemove = useCallback(
       (workflow: WorkflowRow) => {
          openAlertDialog({
-            title: "Excluir workflow",
+            title: "Excluir automação",
             description: `Tem certeza que deseja excluir "${workflow.name}"? Esta ação não pode ser desfeita.`,
             actionLabel: "Excluir",
             cancelLabel: "Cancelar",
@@ -298,11 +298,14 @@ function WorkflowsIndexContent() {
                });
                if (Result.isError(result)) {
                   toast.error(
-                     getErrorMessage(result.error, "Erro ao excluir workflow."),
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao excluir automação.",
+                     ),
                   );
                   return;
                }
-               toast.success("Workflow excluído.");
+               toast.success("Automação excluída.");
             },
          });
       },
@@ -323,11 +326,11 @@ function WorkflowsIndexContent() {
          });
          return transaction.isPersisted.promise.then(
             () => {
-               toast.success("Workflow atualizado.");
+               toast.success("Automação atualizada.");
             },
             (error: unknown) => {
                toast.error(
-                  getErrorMessage(error, "Erro ao atualizar workflow."),
+                  getErrorMessage(error, "Erro ao atualizar automação."),
                );
             },
          );
@@ -340,9 +343,9 @@ function WorkflowsIndexContent() {
          const pause = pauseWorkflowAction(workflowsCollection);
          const transaction = pause({ id: workflow.id });
          void transaction.isPersisted.promise.then(
-            () => toast.success("Workflow pausado."),
+            () => toast.success("Automação pausada."),
             (error: unknown) =>
-               toast.error(getErrorMessage(error, "Erro ao pausar workflow.")),
+               toast.error(getErrorMessage(error, "Erro ao pausar automação.")),
          );
       },
       [workflowsCollection],
@@ -353,9 +356,9 @@ function WorkflowsIndexContent() {
          const activate = activateWorkflowAction(workflowsCollection);
          const transaction = activate({ id: workflow.id });
          void transaction.isPersisted.promise.then(
-            () => toast.success("Workflow ativado."),
+            () => toast.success("Automação ativada."),
             (error: unknown) =>
-               toast.error(getErrorMessage(error, "Erro ao ativar workflow.")),
+               toast.error(getErrorMessage(error, "Erro ao ativar automação.")),
          );
       },
       [workflowsCollection],
@@ -371,12 +374,12 @@ function WorkflowsIndexContent() {
          });
          if (Result.isError(result)) {
             toast.error(
-               getErrorMessage(result.error, "Erro ao ativar workflows."),
+               getErrorMessage(result.error, "Erro ao ativar automações."),
             );
             return false;
          }
          toast.success(
-            ids.length === 1 ? "Workflow ativado." : "Workflows ativados.",
+            ids.length === 1 ? "Automação ativada." : "Automações ativadas.",
          );
          return true;
       },
@@ -393,12 +396,12 @@ function WorkflowsIndexContent() {
          });
          if (Result.isError(result)) {
             toast.error(
-               getErrorMessage(result.error, "Erro ao pausar workflows."),
+               getErrorMessage(result.error, "Erro ao pausar automações."),
             );
             return false;
          }
          toast.success(
-            ids.length === 1 ? "Workflow pausado." : "Workflows pausados.",
+            ids.length === 1 ? "Automação pausada." : "Automações pausadas.",
          );
          return true;
       },
@@ -415,12 +418,12 @@ function WorkflowsIndexContent() {
          });
          if (Result.isError(result)) {
             toast.error(
-               getErrorMessage(result.error, "Erro ao excluir workflows."),
+               getErrorMessage(result.error, "Erro ao excluir automações."),
             );
             return false;
          }
          toast.success(
-            ids.length === 1 ? "Workflow excluído." : "Workflows excluídos.",
+            ids.length === 1 ? "Automação excluída." : "Automações excluídas.",
          );
          return true;
       },
@@ -537,7 +540,7 @@ function WorkflowsIndexContent() {
    );
    const templateFilterOptions = useMemo(
       () => [
-         { value: "all", label: "Todos" },
+         { value: "all", label: "Todos os modelos" },
          ...templates.map((template) => ({
             value: template.id,
             label: template.name,
@@ -591,9 +594,9 @@ function WorkflowsIndexContent() {
                icon={<Trash2 className="size-4" />}
                onClick={() => {
                   openAlertDialog({
-                     title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "workflow" : "workflows"}`,
+                     title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "automação" : "automações"}`,
                      description:
-                        "Tem certeza que deseja excluir os workflows selecionados? Esta ação não pode ser desfeita.",
+                        "Tem certeza que deseja excluir as automações selecionadas? Esta ação não pode ser desfeita.",
                      actionLabel: "Excluir",
                      cancelLabel: "Cancelar",
                      variant: "destructive",
@@ -615,10 +618,10 @@ function WorkflowsIndexContent() {
       <div className="flex flex-1 min-h-0 flex-col gap-4">
          <div className="flex flex-wrap items-center justify-between gap-2">
             <SearchInput
-               aria-label="Buscar workflow por nome..."
+               aria-label="Buscar automação por nome..."
                className="max-w-sm"
                onChange={(event) => searchInput.onChange(event.target.value)}
-               placeholder="Buscar workflow por nome..."
+               placeholder="Buscar automação por nome..."
                value={searchInput.value}
             />
             <div className="flex flex-wrap items-center gap-2">
@@ -636,9 +639,9 @@ function WorkflowsIndexContent() {
                      value={statusFilter}
                   />
                   <PageFilterSelect
-                     group="Template"
+                     group="Modelo"
                      id="templateId"
-                     label="Template"
+                     label="Modelo"
                      onChange={handleTemplateFilterChange}
                      options={templateFilterOptions}
                      value={templateFilter}
@@ -648,11 +651,11 @@ function WorkflowsIndexContent() {
                <Button
                   onClick={openCreateWorkflow}
                   size="icon-sm"
-                  tooltip="Novo workflow"
+                  tooltip="Nova automação"
                   variant="outline"
                >
                   <Plus />
-                  <span className="sr-only">Novo workflow</span>
+                  <span className="sr-only">Nova automação</span>
                </Button>
             </div>
          </div>
@@ -715,13 +718,13 @@ function WorkflowsIndexContent() {
                   <EmptyHeader>
                      <EmptyTitle>
                         {workflows.length === 0
-                           ? "Nenhum workflow criado"
-                           : "Nenhum workflow encontrado"}
+                           ? "Nenhuma automação criada"
+                           : "Nenhuma automação encontrada"}
                      </EmptyTitle>
                      <EmptyDescription>
                         {workflows.length === 0
-                           ? "Crie o primeiro workflow para automatizar relatórios do espaço atual."
-                           : "Ajuste a busca ou crie um novo workflow."}
+                           ? "Crie a primeira automação para gerar relatórios recorrentes neste projeto."
+                           : "Ajuste a busca ou crie uma nova automação."}
                      </EmptyDescription>
                   </EmptyHeader>
                </Empty>

@@ -25,9 +25,9 @@ export const PERIOD_KIND_VALUES: readonly [
 export const REPORT_LABELS: Record<WorkflowReportType, string> = {
    dre: "DRE",
    "cash-flow": "Fluxo de caixa",
-   "cost-centers": "Centro de Custo",
+   "cost-centers": "Despesas por Centro de Custo",
    aging: "A receber/pagar",
-   categories: "Categorias",
+   categories: "Despesas por categoria",
 };
 
 export const PERIOD_LABELS: Record<WorkflowPeriodKind, string> = {
@@ -36,6 +36,8 @@ export const PERIOD_LABELS: Record<WorkflowPeriodKind, string> = {
    "current-month": "Mês atual",
    "current-week": "Semana atual",
 };
+
+const BLANK_WORKFLOW_NAME_TEMPLATES = ["Automação em branco", "Workflow vazio"];
 
 export function parseWorkflowReportType(value: string): WorkflowReportType {
    return REPORT_TYPE_VALUES.find((item) => item === value) ?? "dre";
@@ -80,6 +82,6 @@ export function isBlankWorkflowStub(
       scheduleNode.data.humanLabel === "Todo dia 1 às 09:00" &&
       reportNode.data.reportType === "dre" &&
       reportNode.data.period.kind === "previous-month" &&
-      reportNode.data.nameTemplate === "Workflow vazio"
+      BLANK_WORKFLOW_NAME_TEMPLATES.includes(reportNode.data.nameTemplate)
    );
 }
