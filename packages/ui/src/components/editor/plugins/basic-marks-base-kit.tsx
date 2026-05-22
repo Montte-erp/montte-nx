@@ -10,18 +10,18 @@ import {
    BaseUnderlinePlugin,
 } from "@platejs/basic-nodes";
 
-import { CodeLeafStatic } from "@packages/ui/components/code-node-static";
-import { HighlightLeafStatic } from "@packages/ui/components/highlight-node-static";
-import { KbdLeafStatic } from "@packages/ui/components/kbd-node-static";
+import { CodeLeaf } from "@packages/ui/components/code-node";
+import { HighlightLeaf } from "@packages/ui/components/highlight-node";
+import { KbdLeaf } from "@packages/ui/components/kbd-node";
 
 export const BaseBasicMarksKit = [
    BaseBoldPlugin,
    BaseItalicPlugin,
    BaseUnderlinePlugin,
-   BaseCodePlugin.withComponent(CodeLeafStatic),
+   BaseCodePlugin.withComponent(CodeLeaf),
    BaseStrikethroughPlugin,
    BaseSubscriptPlugin,
    BaseSuperscriptPlugin,
-   BaseHighlightPlugin.withComponent(HighlightLeafStatic),
-   BaseKbdPlugin.withComponent(KbdLeafStatic),
+   BaseHighlightPlugin.withComponent(HighlightLeaf),
+   BaseKbdPlugin.withComponent(KbdLeaf),
 ];

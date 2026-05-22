@@ -10,26 +10,26 @@ import {
 } from "@platejs/basic-nodes";
 import { BaseParagraphPlugin } from "platejs";
 
-import { BlockquoteElementStatic } from "@packages/ui/components/blockquote-node-static";
+import { BlockquoteElement } from "@packages/ui/components/blockquote-node";
 import {
-   H1ElementStatic,
-   H2ElementStatic,
-   H3ElementStatic,
-   H4ElementStatic,
-   H5ElementStatic,
-   H6ElementStatic,
-} from "@packages/ui/components/heading-node-static";
-import { HrElementStatic } from "@packages/ui/components/hr-node-static";
-import { ParagraphElementStatic } from "@packages/ui/components/paragraph-node-static";
+   H1Element,
+   H2Element,
+   H3Element,
+   H4Element,
+   H5Element,
+   H6Element,
+} from "@packages/ui/components/heading-node";
+import { HrElement } from "@packages/ui/components/hr-node";
+import { ParagraphElement } from "@packages/ui/components/paragraph-node";
 
 export const BaseBasicBlocksKit = [
-   BaseParagraphPlugin.withComponent(ParagraphElementStatic),
-   BaseH1Plugin.withComponent(H1ElementStatic),
-   BaseH2Plugin.withComponent(H2ElementStatic),
-   BaseH3Plugin.withComponent(H3ElementStatic),
-   BaseH4Plugin.withComponent(H4ElementStatic),
-   BaseH5Plugin.withComponent(H5ElementStatic),
-   BaseH6Plugin.withComponent(H6ElementStatic),
-   BaseBlockquotePlugin.withComponent(BlockquoteElementStatic),
-   BaseHorizontalRulePlugin.withComponent(HrElementStatic),
+   BaseParagraphPlugin.withComponent(ParagraphElement),
+   BaseH1Plugin.withComponent(H1Element),
+   BaseH2Plugin.withComponent(H2Element),
+   BaseH3Plugin.withComponent(H3Element),
+   BaseH4Plugin.withComponent(H4Element),
+   BaseH5Plugin.withComponent(H5Element),
+   BaseH6Plugin.withComponent(H6Element),
+   BaseBlockquotePlugin.withComponent(BlockquoteElement),
+   BaseHorizontalRulePlugin.withComponent(HrElement),
 ];
