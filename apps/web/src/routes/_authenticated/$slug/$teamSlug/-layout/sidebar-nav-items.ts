@@ -1,8 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
    ArrowLeftRight,
+   Boxes,
    Building2,
+   ClipboardList,
    CreditCard,
+   FileCheck2,
    Inbox,
    ChartNoAxesCombined,
    Tag,
@@ -40,6 +43,36 @@ export const navGroups: NavGroupDef[] = [
             icon: Inbox,
             iconColor: "text-sky-500",
             route: "/$slug/$teamSlug/inbox",
+         },
+      ],
+   },
+   {
+      id: "operations",
+      label: "Operação",
+      items: [
+         {
+            id: "nfe",
+            label: "NF-e",
+            icon: FileCheck2,
+            iconColor: "text-emerald-500",
+            route: "/$slug/$teamSlug/nfe",
+            configurable: true,
+         },
+         {
+            id: "contracts",
+            label: "Contratos",
+            icon: ClipboardList,
+            iconColor: "text-violet-500",
+            route: "/$slug/$teamSlug/contratos",
+            configurable: true,
+         },
+         {
+            id: "products",
+            label: "Produtos",
+            icon: Boxes,
+            iconColor: "text-amber-500",
+            route: "/$slug/$teamSlug/produtos",
+            configurable: true,
          },
       ],
    },
