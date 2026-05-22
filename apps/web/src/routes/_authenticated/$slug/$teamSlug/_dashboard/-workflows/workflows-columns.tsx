@@ -3,8 +3,16 @@ import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
+   Announcement,
+   AnnouncementTag,
+   AnnouncementTitle,
+} from "@/components/blocks/announcement";
+import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
+import {
+   CalendarClock,
    CircleCheckBig,
    CircleDashed,
+   Clock,
    Eye,
    Pause,
    Play,
@@ -16,11 +24,12 @@ export type WorkflowRow = Outputs["workflows"]["list"][number];
 type WorkflowStatus = WorkflowRow["status"];
 
 type BuildWorkflowsColumnsOptions = {
-   templateLabels: Map<string, string>;
    onOpen?: (workflow: WorkflowRow) => void;
    onPause?: (workflow: WorkflowRow) => void;
    onActivate?: (workflow: WorkflowRow) => void;
+   isActivationBlocked?: (workflow: WorkflowRow) => boolean;
    onRemove?: (workflow: WorkflowRow) => void;
+   onRename?: (workflow: WorkflowRow, name: string) => Promise<unknown>;
 };
 
 function WorkflowStatusBadge({ status }: { status: WorkflowStatus }) {
@@ -42,36 +51,49 @@ function WorkflowStatusBadge({ status }: { status: WorkflowStatus }) {
 }
 
 export function buildWorkflowsColumns({
-   templateLabels,
    onOpen,
    onPause,
    onActivate,
+   isActivationBlocked,
    onRemove,
+   onRename,
 }: BuildWorkflowsColumnsOptions): ColumnDef<WorkflowRow>[] {
    return [
       {
          id: "name",
          accessorKey: "name",
          header: "Nome",
-         meta: { label: "Nome", exportable: true },
-         cell: ({ row }) => (
-            <div className="flex flex-col gap-1">
-               <span className="font-medium">{row.original.name}</span>
-               <span className="text-muted-foreground text-xs">
-                  {row.original.graph.nodes[0]?.data.humanLabel}
-               </span>
-            </div>
-         ),
+         meta: {
+            label: "Nome",
+            exportable: true,
+            cellComponent: "text",
+            isEditable: Boolean(onRename),
+            editMode: "inline",
+            required: true,
+         },
+         cell: ({ row }) => {
+            const workflow = row.original;
+            if (onRename) {
+               return (
+                  <InlineEditText
+                     ariaLabel="Nome do workflow"
+                     onSave={(value) => onRename(workflow, value)}
+                     placeholder="Nome do workflow"
+                     value={workflow.name}
+                  />
+               );
+            }
+            return <span className="font-medium">{workflow.name}</span>;
+         },
       },
       {
-         id: "templateId",
-         accessorKey: "templateId",
-         header: "Template",
-         meta: { label: "Template", exportable: true },
+         id: "schedule",
+         header: "Agenda",
+         accessorFn: (workflow) => workflow.graph.nodes[0]?.data.humanLabel,
+         meta: { label: "Agenda", exportable: true },
          cell: ({ row }) => (
             <span className="text-muted-foreground">
-               {templateLabels.get(row.original.templateId) ??
-                  row.original.templateId}
+               {row.original.graph.nodes[0]?.data.humanLabel ?? "Sem agenda"}
             </span>
          ),
       },
@@ -91,13 +113,22 @@ export function buildWorkflowsColumns({
          meta: { label: "Última execução" },
          cell: ({ row }) =>
             row.original.latestRun ? (
-               <span className="text-muted-foreground">
-                  {dayjs(row.original.latestRun.scheduledFor).format(
-                     "DD/MM/YYYY HH:mm",
-                  )}
-               </span>
+               <Announcement className="cursor-default shadow-none hover:shadow-none">
+                  <AnnouncementTag className="flex items-center text-muted-foreground">
+                     <Clock className="size-3" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle className="text-muted-foreground">
+                     {dayjs(row.original.latestRun.scheduledFor).format(
+                        "DD/MM/YYYY HH:mm",
+                     )}
+                  </AnnouncementTitle>
+               </Announcement>
             ) : (
-               <span className="text-muted-foreground">Sem execuções</span>
+               <Announcement className="cursor-default shadow-none hover:shadow-none">
+                  <AnnouncementTitle className="text-muted-foreground">
+                     Sem execuções
+                  </AnnouncementTitle>
+               </Announcement>
             ),
       },
       {
@@ -107,11 +138,20 @@ export function buildWorkflowsColumns({
          meta: { label: "Próxima execução" },
          cell: ({ row }) =>
             row.original.nextRunAt ? (
-               <span className="text-muted-foreground">
-                  {dayjs(row.original.nextRunAt).format("DD/MM/YYYY HH:mm")}
-               </span>
+               <Announcement className="cursor-default shadow-none hover:shadow-none">
+                  <AnnouncementTag className="flex items-center text-muted-foreground">
+                     <CalendarClock className="size-3" />
+                  </AnnouncementTag>
+                  <AnnouncementTitle className="text-muted-foreground">
+                     {dayjs(row.original.nextRunAt).format("DD/MM/YYYY HH:mm")}
+                  </AnnouncementTitle>
+               </Announcement>
             ) : (
-               <span className="text-muted-foreground">Pausado</span>
+               <Announcement className="cursor-default shadow-none hover:shadow-none">
+                  <AnnouncementTitle className="text-muted-foreground">
+                     Pausado
+                  </AnnouncementTitle>
+               </Announcement>
             ),
       },
       {
@@ -120,62 +160,71 @@ export function buildWorkflowsColumns({
          enableSorting: false,
          enableHiding: false,
          meta: { align: "right", importIgnore: true },
-         cell: ({ row }) => (
-            <div className="flex justify-end gap-2">
-               <Button
-                  onClick={(event) => {
-                     event.stopPropagation();
-                     onOpen?.(row.original);
-                  }}
-                  size="icon-sm"
-                  tooltip="Abrir"
-                  variant="outline"
-               >
-                  <Eye className="size-4" />
-                  <span className="sr-only">Abrir</span>
-               </Button>
-               {row.original.status === "active" ? (
+         cell: ({ row }) => {
+            const activationBlocked = isActivationBlocked?.(row.original);
+
+            return (
+               <div className="flex justify-end gap-2">
                   <Button
                      onClick={(event) => {
                         event.stopPropagation();
-                        onPause?.(row.original);
+                        onOpen?.(row.original);
                      }}
                      size="icon-sm"
-                     tooltip="Pausar"
+                     tooltip="Abrir"
                      variant="outline"
                   >
-                     <Pause className="size-4" />
-                     <span className="sr-only">Pausar</span>
+                     <Eye className="size-4" />
+                     <span className="sr-only">Abrir</span>
                   </Button>
-               ) : (
+                  {row.original.status === "active" ? (
+                     <Button
+                        onClick={(event) => {
+                           event.stopPropagation();
+                           onPause?.(row.original);
+                        }}
+                        size="icon-sm"
+                        tooltip="Pausar"
+                        variant="outline"
+                     >
+                        <Pause className="size-4" />
+                        <span className="sr-only">Pausar</span>
+                     </Button>
+                  ) : (
+                     <Button
+                        disabled={activationBlocked}
+                        onClick={(event) => {
+                           event.stopPropagation();
+                           onActivate?.(row.original);
+                        }}
+                        size="icon-sm"
+                        tooltip={
+                           activationBlocked
+                              ? "Configure antes de ativar"
+                              : "Ativar"
+                        }
+                        variant="outline"
+                     >
+                        <Play className="size-4" />
+                        <span className="sr-only">Ativar</span>
+                     </Button>
+                  )}
                   <Button
+                     className="text-destructive hover:text-destructive"
                      onClick={(event) => {
                         event.stopPropagation();
-                        onActivate?.(row.original);
+                        onRemove?.(row.original);
                      }}
                      size="icon-sm"
-                     tooltip="Ativar"
+                     tooltip="Excluir"
                      variant="outline"
                   >
-                     <Play className="size-4" />
-                     <span className="sr-only">Ativar</span>
+                     <Trash2 className="size-4" />
+                     <span className="sr-only">Excluir</span>
                   </Button>
-               )}
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={(event) => {
-                     event.stopPropagation();
-                     onRemove?.(row.original);
-                  }}
-                  size="icon-sm"
-                  tooltip="Excluir"
-                  variant="outline"
-               >
-                  <Trash2 className="size-4" />
-                  <span className="sr-only">Excluir</span>
-               </Button>
-            </div>
-         ),
+               </div>
+            );
+         },
       },
    ];
 }

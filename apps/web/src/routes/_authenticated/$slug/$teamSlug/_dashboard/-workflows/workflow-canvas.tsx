@@ -8,6 +8,9 @@ import {
    Position,
    ReactFlow,
    ReactFlowProvider,
+   useEdgesState,
+   useNodesState,
+   useReactFlow,
    type Edge,
    type Node,
    type NodeMouseHandler,
@@ -19,10 +22,13 @@ import {
    ChartColumn,
    CircleDashed,
    LineChart,
+   Maximize2,
+   Minus,
+   Plus,
    Tags,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import type { Outputs } from "@/integrations/orpc/client";
 
 const REPORT_ICONS: Record<WorkflowReportType, LucideIcon> = {
@@ -201,27 +207,52 @@ const nodeTypes = {
    createReport: WorkflowCreateReportNodeView,
 };
 
+export type WorkflowNodePosition = { id: string; x: number; y: number };
+
 export function WorkflowCanvas({
    graph,
    selectedNodeId,
    onNodeClick,
    onPaneClick,
+   onNodePositionsChange,
 }: {
    graph: WorkflowGraph;
    selectedNodeId?: string | null;
    onNodeClick?: (node: WorkflowFlowNode) => void;
    onPaneClick?: () => void;
+   onNodePositionsChange?: (positions: WorkflowNodePosition[]) => void;
 }) {
-   const nodes = buildFlowNodes(graph, selectedNodeId);
-   const edges = buildFlowEdges(graph);
+   const initialNodes = useMemo(
+      () => buildFlowNodes(graph, selectedNodeId),
+      [graph, selectedNodeId],
+   );
+   const initialEdges = useMemo(() => buildFlowEdges(graph), [graph]);
+
+   const [nodes, setNodes, onNodesChange] =
+      useNodesState<WorkflowFlowNode>(initialNodes);
+   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
+
+   useEffect(() => {
+      setNodes(buildFlowNodes(graph, selectedNodeId));
+   }, [graph, selectedNodeId, setNodes]);
 
    const handleNodeClick: NodeMouseHandler<WorkflowFlowNode> = (_, node) => {
       onNodeClick?.(node);
    };
 
+   const handleNodeDragStop: NodeMouseHandler<WorkflowFlowNode> = () => {
+      if (!onNodePositionsChange) return;
+      onNodePositionsChange(
+         nodes.map((node) => ({
+            id: node.id,
+            x: node.position.x,
+            y: node.position.y,
+         })),
+      );
+   };
+
    return (
       <div className="relative h-full min-h-0 w-full flex-1 overflow-hidden">
-         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_25%,hsl(var(--primary)/0.08),transparent_34%),radial-gradient(circle_at_20%_80%,hsl(var(--muted-foreground)/0.05),transparent_26%)]" />
          <ReactFlowProvider>
             <ReactFlow
                className="workflow-react-flow h-full w-full"
@@ -232,22 +263,76 @@ export function WorkflowCanvas({
                minZoom={0.35}
                nodes={nodes}
                nodesConnectable={false}
-               nodesDraggable={false}
+               nodesDraggable
                nodeTypes={nodeTypes}
+               onEdgesChange={onEdgesChange}
                onNodeClick={handleNodeClick}
+               onNodeDragStop={handleNodeDragStop}
+               onNodesChange={onNodesChange}
                onPaneClick={onPaneClick}
                panOnDrag
                proOptions={{ hideAttribution: true }}
                zoomOnDoubleClick={false}
             >
                <Background
-                  color="hsl(var(--border))"
+                  color="var(--primary)"
                   gap={28}
-                  size={1}
+                  size={1.6}
                   variant={BackgroundVariant.Dots}
                />
+               <RailwayControls />
             </ReactFlow>
          </ReactFlowProvider>
       </div>
+   );
+}
+
+function RailwayControls() {
+   const { zoomIn, zoomOut, fitView } = useReactFlow();
+   return (
+      <div className="bg-popover/85 absolute bottom-4 left-4 z-10 flex flex-col overflow-hidden rounded-xl border shadow-sm backdrop-blur">
+         <RailwayControlButton
+            label="Aproximar"
+            onClick={() => zoomIn({ duration: 160 })}
+         >
+            <Plus className="size-4" />
+         </RailwayControlButton>
+         <RailwayControlButton
+            label="Afastar"
+            onClick={() => zoomOut({ duration: 160 })}
+         >
+            <Minus className="size-4" />
+         </RailwayControlButton>
+         <RailwayControlButton
+            label="Ajustar à tela"
+            onClick={() => fitView({ duration: 240, padding: 0.35 })}
+         >
+            <Maximize2 className="size-4" />
+         </RailwayControlButton>
+      </div>
+   );
+}
+
+function RailwayControlButton({
+   children,
+   label,
+   onClick,
+}: {
+   children: ReactNode;
+   label: string;
+   onClick: () => void;
+}) {
+   return (
+      <button
+         aria-label={label}
+         className={cn(
+            "text-muted-foreground hover:bg-muted hover:text-foreground flex size-9 items-center justify-center transition-colors",
+            "border-border border-b last:border-b-0",
+         )}
+         onClick={onClick}
+         type="button"
+      >
+         {children}
+      </button>
    );
 }

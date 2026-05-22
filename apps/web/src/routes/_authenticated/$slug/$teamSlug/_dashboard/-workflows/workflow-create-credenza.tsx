@@ -1,62 +1,75 @@
 import { Badge } from "@packages/ui/components/badge";
-import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
    CredenzaDescription,
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
-import { Input } from "@packages/ui/components/input";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
+import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+} from "@packages/ui/components/select";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { cn } from "@packages/ui/lib/utils";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { Loader2, Plus, Workflow } from "lucide-react";
+import { useMemo, useState } from "react";
+import { closeCredenza } from "@/hooks/use-credenza";
+import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import type { Outputs } from "@/integrations/orpc/client";
 import { orpc } from "@/integrations/orpc/client";
-import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { closeCredenza } from "@/hooks/use-credenza";
-import {
-   BadgeDollarSign,
-   CalendarRange,
-   ChartColumn,
-   LineChart,
-   Search,
-   Tags,
-   Workflow,
-} from "lucide-react";
-import { useMemo, useState } from "react";
-import {
-   buildWorkflowCron,
-   parseWorkflowScheduleFromCron,
-   SchedulePicker,
-   type WorkflowScheduleDraft,
-} from "./schedule-picker";
-
-const TEMPLATE_ICONS: Record<string, typeof Workflow> = {
-   "dre-monthly": ChartColumn,
-   "cash-flow-weekly": LineChart,
-   "cost-centers-monthly": BadgeDollarSign,
-   "aging-weekly": CalendarRange,
-   "categories-monthly": Tags,
-};
 
 type WorkflowTemplate = Outputs["workflows"]["templates"]["list"][number];
+
+type DomainFilterId = "all" | "reports";
+
+const DOMAIN_FILTER_OPTIONS: { id: DomainFilterId; label: string }[] = [
+   { id: "all", label: "Todos os domínios" },
+   { id: "reports", label: "Relatórios" },
+];
+
+const ILLUSTRATIONS_BASE_PATH = "/workflow-templates";
+
+function cadenceLabel(cadence: WorkflowTemplate["cadence"]) {
+   return cadence === "weekly" ? "Semanal" : "Mensal";
+}
 
 export function WorkflowCreateCredenza({
    templates,
 }: {
    templates: WorkflowTemplate[];
 }) {
-   const firstTemplate = templates[0] ?? null;
+   const [searchInput, setSearchInput] = useState("");
    const [search, setSearch] = useState("");
-   const [selectedTemplateId, setSelectedTemplateId] = useState(
-      firstTemplate?.id ?? "",
+   const [domainFilter, setDomainFilter] = useState<DomainFilterId>("all");
+   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
+      null,
    );
-   const [workflowName, setWorkflowName] = useState(firstTemplate?.name ?? "");
-   const [schedule, setSchedule] = useState<WorkflowScheduleDraft>(() =>
-      parseWorkflowScheduleFromCron(firstTemplate?.defaultCron ?? "0 9 1 * *"),
+
+   const commitSearch = useDebouncedCallback(
+      (next: string) => setSearch(next),
+      { wait: 200 },
    );
+
+   function handleSearchChange(next: string) {
+      setSearchInput(next);
+      commitSearch(next);
+   }
+
+   function handleDomainFilterChange(value: string) {
+      if (value !== "all" && value !== "reports") {
+         return;
+      }
+      setDomainFilter(value);
+   }
+
    const { slug, teamSlug } = useDashboardSlugs();
    const navigate = useNavigate();
 
@@ -70,163 +83,218 @@ export function WorkflowCreateCredenza({
                params: { slug, teamSlug, workflowId: workflow.id },
             });
          },
-         onError: (error) => toast.error(error.message),
+         onError: (error) => {
+            setPendingTemplateId(null);
+            toast.error(error.message);
+         },
       }),
-   );
-
-   const selectedTemplate = useMemo(
-      () =>
-         templates.find((template) => template.id === selectedTemplateId) ??
-         firstTemplate,
-      [firstTemplate, selectedTemplateId, templates],
    );
 
    const filteredTemplates = useMemo(() => {
       const query = search.trim().toLowerCase();
-      if (!query) return templates;
-      return templates.filter((template) =>
-         [template.name, template.description].some((value) =>
+      return templates.filter((template) => {
+         if (template.category === "blank") return false;
+         if (domainFilter !== "all" && template.category !== domainFilter)
+            return false;
+         if (!query) return true;
+         return [template.name, template.description].some((value) =>
             value.toLowerCase().includes(query),
-         ),
-      );
-   }, [search, templates]);
+         );
+      });
+   }, [domainFilter, search, templates]);
 
-   function handleSelectTemplate(template: WorkflowTemplate) {
-      setSelectedTemplateId(template.id);
-      setWorkflowName(template.name);
-      setSchedule(parseWorkflowScheduleFromCron(template.defaultCron));
-   }
+   const showEmptyCard = domainFilter === "all" && !search.trim();
+   const isPending = createMutation.isPending;
 
-   function handleCreate() {
-      if (!selectedTemplate) return;
+   function handleSelect(template: WorkflowTemplate) {
+      if (isPending) return;
+      setPendingTemplateId(template.id);
       createMutation.mutate({
-         templateId: selectedTemplate.id,
-         name: workflowName.trim() || selectedTemplate.name,
+         templateId: template.id,
+         name: template.name,
          schedule: {
-            cron: buildWorkflowCron(schedule),
+            cron: template.defaultCron,
             timezone: "America/Sao_Paulo",
          },
       });
    }
 
+   function handleSelectBlank() {
+      if (isPending) return;
+      setPendingTemplateId("blank");
+      createMutation.mutate({ templateId: "blank" });
+   }
+
    return (
-      <div className="flex max-h-[min(82vh,820px)] min-h-0 flex-col overflow-hidden">
-         <CredenzaHeader className="border-b px-4 pt-4 pb-3">
+      <>
+         <CredenzaHeader className="shrink-0 border-b px-4 py-4">
             <div className="flex flex-col gap-1">
                <CredenzaTitle>Criar workflow</CredenzaTitle>
                <CredenzaDescription>
-                  Escolha um template pronto, ajuste o nome e defina a agenda.
+                  Escolha um template ou comece do zero.
                </CredenzaDescription>
             </div>
          </CredenzaHeader>
 
-         <CredenzaBody className="flex min-h-0 flex-1 flex-col gap-4 p-4">
-            <div className="relative shrink-0">
-               <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-               <Input
-                  className="pl-9"
-                  placeholder="Buscar templates"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+         <CredenzaBody className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden overflow-y-hidden px-4 pt-2 pb-4">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+               <SearchInput
+                  className="min-w-0 flex-1"
+                  placeholder="Filtrar templates"
+                  value={searchInput}
+                  onChange={(event) => handleSearchChange(event.target.value)}
                />
+               <Select
+                  value={domainFilter}
+                  onValueChange={handleDomainFilterChange}
+               >
+                  <SelectTrigger className="w-[200px]">
+                     <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                     {DOMAIN_FILTER_OPTIONS.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                           {option.label}
+                        </SelectItem>
+                     ))}
+                  </SelectContent>
+               </Select>
             </div>
 
-            <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-               <ScrollArea className="min-h-0 pr-2">
-                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                     {filteredTemplates.map((template) => {
-                        const Icon = TEMPLATE_ICONS[template.id] ?? Workflow;
-                        const isSelected = template.id === selectedTemplate?.id;
-                        return (
-                           <button
-                              aria-pressed={isSelected}
-                              className={cn(
-                                 "group min-h-[210px] overflow-hidden rounded-lg border bg-card text-left transition-colors hover:border-foreground/25 hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-60",
-                                 isSelected && "border-primary bg-primary/5",
-                              )}
-                              disabled={createMutation.isPending}
-                              key={template.id}
-                              onClick={() => handleSelectTemplate(template)}
-                              type="button"
-                           >
-                              <div className="flex h-28 items-center justify-center bg-gradient-to-br from-primary/15 via-muted to-muted/40">
-                                 <div className="bg-background/70 text-foreground flex size-14 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-105">
-                                    <Icon className="size-7" />
-                                 </div>
-                              </div>
-                              <div className="flex flex-col gap-3 p-3">
-                                 <div className="flex flex-col gap-1">
-                                    <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
-                                       {template.name}
-                                    </span>
-                                    <span className="text-muted-foreground line-clamp-2 text-sm">
-                                       {template.description}
-                                    </span>
-                                 </div>
-                                 <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="outline">
-                                       {template.cadence === "weekly"
-                                          ? "Semanal"
-                                          : "Mensal"}
-                                    </Badge>
-                                 </div>
-                              </div>
-                           </button>
-                        );
-                     })}
-                  </div>
-               </ScrollArea>
-
-               <div className="flex min-h-0 flex-col gap-4 rounded-lg border bg-card p-4">
-                  <div className="grid gap-1">
-                     <h3 className="text-sm font-semibold">
-                        Configurar ativação
-                     </h3>
-                     <p className="text-muted-foreground text-sm">
-                        Defina como este workflow será criado no espaço atual.
-                     </p>
-                  </div>
-
-                  {selectedTemplate ? (
-                     <>
-                        <div className="grid gap-2">
-                           <label
-                              className="text-sm font-medium"
-                              htmlFor="workflow-name"
-                           >
-                              Nome
-                           </label>
-                           <Input
-                              disabled={createMutation.isPending}
-                              id="workflow-name"
-                              value={workflowName}
-                              onChange={(event) =>
-                                 setWorkflowName(event.target.value)
-                              }
-                              placeholder={selectedTemplate.name}
-                           />
-                        </div>
-                        <SchedulePicker
-                           disabled={createMutation.isPending}
-                           value={schedule}
-                           onChange={setSchedule}
-                        />
-                        <Button
-                           disabled={createMutation.isPending}
-                           onClick={handleCreate}
-                           type="button"
-                        >
-                           Criar workflow
-                        </Button>
-                     </>
-                  ) : (
-                     <p className="text-muted-foreground text-sm">
-                        Selecione um template para configurar a ativação.
-                     </p>
-                  )}
+            <ScrollArea className="min-h-0 flex-1">
+               <div className="grid grid-cols-1 gap-4 pb-4 pr-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {showEmptyCard ? (
+                     <EmptyWorkflowCard
+                        disabled={isPending}
+                        isLoading={pendingTemplateId === "blank"}
+                        onSelect={handleSelectBlank}
+                     />
+                  ) : null}
+                  {filteredTemplates.map((template) => (
+                     <TemplateCard
+                        key={template.id}
+                        template={template}
+                        disabled={isPending}
+                        isLoading={pendingTemplateId === template.id}
+                        onSelect={handleSelect}
+                     />
+                  ))}
                </div>
-            </div>
+               {filteredTemplates.length === 0 && !showEmptyCard ? (
+                  <div className="text-muted-foreground py-4 text-center text-sm">
+                     Nenhum template encontrado.
+                  </div>
+               ) : null}
+            </ScrollArea>
          </CredenzaBody>
-      </div>
+      </>
+   );
+}
+
+function TemplateCard({
+   template,
+   disabled,
+   isLoading,
+   onSelect,
+}: {
+   template: WorkflowTemplate;
+   disabled: boolean;
+   isLoading: boolean;
+   onSelect: (template: WorkflowTemplate) => void;
+}) {
+   const [imageFailed, setImageFailed] = useState(false);
+
+   return (
+      <button
+         className={cn(
+            "group bg-card relative flex flex-col overflow-hidden rounded-lg border text-left transition-all",
+            "hover:border-foreground/30 hover:shadow-md",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+         )}
+         disabled={disabled}
+         onClick={() => onSelect(template)}
+         type="button"
+      >
+         <div className="relative aspect-[4/3] w-full overflow-hidden">
+            {imageFailed ? (
+               <div className="from-primary/25 via-muted to-muted/40 flex size-full items-center justify-center bg-gradient-to-br">
+                  <div className="bg-background/70 text-foreground flex size-14 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-105">
+                     <Workflow className="size-7" />
+                  </div>
+               </div>
+            ) : (
+               <img
+                  alt={template.name}
+                  className="size-full object-cover transition-transform group-hover:scale-[1.02]"
+                  loading="lazy"
+                  onError={() => setImageFailed(true)}
+                  src={`${ILLUSTRATIONS_BASE_PATH}/${template.id}.png`}
+               />
+            )}
+            {isLoading ? (
+               <div className="bg-background/70 absolute inset-0 flex items-center justify-center backdrop-blur-sm">
+                  <Loader2 className="size-6 animate-spin" />
+               </div>
+            ) : null}
+         </div>
+         <div className="flex flex-col gap-2 p-4">
+            <span className="text-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+               {template.name}
+            </span>
+            <div className="flex flex-wrap gap-1">
+               <Badge variant="secondary">oficial</Badge>
+               <Badge variant="secondary">
+                  {cadenceLabel(template.cadence)}
+               </Badge>
+            </div>
+            <p className="text-muted-foreground line-clamp-2 text-sm">
+               {template.description}
+            </p>
+         </div>
+      </button>
+   );
+}
+
+function EmptyWorkflowCard({
+   disabled,
+   isLoading,
+   onSelect,
+}: {
+   disabled: boolean;
+   isLoading: boolean;
+   onSelect: () => void;
+}) {
+   return (
+      <button
+         className={cn(
+            "group bg-card relative flex flex-col overflow-hidden rounded-lg border text-left transition-all",
+            "hover:border-foreground/30 hover:shadow-md",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+         )}
+         disabled={disabled}
+         onClick={onSelect}
+         type="button"
+      >
+         <div className="from-primary/30 via-primary/15 to-primary/5 relative flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br">
+            <Plus className="text-foreground/60 size-12" />
+            {isLoading ? (
+               <div className="bg-background/70 absolute inset-0 flex items-center justify-center backdrop-blur-sm">
+                  <Loader2 className="size-6 animate-spin" />
+               </div>
+            ) : null}
+         </div>
+         <div className="flex flex-col gap-2 p-4">
+            <span className="text-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+               Workflow vazio
+            </span>
+            <div className="flex flex-wrap gap-1">
+               <Badge variant="outline">rascunho</Badge>
+            </div>
+            <p className="text-muted-foreground line-clamp-2 text-sm">
+               Comece do zero, sem template, montando o fluxo na tela do
+               workflow.
+            </p>
+         </div>
+      </button>
    );
 }

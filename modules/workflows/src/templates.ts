@@ -1,6 +1,7 @@
 import type { WorkflowGraph } from "./schema";
 
 export type WorkflowTemplateId =
+   | "blank"
    | "dre-monthly"
    | "cash-flow-weekly"
    | "cost-centers-monthly"
@@ -18,6 +19,7 @@ export type WorkflowTemplate = {
    name: string;
    icon: string;
    description: string;
+   category: "blank" | "reports";
    cadence: "weekly" | "monthly";
    defaultCron: string;
    reportType: WorkflowGraph["nodes"][1]["data"]["reportType"];
@@ -69,10 +71,31 @@ function createTemplateGraph(input: {
 
 export const workflowTemplates = [
    {
+      id: "blank",
+      name: "Workflow vazio",
+      icon: "plus",
+      description: "Comece com um rascunho pausado para configurar depois.",
+      category: "blank",
+      cadence: "monthly",
+      defaultCron: "0 9 1 * *",
+      reportType: "dre",
+      period: "previous-month",
+      defaultNameTemplate: "Workflow vazio",
+      editableFields: ["schedule"],
+      defaultGraph: createTemplateGraph({
+         cron: "0 9 1 * *",
+         humanLabel: "Todo dia 1 às 09:00",
+         reportType: "dre",
+         period: "previous-month",
+         nameTemplate: "Workflow vazio",
+      }),
+   },
+   {
       id: "dre-monthly",
       name: "DRE mensal",
       icon: "chart-column",
       description: "Gera a DRE automaticamente todo mês.",
+      category: "reports",
       cadence: "monthly",
       defaultCron: "0 9 1 * *",
       reportType: "dre",
@@ -92,6 +115,7 @@ export const workflowTemplates = [
       name: "Fluxo de caixa semanal",
       icon: "line-chart",
       description: "Atualiza o fluxo de caixa toda segunda-feira.",
+      category: "reports",
       cadence: "weekly",
       defaultCron: "0 9 * * 1",
       reportType: "cash-flow",
@@ -111,6 +135,7 @@ export const workflowTemplates = [
       name: "Centro de Custo mensal",
       icon: "badge-dollar-sign",
       description: "Resume despesas por Centro de Custo no mês.",
+      category: "reports",
       cadence: "monthly",
       defaultCron: "0 9 1 * *",
       reportType: "cost-centers",
@@ -130,6 +155,7 @@ export const workflowTemplates = [
       name: "A receber/pagar semanal",
       icon: "calendar-range",
       description: "Acompanha vencimentos e atrasos semanalmente.",
+      category: "reports",
       cadence: "weekly",
       defaultCron: "0 9 * * 1",
       reportType: "aging",
@@ -149,6 +175,7 @@ export const workflowTemplates = [
       name: "Despesas por categoria mensal",
       icon: "tags",
       description: "Distribui despesas por categoria todo mês.",
+      category: "reports",
       cadence: "monthly",
       defaultCron: "0 9 1 * *",
       reportType: "categories",

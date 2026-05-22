@@ -57,6 +57,30 @@ describe("workflows router", () => {
       expect(persisted?.templateId).toBe("cash-flow-weekly");
    });
 
+   it("createFromTemplate cria workflow vazio pausado com defaults seguros", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+
+      const result = await call(
+         workflowsRouter.createFromTemplate,
+         { templateId: "blank" },
+         { context: ctx },
+      );
+
+      expect(result.templateId).toBe("blank");
+      expect(result.name).toBe("Workflow vazio");
+      expect(result.status).toBe("paused");
+      expect(result.nextRunAt).toBeNull();
+      expect(result.graph.nodes[0].data.cron).toBe("0 9 1 * *");
+      expect(result.graph.nodes[1].data.reportType).toBe("dre");
+      expect(result.graph.nodes[1].data.period.kind).toBe("previous-month");
+   });
+
    it("update altera nome e schedule do graph", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const userId = await seedUser(testDb.db);
@@ -262,14 +286,22 @@ describe("workflows router", () => {
       expect(persisted?.endedAt).not.toBeNull();
    });
 
-   it("templates.list retorna os 5 templates", async () => {
+   it("templates.list retorna templates incluindo o rascunho vazio", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ctx = createTestContext(testDb.db, { teamId, organizationId });
 
       const result = await call(workflowsRouter.templates.list, undefined, {
          context: ctx,
       });
-      expect(result).toHaveLength(5);
+      expect(result).toHaveLength(6);
+      expect(result[0]?.id).toBe("blank");
+      expect(result[0]?.category).toBe("blank");
+      expect(
+         result.every(
+            (template) =>
+               template.id === "blank" || template.category === "reports",
+         ),
+      ).toBe(true);
    });
 
    it("list retorna workflows do time", async () => {

@@ -66,6 +66,7 @@ import {
 import {
    WorkflowCanvas,
    type WorkflowFlowNode,
+   type WorkflowNodePosition,
 } from "../../-workflows/workflow-canvas";
 
 const REPORT_TYPE_VALUES = [
@@ -121,6 +122,20 @@ const PERIOD_LABELS: Record<WorkflowPeriodKind, string> = {
    "current-week": "Semana atual",
 };
 
+function isBlankWorkflowStub(graph: WorkflowGraph) {
+   const scheduleNode = graph.nodes[0];
+   const reportNode = graph.nodes[1];
+
+   return (
+      scheduleNode.data.cron === "0 9 1 * *" &&
+      scheduleNode.data.timezone === "America/Sao_Paulo" &&
+      scheduleNode.data.humanLabel === "Todo dia 1 às 09:00" &&
+      reportNode.data.reportType === "dre" &&
+      reportNode.data.period.kind === "previous-month" &&
+      reportNode.data.nameTemplate === "Workflow vazio"
+   );
+}
+
 function WorkflowRunStatusBadge({ status }: { status: WorkflowRunStatus }) {
    if (status === "failed") {
       return (
@@ -168,12 +183,12 @@ export const Route = createFileRoute(
 });
 
 function WorkflowDetailSkeleton() {
-   return <main className="flex flex-1 min-h-0 overflow-hidden" />;
+   return <main className="-m-4 flex flex-1 min-h-0 overflow-hidden" />;
 }
 
 function WorkflowDetailPage() {
    return (
-      <main className="flex flex-1 min-h-0 overflow-hidden">
+      <main className="-m-4 flex flex-1 min-h-0 overflow-hidden">
          <QueryBoundary
             fallback={<WorkflowDetailSkeleton />}
             errorTitle="Erro ao carregar workflow"
@@ -206,6 +221,8 @@ function WorkflowDetailContent() {
       : null;
    const scheduleNode = workflow.graph.nodes[0];
    const reportNode = workflow.graph.nodes[1];
+   const isBlankDraft =
+      workflow.templateId === "blank" && isBlankWorkflowStub(workflow.graph);
 
    const invalidateWorkflow = async () => {
       await Promise.all([
@@ -243,6 +260,43 @@ function WorkflowDetailContent() {
          onError: (error) => toast.error(error.message),
       }),
    );
+   const persistPositionsMutation = useMutation(
+      orpc.workflows.update.mutationOptions({
+         onSuccess: () =>
+            queryClient.invalidateQueries(
+               orpc.workflows.get.queryOptions({ input: { id: workflowId } }),
+            ),
+         onError: (error) => toast.error(error.message),
+      }),
+   );
+
+   const handleNodePositionsChange = (positions: WorkflowNodePosition[]) => {
+      const positionById = new Map(
+         positions.map((entry) => [entry.id, { x: entry.x, y: entry.y }]),
+      );
+      const nextSchedulePos =
+         positionById.get(scheduleNode.id) ?? scheduleNode.position;
+      const nextReportPos =
+         positionById.get(reportNode.id) ?? reportNode.position;
+      if (
+         nextSchedulePos.x === scheduleNode.position.x &&
+         nextSchedulePos.y === scheduleNode.position.y &&
+         nextReportPos.x === reportNode.position.x &&
+         nextReportPos.y === reportNode.position.y
+      ) {
+         return;
+      }
+      persistPositionsMutation.mutate({
+         id: workflow.id,
+         graph: {
+            ...workflow.graph,
+            nodes: [
+               { ...scheduleNode, position: nextSchedulePos },
+               { ...reportNode, position: nextReportPos },
+            ],
+         },
+      });
+   };
 
    const form = useForm({
       defaultValues: {
@@ -382,6 +436,7 @@ function WorkflowDetailContent() {
                flushSync(() => setSelectedNodeId(node.id));
                openContextPanel();
             }}
+            onNodePositionsChange={handleNodePositionsChange}
             onPaneClick={() => {
                setSelectedNodeId(null);
                closeContextPanel();
@@ -408,6 +463,13 @@ function WorkflowDetailContent() {
             {workflow.name}
          </div>
 
+         {isBlankDraft ? (
+            <div className="absolute top-16 left-1/2 z-20 flex max-w-[520px] -translate-x-1/2 items-center gap-2 rounded-md border border-amber-500/40 bg-popover/90 px-3 py-2 text-sm shadow-sm backdrop-blur">
+               <AlertTriangle className="size-4 shrink-0 text-amber-500" />
+               <span>Configure este workflow antes de ativar.</span>
+            </div>
+         ) : null}
+
          {workflow.status === "active" ? (
             <Button
                className="absolute top-4 right-4 z-20 size-9 rounded-full border bg-popover/85 shadow-sm backdrop-blur"
@@ -422,9 +484,12 @@ function WorkflowDetailContent() {
          ) : (
             <Button
                className="absolute top-4 right-4 z-20 size-9 rounded-full border bg-popover/85 shadow-sm backdrop-blur"
+               disabled={isBlankDraft}
                onClick={() => activateMutation.mutate({ id: workflow.id })}
                size="icon"
-               tooltip="Ativar workflow"
+               tooltip={
+                  isBlankDraft ? "Configure antes de ativar" : "Ativar workflow"
+               }
                variant="ghost"
             >
                <Play className="size-4" />
