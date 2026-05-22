@@ -1,87 +1,110 @@
-Agrupamento de lançamentos por data e categoria, identidade visual com logos de bancos e ícones nas categorias, e modelos prontos de importação — esta release torna a navegação financeira mais rápida e a entrada de dados muito mais simples. Categorias padrão agora podem ser arquivadas, editadas e excluídas.
+Esta release traz o novo chat do Montte AI com interface AG-UI, relatórios empresariais e blog público. No financeiro, chegam parcelamento e lançamentos recorrentes, além do módulo de cartões com fechamento automático de faturas.
 
 ## Em destaque
 
-### Agrupamento de lançamentos por data e categoria ([#928](https://github.com/Montte-erp/montte-nx/pull/928))
+### Novo chat do Montte AI ([#966](https://github.com/Montte-erp/montte-nx/pull/966))
 
-A tabela de lançamentos agora permite agrupar linhas por data ou categoria, facilitando a visualização do extrato consolidado sem depender de filtros manuais.
+Interface completamente reconstruída com exibição de ferramentas, indicadores e badges, streaming mais confiável e suporte a ferramentas de leitura financeira.
 
-### Logos de bancos e ícones visuais em contas, cartões e categorias ([#908](https://github.com/Montte-erp/montte-nx/pull/908), [#924](https://github.com/Montte-erp/montte-nx/pull/924), [#918](https://github.com/Montte-erp/montte-nx/pull/918))
+### Relatórios empresariais ([#937](https://github.com/Montte-erp/montte-nx/pull/937))
 
-Logos reais de bancos e bandeiras aparecem nas contas e cartões de crédito. Categorias ganharam ícone e cor, tornando a identificação visual imediata durante o lançamento.
+Nova seção de relatórios com tipos monetários precisos, detalhamento por rota e interface redesenhada.
 
-### Modelos de importação prontos para cada entidade ([#909](https://github.com/Montte-erp/montte-nx/pull/909), [#904](https://github.com/Montte-erp/montte-nx/pull/904))
+### Blog do Montte ([#933](https://github.com/Montte-erp/montte-nx/pull/933))
 
-Arquivos modelo de CSV e XLSX estão disponíveis na importação de categorias, contas bancárias, contatos e centros de custo — baixe, preencha e importe sem criar planilhas do zero.
+Blog público no site com RSS, imagens OG e SEO.
 
 ## Ação necessária
 
-### Remoção de Dashboards e Insights ([#911](https://github.com/Montte-erp/montte-nx/pull/911))
+### Remoção do módulo de contatos ([#938](https://github.com/Montte-erp/montte-nx/pull/938), [#962](https://github.com/Montte-erp/montte-nx/pull/962))
 
-**Quem é afetado:** organizações que utilizavam as páginas experimentais de Dashboards ou Insights.
-**O que fazer:** essas funcionalidades foram descontinuadas. Os dados das demais áreas do produto não foram afetados.
+**Quem é afetado:** Usuários que utilizavam o módulo de contatos
+**O que fazer:** O módulo de contatos foi removido do produto.
 
 ## Novidades por área
 
 ### Financeiro
 
-- edição da conta bancária diretamente na linha de lançamento, sem abrir formulário separado ([#931](https://github.com/Montte-erp/montte-nx/pull/931))
-- seletor de categorias com hierarquia visual ao criar lançamento manual ([#897](https://github.com/Montte-erp/montte-nx/pull/897))
-- categoria passou a ser obrigatória no novo lançamento ([#926](https://github.com/Montte-erp/montte-nx/pull/926))
-- opção de ignorar lançamento substitui "marcar como pago" na ação em massa, útil para extratos com movimentações irrelevantes ([#896](https://github.com/Montte-erp/montte-nx/pull/896), [#906](https://github.com/Montte-erp/montte-nx/pull/906))
-- atalho "ver lançamentos" diretamente da conta bancária ([#900](https://github.com/Montte-erp/montte-nx/pull/900))
-- reordenação dos campos no formulário de novo lançamento manual ([#888](https://github.com/Montte-erp/montte-nx/pull/888))
-- campo contato movido para seção recolhível, deixando o formulário mais enxuto ([#921](https://github.com/Montte-erp/montte-nx/pull/921))
+- Lançamentos parcelados ([#934](https://github.com/Montte-erp/montte-nx/pull/934))
+- Lançamentos recorrentes ([#935](https://github.com/Montte-erp/montte-nx/pull/935))
 
-### Cartões e Contas
+### Cartões
 
-- criação de cartão de crédito padronizada via painel lateral ([#891](https://github.com/Montte-erp/montte-nx/pull/891))
-- seleção manual da bandeira no cadastro do cartão ([#902](https://github.com/Montte-erp/montte-nx/pull/902))
-- criação de centro de custo padronizada via painel lateral ([#892](https://github.com/Montte-erp/montte-nx/pull/892))
+- Módulo de cartões extraído com rota de faturas ([#959](https://github.com/Montte-erp/montte-nx/pull/959))
+- Fechamento manual de fatura ([#961](https://github.com/Montte-erp/montte-nx/pull/961))
+- Fechamento automático de faturas ([#960](https://github.com/Montte-erp/montte-nx/pull/960))
 
-### Categorias
+### Landing Page
 
-- edição e exclusão de categorias padrão liberadas ([#881](https://github.com/Montte-erp/montte-nx/pull/881))
-- arquivamento de categorias padrão ([#907](https://github.com/Montte-erp/montte-nx/pull/907), [#905](https://github.com/Montte-erp/montte-nx/pull/905))
-- busca de categorias corrigida na classificação automática ([#927](https://github.com/Montte-erp/montte-nx/pull/927))
+- Hero refinado para operações recorrentes ([#965](https://github.com/Montte-erp/montte-nx/pull/965))
+- Proteção da waitlist com ArcJet contra abuso ([#967](https://github.com/Montte-erp/montte-nx/pull/967))
 
-### Plataforma
+### Montte AI
 
-- upload de avatar do usuário ([#879](https://github.com/Montte-erp/montte-nx/pull/879))
-- gestão de times com controle de acesso explícito entre espaços de trabalho ([#914](https://github.com/Montte-erp/montte-nx/pull/914))
-- reenvio de convite pendente para membros da organização ([#901](https://github.com/Montte-erp/montte-nx/pull/901))
-- seletor de organização corrigido ao trocar entre organizações ([#893](https://github.com/Montte-erp/montte-nx/pull/893))
+- Ferramentas de leitura financeira ([#972](https://github.com/Montte-erp/montte-nx/pull/972))
+
+### Categorias e Tags
+
+- Categorias migradas para TanStack DB ([#975](https://github.com/Montte-erp/montte-nx/pull/975))
+- Tags migradas para TanStack DB com validação de conflito ([#974](https://github.com/Montte-erp/montte-nx/pull/974))
+
+### Cashbook
+
+- Cashbook extraído do módulo de finance ([#963](https://github.com/Montte-erp/montte-nx/pull/963))
 
 ## Correções
 
-- saldo atual das contas passou a considerar apenas lançamentos pagos, excluindo pendentes ([#923](https://github.com/Montte-erp/montte-nx/pull/923))
-- filtro "todos" agora funciona corretamente na visualização de lançamentos ([#925](https://github.com/Montte-erp/montte-nx/pull/925))
-- ordenação das colunas corrigida nas tabelas ([#920](https://github.com/Montte-erp/montte-nx/pull/920))
-- importação OFX que exibia erro e não salvava lançamentos ([#882](https://github.com/Montte-erp/montte-nx/pull/882))
-- parsing de datas corrigido na importação de planilhas ([#919](https://github.com/Montte-erp/montte-nx/pull/919))
-- alinhamento da coluna valor ajustado nas tabelas ([#922](https://github.com/Montte-erp/montte-nx/pull/922))
-- exportação de cartões de crédito com formato brasileiro ([#895](https://github.com/Montte-erp/montte-nx/pull/895))
-- permissão de atualização do tipo de lançamento ([#910](https://github.com/Montte-erp/montte-nx/pull/910))
-- tooltips das ações de lançamentos ajustados ([#898](https://github.com/Montte-erp/montte-nx/pull/898))
-- coluna de categoria pai removida da tabela, eliminando redundância ([#899](https://github.com/Montte-erp/montte-nx/pull/899))
-- foco do campo de busca preservado ao navegar na tabela de centros de custo ([#887](https://github.com/Montte-erp/montte-nx/pull/887))
+### Web
+
+- Ordenação dos cartões corrigida ([#976](https://github.com/Montte-erp/montte-nx/pull/976))
+- Popover de edição em massa não abre mais atrás da interface ([#936](https://github.com/Montte-erp/montte-nx/pull/936))
+- Toasts de carregamento em fluxos de auth corrigidos ([#944](https://github.com/Montte-erp/montte-nx/pull/944))
+- Mapeamento de logos de bancos corrigido ([#951](https://github.com/Montte-erp/montte-nx/pull/951))
+
+### Montte AI
+
+- Compilação do prompt do advisor corrigida ([#953](https://github.com/Montte-erp/montte-nx/pull/953))
+- Agente não tentava atualizar thread vazia ([#957](https://github.com/Montte-erp/montte-nx/pull/957))
+
+## Melhorias
+
+- Mensagens de erro do Montte AI agora em pt-BR ([#954](https://github.com/Montte-erp/montte-nx/pull/954))
 
 <details>
 <summary><strong>Notas técnicas</strong> (para o time)</summary>
 
-- **DataTable v2:** migração completa da tabela de dados para TanStack Table com slot-based core, sticky footer, redimensionamento, reordenação via DnD, sub-rows e exportação ([#912](https://github.com/Montte-erp/montte-nx/pull/912)); hook de toast com ID fixo ([#917](https://github.com/Montte-erp/montte-nx/pull/917)); refactor dos componentes visuais de categoria ([#929](https://github.com/Montte-erp/montte-nx/pull/929))
-- **Montte AI:** ferramentas de serviço removidas do agente ([#913](https://github.com/Montte-erp/montte-nx/pull/913)); middleware de telemetria migrado de PostHog AI para OpenTelemetry ([#883](https://github.com/Montte-erp/montte-nx/pull/883)); propagação de `organizationId` para módulos de agente e classificação ([#883](https://github.com/Montte-erp/montte-nx/pull/883))
-- **Infra:** armazenamento de arquivos migrado de MinIO para RustFS ([#880](https://github.com/Montte-erp/montte-nx/pull/880)); cliente S3 migrado para `@aws-sdk/client-s3` ([#880](https://github.com/Montte-erp/montte-nx/pull/880)); Nx Cloud e Blacksmith runners removidos ([#892](https://github.com/Montte-erp/montte-nx/pull/892)); badge "Alpha" e opção de desativar PostHog localmente ([#893](https://github.com/Montte-erp/montte-nx/pull/893))
-- **Landing page:** Arcjet e rota de waitlist removidos ([#882](https://github.com/Montte-erp/montte-nx/pull/882)); carrossel animado do hero e consentimento de cookies ([#883](https://github.com/Montte-erp/montte-nx/pull/883))
+- Refactor(account): substitui neverthrow por better-result ([#970](https://github.com/Montte-erp/montte-nx/pull/970))
+- Refactor(insights): migra error handling para better-result e evlog ([#969](https://github.com/Montte-erp/montte-nx/pull/969))
+- Refactor(inbox): migra para better-result ([#968](https://github.com/Montte-erp/montte-nx/pull/968))
+- Remove schemas não utilizados e migra para better-result ([#948](https://github.com/Montte-erp/montte-nx/pull/948))
+- Refactor agents runtime jobs ([#950](https://github.com/Montte-erp/montte-nx/pull/950))
+- Remove pacote SSE do core ([#949](https://github.com/Montte-erp/montte-nx/pull/949))
+- Desacopla AgentRuntimeError dos payloads de job ([#958](https://github.com/Montte-erp/montte-nx/pull/958))
+- Lock transacional explícito no chat ([#955](https://github.com/Montte-erp/montte-nx/pull/955))
+- Refactor agents resultgen flows ([#956](https://github.com/Montte-erp/montte-nx/pull/956))
+- Observabilidade de AI migrada para TanStack OTEL middleware ([#939](https://github.com/Montte-erp/montte-nx/pull/939))
+- Logging migrado para evlog ([#942](https://github.com/Montte-erp/montte-nx/pull/942))
+- Integra better-notify como camada unificada de notificações ([#943](https://github.com/Montte-erp/montte-nx/pull/943))
+- Runtime DBOS isolado no worker ([#941](https://github.com/Montte-erp/montte-nx/pull/941))
+- Limpeza e melhoria do core utils ([#947](https://github.com/Montte-erp/montte-nx/pull/947))
+- Refactor dos forms de configuração da organização ([#945](https://github.com/Montte-erp/montte-nx/pull/945))
+- Refactor classification result boundaries ([#952](https://github.com/Montte-erp/montte-nx/pull/952))
+- Remove schema de contacts e referências ([#962](https://github.com/Montte-erp/montte-nx/pull/962))
+- Adiciona suporte Tauri para desktop ([#973](https://github.com/Montte-erp/montte-nx/pull/973))
+- Cashbook: refactors de erro para better-result e evlog, extração de finance ([#963](https://github.com/Montte-erp/montte-nx/pull/963))
 
 </details>
 
 <details>
 <summary><strong>Manutenção</strong></summary>
 
-- Atualização de configuração PostHog e remoção de variáveis de ambiente obsoletas ([#880](https://github.com/Montte-erp/montte-nx/pull/880))
-- Correções em testes E2E de importação e UI ([#903](https://github.com/Montte-erp/montte-nx/pull/903), [#916](https://github.com/Montte-erp/montte-nx/pull/916), [#894](https://github.com/Montte-erp/montte-nx/pull/894))
-- Atualização de script de release notes ([#930](https://github.com/Montte-erp/montte-nx/pull/930))
+- docs: atualiza skills de marketing, design, code-review, docs e release
+- docs: atualiza CONTRIBUTING.md e README
+- docs(better-result): atualiza documentação do padrão de erros
+- chore: atualiza TanStack AI packages
+- chore: sync lockfile para ag-ui core
+- ci: adiciona workflow para auto-gerar blog posts a partir de releases
+- refactor(landing): migra para variáveis de ambiente tipadas do Astro
 
 </details>
 

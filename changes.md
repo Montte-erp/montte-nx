@@ -1,267 +1,284 @@
 ## Commits
-- Merge pull request #931 from Montte-erp/manoelnetocarvalho03/mon-1040-simplificar-exibicao-da-coluna-conta-em-lancamentos (749291ec) by Manoel Neto
-- feat(inline-edit): add renderSelected prop for custom display (8e7877c8) by Manoel
-- feat(web): add inline account editing to transaction rows (80bc5f7d) by Manoel
-- feat(logos): implement logo fallback sources and brand avatar (eab0ca73) by Manoel
-- feat(web): add bank logo avatars to transactions table (71cab0a4) by Manoel
-- Merge pull request #930 from Montte-erp/manoelnetocarvalho03/mon-1044-exibir-icone-e-hierarquia-na-selecao-de-categoria (3c896ca0) by Manoel Neto
-- Merge pull request #929 from Montte-erp/manoelnetocarvalho03/mon-1044-exibir-icone-e-hierarquia-na-selecao-de-categoria (3ea3ea99) by Manoel Neto
-- ci(workflows): update release note prompts and add validation (35612994) by Manoel
-- refactor: extract category visual components and update picker UI (48534ad2) by Manoel
-- Merge pull request #928 from Montte-erp/manoelnetocarvalho03/mon-984-permitir-agrupamento-de-lancamentos-por-data-e-categoria (d7d68ea1) by Manoel Neto
-- refactor(web): make LOGO_DEV_TOKEN required and fix flex layout (5620e1f2) by Manoel
-- ci: Update weekly release cron schedule (90bf186a) by Manoel
-- fix(account): handle duplicate key on team member insert (c99afea1) by Manoel
-- refactor: change groupBy parameter to grouping array (07b79d04) by Manoel
-- feat(web): Add row grouping to transactions table (741fd00f) by Manoel
-- feat(landing): Update hero carousel and dashboard mock components (831a6301) by Manoel
-- Merge pull request #927 from Montte-erp/manoelnetocarvalho03/mon-977-busca-de-categorias-nao-retorna-subcategorias (336fcb8d) by Manoel Neto
-- fix(classification): correct category search pagination and filtering (28712ff9) by Manoel
-- Merge pull request #925 from Montte-erp/manoelnetocarvalho03/mon-1043-lancamentos-ignorados-nao-aparecem-na-visualizacao-completa (82fc13c7) by Manoel Neto
-- Merge pull request #926 from Montte-erp/manoelnetocarvalho03/mon-1037-tornar-categoria-obrigatoria-no-novo-lancamento (cef4f3a4) by Manoel Neto
-- fix(web): add missing category validation and error UI (ab8dce48) by Manoel
-- fix(finance): include all view in transaction filter logic (177f9c4c) by Manoel
-- Merge pull request #923 from Montte-erp/manoelnetocarvalho03/mon-978-saldo-atual-considera-lancamentos-pendentes (19095a86) by Manoel Neto
-- Merge pull request #924 from Montte-erp/manoelnetocarvalho03/mon-955-exibir-icones-de-banco-e-bandeira-no-cartao (c628c627) by Manoel Neto
-- refactor: remove inline editing for brands and fix combobox layout (8c71bbea) by Manoel
-- feat: extract BankLogoAvatar component with favicon fallback (50754bc3) by Manoel
-- fix(finance): compute current balance using only paid transactions (4a8d7ccb) by Manoel
-- Merge pull request #922 from Montte-erp/manoelnetocarvalho03/mon-1039-corrigir-alinhamento-da-coluna-valor-em-lancamentos (9e9f2d86) by Manoel Neto
-- refactor: remove right alignment from transactions column (3947b1ac) by Manoel
-- Merge pull request #921 from Montte-erp/manoelnetocarvalho03/mon-1038-mover-contato-para-mais-opcoes-no-novo-lancamento (cc8e5d67) by Manoel Neto
-- refactor(web): move contact field to collapsible section (8fb8bf89) by Manoel
-- Merge pull request #919 from Montte-erp/manoelnetocarvalho03/mon-994-corrigir-formatacao-de-data-na-importacao-de-lancamentos (5d12256d) by Manoel Neto
-- fix: validate date parsing and add text alignment support (d5337ba4) by Manoel
-- fix: correct transaction date parsing and adjust test timeout (5f53ba20) by Manoel
-- Merge branch 'master' into manoelnetocarvalho03/mon-994-corrigir-formatacao-de-data-na-importacao-de-lancamentos (5b1112f8) by Manoel
-- Merge pull request #920 from Montte-erp/manoelnetocarvalho03/mon-980-ordenacao-das-tabelas-nao-funciona (3185128f) by Manoel Neto
-- refactor(finance): extract bank account balance SQL generation (3072bd26) by Manoel
-- fix: exclude pending transactions from balance calculations (78015ff9) by Manoel
-- refactor: support multi-column sorting and extract shared header (48b13307) by Manoel
-- fix: handle Excel date cells and modernize CSS imports (89fe1436) by Manoel
-- refactor(api-keys): wrap handleRevoke with useCallback (5b2e57db) by Manoel
-- refactor(data-table): migrate to TanStack Table (65733bd5) by Manoel
-- feat: implement column sorting for dashboard tables (e9d5ac1f) by Manoel
-- Merge branch 'master' into manoelnetocarvalho03/mon-994-corrigir-formatacao-de-data-na-importacao-de-lancamentos (fbd2a7b5) by Manoel
-- Merge pull request #918 from Montte-erp/betterpcollummns (eada2897) by Manoel Neto
-- fix(inline-edit): handle race condition in inline number editor (43f3e724) by Manoel
-- fix: hide empty navigation section while editing (251f2fad) by Manoel
-- Fix inline table review comments (a5d80c78) by Manoel
-- fix(web): parse XLSX dates correctly during import (8909df8e) by Manoel
-- feat(landing): add animated hero carousel component (4c75c904) by Manoel
-- fix(web): typecheck errors in credit-cards and tags columns (2cbd68f3) by Manoel
-- chore: update bun.lock and format routeTree.gen.ts (11a9fc2e) by Manoel
-- feat(data-table): add startContent support to inline edit components (b3715364) by Manoel
-- feat(web): add icon and color picker to categories table (2231723f) by Manoel
-- Merge pull request #917 from Montte-erp/toast-hook-wrapper (4f75b8be) by Manoel Neto
-- feat: add fixed id toast hook (c8f6b5b7) by Manoel
-- Merge pull request #916 from Montte-erp/manoelnetocarvalho03/mon-982-importacao-em-massa-de-lancamentos-exibe-id-e-permite (56caa0ac) by Manoel Neto
-- test(web-e2e): MON-982 review fixes — stable selectors, scoped cleanup (910f9cbf) by Manoel
-- test(web-e2e): MON-982 cover bulk mapping bug repro (f684fcba) by Manoel
-- Merge pull request #915 from Montte-erp/manoelnetocarvalho03/mon-991-adicionar-e2e-de-acesso-a-espacos-por-outro-membro-da-mesma (a0243495) by Manoel Neto
-- Merge pull request #914 from Montte-erp/manoelnetocarvalho03/mon-991-adicionar-e2e-de-acesso-a-espacos-por-outro-membro-da-mesma (827c3749) by Manoel Neto
-- fix(account): drop redundant new Date wrap on member createdAt (654fbeba) by Manoel
-- refactor(account): use shared requireOrganizationTeam middleware in getTeamMembers (c3ef75e3) by Manoel
-- fix(account): validate team ownership and add error boundary (0b6d5c3c) by Manoel
-- feat: add team management and explicit access control (1a81e3ea) by Manoel
-- Merge pull request #912 from Montte-erp/fix-datatable-ui/ux (2130578f) by Manoel Neto
-- fix(data-table): pagination gap-2, sr-only on new-account button (6af8ebc2) by Manoel
-- feat(tables): inline-edit primitives + required markers across bank-accounts, credit-cards, categories, tags, contacts (88079fc4) by Manoel
-- feat(transactions): inline edits in import, decouple ignored from status, view as filter radio (cce283a0) by Manoel
-- fix(data-table): filter-chips fallback, NaN guard, rollback via ref, last4 slice(-4) (3287549b) by Manoel
-- fix(data-table): review feedback — spacing rules, keyboard sortable getter, rollback capture (609e1200) by Manoel
-- fix(data-table): review feedback — leaf cols export, range filter zero, inArray, a11y polish (854da6ef) by Manoel
-- feat(data-table): sticky footer, resize, dnd reorder, subrows, export, inline-edit primitives (a527f5f8) by Manoel
-- fix: drop unused useState in contactId and add dom lib to web-e2e tsconfig (77553ac1) by Manoel
-- Merge remote-tracking branch 'origin/master' into fix-datatable-ui/ux (34995158) by Manoel
-- Merge pull request #913 from Montte-erp/chore/remove-service-tools-from-montte-ai (1251e81c) by Manoel Neto
-- chore: remove service tools from montte ai (70984a48) by Manoel
-- refactor(data-import): inline types and match-headers into hook (3a8329f3) by Manoel
-- refactor(data-table): useTableUrlState hook + final cleanup (305f3bad) by Manoel
-- refactor(data-table): primitives only — kill context, atomic slots, add pacer + global selection (33817132) by Manoel
-- fix(data-table): address PR review blockers (9ad432aa) by Manoel
-- refactor: move data-table + editable-trigger + data-import into blocks/data-table (ca116a45) by Manoel
-- Merge remote-tracking branch 'origin/master' into fix-datatable-ui/ux (eaa3eb23) by Manoel
-- Merge pull request #911 from Montte-erp/chore/remove-dashboards-insights (a6fd1f59) by Manoel Neto
-- refactor(data-table): delete v1 — Stage 4 complete (5013a7f2) by Manoel
-- refactor(data-table): migrate transactions list to v2 (52a19790) by Manoel
-- refactor(data-table): migrate contacts + contact transactions tab to v2 (c45dac1b) by Manoel
-- refactor(data-table): migrate service tabs to v2 (a3dbdf71) by Manoel
-- chore: remove dashboards and insights (fea8dbce) by Manoel
-- refactor(data-table): migrate meters + benefits to v2 (cc32689a) by Manoel
-- refactor(data-table): migrate services-list + coupons to v2 (927eb90b) by Manoel
-- refactor(data-table): migrate categories/credit-cards/members to v2 (c66fe133) by Manoel
-- refactor(data-table): introduce v2 slot-based core + extract features (3ca9286d) by Manoel
-- Merge pull request #909 from Montte-erp/manoelnetocarvalho03/mon-958-modelos-importacao-xlsx-csv (1425aacf) by Manoel Neto
-- feat: adicionar modelos xlsx de importacao (cfd2c137) by Manoel
-- Merge pull request #910 from Montte-erp/fix/transaction-type-update (c0d4a231) by Manoel Neto
-- fix(transactions): allow type in update schema (286973f0) by Manoel
-- Merge pull request #908 from Montte-erp/manoelnetocarvalho03/mon-953-exibir-logo-do-banco-na-listagem-de-contas (7a74a6bc) by Manoel Neto
-- Merge pull request #906 from Montte-erp/manoelnetocarvalho03/mon-963-implementar-opcao-de-ignorar-lancamento-manual (dbaa3070) by Manoel Neto
-- fix: align ignored transaction handling (f37dfe5e) by Manoel
-- Merge pull request #904 from Montte-erp/manoelnetocarvalho03/mon-958-revisar-importacoes-e-criar-modelos-por-entidade (118c4910) by Manoel Neto
-- Merge pull request #907 from Montte-erp/manoelnetocarvalho03/mon-951-arquivar-categorias-padrao (2ca7949f) by Manoel Neto
-- feat: exibir logo do banco nas contas (ea413c97) by Manoel
-- feat: allow archiving default categories (920b6dcc) by Manoel
-- Merge pull request #905 from Montte-erp/manoelnetocarvalho03/mon-951-adicionar-opcao-de-arquivar-categorias (e19eae68) by Manoel Neto
-- feat: support ignored manual transactions (a9526dc2) by Manoel
-- feat: add category archiving option (433d291f) by Manoel
-- feat: adicionar modelos de importacao (7ce35a9c) by Manoel
-- Merge pull request #902 from Montte-erp/manoelnetocarvalho03/credit-card-brand-select (8334769e) by Manoel Neto
-- chore: type credit card brand option props (44ec11bc) by Manoel
-- Merge pull request #903 from Montte-erp/fix/e2e-ui-hang (4a613a80) by Manoel Neto
-- chore: use interface for credit card form values (b1c605ba) by Manoel
-- test: fix e2e ui hanging resources (cdebfb07) by Manoel
-- Merge pull request #901 from Montte-erp/manoelnetocarvalho03/mon-969-adicionar-botao-para-reenviar-convite-pendente (c79955ac) by Manoel Neto
-- chore: rely on role inference (e55c099b) by Manoel
-- Merge pull request #900 from Montte-erp/manoelnetocarvalho03/mon-952-adicionar-atalho-para-ver-transacoes-da-conta (1fd19cd4) by Manoel Neto
-- fix: use dashboard slugs for bank account links (227522d9) by Manoel
-- feat: select credit card brand manually (142eca6c) by Manoel
-- feat: add resend pending invite action (64e3add9) by Manoel
-- Merge pull request #897 from Montte-erp/manoelnetocarvalho03/mon-947-corrigir-hierarquia-de-categorias-em-novo-lancamento (3cf67768) by Manoel Neto
-- Merge pull request #896 from Montte-erp/manoelnetocarvalho03/mon-946-ajustar-acoes-em-massa-de-lancamentos (30dff845) by Manoel Neto
-- feat: add bank account transactions shortcut (f7e22114) by Manoel
-- refactor(e2e): derive insertCategory level from parentId (6345d3a2) by Manoel
-- fix(transactions): gate bulk status onSuccess and assert UI clears (0504db69) by Manoel
-- fix(e2e): throw on insertCategory empty returning to satisfy strict TS (4e77465f) by Manoel
-- fix(transactions): gate selection clear on bulk ignore success (4b967d7a) by Manoel
-- Merge pull request #899 from Montte-erp/manoelnetocarvalho03/mon-950-remover-coluna-de-categoria-pai-da-tabela (a0e76cc8) by Manoel Neto
-- Merge pull request #898 from Montte-erp/manoelnetocarvalho03/mon-945-ajustar-tooltips-das-acoes-em-lancamentos (1edd5963) by Manoel Neto
-- fix: remover coluna de categoria pai (ca4c1892) by Manoel
-- fix: ajusta tooltips das ações de lançamentos (437c38ad) by Manoel
-- test(e2e): cover ignore bulk action and status menu options (c8441cdb) by Manoel
-- feat(transactions): hierarchical category picker in new transaction sheet (54135e09) by Manoel
-- Merge pull request #895 from Montte-erp/manoelnetocarvalho03/mon-957-exportacao-de-cartoes-usa-padrao-americano (19095be8) by Manoel Neto
-- fix(transactions): replace "mark as paid" bulk action with "ignore" (d8a41196) by Manoel
-- fix: localize credit card export (a14106de) by Manoel
-- Merge pull request #894 from Montte-erp/fix-e2e (e199ed01) by Manoel Neto
-- style: translate log messages and update UI components (03eef012) by Manoel
-- test(database): replace drizzle-seed with direct database inserts (9cb0ef7c) by Manoel
-- fix: enhance error handling and improve test reliability (0dec76d0) by Manoel
-- Merge remote-tracking branch 'origin/master' into fix-e2e (bce5c53d) by Manoel
-- fix(files): enable path style for local S3 endpoints (8f924c6f) by Manoel
-- fix: stabilize e2e flows (b06d49de) by Manoel
-- Merge pull request #893 from Montte-erp/manoelnetocarvalho03/mon-965-org-switcher-nao-seleciona-team-padrao-ao-trocar-de (bf613122) by Manoel Neto
-- fix(auth): standardize redirect validation and clear search params (5bc576ca) by Manoel
-- fix(auth): improve redirect handling and team selection (5195ca62) by Manoel
-- feat(web): add alpha badge and local PostHog opt-out (96d6271d) by Manoel
-- refactor: migrate organization invitation acceptance to auth client (9c493177) by Manoel
-- refactor(auth): pass redirect param and accept invitations via API (d6d03c5c) by Manoel
-- test(web-e2e): add invite member UI signup flow test (d521e0fb) by Manoel
-- refactor: simplify scope switcher and team creation flow (b9953c32) by Manoel
-- Merge pull request #892 from Montte-erp/manoelnetocarvalho03/mon-944-padronizar-criacao-de-centro-de-custo-via-sheet (992f8aa2) by Manoel Neto
-- ci: drop nxCloudId from nx.json (bc510281) by Manoel
-- fix(ui): add form attributes and handle undefined RGBA (b58a183d) by Manoel
-- ci: remove Nx Cloud and Blacksmith runners (cc0ccbcb) by Manoel
-- feat: add help menu and enhance category form with pickers (cc8c5e43) by Manoel
-- ci: split documentation generation by domain and fix tooltip provider (30d45c12) by Manoel
-- refactor(web): restructure footer and add panel close/minimize controls (90e10f0d) by Manoel
-- refactor: restructure context panel, migrate tag form, add CI workflow (e1914944) by Manoel
-- Merge pull request #891 from Montte-erp/manoelnetocarvalho03/mon-943-padronizar-criacao-de-cartoes-de-credito-via-sheet (64c066f8) by Manoel Neto
-- style: square off logo avatars (726977ec) by Manoel
-- feat: refine credit card logos (e0a822b5) by Manoel
-- feat: derive credit card brand from prefix (994fe879) by Manoel
-- fix: address credit card review comments (aa638fcc) by Manoel
-- feat: switch to logo.dev + show bank logos no combobox + e2e (8243fbc6) by Manoel
-- feat: usar logos reais de banco emissor e bandeira do cartão (9fa83344) by Manoel
-- feat: exibir ícones de banco emissor e bandeira na listagem de cartões (b4d27e4e) by Manoel
-- feat: padronizar criação de cartões de crédito via side sheet (aca38102) by Manoel
-- Merge pull request #888 from Montte-erp/manoelnetocarvalho03/mon-960-reordenar-campos-do-novo-lancamento-manual (c0755f4c) by Manoel Neto
-- fix: reordenar drawer de lancamento manual (480b5067) by Manoel
-- Merge pull request #890 from Montte-erp/manoelnetocarvalho03/mon-894-permitir-escolher-icone-ao-criar-categoria (a2feb26e) by Manoel Neto
-- Merge pull request #889 from Montte-erp/manoelnetocarvalho03/mon-897-disponibilizar-arquivo-modelo-na-importacao-de-categorias (1a5acf2e) by Manoel Neto
-- feat: add category icon selection (28907831) by Manoel
-- feat: add categories import template (82e17332) by Manoel
-- Merge pull request #887 from Montte-erp/manoelnetocarvalho03/mon-892-adicionar-debounce-na-busca-de-centros-de-custo (4bf43de1) by Manoel Neto
-- fix: preserve search input focus on cost centers table (44700a48) by Manoel
-- Merge pull request #886 from Montte-erp/manoelnetocarvalho03/mon-898-disponibilizar-arquivo-modelo-na-importacao-de-conta (a6f5352f) by Manoel Neto
-- feat: add bank account import template (8321da18) by Manoel
-- Merge pull request #885 from Montte-erp/manoelnetocarvalho03/mon-906-disponibilizar-arquivo-modelo-na-importacao-de-contatos (4c727533) by Manoel Neto
-- fix: align contacts import template fields (678c6609) by Manoel
-- feat: add contacts import template (1d1f294e) by Manoel
-- Merge pull request #884 from Montte-erp/manoelnetocarvalho03/mon-893-disponibilizar-arquivo-modelo-na-importacao-de-centro-de (178ee7c7) by Manoel Neto
-- feat: add cost center import template (5770ffa2) by Manoel
-- Merge pull request #883 from Montte-erp/manoelnetocarvalho03/mon-891-permitir-editar-nome-do-centro-de-custo (bc30aee9) by Manoel Neto
-- feat: propagate organizationId to agent and classification modules (64e86a59) by Manoel
-- refactor: wrap layouts with RouteTransition and remove APP_URL tests (abede26b) by Manoel
-- refactor: replace PostHog AI middleware with OpenTelemetry (ef73c7d6) by Manoel
-- Merge pull request #882 from Montte-erp/manoelnetocarvalho03/mon-888-importacao-via-ofx-exibe-erro-e-nao-salva-lancamentos (bd58287f) by Manoel Neto
-- refactor(landing): remove Arcjet integration and waitlist API route (ea04f764) by Manoel
-- chore(landing): switch to Vite public environment variables (e41c2a37) by Manoel
-- feat(landing): add cookie consent, privacy policy, and refactor UI (858df3d7) by Manoel
-- test(web-e2e): add OFX import tests (c3daf2e1) by Manoel
-- feat: persist waitlist email and improve transaction imports (96342450) by Manoel
-- refactor(web): simplify S3 URL construction and CORS configuration (fc988451) by Manoel
-- Merge pull request #881 from Montte-erp/manoelnetocarvalho03/mon-869-us-04-permitir-editar-e-excluir-categorias-padrao (ce5acbea) by Manoel Neto
-- feat(categories): allow editing and deleting default categories (c7ad6905) by Manoel
-- Merge pull request #880 from Montte-erp/debloat-core-files (66c119fa) by Manoel Neto
-- refactor: replace legacy hooks and remove unused dependencies (4cc338b1) by Manoel
-- feat(web): add image upload hook with compression (3c083ea4) by Manoel
-- refactor(s3): migrate S3 client to @aws-sdk/client-s3 (5fdc38c0) by Manoel
-- chore(web): Update PostHog config and remove staging example (1027e147) by Manoel
-- feat: add set-bucket-cors script (030fa994) by Manoel
-- Merge pull request #878 from Montte-erp/opencode/schedule-48fb87-20260508220207 (f2af5144) by Manoel Neto
-- Merge pull request #879 from Montte-erp/file-upload (2ee9f815) by Manoel Neto
-- refactor: remove unused environment variables and configs (b6f5b39c) by Manoel
-- refactor: remove unused posthog public key env variable (374a72c7) by Manoel
-- chore: update .env.example and remove stripe configuration (dd2aa8ec) by Manoel
-- refactor: migrate storage configuration from MinIO to RustFS (503371fa) by Manoel
-- refactor: upgrade PostHog client and standardize storage env vars (4b64e06a) by Manoel
-- RN pronta: 31 PRs, 15 MONs (9cc50d93) by opencode-agent[bot]
+- Merge pull request #976 from Montte-erp/bank-accounts-tanstackdb (9586150c) by Manoel Neto
+- refactor(database): remove meters and usage-events schema exports (86b14cf6) by Manoel
+- feat(bank-accounts): add sorting support for createdAt and updatedAt (a0e5ca99) by Manoel
+- feat(bank-accounts): add pagination, filtering, and sorting support (24a6b738) by Manoel
+- fix(web): ajustar ordenacao dos cartoes (8177de29) by Manoel
+- feat(web): add header alignment and normalize column order (0277e3f0) by Manoel
+- feat(web): add bank account details to CSV import (76137acd) by Manoel
+- feat: migrate bank accounts to TanStack DB and add module specs (c9055c46) by Manoel
+- Merge pull request #975 from Montte-erp/categorias-tanstackdb (f706290b) by Manoel Neto
+- fix: scope category collection by team and resolve type-safe categories (3558ef85) by Manoel
+- fix: keep Montte AI effort picker (7fb4e743) by Manoel
+- chore: update TanStack AI packages (ef20e837) by Manoel
+- fix: dedupe optimistic category rows (81f2ea0f) by Manoel
+- feat: migrate categories to TanStack DB (865cd0ee) by Manoel
+- docs: quote marketing skill description (60f32edb) by Manoel
+- docs(marketing): replace em dashes and update competitor rules (cfbb5b8b) by Manoel
+- Merge pull request #974 from Montte-erp/tags-tanstackdb (1b431dc6) by Manoel Neto
+- docs: rename design/marketing skills, add docs and release skills (0a9109d2) by Manoel
+- docs: add code-review skill and references (6e516293) by Manoel
+- docs: update AI skill guides and add evlog and TanStack AI references (fac91c70) by Manoel
+- refactor(.agents/skills): streamline skill definitions and references (0cfcdd56) by Manoel
+- feat(tags): integrate TanStack DB and add conflict validation (9ed19f0d) by Manoel
+- Merge pull request #970 from Montte-erp/manoelnetocarvalho03/mon-1110-migrar-modulesaccount-de-neverthrow-para-better-result (0853ade7) by Manoel Neto
+- Merge pull request #973 from Montte-erp/manoelnetocarvalho03/mon-1098-adicionar-tauri-ao-appsweb (be2fe241) by Manoel Neto
+- feat(desktop): Add Tauri shell and local development support (8db1d7b5) by Manoel
+- Merge pull request #972 from Montte-erp/manoelnetocarvalho03/mon-1113-desenhar-tools-do-agente-para-capacidades-existentes-da (cf3f1c8b) by Manoel Neto
+- fix(chat, agents): improve error handling and add cancelled status (b24aa511) by Manoel
+- feat(ui): enhance tool call UI with icons, badges, and metrics (e42b245b) by Manoel
+- feat: enhance thread history, list options, and stream handling (fccd8877) by Manoel
+- refactor(chat): replace chat implementation with @assistant-ui/react (e2d14c65) by Manoel
+- fix(web): keep chat composer within thread viewport (948cd0f7) by Manoel
+- feat(agents): add finance read tools (bb7d1cc7) by Manoel
+- Merge pull request #966 from Montte-erp/feature/ag-ui-assistant-ui (8aab2cd0) by Manoel Neto
+- fix: center chat layout wrapper (2ab1f074) by Manoel
+- fix: center chat page container (b634a6bc) by Manoel
+- fix: center chat content in dashboard (707781e3) by Manoel
+- chore: sync lockfile for ag-ui core update (2883cd71) by Manoel
+- chore: add ag-ui core and propagate runId in ai traces (7b5a001d) by Manoel
+- Revert "Refactor Montte AI chat to typed oRPC stream with runId support" (a63bc77d) by Manoel
+- Refactor Montte AI chat to typed oRPC stream with runId support (e1fa6d6b) by Manoel
+- refactor(account): replace neverthrow with better-result (09cfa422) by Manoel
+- Merge pull request #969 from Montte-erp/manoelnetocarvalho03/mon-1112-migrar-modulesinsights-de-neverthrow-para-better-result (37d52e83) by Manoel Neto
+- refactor(insights): migrates error handling to better-result and evlog (36797d18) by Manoel
+- Merge pull request #968 from Montte-erp/manoelnetocarvalho03/mon-1111-migrar-modulesinbox-de-neverthrow-para-better-result (371cfa2b) by Manoel Neto
+- refactor(inbox): migrate to better-result (f7081da4) by Manoel
+- Merge pull request #967 from Montte-erp/manoelnetocarvalho03/mon-1104-proteger-waitlist-sign-up-com-arcjet-contra-emails (3806507a) by Manoel Neto
+- fix(waitlist): handle API errors and add fetch timeout (81b158e0) by Manoel
+- refactor(landing): use dependency catalog and add response validation (6a4a4ff5) by Manoel
+- fix(landing): delete is_vim environment variable (e1cbc499) by Manoel
+- feat(landing): update ops pillars block with conversational UI (3081fa14) by Manoel
+- feat(landing): integrate ArcJet for email validation (b3f50241) by Manoel
+- feat(landing): implement waitlist API and anti-abuse validation (7bc61d3c) by Manoel
+- Merge pull request #965 from Montte-erp/improve-hero-copy (2238ffdf) by Manoel Neto
+- feat(landing): replace hero background image with video (67f85d7e) by Manoel
+- feat(landing): replace hero animation with static background image (701a8267) by Manoel
+- style(landing): simplify hero carousel and update background visuals (ab7deb1b) by Manoel
+- fix(landing): finalize hero background asset (6e98bac5) by Manoel
+- fix(landing): persist optimized hero background (824f6478) by Manoel
+- fix(landing): keep sharper hero background (3490bb76) by Manoel
+- fix(landing): mirror hero reference layout (90e40899) by Manoel
+- fix(landing): match hero reference and sharpen background (614ebafa) by Manoel
+- style(landing): updates UI labels and grid spacing (d4f1fa0b) by Manoel
+- feat(landing): update hero background and layout (ea113d89) by Manoel
+- fix(landing): align hero and skills messaging (6b94c96c) by Manoel
+- fix(landing): simplify hero copy and localize mocks (87d3c903) by Manoel
+- feat: migrate Montte AI chat to AG-UI runtime (d301e609) by Manoel
+- feat(landing): rework hero with billing infrastructure direction (900e5dd3) by Manoel
+- fix(landing): align spacing and animation lifecycle (a8c81ba8) by Manoel
+- feat(landing): rework operations section as product mosaic (9ede4431) by Manoel
+- feat(landing): refine hero for recurring operations and billing flow (a1ddce48) by Manoel
+- Merge pull request #964 from Montte-erp/feature/removemos-o-crm-post (e6a3c1cf) by Manoel Neto
+- Merge branch 'master' into feature/removemos-o-crm-post (c9e060f2) by Manoel
+- Merge pull request #963 from Montte-erp/manoelnetocarvalho03/mon-1101-extrair-cashbook-de-finance (ee045c74) by Manoel Neto
+- refactor: remove billable procedure and refactor cashbook logic (e479d17b) by Manoel
+- refactor(cashbook): replace legacy router errors (a06a3ee6) by Manoel
+- refactor(cashbook): split generic errors into domain-specific catalogs (cfefa6bc) by Manoel
+- refactor(cashbook): converts conditional logic to IIFEs (d0ae458d) by Manoel
+- refactor(cashbook): replace WebAppError with CashbookError (35a3078a) by Manoel
+- refactor(cashbook): migrate error handling to better-result and evlog (22b19e34) by Manoel
+- docs: posiciona Montte como camada de billing (Autumn + Rillet) no README e PRODUCT.md (26275a09) by Manoel
+- refactor(cashbook): enforce text operators on text columns only (267e44a1) by Manoel
+- refactor(cashbook): replace manual money parsing with @f-o-t/money (12f03800) by Manoel
+- refactor cashbook out of finance (761fbfd6) by Manoel
+- docs(skill): atualiza montte-social com posicionamento canônico (Autumn+Rillet, billing layer) (5942ff1b) by Manoel
+- docs: enxuga keyTakeaways e faq, tira tom de pitch (e464ffb7) by Manoel
+- docs: wira URL real do survey e suaviza tom das sections finais (f0620052) by Manoel
+- docs: tira CTA de DM, suaviza SDK, adiciona survey de DX (56c3b9ad) by Manoel
+- docs: troca "runtime de billing" por "camada que falta no SaaS" (fdb28336) by Manoel
+- docs: tira Autumn, Polar e NFe (ainda nao existe) (434c6da2) by Manoel
+- docs: explica CPF/CNPJ no Customer e mapping CPF->Person, CNPJ->Company (3bddecb4) by Manoel
+- docs: tira "fronteira oficial", explica que Twenty e usado internamente (d6755c0b) by Manoel
+- docs: drop Pipedrive e PostHog do post (49051d1b) by Manoel
+- docs: strip AI-tells, drop "meses" timeline (1a5f4b65) by Manoel
+- docs: drop "Montte Payments", produto e so Montte (ac232005) by Manoel
+- docs: match CRM post voice to the release post (37e6430c) by Manoel
+- docs: link waitlist live (already open on landing) (625968c6) by Manoel
+- docs: tone CRM removal post to building-in-public (78126611) by Manoel
+- docs: reframe CRM removal post around Twenty + Autumn (b0484b4e) by Manoel
+- feat: add final cover image for CRM removal post (c95e438a) by Manoel
+- docs: sharpen CRM removal blog post (69ea3f2d) by Manoel
+- Revert "feat: add dedicated cover image for CRM removal post" (61d4c669) by Manoel
+- feat: add dedicated cover image for CRM removal post (291ee8c7) by Manoel
+- feat: publish CRM removal post on landing blog (24c8b0ba) by Manoel
+- docs: add draft for CRM removal blog post (4a2265fd) by Manoel
+- refactor: remove finance module and reorganize marketing skills (4a071c74) by Manoel
+- Merge pull request #962 from Montte-erp/remove-contacts-residue (ce7e653d) by Manoel Neto
+- refactor(database): remove contacts schema and references (18777022) by Manoel
+- feat(cards): implement manual statement close (3c6b446c) by Manoel
+- Merge pull request #960 from Montte-erp/manoelnetocarvalho03/mon-1102-adicionar-job-de-fechamento-automatico-de-faturas (5af5887f) by Manoel Neto
+- Merge pull request #960 from Montte-erp/manoelnetocarvalho03/mon-1102-adicionar-job-de-fechamento-automatico-de-faturas (14354b78) by Manoel Neto
+- feat(cards): add automatic statement closing pg-boss job (5f8bf5de) by Manoel
+- Merge pull request #959 from Montte-erp/manoelnetocarvalho03/mon-1099-extrair-modulo-cards-de-finance (2e3cd832) by Manoel Neto
+- Adiciona testes do modulo de cards (d48ee42b) by Manoel
+- Corrige remocao em massa de cards duplicados (525ba5ae) by Manoel
+- Corrige validacoes do router de cards (5cce64e0) by Manoel
+- Reorganiza helpers do router de cards (30831081) by Manoel
+- Valida transacao de pagamento da fatura (caef32f9) by Manoel
+- Adiciona router de faturas de cartao (c9acfc89) by Manoel
+- Extrai modulo de cards de finance (3bb9cfe7) by Manoel
+- Merge pull request #958 from Montte-erp/manoelnetocarvalho03/mon-1097-agents-runtime-reduzir-acoplamento-entre-agentruntimeerror-e (4839af0e) by Manoel Neto
+- refactor: normalize runtime enqueue errors with better-result (b67a69f4) by Manoel
+- chore: simplify runtime error payload mapping (e2ce7788) by Manoel
+- agents: reduce runtime job error coupling (4b1c0ad8) by Manoel
+- Merge pull request #957 from Montte-erp/manoelnetocarvalho03/mon-1094-agents-sugestoes-checar-update-vazio-no-job-refresh (ac7a27d2) by Manoel Neto
+- fix(agents): skip completed when thread update has no rows (b4951df4) by Manoel
+- Merge pull request #956 from Montte-erp/manoelnetocarvalho03/mon-1095-agents-migrar-fluxos-longos-para-resultgen (b982d1ec) by Manoel Neto
+- fix advisor tool error context payload (a670223b) by Manoel
+- refactor agents resultgen flows (7deb0380) by Manoel
+- Merge pull request #955 from Montte-erp/manoelnetocarvalho03/mon-1096-agents-chat-decidir-e-explicitar-transacao-com-advisory-lock (de2fd87d) by Manoel Neto
+- refactor agents chat history lock (ff5dc7ea) by Manoel
+- Merge pull request #954 from Montte-erp/fix-advisor-prompt (1776cd5c) by Manoel Neto
+- add pt-br messages to agents tagged errors (c97d0997) by Manoel
+- Merge pull request #953 from Montte-erp/fix-advisor-prompt (f2f099be) by Manoel Neto
+- fix advisor prompt compilation errors (48d36107) by Manoel
+- Merge pull request #952 from Montte-erp/debloat-classification (9960f39f) by Manoel Neto
+- fix(classification): use valid pg-boss queue names (3bb09a5b) by Manoel
+- fix(classification): sync project references (abdd754d) by Manoel
+- refactor(orpc): simplify Result usage and error handling (01390c84) by Manoel
+- debloat orpc logger middleware (f1ea4ce0) by Manoel
+- simplify tagged error transport guard (f11ecd1a) by Manoel
+- integrate tagged errors with orpc (dbcdbf2d) by Manoel
+- use orpc typed errors in server middleware (45d03b6f) by Manoel
+- remove web app error from orpc server (754dc94d) by Manoel
+- simplify orpc tagged error mapping (3bde25f9) by Manoel
+- adapt tagged errors at orpc boundary (40bb6243) by Manoel
+- remove classification router error factories (5729a7e2) by Manoel
+- refactor classification result errors (510a04e8) by Manoel
+- docs(better-result): update skill documentation and patterns (24f6ce3e) by Manoel
+- revert global orpc tagged error serialization (21ee7ec9) by Manoel
+- serialize tagged errors at orpc boundary (41f8b924) by Manoel
+- debloat classification module (e58ded88) by Manoel
+- fix classification result error flow (5e3c9569) by Manoel
+- refactor classification result boundaries (18fe59fb) by Manoel
+- refactor classification keyword derivation job (d7e5cc75) by Manoel
+- Merge pull request #951 from Montte-erp/debloat-settings (281cc93e) by Manoel Neto
+- feat: respect prefers-reduced-motion and update bank domains (67560df4) by Manoel
+- feat(skills): add Impeccable skill and remove AI agents route (00a887d6) by Manoel
+- refactor(nitro): register evlog plugin programmatically and improve logger (96d547d0) by Manoel
+- Merge pull request #950 from Montte-erp/refactor-agents-runtime (22798e5a) by Manoel Neto
+- refactor: split agents runtime jobs (dff81711) by Manoel
+- Merge pull request #949 from Montte-erp/kill-sse (96324ad8) by Manoel Neto
+- fix stale sse references (8e940365) by Manoel
+- Remove core sse package (2ba40251) by Manoel
+- Merge pull request #948 from Montte-erp/manoelnetocarvalho03/mon-1088-auditar-e-fortalecer-zod-better-result-em-todos-os-pacotes (5c75106d) by Manoel Neto
+- refactor: remove unused schemas and migrate to better-result (30d4825f) by Manoel
+- Merge pull request #945 from Montte-erp/manoelnetocarvalho03/mon-940-refatorar-logosection-colapsar-usetransition-simplificar (cb113b7c) by Manoel Neto
+- Merge branch 'master' of https://github.com/Montte-erp/montte-nx into manoelnetocarvalho03/mon-940-refatorar-logosection-colapsar-usetransition-simplificar (9bb0d3ca) by Manoel
+- Merge pull request #947 from Montte-erp/manoelnetocarvalho03/mon-1087-limpar-e-melhorar-o-uso-de-coreutils (cacf325a) by Manoel Neto
+- Merge branch 'master' of https://github.com/Montte-erp/montte-nx into manoelnetocarvalho03/mon-940-refatorar-logosection-colapsar-usetransition-simplificar (1508e43e) by Manoel
+- docs: clarify core utils imports (37a3179e) by Manoel
+- refactor: colocate web formatting utils (7974f35a) by Manoel
+- refactor: slim core utils (58cdab11) by Manoel
+- Refactor organization general settings form (5a1ae0f9) by Manoel
+- Merge pull request #944 from Montte-erp/manoelnetocarvalho03/mon-964-toasts-de-loading-nunca-desaparecem-nos-fluxos-de-auth (9541ffc1) by Manoel Neto
+- fix(web): centralize toast usage (98d9f8a4) by Manoel
+- Merge pull request #943 from Montte-erp/manoelnetocarvalho03/mon-966-integrar-better-notify-como-camada-unificada-de-notificacoes (53a41d86) by Manoel Neto
+- Merge remote-tracking branch 'origin/master' into manoelnetocarvalho03/mon-966-integrar-better-notify-como-camada-unificada-de-notificacoes (fb38d8b5) by Manoel
+- Merge pull request #940 from Montte-erp/manoelnetocarvalho03/mon-1078-spike-validar-pg-boss-com-bun-drizzle-e-appsworker (8fcdc3ca) by Manoel Neto
+- merge master into pg-boss spike (3de01442) by Manoel
+- Merge remote-tracking branch 'origin/master' into manoelnetocarvalho03/mon-966-integrar-better-notify-como-camada-unificada-de-notificacoes (e4ace1e8) by Manoel
+- Merge pull request #941 from Montte-erp/manoelnetocarvalho03/mon-1076-isolar-dbos-no-worker-e-migrar-classification-para-enqueue (0934cc45) by Manoel Neto
+- feat(notifications): add better-notify core (23394169) by Manoel
+- fix(dbos): declare telemetry runtime dependencies (717fbc2c) by Manoel
+- fix(worker): include dbos logging transport (359285f7) by Manoel
+- fix(dbos): stabilize smoke test and worker logging (9a3680cb) by Manoel
+- fix(dbos): address workflow queue review findings (9ec40431) by Manoel
+- refactor: use tagged errors in persist middleware (4df1ef9c) by Manoel
+- Merge origin/master into MON-1076 (97e81d5f) by Manoel
+- merge master into pg-boss spike (34a923f3) by Manoel
+- Merge pull request #942 from Montte-erp/manoelnetocarvalho03/mon-967-migrar-logging-para-evlog-wide-events-posthog-logs-audit (da6d05b7) by Manoel Neto
+- fix(logging): address evlog review findings (db479451) by Manoel
+- refactor(logging): remove compat logger bloat (b6c1ad48) by Manoel
+- feat: harden pg-boss queue configuration (a6b59388) by Manoel
+- refactor(web): move evlog setup to nitro config (e950e01e) by Manoel
+- refactor(logging): remove evlog bloat (82b1f73e) by Manoel
+- refactor(logging): align evlog integration (f6256b99) by Manoel
+- chore: remove pg-boss spike doc (86742d8a) by Manoel
+- fix: address pg-boss review comments (41cccbcd) by Manoel
+- Merge remote-tracking branch 'origin/master' into manoelnetocarvalho03/mon-967-migrar-logging-para-evlog-wide-events-posthog-logs-audit (1a4e3157) by Manoel
+- MON-1076 share workflow hash helper (e8b1e098) by Manoel
+- refactor(pg-boss): debloat spike package (a5d6597a) by Manoel
+- Merge pull request #939 from Montte-erp/manoelnetocarvalho03/mon-1068-migrar-observabilidade-de-ai-para-tanstack-ai-otelmiddleware (c697054f) by Manoel Neto
+- feat(logging): migrate logging to evlog (8a627628) by Manoel
+- MON-1076 isolate DBOS runtime in worker (d00b0e8f) by Manoel
+- feat(ai): use tanstack otel middleware (87c85d4f) by Manoel
+- feat: spike pg-boss for agent title jobs (915dc04e) by Manoel
+- docs: update CONTRIBUTING.md and README for current project state (43c40dc2) by Manoel
+- Merge pull request #937 from Montte-erp/manoelnetocarvalho03/mon-1075-implementar-relatorios-empresariais-v1 (1faa8f78) by Manoel Neto
+- refactor: extract getOrderedItems utility and memoize sensors (7a840d27) by Manoel
+- feat(reports): redesign report UI and switch to precise money types (f4dc42da) by Manoel
+- style: remove h-7 rounded-md px-2 from sidebar nav (845105be) by Manoel
+- feat(sidebar): add drag-and-drop reordering (3a21ba96) by Manoel
+- fix reports table bulk actions (0ae32a16) by Manoel
+- Merge remote-tracking branch 'origin/master' into manoelnetocarvalho03/mon-1075-implementar-relatorios-empresariais-v1 (84729a6a) by Manoel
+- style(web): format route tree and adjust report layout padding (b4074a6c) by Manoel
+- Merge pull request #938 from Montte-erp/manoelnetocarvalho03/remove-contacts-module (31c76e59) by Manoel Neto
+- feat: Add report detail route and split reports page (5d506b96) by Manoel
+- Address contacts removal review comments (c83af1c7) by Manoel
+- Remove contacts module (019ce11b) by Manoel
+- Implement business reports v1 (1704b0b7) by Manoel
+- Merge pull request #936 from Montte-erp/manoelnetocarvalho03/mon-1046-popover-da-edicao-em-massa-abre-por-tras-da-interface (43e46f66) by Manoel Neto
+- refactor: removes unused imports and recent conversations footer (17acf49b) by Manoel
+- refactor(ui): replace Combobox with Command and adjust z-index (eec25c64) by Manoel
+- Merge pull request #935 from Montte-erp/manoelnetocarvalho03/mon-961-implementar-lancamentos-recorrentes (010be05a) by Manoel Neto
+- refactor(finance): removes unused transactionRecurrences import (f086836b) by Manoel
+- fix(recurrence): recalculate next occurrence date on frequency change (1c90ab06) by Manoel
+- style: center transaction account combobox (689761da) by Manoel
+- feat: add installment and recurring transaction support (1646a6ed) by Manoel
+- feat: adopt better-result and update error handling guidelines (c123ba2d) by Manoel
+- feat: add recurring transaction support (4eec026f) by Manoel
+- Merge pull request #934 from Montte-erp/manoelnetocarvalho03/mon-962-implementar-lancamentos-parcelados (0f7eef5b) by Manoel Neto
+- feat(finance): add installment support for transactions (2c2fb148) by Manoel
+- feat: enable PostHog tracking features (8a4849a5) by Manoel
+- refactor(posthog): disable unnecessary tracking features (6d6e03b3) by Manoel
+- ci: Adds workflow to auto-generate blog posts from releases (9652afad) by Manoel
+- refactor(landing): migrate to astro typed environment variables (d4efaa21) by Manoel
+- build(landing): add PostHog env vars to build inputs (2047c933) by Manoel
+- Merge pull request #933 from Montte-erp/montte-blog (dab0f355) by Manoel Neto
+- feat(landing): add blog with Astro, RSS, OG images and SEO (547886e1) by Manoel
 
 ## Merged PRs
-- #931 Manoelnetocarvalho03/mon 1040 simplificar exibicao da coluna conta em lancamentos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/931
-- #930 ci(workflows): update release note prompts and add validation by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/930
-- #929 refactor: extract category visual components and update picker UI by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/929
-- #928 feat(web): Add row grouping to transactions table by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/928
-- #927 fix(classification): correct category search pagination and filtering by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/927
-- #926 fix(web): add missing category validation and error UI by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/926
-- #925 fix(finance): include all view in transaction filter logic by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/925
-- #924 Manoelnetocarvalho03/mon 955 exibir icones de banco e bandeira no cartao by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/924
-- #923 fix(finance): compute current balance using only paid transactions by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/923
-- #922 refactor: remove right alignment from transactions column by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/922
-- #921 refactor(web): move contact field to collapsible section by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/921
-- #920 Manoelnetocarvalho03/mon 980 ordenacao das tabelas nao funciona by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/920
-- #919 Manoelnetocarvalho03/mon 994 corrigir formatacao de data na importacao de lancamentos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/919
-- #918 feat(web): add icon and color picker to categories table by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/918
-- #917 Add fixed id toast hook by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/917
-- #916 test(web-e2e): MON-982 cobertura do bug de importação em massa by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/916
-- #915 fix(account): drop redundant new Date wrap on member createdAt by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/915
-- #914 feat: add team management and explicit access control by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/914
-- #913 chore: remove service tools from Montte AI by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/913
-- #912 refactor(data-table): v2 slot-based core + extract features by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/912
-- #911 chore: remove dashboards and insights by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/911
-- #910 fix(transactions): allow type in update schema by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/910
-- #909 MON-958: padronizar modelos de importação CSV e XLSX by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/909
-- #908 MON-953 Exibir logo do banco na listagem de contas by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/908
-- #907 Permitir arquivar categorias padrão by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/907
-- #906 MON-963: Implementar lançamentos ignorados by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/906
-- #905 MON-951: adicionar opção de arquivar categorias by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/905
-- #904 MON-958: revisar importações e criar modelos por entidade by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/904
-- #903 test: fix E2E UI hanging resources by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/903
-- #902 Selecionar bandeira no cadastro de cartão by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/902
-- #901 MON-969: adicionar botão para reenviar convite pendente by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/901
-- #900 MON-952: adiciona atalho para lançamentos da conta by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/900
-- #899 fix: remover coluna de categoria pai by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/899
-- #898 MON-945 Ajusta tooltips das ações em lançamentos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/898
-- #897 feat(transactions): hierarchical category picker (MON-947) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/897
-- #896 fix(transactions): substituir "marcar como pagas" por "ignorar lançamentos" (MON-946) by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/896
-- #895 MON-957: Localiza exportação de cartões de crédito by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/895
-- #894 fix: stabilize e2e flows by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/894
-- #893 Manoelnetocarvalho03/mon 965 org switcher nao seleciona team padrao ao trocar de by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/893
-- #892 Manoelnetocarvalho03/mon 944 padronizar criacao de centro de custo via sheet by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/892
-- #891 feat: padronizar criação de cartões de crédito via side sheet by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/891
-- #890 MON-894: permitir escolher ícone ao criar categoria by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/890
-- #889 feat: add categories import template by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/889
-- #888 MON-960 Reordenar campos do novo lançamento manual by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/888
-- #887 fix: preserve search input focus on cost centers table by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/887
-- #886 MON-898: adiciona modelo de importação de contas bancárias by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/886
-- #885 MON-906: disponibilizar modelo na importação de contatos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/885
-- #884 feat: add cost center import template by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/884
-- #883 refactor: replace PostHog AI middleware with OpenTelemetry by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/883
-- #882 Manoelnetocarvalho03/mon 888 importacao via ofx exibe erro e nao salva lancamentos by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/882
-- #881 feat(categories): allow editing and deleting default categories by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/881
-- #880 Debloat core files by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/880
-- #879 File upload by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/879
-- #878 RN pronta: 31 PRs, 15 MONs by @app/opencode-agent — https://github.com/Montte-erp/montte-nx/pull/878
-- #877 feat(upload): add user avatar upload and migrate to S3 client by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/877
+- #976 fix(web): ajustar ordenacao dos cartoes by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/976
+- #975 feat: migrar categorias para TanStack DB by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/975
+- #974 feat(tags): integrate TanStack DB and add conflict validation by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/974
+- #973 feat(desktop): Add Tauri shell and local development support by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/973
+- #972 Add finance read tools to Montte AI by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/972
+- #970 refactor(account): replace neverthrow with better-result by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/970
+- #969 refactor(insights): migrates error handling to better-result and evlog by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/969
+- #968 refactor(inbox): migrate to better-result by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/968
+- #967 Manoelnetocarvalho03/mon 1104 proteger waitlist sign up com arcjet contra emails by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/967
+- #966 Migrate Montte AI chat to AG-UI runtime by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/966
+- #965 Refine landing hero for recurring operations by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/965
+- #964 feat: publish CRM removal blog post by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/964
+- #963 Extrai cashbook de finance by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/963
+- #962 refactor(database): remove contacts schema and references by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/962
+- #961 feat(cards): implementar fechamento manual de fatura by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/961
+- #960 feat(cards): add automatic statement closing pg-boss job by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/960
+- #959 MON-1099 Extrai módulo de cards de finance by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/959
+- #958 Decouple AgentRuntimeError from job error payloads by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/958
+- #957 fix(agents): skip completed when thread update has no rows by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/957
+- #956 refactor agents resultgen flows by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/956
+- #955 MON-1096: Explicita lock transacional do chat by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/955
+- #954 add pt-br messages to agents tagged errors by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/954
+- #953 Corrige compilação do prompt no advisor by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/953
+- #952 Refactor classification result boundaries by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/952
+- #951 Fix bank Logo.dev mappings and reduce landing motion by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/951
+- #950 Refactor agents runtime jobs by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/950
+- #949 Remove core SSE package by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/949
+- #948 refactor: remove unused schemas and migrate to better-result by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/948
+- #947 MON-1087: limpar uso do core utils by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/947
+- #945 Refactor organization general settings form by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/945
+- #944 Fix auth loading toasts by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/944
+- #943 MON-966: integrar better-notify como core de notificações by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/943
+- #942 MON-967 Migrar logging para evlog by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/942
+- #941 MON-1076 Isolar runtime DBOS no worker by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/941
+- #940 MON-1078 Spike pg-boss com Bun e Drizzle by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/940
+- #939 MON-1068: Migrar observabilidade de AI para TanStack OTEL by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/939
+- #938 Remove contacts module by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/938
+- #937 Implementar relatórios empresariais V1 by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/937
+- #936 Manoelnetocarvalho03/mon 1046 popover da edicao em massa abre por tras da interface by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/936
+- #935 MON-961: Implementar lançamentos recorrentes by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/935
+- #934 feat(finance): add installment support for transactions by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/934
+- #933 feat(landing): add blog with Astro, RSS, OG images and SEO by @Yorizel — https://github.com/Montte-erp/montte-nx/pull/933
