@@ -40,7 +40,7 @@ const canonicalUrl = canonicalOverride
 const canonical = canonicalUrl.toString();
 const socialImage = ogImage
    ? new URL(ogImage, siteUrl).toString()
-   : new URL("/favicon.svg", siteUrl).toString();
+   : new URL("/open-graph/montte.png", siteUrl).toString();
 
 const orgJsonLd = {
    "@context": "https://schema.org",
@@ -84,6 +84,8 @@ const jsonLdBlocks = [orgJsonLd, ...(jsonLd ?? [])];
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />
       <meta property="og:image" content={socialImage} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content={title} />
       <meta property="og:locale" content="pt_BR" />
       {
@@ -113,6 +115,7 @@ const jsonLdBlocks = [orgJsonLd, ...(jsonLd ?? [])];
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={socialImage} />
+      <meta name="twitter:image:alt" content={title} />
       <title>{title}</title>
       {
          jsonLdBlocks.map((block) => (
@@ -130,6 +133,6 @@ const jsonLdBlocks = [orgJsonLd, ...(jsonLd ?? [])];
       <main class="relative">
          <slot />
       </main>
-      <CookieConsent client:load />
+      <CookieConsent client:idle />
    </body>
 </html>

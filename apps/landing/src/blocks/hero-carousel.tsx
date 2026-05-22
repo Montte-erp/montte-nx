@@ -10,11 +10,13 @@ export function HeroCarousel() {
                   <div className="md:w-1/2">
                      <div>
                         <h1 className="max-w-md text-5xl font-medium text-balance md:text-6xl">
-                           Recorrência simples para empresas brasileiras
+                           Infraestrutura AI-native para serviços recorrentes
                         </h1>
                         <p className="my-8 max-w-2xl text-xl text-muted-foreground text-balance">
-                           Cobre uso, concilie receita e entenda cada cliente
-                           sem remendar planilhas, cobrança e financeiro.
+                           O Montte junta cobrança, clientes, uso, pendências e
+                           financeiro em uma infraestrutura fácil de
+                           implementar. Feito para SaaS, coworkings e empresas
+                           que vivem de recorrência.
                         </p>
 
                         <div className="flex items-center gap-3">
@@ -51,7 +53,7 @@ function ProductScreen() {
          alt="Tela de lançamentos financeiros no Montte"
          width={1870}
          height={992}
-         className="size-full object-contain object-left-top"
+         className="size-full object-cover object-left-top"
          loading="eager"
       />
    );

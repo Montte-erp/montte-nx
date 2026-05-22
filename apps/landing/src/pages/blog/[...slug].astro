@@ -9,18 +9,19 @@ import { readingTime } from "reading-time-estimator";
 import BaseLayout from "../../layouts/base-layout.astro";
 import FooterBlock from "../../blocks/footer-block.astro";
 import { getAuthor, getInitials } from "../../data/authors";
+import { getRelatedPosts, sortBlogPosts } from "../../lib/blog";
 
 dayjs.locale("pt-br");
 
 export async function getStaticPaths() {
-   const posts = await getCollection("blog");
+   const posts = sortBlogPosts(await getCollection("blog"));
    return posts.map((post) => ({
       params: { slug: post.id },
-      props: { post },
+      props: { post, relatedPosts: getRelatedPosts(post, posts) },
    }));
 }
 
-const { post } = Astro.props;
+const { post, relatedPosts } = Astro.props;
 const { Content, headings } = await render(post);
 const tocHeadings = headings.filter((h) => h.depth === 2);
 const author = getAuthor(post.data.author);
@@ -71,7 +72,28 @@ const faqLd = post.data.faq?.length
      }
    : null;
 
-const jsonLd = faqLd ? [blogPostingLd, faqLd] : [blogPostingLd];
+const breadcrumbLd = {
+   "@context": "https://schema.org",
+   "@type": "BreadcrumbList",
+   itemListElement: [
+      {
+         "@type": "ListItem",
+         position: 1,
+         name: "Blog",
+         item: new URL("/blog", siteUrl).toString(),
+      },
+      {
+         "@type": "ListItem",
+         position: 2,
+         name: post.data.title,
+         item: canonical,
+      },
+   ],
+};
+
+const jsonLd = faqLd
+   ? [blogPostingLd, faqLd, breadcrumbLd]
+   : [blogPostingLd, breadcrumbLd];
 
 const trackingProps = {
    post_slug: post.id,
@@ -85,6 +107,10 @@ const trackingProps = {
    featured: post.data.featured,
    release_version: post.data.releaseVersion ?? null,
 };
+
+const ctaTitle = "Acompanhe o desenvolvimento do Montte";
+const ctaDescription =
+   "Publicamos releases, decisões técnicas e postmortems conforme o produto muda.";
 ---
 
 <BaseLayout
@@ -274,28 +300,69 @@ const trackingProps = {
                      )
                   }
 
+                  {
+                     relatedPosts.length > 0 && (
+                        <section class="flex flex-col gap-4 rounded-xl border border-border/60 bg-card/30 p-5">
+                           <div class="flex flex-col gap-1">
+                              <h2 class="font-serif text-xl font-bold text-foreground">
+                                 Leia também
+                              </h2>
+                              <p class="text-sm text-muted-foreground">
+                                 Outros posts com contexto parecido.
+                              </p>
+                           </div>
+                           <ul class="m-0 flex list-none flex-col divide-y divide-border/40 p-0">
+                              {relatedPosts.map((relatedPost) => (
+                                 <li>
+                                    <a
+                                       href={`/blog/${relatedPost.id}`}
+                                       class="group/related flex items-center justify-between gap-4 rounded-lg px-0 py-3 transition-colors first:pt-0 last:pb-0 hover:text-primary"
+                                    >
+                                       <div class="flex min-w-0 flex-col gap-1.5">
+                                          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                             <span class="font-semibold uppercase tracking-wider">
+                                                {relatedPost.data.category}
+                                             </span>
+                                             <span aria-hidden="true">·</span>
+                                             <time datetime={relatedPost.data.publishedAt.toISOString()}>
+                                                {dayjs(relatedPost.data.publishedAt).format(
+                                                   "DD [de] MMM, YYYY",
+                                                )}
+                                             </time>
+                                          </div>
+                                          <span class="text-sm font-semibold leading-snug text-foreground transition-colors group-hover/related:text-primary">
+                                             {relatedPost.data.title}
+                                          </span>
+                                       </div>
+                                       <ArrowRight
+                                          class="size-4 shrink-0 text-muted-foreground transition-transform group-hover/related:translate-x-1 group-hover/related:text-primary"
+                                          aria-hidden="true"
+                                       />
+                                    </a>
+                                 </li>
+                              ))}
+                           </ul>
+                        </section>
+                     )
+                  }
+
                   <a
-                     href="/#waitlist"
-                     class="group relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/10 p-5 transition-all hover:border-primary/60 hover:bg-primary/15"
+                     href="/blog"
+                     class="group relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-border/60 bg-card/30 p-5 transition-colors hover:border-border hover:bg-card/50"
                   >
-                     <div
-                        class="absolute inset-0 -z-10 opacity-0 transition-opacity group-hover:opacity-100"
-                        style="background: radial-gradient(ellipse at right, color-mix(in oklch, var(--primary) 25%, transparent), transparent 70%);"
-                        aria-hidden="true"
-                     />
                      <div class="flex flex-col gap-0.5">
-                        <span class="text-xs font-semibold uppercase tracking-wider text-primary">
-                           Waitlist
+                        <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                           Diário público
                         </span>
                         <span class="text-base font-semibold text-foreground">
-                           Quer testar o Montte antes dos outros?
+                           {ctaTitle}
                         </span>
                         <span class="text-sm text-muted-foreground">
-                           Entre na lista e a gente te chama no próximo lote.
+                           {ctaDescription}
                         </span>
                      </div>
                      <ArrowRight
-                        class="size-5 shrink-0 text-primary transition-transform group-hover:translate-x-1"
+                        class="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary"
                         aria-hidden="true"
                      />
                   </a>
@@ -333,13 +400,13 @@ const trackingProps = {
                      class="flex flex-col gap-2 rounded-lg border border-border/60 bg-card/40 p-4"
                   >
                      <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Em breve no Montte?
+                        Acompanhe o projeto
                      </p>
                      <a
-                        href="/#waitlist"
+                        href="/rss.xml"
                         class="text-sm font-semibold text-primary hover:underline"
                      >
-                        Entre na lista de espera →
+                        RSS do blog →
                      </a>
                   </div>
                </div>
@@ -351,7 +418,7 @@ const trackingProps = {
    <FooterBlock />
 </BaseLayout>
 
-<script define:vars={{ trackingProps }}>
+<script is:inline define:vars={{ trackingProps }}>
    const waitForPosthog = (cb) => {
       if (window.posthog?.__loaded) return cb(window.posthog);
       let tries = 0;

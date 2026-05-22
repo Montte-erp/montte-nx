@@ -9,20 +9,24 @@ import FooterBlock from "../blocks/footer-block.astro";
 ---
 
 <BaseLayout
-   title="Montte: recorrência para empresas brasileiras"
-   description="Conecte assinatura, uso, cobrança, cliente e financeiro em uma operação recorrente feita para empresas brasileiras."
+   title="Montte: infraestrutura AI-native para serviços recorrentes"
+   description="Cobrança, clientes, uso, pendências e financeiro em uma infraestrutura fácil de implementar para SaaS, coworkings e serviços recorrentes."
 >
    <section
       class="relative isolate flex min-h-screen flex-col overflow-hidden"
       aria-label="Apresentação"
    >
-      <img
-         src="/videos/montte-hero-bg.webp"
-         alt=""
-         class="absolute inset-0 -z-30 size-full object-cover"
-         loading="eager"
+      <video
+         class="absolute inset-0 -z-30 size-full object-cover motion-reduce:hidden"
+         autoplay
+         muted
+         loop
+         playsinline
+         preload="metadata"
          aria-hidden="true"
-      />
+      >
+         <source src="/videos/montte-hero-bg.webm" type="video/webm" />
+      </video>
       <div
          class="absolute inset-0 -z-20 bg-gradient-to-r from-background/40 via-background/10 to-transparent"
          aria-hidden="true"
@@ -35,7 +39,7 @@ import FooterBlock from "../blocks/footer-block.astro";
       </div>
 
       <div class="flex w-full flex-1 flex-col justify-center gap-4">
-         <HeroCarousel client:load />
+         <HeroCarousel client:idle />
       </div>
    </section>
 

@@ -1,0 +1,79 @@
+---
+export const prerender = true;
+import { createSlug } from "@core/utils/text";
+import BlogCategoryNav from "../../../components/blog/blog-category-nav.astro";
+import BlogPostList from "../../../components/blog/blog-post-list.astro";
+import FooterBlock from "../../../blocks/footer-block.astro";
+import BaseLayout from "../../../layouts/base-layout.astro";
+import {
+   getBlogCategories,
+   getBlogCategoryTabs,
+   getBlogItemListLd,
+   getSortedBlogPosts,
+} from "../../../lib/blog";
+
+export async function getStaticPaths() {
+   const allPosts = await getSortedBlogPosts();
+   return getBlogCategories(allPosts).map(([name]) => {
+      const posts = allPosts.filter((post) => post.data.category === name);
+      return {
+         params: { category: createSlug(name) },
+         props: {
+            categoryName: name,
+            posts,
+            tabs: getBlogCategoryTabs(allPosts, name),
+         },
+      };
+   });
+}
+
+const { categoryName, posts, tabs } = Astro.props;
+const itemListLd = getBlogItemListLd(posts, `Blog do Montte: ${categoryName}`);
+---
+
+<BaseLayout
+   title={`${categoryName} — Blog do Montte`}
+   description={`Posts de ${categoryName.toLowerCase()} sobre decisões, mudanças e aprendizados no Montte.`}
+   ogImage="/open-graph/blog.png"
+   jsonLd={[itemListLd]}
+>
+   <section class="relative isolate overflow-hidden border-b border-border/60 pt-32 pb-16">
+      <div
+         class="absolute inset-0 -z-10"
+         style="background: linear-gradient(to bottom, color-mix(in oklch, var(--secondary) 22%, var(--background)) 0%, var(--background) 100%);"
+         aria-hidden="true"
+      >
+      </div>
+      <div class="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-4 text-center sm:px-4">
+         <a
+            href="/blog"
+            class="text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+         >
+            ← Blog
+         </a>
+         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            Categoria
+         </p>
+         <h1 class="font-serif text-4xl leading-tight font-black text-foreground text-balance sm:text-5xl md:text-6xl">
+            {categoryName}
+         </h1>
+         <p class="max-w-2xl text-base leading-relaxed text-muted-foreground text-balance sm:text-lg">
+            Posts de {categoryName.toLowerCase()} sobre decisões, mudanças e aprendizados no Montte.
+         </p>
+      </div>
+   </section>
+
+   <section class="py-12 sm:py-16">
+      <div class="mx-auto w-full max-w-6xl px-4 sm:px-4">
+         <div class="grid grid-cols-1 gap-8 lg:grid-cols-[200px_1fr] lg:gap-12">
+            <BlogCategoryNav tabs={tabs} />
+
+            <div class="flex flex-col">
+               <BlogPostList posts={posts} />
+            </div>
+         </div>
+      </div>
+   </section>
+
+   <FooterBlock />
+</BaseLayout>

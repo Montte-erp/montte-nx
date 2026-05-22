@@ -3,7 +3,23 @@ import { getCollection } from "astro:content";
 
 const posts = await getCollection("blog");
 
-const pages = Object.fromEntries(posts.map((post) => [post.id, post.data]));
+const landingPages = {
+   montte: {
+      title: "Montte: infraestrutura AI-native para serviços recorrentes",
+      description:
+         "Cobrança, clientes, uso, pendências e financeiro em uma infraestrutura fácil de implementar para SaaS, coworkings e serviços recorrentes.",
+   },
+   blog: {
+      title: "Blog do Montte",
+      description:
+         "Releases, decisões de produto e bastidores da infraestrutura AI-native para serviços recorrentes.",
+   },
+};
+
+const pages = {
+   ...landingPages,
+   ...Object.fromEntries(posts.map((post) => [post.id, post.data])),
+};
 
 export const { getStaticPaths, GET } = OGImageRoute({
    param: "route",

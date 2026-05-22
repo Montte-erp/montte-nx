@@ -1,0 +1,73 @@
+---
+import { Picture } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
+import { getAuthor, getInitials } from "../../data/authors";
+
+dayjs.locale("pt-br");
+
+interface Props {
+   posts: CollectionEntry<"blog">[];
+   emptyMessage?: string;
+}
+
+const { posts, emptyMessage = "Nenhum post publicado nesta categoria." } =
+   Astro.props;
+---
+
+{
+   posts.length === 0 ? (
+      <p class="text-muted-foreground">{emptyMessage}</p>
+   ) : (
+      <ul class="flex flex-col">
+         {posts.map((post) => {
+            const author = getAuthor(post.data.author);
+            const avatar = author ? (
+               <Picture
+                  src={author.avatar}
+                  alt={author.name}
+                  formats={["webp"]}
+                  widths={[20, 40]}
+                  sizes="20px"
+                  loading="lazy"
+                  decoding="async"
+                  class="size-5 shrink-0 rounded-full border border-border/60 object-cover"
+               />
+            ) : (
+               <span
+                  class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary"
+                  aria-hidden="true"
+               >
+                  {getInitials(post.data.author)}
+               </span>
+            );
+
+            return (
+               <li class="border-b border-border/40 last:border-b-0">
+                  <a
+                     href={`/blog/${post.id}`}
+                     class="group flex flex-col gap-2 py-4 lg:flex-row lg:items-center lg:gap-3"
+                  >
+                     <div class="flex min-w-0 items-center gap-2 lg:flex-1">
+                        <span class="line-clamp-2 text-sm font-medium text-foreground group-hover:text-primary group-hover:underline underline-offset-4 sm:text-base lg:line-clamp-1 lg:truncate">
+                           {post.data.title}
+                        </span>
+                        <span class="hidden shrink-0 lg:inline-flex">{avatar}</span>
+                     </div>
+                     <div class="flex items-center justify-between gap-3 text-xs text-muted-foreground lg:justify-end">
+                        <span class="inline-flex shrink-0 lg:hidden">{avatar}</span>
+                        <time
+                           datetime={post.data.publishedAt.toISOString()}
+                           class="shrink-0 whitespace-nowrap"
+                        >
+                           {dayjs(post.data.publishedAt).format("DD [de] MMM, YYYY")}
+                        </time>
+                     </div>
+                  </a>
+               </li>
+            );
+         })}
+      </ul>
+   )
+}

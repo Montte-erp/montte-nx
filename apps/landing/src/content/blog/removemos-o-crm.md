@@ -5,7 +5,7 @@ publishedAt: 2026-05-18
 author: "Manoel Neto"
 tags: ["opiniao", "crm", "billing", "twenty"]
 category: "Opinião"
-coverImage: "../../assets/blog/removemos-o-crm-cover.png"
+coverImage: "../../assets/blog/removemos-o-crm-cover.webp"
 featured: false
 readingMinutes: 3
 keyTakeaways:
@@ -68,4 +68,4 @@ Não é Bling, Omie ou Conta Azul.
 
 ## O que vem por aí
 
-Tem [waitlist aberta](https://montte.com.br/#waitlist) pra quem quiser acompanhar de perto. O resultado do survey de DX sai num próximo post.
+Tem [waitlist aberta](https://montte.co/#waitlist) pra quem quiser acompanhar de perto. O resultado do survey de DX sai num próximo post.
