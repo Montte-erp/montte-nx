@@ -10,11 +10,11 @@ export function HeroCarousel() {
                   <div className="md:w-1/2">
                      <div>
                         <h1 className="max-w-md text-5xl font-medium text-balance md:text-6xl">
-                           Recorrência simples para empresas brasileiras
+                           Billing pra SaaS brasileiro, sem ERP por fora
                         </h1>
                         <p className="my-8 max-w-2xl text-xl text-muted-foreground text-balance">
-                           Cobre uso, concilie receita e entenda cada cliente
-                           sem remendar planilhas, cobrança e financeiro.
+                           Assinatura, uso medido, cobrança e estado do cliente
+                           em uma camada feita para founder operar sem remendo.
                         </p>
 
                         <div className="flex items-center gap-3">

@@ -1,4 +1,3 @@
-import type { FormEvent } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { motion, AnimatePresence } from "motion/react";
@@ -153,8 +152,12 @@ export function WaitlistForm() {
                                     aria-invalid={isInvalid}
                                     disabled={form.state.isSubmitting}
                                     value={field.state.value}
-                                    onInput={(e: FormEvent<HTMLInputElement>) =>
-                                       field.handleChange(e.currentTarget.value)
+                                    onInput={(event: {
+                                       currentTarget: HTMLInputElement;
+                                    }) =>
+                                       field.handleChange(
+                                          event.currentTarget.value,
+                                       )
                                     }
                                     onBlur={() => field.handleBlur()}
                                     required

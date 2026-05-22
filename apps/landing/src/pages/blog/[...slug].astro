@@ -9,6 +9,7 @@ import { readingTime } from "reading-time-estimator";
 import BaseLayout from "../../layouts/base-layout.astro";
 import FooterBlock from "../../blocks/footer-block.astro";
 import { getAuthor, getInitials } from "../../data/authors";
+import { getRelatedPosts } from "../../lib/blog";
 
 dayjs.locale("pt-br");
 
@@ -21,6 +22,10 @@ export async function getStaticPaths() {
 }
 
 const { post } = Astro.props;
+const allPosts = (await getCollection("blog")).sort(
+   (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime(),
+);
+const relatedPosts = getRelatedPosts(post, allPosts);
 const { Content, headings } = await render(post);
 const tocHeadings = headings.filter((h) => h.depth === 2);
 const author = getAuthor(post.data.author);
@@ -72,7 +77,28 @@ const faqLd = post.data.faq?.length
      }
    : null;
 
-const jsonLd = faqLd ? [blogPostingLd, faqLd] : [blogPostingLd];
+const breadcrumbLd = {
+   "@context": "https://schema.org",
+   "@type": "BreadcrumbList",
+   itemListElement: [
+      {
+         "@type": "ListItem",
+         position: 1,
+         name: "Blog",
+         item: new URL("/blog", siteUrl).toString(),
+      },
+      {
+         "@type": "ListItem",
+         position: 2,
+         name: post.data.title,
+         item: canonical,
+      },
+   ],
+};
+
+const jsonLd = faqLd
+   ? [blogPostingLd, faqLd, breadcrumbLd]
+   : [blogPostingLd, breadcrumbLd];
 
 const trackingProps = {
    post_slug: post.id,
@@ -86,6 +112,13 @@ const trackingProps = {
    featured: post.data.featured,
    release_version: post.data.releaseVersion ?? null,
 };
+
+const ctaTitle = post.data.releaseVersion
+   ? "Quer testar as próximas releases do Montte?"
+   : "Quer acompanhar a construção do Montte?";
+const ctaDescription = post.data.releaseVersion
+   ? "Entre na lista e receba convite quando abrirmos o próximo lote."
+   : "Entre na lista para ver a camada de billing que estamos construindo para SaaS brasileiro.";
 ---
 
 <BaseLayout
@@ -275,6 +308,39 @@ const trackingProps = {
                      )
                   }
 
+                  {
+                     relatedPosts.length > 0 && (
+                        <section class="flex flex-col gap-3 rounded-xl border border-border/60 bg-card/30 p-5">
+                           <h2 class="font-serif text-xl font-bold text-foreground">
+                              Continue lendo
+                           </h2>
+                           <ul class="flex flex-col gap-3">
+                              {relatedPosts.map((relatedPost) => (
+                                 <li>
+                                    <a
+                                       href={`/blog/${relatedPost.id}`}
+                                       class="group/related flex items-start justify-between gap-4 rounded-lg border border-border/40 bg-background/40 p-3 transition-colors hover:border-border hover:bg-background/70"
+                                    >
+                                       <div class="flex flex-col gap-1">
+                                          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                             {relatedPost.data.category}
+                                          </span>
+                                          <span class="text-sm font-semibold text-foreground group-hover/related:text-primary">
+                                             {relatedPost.data.title}
+                                          </span>
+                                       </div>
+                                       <ArrowRight
+                                          class="size-4 shrink-0 text-muted-foreground transition-transform group-hover/related:translate-x-1 group-hover/related:text-primary"
+                                          aria-hidden="true"
+                                       />
+                                    </a>
+                                 </li>
+                              ))}
+                           </ul>
+                        </section>
+                     )
+                  }
+
                   <a
                      href="/#waitlist"
                      class="group relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/10 p-5 transition-all hover:border-primary/60 hover:bg-primary/15"
@@ -289,10 +355,10 @@ const trackingProps = {
                            Waitlist
                         </span>
                         <span class="text-base font-semibold text-foreground">
-                           Quer testar o Montte antes dos outros?
+                           {ctaTitle}
                         </span>
                         <span class="text-sm text-muted-foreground">
-                           Entre na lista e a gente te chama no próximo lote.
+                           {ctaDescription}
                         </span>
                      </div>
                      <ArrowRight
@@ -352,7 +418,7 @@ const trackingProps = {
    <FooterBlock />
 </BaseLayout>
 
-<script define:vars={{ trackingProps }}>
+<script is:inline define:vars={{ trackingProps }}>
    const waitForPosthog = (cb) => {
       if (window.posthog?.__loaded) return cb(window.posthog);
       let tries = 0;

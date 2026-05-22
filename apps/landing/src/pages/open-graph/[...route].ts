@@ -3,7 +3,23 @@ import { getCollection } from "astro:content";
 
 const posts = await getCollection("blog");
 
-const pages = Object.fromEntries(posts.map((post) => [post.id, post.data]));
+const landingPages = {
+   montte: {
+      title: "Montte: billing para SaaS brasileiro",
+      description:
+         "Assinatura, uso medido, cobrança e estado do cliente em uma camada feita para founder operar sem ERP por fora.",
+   },
+   blog: {
+      title: "Blog do Montte",
+      description:
+         "Releases, decisões de produto e bastidores da camada de billing que falta no SaaS brasileiro.",
+   },
+};
+
+const pages = {
+   ...landingPages,
+   ...Object.fromEntries(posts.map((post) => [post.id, post.data])),
+};
 
 export const { getStaticPaths, GET } = OGImageRoute({
    param: "route",

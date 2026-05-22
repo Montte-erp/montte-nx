@@ -7,6 +7,7 @@ import "dayjs/locale/pt-br";
 import BaseLayout from "../../layouts/base-layout.astro";
 import FooterBlock from "../../blocks/footer-block.astro";
 import { getAuthor, getInitials } from "../../data/authors";
+import { slugifyCategory } from "../../lib/blog";
 
 dayjs.locale("pt-br");
 
@@ -24,15 +25,35 @@ const categories = Object.entries(categoryCounts).sort(
    ([, a], [, b]) => b - a,
 );
 
+const siteUrl = "https://montte.co";
 const tabs = [
-   { name: "Todos os posts", count: posts.length, active: true },
-   ...categories.map(([name, count]) => ({ name, count, active: false })),
+   { name: "Todos os posts", count: posts.length, active: true, href: "/blog" },
+   ...categories.map(([name, count]) => ({
+      name,
+      count,
+      active: false,
+      href: `/blog/categoria/${slugifyCategory(name)}`,
+   })),
 ];
+
+const itemListLd = {
+   "@context": "https://schema.org",
+   "@type": "ItemList",
+   name: "Blog do Montte",
+   itemListElement: posts.map((post, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: new URL(`/blog/${post.id}`, siteUrl).toString(),
+      name: post.data.title,
+   })),
+};
 ---
 
 <BaseLayout
    title="Blog do Montte"
-   description="Releases, decisões de produto, postmortems e o que estamos aprendendo construindo o Montte, a plataforma operacional pra empresas brasileiras."
+   description="Releases, decisões de produto, postmortems e o que estamos aprendendo construindo a camada de billing que falta no SaaS brasileiro."
+   ogImage="/open-graph/blog.png"
+   jsonLd={[itemListLd]}
 >
    <section
       class="relative isolate overflow-hidden border-b border-border/60 pt-32 pb-16"
@@ -154,7 +175,9 @@ const tabs = [
                         {
                            tabs.map((tab) => (
                               <li class="shrink-0 lg:w-full">
-                                 <span
+                                 <a
+                                    href={tab.href}
+                                    aria-current={tab.active ? "page" : undefined}
                                     class:list={[
                                        "inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-1 pb-3 text-sm transition-colors lg:w-full lg:justify-between lg:border-b-0 lg:border-l-2 lg:px-3 lg:py-2 lg:pb-2",
                                        tab.active
@@ -173,7 +196,7 @@ const tabs = [
                                     >
                                        {tab.count}
                                     </span>
-                                 </span>
+                                 </a>
                               </li>
                            ))
                         }
