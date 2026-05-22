@@ -23,13 +23,13 @@ import { useMemo, useState } from "react";
 import { Result } from "better-result";
 import { closeCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import type { Outputs } from "@/integrations/orpc/client";
 import {
    createWorkflowFromTemplateAction,
+   type WorkflowTemplateRow,
    type WorkflowsCollection,
 } from "@/integrations/tanstack-db/workflows";
 
-type WorkflowTemplate = Outputs["workflows"]["templates"]["list"][number];
+type WorkflowTemplate = WorkflowTemplateRow;
 
 type DomainFilterId = "all" | "reports";
 

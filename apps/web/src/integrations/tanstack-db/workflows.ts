@@ -6,15 +6,27 @@ import dayjs from "dayjs";
 import { orpc, type Inputs, type Outputs } from "@/integrations/orpc/client";
 
 export type WorkflowCollectionRow = Outputs["workflows"]["list"][number];
-export type WorkflowTemplateRow =
-   Outputs["workflows"]["templates"]["list"][number];
+type WorkflowTemplateOutput = Outputs["workflows"]["templates"]["list"][number];
+export type WorkflowTemplateRow = {
+   id: WorkflowTemplateOutput["id"];
+   name: WorkflowTemplateOutput["name"];
+   icon: WorkflowTemplateOutput["icon"];
+   description: WorkflowTemplateOutput["description"];
+   category: WorkflowTemplateOutput["category"];
+   cadence: WorkflowTemplateOutput["cadence"];
+   defaultCron: WorkflowTemplateOutput["defaultCron"];
+   reportType: WorkflowTemplateOutput["reportType"];
+   period: WorkflowTemplateOutput["period"];
+   defaultNameTemplate: WorkflowTemplateOutput["defaultNameTemplate"];
+   editableFields: WorkflowTemplateOutput["editableFields"];
+   defaultGraph: WorkflowTemplateOutput["defaultGraph"];
+};
 export type WorkflowRunRow = Outputs["workflows"]["runs"]["list"][number];
 export type WorkflowCreateFromTemplateInput =
    Inputs["workflows"]["createFromTemplate"];
 export type WorkflowUpdateInput = Inputs["workflows"]["update"];
 
 export type WorkflowsCollection = Collection<WorkflowCollectionRow, string>;
-type WorkflowTemplatesCollection = Collection<WorkflowTemplateRow, string>;
 type WorkflowRunsCollection = Collection<WorkflowRunRow, string>;
 
 type WorkflowsCollectionOptionsInput = {

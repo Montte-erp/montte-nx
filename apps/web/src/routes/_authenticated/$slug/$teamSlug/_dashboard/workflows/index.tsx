@@ -243,7 +243,10 @@ function WorkflowsIndexContent() {
             .select(({ template }) => template),
       [workflowTemplatesCollection],
    );
-   const templateRows = templates as WorkflowTemplateRow[];
+   const templateRows = useMemo<WorkflowTemplateRow[]>(
+      () => templates.map((template) => template),
+      [templates],
+   );
 
    const searchInput = useDebouncedSearch({
       value: search,

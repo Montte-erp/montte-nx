@@ -74,19 +74,19 @@ import {
    type WorkflowNodePosition,
 } from "../../-workflows/workflow-canvas";
 
-const REPORT_TYPE_VALUES = [
+const REPORT_TYPE_VALUES: readonly [
    "dre",
    "cash-flow",
    "cost-centers",
    "aging",
    "categories",
-] as const;
-const PERIOD_KIND_VALUES = [
+] = ["dre", "cash-flow", "cost-centers", "aging", "categories"];
+const PERIOD_KIND_VALUES: readonly [
    "previous-month",
    "previous-week",
    "current-month",
    "current-week",
-] as const;
+] = ["previous-month", "previous-week", "current-month", "current-week"];
 
 const formSchema = z.object({
    schedule: z.object({
@@ -126,6 +126,14 @@ const PERIOD_LABELS: Record<WorkflowPeriodKind, string> = {
    "current-month": "Mês atual",
    "current-week": "Semana atual",
 };
+
+function parseWorkflowReportType(value: string): WorkflowReportType {
+   return REPORT_TYPE_VALUES.find((item) => item === value) ?? "dre";
+}
+
+function parseWorkflowPeriodKind(value: string): WorkflowPeriodKind {
+   return PERIOD_KIND_VALUES.find((item) => item === value) ?? "previous-month";
+}
 
 type WorkflowScheduleNode = WorkflowGraph["nodes"][0];
 type WorkflowReportNode = WorkflowGraph["nodes"][1];
@@ -423,7 +431,9 @@ function WorkflowDetailContent() {
                            <Select
                               value={field.state.value}
                               onValueChange={(value) =>
-                                 field.handleChange(value as WorkflowPeriodKind)
+                                 field.handleChange(
+                                    parseWorkflowPeriodKind(value),
+                                 )
                               }
                            >
                               <SelectTrigger className="w-full">
@@ -446,7 +456,9 @@ function WorkflowDetailContent() {
                            <Select
                               value={field.state.value}
                               onValueChange={(value) =>
-                                 field.handleChange(value as WorkflowReportType)
+                                 field.handleChange(
+                                    parseWorkflowReportType(value),
+                                 )
                               }
                            >
                               <SelectTrigger className="w-full">
