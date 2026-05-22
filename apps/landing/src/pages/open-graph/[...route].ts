@@ -5,14 +5,14 @@ const posts = await getCollection("blog");
 
 const landingPages = {
    montte: {
-      title: "Montte: billing para SaaS brasileiro",
+      title: "Montte: infraestrutura AI-native para serviços recorrentes",
       description:
-         "Assinatura, uso medido, cobrança e estado do cliente em uma camada feita para founder operar sem ERP por fora.",
+         "Cobrança, clientes, uso, pendências e financeiro em uma infraestrutura fácil de implementar para SaaS, coworkings e serviços recorrentes.",
    },
    blog: {
       title: "Blog do Montte",
       description:
-         "Releases, decisões de produto e bastidores da camada de billing que falta no SaaS brasileiro.",
+         "Releases, decisões de produto e bastidores da infraestrutura AI-native para serviços recorrentes.",
    },
 };
 

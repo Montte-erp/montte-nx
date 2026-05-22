@@ -10,11 +10,13 @@ export function HeroCarousel() {
                   <div className="md:w-1/2">
                      <div>
                         <h1 className="max-w-md text-5xl font-medium text-balance md:text-6xl">
-                           Billing pra SaaS brasileiro, sem ERP por fora
+                           Infraestrutura AI-native para serviços recorrentes
                         </h1>
                         <p className="my-8 max-w-2xl text-xl text-muted-foreground text-balance">
-                           Assinatura, uso medido, cobrança e estado do cliente
-                           em uma camada feita para founder operar sem remendo.
+                           O Montte junta cobrança, clientes, uso, pendências e
+                           financeiro em uma infraestrutura fácil de
+                           implementar. Feito para SaaS, coworkings e empresas
+                           que vivem de recorrência.
                         </p>
 
                         <div className="flex items-center gap-3">
