@@ -51,7 +51,7 @@ function ProductScreen() {
          alt="Tela de lançamentos financeiros no Montte"
          width={1870}
          height={992}
-         className="size-full object-contain object-left-top"
+         className="size-full object-cover object-left-top"
          loading="eager"
       />
    );
