@@ -19,28 +19,32 @@ import { toast } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { useSheet } from "@/hooks/use-sheet";
-import type { NfeRow, NfeStatus } from "./nfe-columns";
+import type { NfeRow } from "./nfe-columns";
 
 const formSchema = z.object({
    numero: z.string().trim().min(2, "Informe o número da NF-e."),
+   serie: z.string().trim().min(1, "Informe a série."),
    cliente: z.string().trim().min(2, "Informe o cliente."),
    cnpj: z.string().trim().min(14, "Informe um CNPJ válido."),
    valor: z.string().trim().min(4, "Informe o valor."),
    emissao: z.string().trim().min(10, "Informe a data de emissão."),
-   contrato: z.string().trim().min(2, "Informe o contrato vinculado."),
-   status: z.enum(["rascunho", "validacao", "autorizada", "cancelada"]),
+   contrato: z.string().trim().min(2, "Informe o vínculo comercial."),
+   operacao: z.string().trim().min(2, "Informe a operação fiscal."),
+   ambiente: z.enum(["normal", "contingencia", "homologacao"]),
 });
 
 type FormValues = z.input<typeof formSchema>;
 
 const defaultValues: FormValues = {
    numero: "",
+   serie: "1",
    cliente: "",
    cnpj: "",
    valor: "",
-   emissao: "21/05/2026",
+   emissao: "22/05/2026",
    contrato: "",
-   status: "rascunho",
+   operacao: "Venda de produto",
+   ambiente: "normal",
 };
 
 function isFieldInvalid(field: {
@@ -56,9 +60,15 @@ function getFieldErrorMessage(error: unknown) {
       error !== null &&
       "message" in error &&
       typeof error.message === "string"
-   )
+   ) {
       return error.message;
+   }
    return undefined;
+}
+
+function buildDemoAccessKey(numero: string, cnpj: string) {
+   const digits = `${cnpj}${numero}`.replaceAll(/\D/g, "");
+   return `${digits.padEnd(44, "0").slice(0, 44)}`;
 }
 
 export function NfeFormSheet({
@@ -71,17 +81,28 @@ export function NfeFormSheet({
       defaultValues,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: ({ value }) => {
+         const numero = value.numero.trim();
+         const cnpj = value.cnpj.trim();
          onCreate({
             id: crypto.randomUUID(),
-            numero: value.numero.trim(),
+            numero,
+            serie: value.serie.trim(),
+            modelo: "55",
             cliente: value.cliente.trim(),
-            cnpj: value.cnpj.trim(),
+            cnpj,
             valor: value.valor.trim(),
             emissao: value.emissao.trim(),
             contrato: value.contrato.trim(),
-            status: value.status,
+            operacao: value.operacao.trim(),
+            ambiente: value.ambiente,
+            chave: buildDemoAccessKey(numero, cnpj),
+            recibo: "Aguardando envio",
+            protocolo: "Sem protocolo",
+            retorno: "Nota pronta para emissão com certificado digital.",
+            evento: "Documento criado localmente.",
+            status: "pronta",
          });
-         toast.success("NF-e mockada criada com sucesso.");
+         toast.success("NF-e criada na demo fiscal.");
          closeTopSheet();
       },
    });
@@ -89,10 +110,10 @@ export function NfeFormSheet({
    return (
       <>
          <SheetHeader>
-            <SheetTitle>Nova NF-e mockada</SheetTitle>
+            <SheetTitle>Emitir NF-e</SheetTitle>
             <SheetDescription>
-               Cadastre uma nota local para demonstrar validação, autorização e
-               vínculo com contrato.
+               O certificado digital mockado já está conectado. Informe os dados
+               comerciais e o Montte prepara a assinatura, envio e XML/DANFE.
             </SheetDescription>
          </SheetHeader>
          <form
@@ -102,16 +123,24 @@ export function NfeFormSheet({
                form.handleSubmit();
             }}
          >
-            <form.Field
-               name="numero"
-               children={(field) => (
-                  <TextField
-                     field={field}
-                     label="Número"
-                     placeholder="NFE-1052"
-                  />
-               )}
-            />
+            <div className="grid gap-4 md:grid-cols-2">
+               <form.Field
+                  name="numero"
+                  children={(field) => (
+                     <TextField
+                        field={field}
+                        label="Número"
+                        placeholder="1052"
+                     />
+                  )}
+               />
+               <form.Field
+                  name="serie"
+                  children={(field) => (
+                     <TextField field={field} label="Série" placeholder="1" />
+                  )}
+               />
+            </div>
             <form.Field
                name="cliente"
                children={(field) => (
@@ -132,46 +161,60 @@ export function NfeFormSheet({
                   />
                )}
             />
-            <form.Field
-               name="valor"
-               children={(field) => (
-                  <TextField
-                     field={field}
-                     label="Valor"
-                     placeholder="R$ 4.900,00"
-                  />
-               )}
-            />
-            <form.Field
-               name="emissao"
-               children={(field) => (
-                  <TextField
-                     field={field}
-                     label="Emissão"
-                     placeholder="21/05/2026"
-                  />
-               )}
-            />
+            <div className="grid gap-4 md:grid-cols-2">
+               <form.Field
+                  name="valor"
+                  children={(field) => (
+                     <TextField
+                        field={field}
+                        label="Valor"
+                        placeholder="R$ 4.900,00"
+                     />
+                  )}
+               />
+               <form.Field
+                  name="emissao"
+                  children={(field) => (
+                     <TextField
+                        field={field}
+                        label="Emissão"
+                        placeholder="22/05/2026"
+                     />
+                  )}
+               />
+            </div>
             <form.Field
                name="contrato"
                children={(field) => (
                   <TextField
                      field={field}
-                     label="Contrato"
+                     label="Vínculo"
                      placeholder="CTR-2026-022"
                   />
                )}
             />
             <form.Field
-               name="status"
+               name="operacao"
+               children={(field) => (
+                  <TextField
+                     field={field}
+                     label="Operação fiscal"
+                     placeholder="Venda de produto"
+                  />
+               )}
+            />
+            <form.Field
+               name="ambiente"
                children={(field) => (
                   <Field data-invalid={isFieldInvalid(field) || undefined}>
-                     <FieldLabel htmlFor={field.name}>Status</FieldLabel>
+                     <FieldLabel htmlFor={field.name}>Ambiente</FieldLabel>
                      <Select
-                        value={field.state.value}
-                        onValueChange={(value: NfeStatus) =>
-                           field.handleChange(value)
+                        onValueChange={(value) =>
+                           field.handleChange(
+                              formSchema.shape.ambiente.parse(value),
+                           )
                         }
+                        value={field.state.value}
                      >
                         <SelectTrigger
                            aria-invalid={isFieldInvalid(field)}
@@ -180,14 +223,13 @@ export function NfeFormSheet({
                            <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                           <SelectItem value="rascunho">Rascunho</SelectItem>
-                           <SelectItem value="validacao">
-                              Em validação
+                           <SelectItem value="normal">Normal</SelectItem>
+                           <SelectItem value="contingencia">
+                              Contingência
                            </SelectItem>
-                           <SelectItem value="autorizada">
-                              Autorizada
+                           <SelectItem value="homologacao">
+                              Homologação
                            </SelectItem>
-                           <SelectItem value="cancelada">Cancelada</SelectItem>
                         </SelectContent>
                      </Select>
                   </Field>
@@ -209,7 +251,7 @@ export function NfeFormSheet({
                      disabled={!canSubmit || isSubmitting}
                      onClick={() => form.handleSubmit()}
                   >
-                     Criar NF-e
+                     Preparar emissão
                   </Button>
                )}
             </form.Subscribe>
@@ -225,7 +267,10 @@ function TextField({
 }: {
    field: {
       name: string;
-      state: { value: string; meta: { isTouched: boolean; errors: unknown[] } };
+      state: {
+         value: string;
+         meta: { isTouched: boolean; errors: unknown[] };
+      };
       handleBlur: () => void;
       handleChange: (value: string) => void;
    };

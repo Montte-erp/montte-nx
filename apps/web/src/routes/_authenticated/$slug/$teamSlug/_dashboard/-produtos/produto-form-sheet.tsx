@@ -1,6 +1,9 @@
 import { Button } from "@packages/ui/components/button";
+import { Combobox } from "@packages/ui/components/combobox";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
+import { MoneyInput } from "@packages/ui/components/money-input";
+import { NumberInput } from "@packages/ui/components/number-input";
 import {
    SheetClose,
    SheetDescription,
@@ -10,17 +13,22 @@ import {
 } from "@packages/ui/components/sheet";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { z } from "zod";
+import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
+import { orpc } from "@/integrations/orpc/client";
 import type { ProdutoRow } from "./produtos-columns";
 
 const formSchema = z.object({
    sku: z.string().trim().min(2, "Informe o SKU."),
    nome: z.string().trim().min(2, "Informe o produto."),
-   deposito: z.string().trim().min(2, "Informe o depósito."),
+   categoryId: z.string(),
+   tagId: z.string(),
    saldo: z.number().int().min(0, "Saldo não pode ser negativo."),
-   reservado: z.number().int().min(0, "Reserva não pode ser negativa."),
    minimo: z.number().int().min(0, "Mínimo não pode ser negativo."),
+   custoUnitario: z.number().min(0, "Custo não pode ser negativo."),
+   precoVenda: z.number().min(0, "Preço não pode ser negativo."),
 });
 
 type FormValues = z.input<typeof formSchema>;
@@ -28,10 +36,12 @@ type FormValues = z.input<typeof formSchema>;
 const defaultValues: FormValues = {
    sku: "",
    nome: "",
-   deposito: "Principal",
+   categoryId: "",
+   tagId: "",
    saldo: 0,
-   reservado: 0,
    minimo: 0,
+   custoUnitario: 0,
+   precoVenda: 0,
 };
 
 function isFieldInvalid(field: {
@@ -57,7 +67,47 @@ export function ProdutoFormSheet({
 }: {
    onCreate: (row: ProdutoRow) => void;
 }) {
+   return (
+      <QueryBoundary
+         fallback={
+            <div className="flex flex-col gap-4 p-4">
+               <SheetHeader>
+                  <SheetTitle>Novo produto</SheetTitle>
+                  <SheetDescription>
+                     Carregando classificações...
+                  </SheetDescription>
+               </SheetHeader>
+            </div>
+         }
+         errorTitle="Erro ao carregar classificações"
+      >
+         <ProdutoFormSheetContent onCreate={onCreate} />
+      </QueryBoundary>
+   );
+}
+
+function ProdutoFormSheetContent({
+   onCreate,
+}: {
+   onCreate: (row: ProdutoRow) => void;
+}) {
    const { closeTopSheet } = useSheet();
+   const { data: categories } = useSuspenseQuery(
+      orpc.categories.getAll.queryOptions({ input: { type: "expense" } }),
+   );
+   const { data: tagsResult } = useSuspenseQuery(
+      orpc.tags.getAll.queryOptions({ input: { pageSize: 100 } }),
+   );
+   const categoryOptions = categories.map((category) => ({
+      value: category.id,
+      label: category.parentId
+         ? `${categories.find((item) => item.id === category.parentId)?.name ?? "Categoria"} / ${category.name}`
+         : category.name,
+   }));
+   const tagOptions = tagsResult.data.map((tag) => ({
+      value: tag.id,
+      label: tag.name,
+   }));
    const form = useForm({
       defaultValues,
       validators: { onMount: formSchema, onChange: formSchema },
@@ -66,10 +116,15 @@ export function ProdutoFormSheet({
             id: crypto.randomUUID(),
             sku: value.sku.trim(),
             nome: value.nome.trim(),
-            deposito: value.deposito.trim(),
+            categoryId: value.categoryId,
+            categoryName: resolveOptionLabel(categoryOptions, value.categoryId),
+            tagId: value.tagId,
+            tagName: resolveOptionLabel(tagOptions, value.tagId),
             saldo: value.saldo,
-            reservado: value.reservado,
             minimo: value.minimo,
+            custoUnitario: value.custoUnitario,
+            precoVenda: value.precoVenda,
+            movements: [],
          });
          toast.success("Produto criado no estoque da demo.");
          closeTopSheet();
@@ -81,8 +136,8 @@ export function ProdutoFormSheet({
          <SheetHeader>
             <SheetTitle>Novo produto</SheetTitle>
             <SheetDescription>
-               Cadastre um item local para demonstrar saldo, reserva, mínimo e
-               depósito.
+               Cadastre um produto físico simples com classificação financeira
+               padrão.
             </SheetDescription>
          </SheetHeader>
          <form
@@ -104,37 +159,65 @@ export function ProdutoFormSheet({
                   <TextField
                      field={field}
                      label="Produto"
-                     placeholder="Módulo recorrência"
+                     placeholder="Cápsula de café"
                   />
                )}
             />
             <form.Field
-               name="deposito"
+               name="categoryId"
                children={(field) => (
-                  <TextField
+                  <ComboboxField
                      field={field}
-                     label="Depósito"
-                     placeholder="Principal"
+                     emptyMessage="Nenhuma categoria encontrada."
+                     label="Categoria financeira"
+                     options={categoryOptions}
+                     placeholder="Selecionar categoria..."
+                     searchPlaceholder="Buscar categoria..."
                   />
                )}
             />
-            <div className="grid gap-4 md:grid-cols-3">
+            <form.Field
+               name="tagId"
+               children={(field) => (
+                  <ComboboxField
+                     field={field}
+                     emptyMessage="Nenhum Centro de Custo encontrado."
+                     label="Centro de Custo"
+                     options={tagOptions}
+                     placeholder="Selecionar Centro de Custo..."
+                     searchPlaceholder="Buscar Centro de Custo..."
+                  />
+               )}
+            />
+            <div className="grid gap-4 md:grid-cols-2">
                <form.Field
                   name="saldo"
                   children={(field) => (
-                     <NumberField field={field} label="Saldo" />
-                  )}
-               />
-               <form.Field
-                  name="reservado"
-                  children={(field) => (
-                     <NumberField field={field} label="Reservado" />
+                     <NumberField field={field} label="Saldo" step={1} />
                   )}
                />
                <form.Field
                   name="minimo"
                   children={(field) => (
-                     <NumberField field={field} label="Mínimo" />
+                     <NumberField
+                        field={field}
+                        label="Estoque mínimo"
+                        step={1}
+                     />
+                  )}
+               />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+               <form.Field
+                  name="custoUnitario"
+                  children={(field) => (
+                     <MoneyField field={field} label="Custo unitário" />
+                  )}
+               />
+               <form.Field
+                  name="precoVenda"
+                  children={(field) => (
+                     <MoneyField field={field} label="Preço de venda" />
                   )}
                />
             </div>
@@ -161,6 +244,13 @@ export function ProdutoFormSheet({
          </SheetFooter>
       </>
    );
+}
+
+function resolveOptionLabel(
+   options: Array<{ value: string; label: string }>,
+   value: string,
+) {
+   return options.find((option) => option.value === value)?.label ?? "";
 }
 
 function TextField({
@@ -198,7 +288,86 @@ function TextField({
    );
 }
 
+function ComboboxField({
+   field,
+   label,
+   options,
+   placeholder,
+   searchPlaceholder,
+   emptyMessage,
+}: {
+   field: {
+      name: string;
+      state: { value: string; meta: { isTouched: boolean; errors: unknown[] } };
+      handleBlur: () => void;
+      handleChange: (value: string) => void;
+   };
+   label: string;
+   options: Array<{ value: string; label: string }>;
+   placeholder: string;
+   searchPlaceholder: string;
+   emptyMessage: string;
+}) {
+   return (
+      <Field data-invalid={isFieldInvalid(field) || undefined}>
+         <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+         <Combobox
+            className="w-full"
+            emptyMessage={emptyMessage}
+            id={field.name}
+            onBlur={field.handleBlur}
+            onValueChange={(value) => field.handleChange(value)}
+            options={options}
+            placeholder={placeholder}
+            searchPlaceholder={searchPlaceholder}
+            value={field.state.value}
+         />
+         {isFieldInvalid(field) ? (
+            <FieldError>
+               {getFieldErrorMessage(field.state.meta.errors[0])}
+            </FieldError>
+         ) : null}
+      </Field>
+   );
+}
+
 function NumberField({
+   field,
+   label,
+   step,
+}: {
+   field: {
+      name: string;
+      state: { value: number; meta: { isTouched: boolean; errors: unknown[] } };
+      handleBlur: () => void;
+      handleChange: (value: number) => void;
+   };
+   label: string;
+   step: number;
+}) {
+   return (
+      <Field data-invalid={isFieldInvalid(field) || undefined}>
+         <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+         <NumberInput
+            aria-invalid={isFieldInvalid(field)}
+            id={field.name}
+            min={0}
+            name={field.name}
+            onBlur={field.handleBlur}
+            onChange={(value) => field.handleChange(value)}
+            step={step}
+            value={field.state.value}
+         />
+         {isFieldInvalid(field) ? (
+            <FieldError>
+               {getFieldErrorMessage(field.state.meta.errors[0])}
+            </FieldError>
+         ) : null}
+      </Field>
+   );
+}
+
+function MoneyField({
    field,
    label,
 }: {
@@ -213,19 +382,14 @@ function NumberField({
    return (
       <Field data-invalid={isFieldInvalid(field) || undefined}>
          <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-         <Input
+         <MoneyInput
             aria-invalid={isFieldInvalid(field)}
             id={field.name}
             name={field.name}
-            min={0}
             onBlur={field.handleBlur}
-            onChange={(event) =>
-               field.handleChange(
-                  Number.parseInt(event.target.value || "0", 10),
-               )
-            }
-            type="number"
+            onChange={(value) => field.handleChange(value ?? 0)}
             value={field.state.value}
+            valueInCents={false}
          />
          {isFieldInvalid(field) ? (
             <FieldError>

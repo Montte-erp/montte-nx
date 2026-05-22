@@ -89,6 +89,7 @@
       "@tanstack/react-virtual": "catalog:tanstack",
       "@tanstack/router-plugin": "catalog:tanstack",
       "@tanstack/store": "catalog:tanstack",
+      "@udecode/plate": "^49.0.0",
       "better-auth": "catalog:auth",
       "better-result": "catalog:validation",
       "browser-image-compression": "^2.0.2",

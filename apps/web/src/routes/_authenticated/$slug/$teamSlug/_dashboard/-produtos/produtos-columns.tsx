@@ -1,21 +1,46 @@
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
-import { PackageCheck, PackageMinus, Trash2 } from "lucide-react";
+import { History, PackagePlus } from "lucide-react";
+
+export type ProdutoMovementType = "entrada" | "saida" | "ajuste";
+
+export type ProdutoMovement = {
+   id: string;
+   type: ProdutoMovementType;
+   quantityUnits: number;
+   previousQuantityUnits: number;
+   resultingQuantityUnits: number;
+   unitCost: number;
+   totalAmount: number;
+   reason: string;
+   categoryId: string;
+   categoryName: string;
+   tagId: string;
+   tagName: string;
+   occurredAt: string;
+   note: string;
+   createsFinancialEntry: boolean;
+};
 
 export type ProdutoRow = {
    id: string;
    sku: string;
    nome: string;
    saldo: number;
-   reservado: number;
    minimo: number;
-   deposito: string;
+   custoUnitario: number;
+   precoVenda: number;
+   categoryId: string;
+   categoryName: string;
+   tagId: string;
+   tagName: string;
+   movements: ProdutoMovement[];
 };
 
 export function getProdutoStatus(row: ProdutoRow) {
    if (row.saldo < row.minimo) return "abaixo_minimo";
-   if (row.reservado >= row.saldo && row.saldo > 0) return "reservado";
+   if (row.saldo === row.minimo) return "no_minimo";
    return "disponivel";
 }
 
@@ -25,17 +50,15 @@ export function ProdutoStatusBadge({ row }: { row: ProdutoRow }) {
       return <Badge variant="success">Disponível</Badge>;
    if (status === "abaixo_minimo")
       return <Badge variant="destructive">Abaixo do mínimo</Badge>;
-   return <Badge variant="secondary">Reservado</Badge>;
+   return <Badge variant="secondary">No mínimo</Badge>;
 }
 
 export function buildProdutosColumns({
-   onEntry,
-   onReserve,
-   onDelete,
+   onRegisterMovement,
+   onOpenHistory,
 }: {
-   onEntry: (id: string) => void;
-   onReserve: (id: string) => void;
-   onDelete: (id: string) => void;
+   onRegisterMovement: (id: string) => void;
+   onOpenHistory: (id: string) => void;
 }): ColumnDef<ProdutoRow>[] {
    return [
       {
@@ -55,24 +78,11 @@ export function buildProdutosColumns({
          ),
       },
       {
-         accessorKey: "deposito",
-         header: "Depósito",
-         meta: { label: "Depósito", exportable: true },
-      },
-      {
          accessorKey: "saldo",
          header: "Saldo",
          meta: { label: "Saldo", align: "right", exportable: true },
          cell: ({ row }) => (
             <span className="tabular-nums">{row.original.saldo}</span>
-         ),
-      },
-      {
-         accessorKey: "reservado",
-         header: "Reservado",
-         meta: { label: "Reservado", align: "right", exportable: true },
-         cell: ({ row }) => (
-            <span className="tabular-nums">{row.original.reservado}</span>
          ),
       },
       {
@@ -82,6 +92,73 @@ export function buildProdutosColumns({
          cell: ({ row }) => (
             <span className="tabular-nums">{row.original.minimo}</span>
          ),
+      },
+      {
+         accessorKey: "custoUnitario",
+         header: "Custo unitário",
+         meta: {
+            label: "Custo unitário",
+            align: "right",
+            exportable: true,
+         },
+         cell: ({ row }) => (
+            <span className="tabular-nums">
+               {formatBRL(row.original.custoUnitario)}
+            </span>
+         ),
+      },
+      {
+         accessorKey: "precoVenda",
+         header: "Preço de venda",
+         meta: {
+            label: "Preço de venda",
+            align: "right",
+            exportable: true,
+         },
+         cell: ({ row }) => (
+            <span className="tabular-nums">
+               {formatBRL(row.original.precoVenda)}
+            </span>
+         ),
+      },
+      {
+         id: "valorEstoque",
+         header: "Valor em estoque",
+         meta: {
+            label: "Valor em estoque",
+            align: "right",
+            exportable: true,
+            exportValue: (row) => formatBRL(row.saldo * row.custoUnitario),
+         },
+         cell: ({ row }) => (
+            <span className="tabular-nums font-medium">
+               {formatBRL(row.original.saldo * row.original.custoUnitario)}
+            </span>
+         ),
+      },
+      {
+         accessorKey: "categoryName",
+         header: "Categoria",
+         meta: { label: "Categoria", exportable: true },
+         cell: ({ row }) =>
+            row.original.categoryName ? (
+               row.original.categoryName
+            ) : (
+               <span className="text-muted-foreground">Sem categoria</span>
+            ),
+      },
+      {
+         accessorKey: "tagName",
+         header: "Centro de Custo",
+         meta: { label: "Centro de Custo", exportable: true },
+         cell: ({ row }) =>
+            row.original.tagName ? (
+               row.original.tagName
+            ) : (
+               <span className="text-muted-foreground">
+                  Sem Centro de Custo
+               </span>
+            ),
       },
       {
          id: "status",
@@ -98,32 +175,30 @@ export function buildProdutosColumns({
          cell: ({ row }) => (
             <div className="flex justify-end gap-2">
                <Button
-                  onClick={() => onEntry(row.original.id)}
+                  onClick={() => onRegisterMovement(row.original.id)}
                   size="icon-sm"
-                  tooltip="Registrar entrada"
+                  tooltip="Registrar movimentação"
                   variant="outline"
                >
-                  <PackageCheck />
+                  <PackagePlus />
                </Button>
                <Button
-                  onClick={() => onReserve(row.original.id)}
+                  onClick={() => onOpenHistory(row.original.id)}
                   size="icon-sm"
-                  tooltip="Reservar item"
+                  tooltip="Ver histórico"
                   variant="outline"
                >
-                  <PackageMinus />
-               </Button>
-               <Button
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => onDelete(row.original.id)}
-                  size="icon-sm"
-                  tooltip="Excluir produto"
-                  variant="outline"
-               >
-                  <Trash2 />
+                  <History />
                </Button>
             </div>
          ),
       },
    ];
+}
+
+export function formatBRL(value: number): string {
+   return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+   }).format(value);
 }
