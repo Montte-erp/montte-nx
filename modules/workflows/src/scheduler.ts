@@ -1,8 +1,9 @@
+import { Result } from "better-result";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { and, asc, eq, lte } from "drizzle-orm";
 import dayjs from "dayjs";
 import { workflowsDataSource } from "./data-source";
-import { workflows } from "./schema";
+import { workflows } from "@core/database/schemas/workflows";
 import {
    createWorkflowRun,
    WORKFLOW_EXECUTE_QUEUE_NAME,
@@ -42,25 +43,51 @@ export async function pollDueWorkflowsOnce() {
    for (const workflow of due) {
       const scheduledFor = workflow.nextRunAt;
       if (!scheduledFor) continue;
-      const run = await DBOS.runStep(
-         () =>
-            createWorkflowRun({
+
+      const runResult = await Result.tryPromise({
+         try: () =>
+            DBOS.runStep(
+               () =>
+                  createWorkflowRun({
+                     workflowId: workflow.id,
+                     scheduledFor,
+                     triggeredBy: "schedule",
+                  }),
+               { name: `create-workflow-run-${workflow.id}` },
+            ),
+         catch: () => "Falha ao criar execução agendada do workflow.",
+      });
+      if (Result.isError(runResult)) {
+         console.error("Falha ao programar execução do workflow.", {
+            workflowId: workflow.id,
+            scheduledFor,
+            error: runResult.error,
+         });
+         continue;
+      }
+      const run = runResult.value;
+      if (!run) continue;
+
+      const startResult = await Result.tryPromise({
+         try: () =>
+            DBOS.startWorkflow(executeWorkflowWorkflow, {
+               workflowID: run.id,
+               queueName: WORKFLOW_EXECUTE_QUEUE_NAME,
+            })({
                workflowId: workflow.id,
+               runId: run.id,
                scheduledFor,
                triggeredBy: "schedule",
             }),
-         { name: `create-workflow-run-${workflow.id}` },
-      );
-      if (!run) continue;
-      await DBOS.startWorkflow(executeWorkflowWorkflow, {
-         workflowID: run.id,
-         queueName: WORKFLOW_EXECUTE_QUEUE_NAME,
-      })({
-         workflowId: workflow.id,
-         runId: run.id,
-         scheduledFor,
-         triggeredBy: "schedule",
+         catch: () => "Falha ao iniciar workflow executável.",
       });
+      if (Result.isError(startResult)) {
+         console.error("Falha ao programar execução do workflow.", {
+            workflowId: workflow.id,
+            scheduledFor,
+            error: startResult.error,
+         });
+      }
    }
 }
 

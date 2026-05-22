@@ -1,5 +1,5 @@
 import { call } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam, seedUser } from "@core/database/testing/factories";
@@ -21,6 +21,34 @@ beforeAll(async () => {
 afterAll(async () => {
    await testDb.cleanup();
 });
+
+type WorkflowSeedInput = {
+   templateId: string;
+   name: string;
+   cron: string;
+};
+
+async function createWorkflows(
+   ctx: ReturnType<typeof createTestContext>,
+   entries: WorkflowSeedInput[],
+) {
+   return Promise.all(
+      entries.map((entry) =>
+         call(
+            workflowsRouter.createFromTemplate,
+            {
+               templateId: entry.templateId,
+               name: entry.name,
+               schedule: {
+                  cron: entry.cron,
+                  timezone: "America/Sao_Paulo",
+               },
+            },
+            { context: ctx },
+         ),
+      ),
+   );
+}
 
 describe("workflows router", () => {
    it("createFromTemplate persiste workflow com graph e nextRunAt", async () => {
@@ -213,6 +241,148 @@ describe("workflows router", () => {
       );
       expect(activated.status).toBe("active");
       expect(activated.nextRunAt).not.toBeNull();
+   });
+
+   it("bulkPause pausa múltiplos workflows em lote", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+      const [first, second, third] = await createWorkflows(ctx, [
+         {
+            templateId: "dre-monthly",
+            name: "Workflow 1",
+            cron: "0 9 1 * *",
+         },
+         {
+            templateId: "cash-flow-weekly",
+            name: "Workflow 2",
+            cron: "0 9 * * 1",
+         },
+         {
+            templateId: "categories-monthly",
+            name: "Workflow 3",
+            cron: "0 9 1 * *",
+         },
+      ]);
+
+      const result = await call(
+         workflowsRouter.bulkPause,
+         { ids: [first.id, second.id] },
+         { context: ctx },
+      );
+      expect(result.updated).toBe(2);
+
+      const pausedRowsList = await testDb.db
+         .select()
+         .from(workflows)
+         .where(inArray(workflows.id, [first.id, second.id]));
+      const pausedRows = new Map(pausedRowsList.map((row) => [row.id, row]));
+      expect(pausedRows.get(first.id)?.status).toBe("paused");
+      expect(pausedRows.get(second.id)?.status).toBe("paused");
+      expect(pausedRows.get(first.id)?.nextRunAt).toBeNull();
+      expect(pausedRows.get(second.id)?.nextRunAt).toBeNull();
+
+      const [activeThird] = await testDb.db
+         .select()
+         .from(workflows)
+         .where(eq(workflows.id, third.id));
+      expect(activeThird?.status).toBe("active");
+   });
+
+   it("bulkActivate reativa workflows em lote", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+      const [first, second] = await createWorkflows(ctx, [
+         {
+            templateId: "dre-monthly",
+            name: "Workflow pausado 1",
+            cron: "0 9 1 * *",
+         },
+         {
+            templateId: "cash-flow-weekly",
+            name: "Workflow pausado 2",
+            cron: "0 9 * * 1",
+         },
+      ]);
+      await call(
+         workflowsRouter.bulkPause,
+         { ids: [first.id, second.id] },
+         { context: ctx },
+      );
+
+      const result = await call(
+         workflowsRouter.bulkActivate,
+         { ids: [first.id, second.id] },
+         { context: ctx },
+      );
+      expect(result.updated).toBe(2);
+
+      const activatedRows = await testDb.db
+         .select()
+         .from(workflows)
+         .where(inArray(workflows.id, [first.id, second.id]));
+      const activatedRowsById = new Map(
+         activatedRows.map((row) => [row.id, row]),
+      );
+      expect(activatedRowsById.get(first.id)?.status).toBe("active");
+      expect(activatedRowsById.get(second.id)?.status).toBe("active");
+      expect(activatedRowsById.get(first.id)?.nextRunAt).not.toBeNull();
+      expect(activatedRowsById.get(second.id)?.nextRunAt).not.toBeNull();
+   });
+
+   it("bulkRemove remove workflows em lote", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+      const [first, second, third] = await createWorkflows(ctx, [
+         {
+            templateId: "dre-monthly",
+            name: "Workflow remover 1",
+            cron: "0 9 1 * *",
+         },
+         {
+            templateId: "cash-flow-weekly",
+            name: "Workflow remover 2",
+            cron: "0 9 * * 1",
+         },
+         {
+            templateId: "categories-monthly",
+            name: "Workflow manter",
+            cron: "0 9 1 * *",
+         },
+      ]);
+
+      const result = await call(
+         workflowsRouter.bulkRemove,
+         { ids: [first.id, second.id] },
+         { context: ctx },
+      );
+      expect(result.deleted).toBe(2);
+
+      const removed = await testDb.db
+         .select()
+         .from(workflows)
+         .where(inArray(workflows.id, [first.id, second.id]));
+      expect(removed).toHaveLength(0);
+
+      const [remaining] = await testDb.db
+         .select()
+         .from(workflows)
+         .where(eq(workflows.id, third.id));
+      expect(remaining?.id).toBe(third.id);
    });
 
    it("runNow cria execução manual e enfileira workflow", async () => {

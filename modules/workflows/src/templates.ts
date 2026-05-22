@@ -1,4 +1,4 @@
-import type { WorkflowGraph } from "./schema";
+import type { WorkflowGraph } from "@core/database/schemas/workflows";
 
 export type WorkflowTemplateId =
    | "blank"

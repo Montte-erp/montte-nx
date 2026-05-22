@@ -17,14 +17,17 @@ import {
 import { toast } from "@packages/ui/hooks/use-toast";
 import { cn } from "@packages/ui/lib/utils";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Plus, Workflow } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Result } from "better-result";
 import { closeCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import type { Outputs } from "@/integrations/orpc/client";
-import { orpc } from "@/integrations/orpc/client";
+import {
+   createWorkflowFromTemplateAction,
+   type WorkflowsCollection,
+} from "@/integrations/tanstack-db/workflows";
 
 type WorkflowTemplate = Outputs["workflows"]["templates"]["list"][number];
 
@@ -41,9 +44,15 @@ function cadenceLabel(cadence: WorkflowTemplate["cadence"]) {
    return cadence === "weekly" ? "Semanal" : "Mensal";
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+   return error instanceof Error ? error.message : fallback;
+}
+
 export function WorkflowCreateCredenza({
+   collection,
    templates,
 }: {
+   collection: WorkflowsCollection;
    templates: WorkflowTemplate[];
 }) {
    const [searchInput, setSearchInput] = useState("");
@@ -73,23 +82,6 @@ export function WorkflowCreateCredenza({
    const { slug, teamSlug } = useDashboardSlugs();
    const navigate = useNavigate();
 
-   const createMutation = useMutation(
-      orpc.workflows.createFromTemplate.mutationOptions({
-         onSuccess: async (workflow) => {
-            toast.success("Workflow criado.");
-            closeCredenza();
-            await navigate({
-               to: "/$slug/$teamSlug/workflows/$workflowId",
-               params: { slug, teamSlug, workflowId: workflow.id },
-            });
-         },
-         onError: (error) => {
-            setPendingTemplateId(null);
-            toast.error(error.message);
-         },
-      }),
-   );
-
    const filteredTemplates = useMemo(() => {
       const query = search.trim().toLowerCase();
       return templates.filter((template) => {
@@ -104,25 +96,47 @@ export function WorkflowCreateCredenza({
    }, [domainFilter, search, templates]);
 
    const showEmptyCard = domainFilter === "all" && !search.trim();
-   const isPending = createMutation.isPending;
+   const isPending = pendingTemplateId !== null;
 
-   function handleSelect(template: WorkflowTemplate) {
+   async function createFromTemplate(template: WorkflowTemplate | null) {
       if (isPending) return;
-      setPendingTemplateId(template.id);
-      createMutation.mutate({
-         templateId: template.id,
-         name: template.name,
-         schedule: {
-            cron: template.defaultCron,
-            timezone: "America/Sao_Paulo",
-         },
+      setPendingTemplateId(template?.id ?? "blank");
+      const create = createWorkflowFromTemplateAction(collection);
+      const transaction = create(
+         template
+            ? {
+                 templateId: template.id,
+                 name: template.name,
+                 schedule: {
+                    cron: template.defaultCron,
+                    timezone: "America/Sao_Paulo",
+                 },
+              }
+            : { templateId: "blank" },
+      );
+      const result = await Result.tryPromise({
+         try: () => transaction.isPersisted.promise,
+         catch: (error) => error,
+      });
+      if (Result.isError(result)) {
+         setPendingTemplateId(null);
+         toast.error(getErrorMessage(result.error, "Erro ao criar workflow."));
+         return;
+      }
+      toast.success("Workflow criado.");
+      closeCredenza();
+      await navigate({
+         to: "/$slug/$teamSlug/workflows/$workflowId",
+         params: { slug, teamSlug, workflowId: result.value.id },
       });
    }
 
+   function handleSelect(template: WorkflowTemplate) {
+      void createFromTemplate(template);
+   }
+
    function handleSelectBlank() {
-      if (isPending) return;
-      setPendingTemplateId("blank");
-      createMutation.mutate({ templateId: "blank" });
+      void createFromTemplate(null);
    }
 
    return (

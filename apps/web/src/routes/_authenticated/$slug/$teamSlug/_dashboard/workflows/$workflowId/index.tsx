@@ -27,11 +27,7 @@ import {
 } from "@packages/ui/components/tabs";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQueries,
-} from "@tanstack/react-query";
+import { createCollection, eq, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import {
@@ -45,13 +41,22 @@ import {
    Pause,
    Play,
 } from "lucide-react";
-import { fromPromise } from "neverthrow";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { z } from "zod";
+import { Result } from "better-result";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { orpc, type Outputs } from "@/integrations/orpc/client";
+import {
+   activateWorkflowAction,
+   pauseWorkflowAction,
+   updateWorkflowAction,
+   workflowRunsCollectionOptions,
+   workflowsCollectionOptions,
+   type WorkflowCollectionRow,
+   type WorkflowRunRow,
+} from "@/integrations/tanstack-db/workflows";
 import {
    closeContextPanel,
    openContextPanel,
@@ -98,8 +103,8 @@ const formSchema = z.object({
    }),
 });
 
-type WorkflowDetail = Outputs["workflows"]["get"];
-type WorkflowRun = Outputs["workflows"]["runs"]["list"][number];
+type WorkflowDetail = WorkflowCollectionRow;
+type WorkflowRun = WorkflowRunRow;
 type WorkflowRunStatus = WorkflowRun["status"];
 type WorkflowGraph = WorkflowDetail["graph"];
 type WorkflowGraphNode = WorkflowGraph["nodes"][number];
@@ -122,9 +127,34 @@ const PERIOD_LABELS: Record<WorkflowPeriodKind, string> = {
    "current-week": "Semana atual",
 };
 
+type WorkflowScheduleNode = WorkflowGraph["nodes"][0];
+type WorkflowReportNode = WorkflowGraph["nodes"][1];
+
+function getWorkflowScheduleNode(
+   graph: WorkflowGraph,
+): WorkflowScheduleNode | null {
+   return (
+      graph.nodes.find(
+         (node): node is WorkflowScheduleNode =>
+            node.type === "scheduleTrigger",
+      ) ?? null
+   );
+}
+
+function getWorkflowReportNode(
+   graph: WorkflowGraph,
+): WorkflowReportNode | null {
+   return (
+      graph.nodes.find(
+         (node): node is WorkflowReportNode => node.type === "createReport",
+      ) ?? null
+   );
+}
+
 function isBlankWorkflowStub(graph: WorkflowGraph) {
-   const scheduleNode = graph.nodes[0];
-   const reportNode = graph.nodes[1];
+   const scheduleNode = getWorkflowScheduleNode(graph);
+   const reportNode = getWorkflowReportNode(graph);
+   if (!scheduleNode || !reportNode) return false;
 
    return (
       scheduleNode.data.cron === "0 9 1 * *" &&
@@ -164,16 +194,6 @@ function WorkflowRunStatusBadge({ status }: { status: WorkflowRunStatus }) {
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/workflows/$workflowId/",
 )({
-   loader: ({ context, params }) => {
-      context.queryClient.prefetchQuery(
-         orpc.workflows.get.queryOptions({ input: { id: params.workflowId } }),
-      );
-      context.queryClient.prefetchQuery(
-         orpc.workflows.runs.list.queryOptions({
-            input: { workflowId: params.workflowId, limit: 5 },
-         }),
-      );
-   },
    pendingMs: 300,
    pendingComponent: WorkflowDetailSkeleton,
    head: () => ({
@@ -184,6 +204,10 @@ export const Route = createFileRoute(
 
 function WorkflowDetailSkeleton() {
    return <main className="-m-4 flex flex-1 min-h-0 overflow-hidden" />;
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+   return error instanceof Error ? error.message : fallback;
 }
 
 function WorkflowDetailPage() {
@@ -203,74 +227,106 @@ function WorkflowDetailContent() {
    const { workflowId } = Route.useParams();
    const { slug, teamSlug } = useDashboardSlugs();
    const navigate = useNavigate();
-   const queryClient = useQueryClient();
+   const { activeTeamId } = useActiveTeam();
+   const { queryClient } = Route.useRouteContext();
    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-   const [{ data: workflow }, { data: runs }] = useSuspenseQueries({
-      queries: [
-         orpc.workflows.get.queryOptions({ input: { id: workflowId } }),
-         orpc.workflows.runs.list.queryOptions({
-            input: { workflowId, limit: 5 },
-         }),
-      ],
-   });
+   const workflowsCollection = useMemo(
+      () =>
+         createCollection(
+            workflowsCollectionOptions({
+               queryClient,
+               teamId: activeTeamId ?? "no-team",
+            }),
+         ),
+      [activeTeamId, queryClient],
+   );
+   const workflowRunsCollection = useMemo(
+      () =>
+         createCollection(
+            workflowRunsCollectionOptions({
+               queryClient,
+               workflowId,
+            }),
+         ),
+      [queryClient, workflowId],
+   );
+
+   const { data: workflowRows } = useLiveQuery(
+      (q) =>
+         q
+            .from({ workflow: workflowsCollection })
+            .where(({ workflow }) => eq(workflow.id, workflowId))
+            .select(({ workflow }) => workflow),
+      [workflowsCollection, workflowId],
+   );
+   const { data: runs } = useLiveQuery(
+      (q) => q.from({ run: workflowRunsCollection }).select(({ run }) => run),
+      [workflowRunsCollection],
+   );
+
+   const workflow = workflowRows[0] ?? null;
 
    const selectedNode = selectedNodeId
-      ? (workflow.graph.nodes.find((node) => node.id === selectedNodeId) ??
+      ? (workflow?.graph.nodes.find((node) => node.id === selectedNodeId) ??
         null)
       : null;
-   const scheduleNode = workflow.graph.nodes[0];
-   const reportNode = workflow.graph.nodes[1];
+   const scheduleNode = workflow
+      ? getWorkflowScheduleNode(workflow.graph)
+      : null;
+   const reportNode = workflow ? getWorkflowReportNode(workflow.graph) : null;
    const isBlankDraft =
-      workflow.templateId === "blank" && isBlankWorkflowStub(workflow.graph);
+      workflow?.templateId === "blank" && isBlankWorkflowStub(workflow.graph);
 
-   const invalidateWorkflow = async () => {
-      await Promise.all([
-         queryClient.invalidateQueries(
-            orpc.workflows.get.queryOptions({ input: { id: workflowId } }),
-         ),
-         queryClient.invalidateQueries(orpc.workflows.list.queryOptions()),
-      ]);
-   };
+   async function persistWorkflowUpdate(input: {
+      graph: WorkflowGraph;
+      successMessage?: string;
+   }) {
+      if (!workflow) return false;
+      const update = updateWorkflowAction(workflowsCollection);
+      const transaction = update({
+         id: workflow.id,
+         patch: { graph: input.graph },
+      });
+      const result = await Result.tryPromise({
+         try: () => transaction.isPersisted.promise,
+         catch: (error) => error,
+      });
+      if (Result.isError(result)) {
+         toast.error(
+            getErrorMessage(result.error, "Erro ao atualizar workflow."),
+         );
+         return false;
+      }
+      if (input.successMessage) toast.success(input.successMessage);
+      return true;
+   }
 
-   const updateMutation = useMutation(
-      orpc.workflows.update.mutationOptions({
-         onSuccess: async () => {
-            toast.success("Workflow atualizado.");
-            await invalidateWorkflow();
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const pauseMutation = useMutation(
-      orpc.workflows.pause.mutationOptions({
-         onSuccess: async () => {
-            toast.success("Workflow pausado.");
-            await invalidateWorkflow();
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const activateMutation = useMutation(
-      orpc.workflows.activate.mutationOptions({
-         onSuccess: async () => {
-            toast.success("Workflow ativado.");
-            await invalidateWorkflow();
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const persistPositionsMutation = useMutation(
-      orpc.workflows.update.mutationOptions({
-         onSuccess: () =>
-            queryClient.invalidateQueries(
-               orpc.workflows.get.queryOptions({ input: { id: workflowId } }),
-            ),
-         onError: (error) => toast.error(error.message),
-      }),
-   );
+   async function persistWorkflowStatus(
+      action: "activate" | "pause",
+      successMessage: string,
+   ) {
+      if (!workflow) return;
+      const execute =
+         action === "activate"
+            ? activateWorkflowAction(workflowsCollection)
+            : pauseWorkflowAction(workflowsCollection);
+      const transaction = execute({ id: workflow.id });
+      const result = await Result.tryPromise({
+         try: () => transaction.isPersisted.promise,
+         catch: (error) => error,
+      });
+      if (Result.isError(result)) {
+         toast.error(
+            getErrorMessage(result.error, "Erro ao atualizar workflow."),
+         );
+         return;
+      }
+      toast.success(successMessage);
+   }
 
    const handleNodePositionsChange = (positions: WorkflowNodePosition[]) => {
+      if (!workflow || !scheduleNode || !reportNode) return;
       const positionById = new Map(
          positions.map((entry) => [entry.id, { x: entry.x, y: entry.y }]),
       );
@@ -286,8 +342,7 @@ function WorkflowDetailContent() {
       ) {
          return;
       }
-      persistPositionsMutation.mutate({
-         id: workflow.id,
+      void persistWorkflowUpdate({
          graph: {
             ...workflow.graph,
             nodes: [
@@ -311,38 +366,35 @@ function WorkflowDetailContent() {
       } satisfies FormValues,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
-         const result = await fromPromise(
-            updateMutation.mutateAsync({
-               id: workflow.id,
-               graph: {
-                  ...workflow.graph,
-                  nodes: [
-                     {
-                        ...scheduleNode,
-                        data: {
-                           ...scheduleNode.data,
-                           cron: buildWorkflowCron(value.schedule),
-                           humanLabel: buildWorkflowHumanLabel(value.schedule),
-                        },
+         if (!workflow || !scheduleNode || !reportNode) return;
+         await persistWorkflowUpdate({
+            successMessage: "Workflow atualizado.",
+            graph: {
+               ...workflow.graph,
+               nodes: [
+                  {
+                     ...scheduleNode,
+                     data: {
+                        ...scheduleNode.data,
+                        cron: buildWorkflowCron(value.schedule),
+                        humanLabel: buildWorkflowHumanLabel(value.schedule),
                      },
-                     {
-                        ...reportNode,
-                        data: {
-                           ...reportNode.data,
-                           reportType: value.report.reportType,
-                           period: {
-                              ...reportNode.data.period,
-                              kind: value.report.periodKind,
-                           },
-                           nameTemplate: value.report.nameTemplate,
+                  },
+                  {
+                     ...reportNode,
+                     data: {
+                        ...reportNode.data,
+                        reportType: value.report.reportType,
+                        period: {
+                           ...reportNode.data.period,
+                           kind: value.report.periodKind,
                         },
+                        nameTemplate: value.report.nameTemplate,
                      },
-                  ],
-               },
-            }),
-            (error) => error,
-         );
-         if (result.isErr()) return;
+                  },
+               ],
+            },
+         });
       },
    });
 
@@ -427,6 +479,8 @@ function WorkflowDetailContent() {
       ) : null,
    );
 
+   if (!workflow) return <WorkflowDetailSkeleton />;
+
    return (
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
          <WorkflowCanvas
@@ -473,7 +527,9 @@ function WorkflowDetailContent() {
          {workflow.status === "active" ? (
             <Button
                className="absolute top-4 right-4 z-20 size-9 rounded-full border bg-popover/85 shadow-sm backdrop-blur"
-               onClick={() => pauseMutation.mutate({ id: workflow.id })}
+               onClick={() =>
+                  void persistWorkflowStatus("pause", "Workflow pausado.")
+               }
                size="icon"
                tooltip="Pausar workflow"
                variant="ghost"
@@ -485,7 +541,9 @@ function WorkflowDetailContent() {
             <Button
                className="absolute top-4 right-4 z-20 size-9 rounded-full border bg-popover/85 shadow-sm backdrop-blur"
                disabled={isBlankDraft}
-               onClick={() => activateMutation.mutate({ id: workflow.id })}
+               onClick={() =>
+                  void persistWorkflowStatus("activate", "Workflow ativado.")
+               }
                size="icon"
                tooltip={
                   isBlankDraft ? "Configure antes de ativar" : "Ativar workflow"

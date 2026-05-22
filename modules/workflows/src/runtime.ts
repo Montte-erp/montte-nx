@@ -16,7 +16,7 @@ import {
    workflows,
    type WorkflowGraph,
    type WorkflowRunTriggeredBy,
-} from "./schema";
+} from "@core/database/schemas/workflows";
 import { workflowsDataSource } from "./data-source";
 import type { WorkflowTemplatePeriod } from "./templates";
 
@@ -51,6 +51,11 @@ export const workflowsRuntimeErrors = defineErrorCatalog("workflows.runtime", {
       message: "Execução do workflow não encontrada.",
       tags: ["workflows", "runtime"],
    },
+   WORKFLOW_RUN_LOAD_FAILED: {
+      status: 500,
+      message: "Falha ao carregar execução do workflow.",
+      tags: ["workflows", "runtime"],
+   },
    NEXT_RUN_FAILED: {
       status: 500,
       message: "Falha ao calcular próxima execução.",
@@ -79,16 +84,31 @@ export type WorkflowsRuntimeCatalogError =
    | ReturnType<typeof workflowsRuntimeErrors.LOAD_WORKFLOW_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.MARK_RUN_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND>
+   | ReturnType<typeof workflowsRuntimeErrors.WORKFLOW_RUN_LOAD_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.NEXT_RUN_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.REPORT_CREATE_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.WORKFLOW_NOT_FOUND>;
-
 export class WorkflowsRuntimeError extends TaggedError(
    "WorkflowsRuntimeError",
 )<{
    error: WorkflowsRuntimeCatalogError;
    message: string;
 }>() {}
+
+function getErrorField(error: unknown, field: string) {
+   if (!(error && (typeof error === "object" || typeof error === "function")))
+      return undefined;
+   const value = Reflect.get(error, field);
+   if (typeof value !== "string") return undefined;
+   return value;
+}
+
+function isWorkflowRunNotFoundError(error: unknown) {
+   return (
+      getErrorField(error, "name") === "NotFoundError" ||
+      getErrorField(error, "code") === "NOT_FOUND"
+   );
+}
 
 export type WorkflowPeriod = {
    from: Date;
@@ -111,10 +131,17 @@ export function buildHumanLabel(cron: string) {
       return `Todo dia ${dayOfMonth} às ${hourLabel}:${minuteLabel}`;
    }
    if (dayOfWeek && dayOfWeek !== "*" && dayOfMonth === "*") {
-      const weekday =
-         ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"][
-            Number(dayOfWeek)
-         ] ?? "segunda";
+      const weekdayNames = [
+         "domingo",
+         "segunda",
+         "terça",
+         "quarta",
+         "quinta",
+         "sexta",
+         "sábado",
+      ];
+      const normalizedWeekday = ((Number(dayOfWeek) % 7) + 7) % 7;
+      const weekday = weekdayNames[normalizedWeekday] ?? "segunda";
       return `Toda ${weekday} às ${hourLabel}:${minuteLabel}`;
    }
    return `Agendado às ${hourLabel}:${minuteLabel}`;
@@ -211,11 +238,30 @@ export function buildWorkflowReportConfig(input: {
 }
 
 export function getWorkflowScheduleNode(graph: WorkflowGraph) {
-   return graph.nodes[0];
+   const node = graph.nodes.find(
+      (node): node is WorkflowGraph["nodes"][0] =>
+         node.type === "scheduleTrigger",
+   );
+   if (!node) {
+      throw new WorkflowsRuntimeError({
+         error: workflowsRuntimeErrors.WORKFLOW_NOT_FOUND(),
+         message: "Workflow sem nó de agenda esperado.",
+      });
+   }
+   return node;
 }
 
 export function getWorkflowActionNode(graph: WorkflowGraph) {
-   return graph.nodes[1];
+   const node = graph.nodes.find(
+      (node): node is WorkflowGraph["nodes"][1] => node.type === "createReport",
+   );
+   if (!node) {
+      throw new WorkflowsRuntimeError({
+         error: workflowsRuntimeErrors.WORKFLOW_NOT_FOUND(),
+         message: "Workflow sem nó de relatório esperado.",
+      });
+   }
+   return node;
 }
 
 export async function loadWorkflowById(workflowId: string) {
@@ -271,11 +317,23 @@ export async function loadWorkflowRunForWorkflow(input: {
             },
             { name: "load-workflow-run-for-workflow" },
          ),
-      catch: () =>
-         new WorkflowsRuntimeError({
-            error: workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND(),
-            message: "Falha ao carregar execução do workflow.",
-         }),
+      catch: (error) => {
+         if (isWorkflowRunNotFoundError(error)) {
+            return new WorkflowsRuntimeError({
+               error: workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND(),
+               message:
+                  "Execução do workflow não encontrada para este workflow.",
+            });
+         }
+
+         const message =
+            getErrorField(error, "message") ??
+            workflowsRuntimeErrors.WORKFLOW_RUN_LOAD_FAILED().message;
+         return new WorkflowsRuntimeError({
+            error: workflowsRuntimeErrors.WORKFLOW_RUN_LOAD_FAILED(),
+            message,
+         });
+      },
    });
    if (Result.isError(result)) throw result.error;
    if (!result.value)
@@ -303,7 +361,7 @@ export async function loadWorkflowRunRows(workflowId: string, limit = 20) {
          ),
       catch: () =>
          new WorkflowsRuntimeError({
-            error: workflowsRuntimeErrors.MARK_RUN_FAILED(),
+            error: workflowsRuntimeErrors.WORKFLOW_RUN_LOAD_FAILED(),
             message: "Falha ao listar execuções do workflow.",
          }),
    });
@@ -372,7 +430,7 @@ export async function markWorkflowRunRunning(runId: string) {
    if (Result.isError(result)) throw result.error;
    if (!result.value)
       throw new WorkflowsRuntimeError({
-         error: workflowsRuntimeErrors.MARK_RUN_FAILED(),
+         error: workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND(),
          message: "Execução do workflow não encontrada.",
       });
    return result.value;
@@ -410,7 +468,7 @@ export async function markWorkflowRunSucceeded(input: {
    if (Result.isError(result)) throw result.error;
    if (!result.value)
       throw new WorkflowsRuntimeError({
-         error: workflowsRuntimeErrors.MARK_RUN_FAILED(),
+         error: workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND(),
          message: "Execução do workflow não encontrada.",
       });
    return result.value;
@@ -447,7 +505,7 @@ export async function markWorkflowRunFailed(input: {
    if (Result.isError(result)) throw result.error;
    if (!result.value)
       throw new WorkflowsRuntimeError({
-         error: workflowsRuntimeErrors.MARK_RUN_FAILED(),
+         error: workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND(),
          message: "Execução do workflow não encontrada.",
       });
    return result.value;

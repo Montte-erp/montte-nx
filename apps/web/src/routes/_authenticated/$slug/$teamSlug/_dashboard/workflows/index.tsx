@@ -12,11 +12,7 @@ import { SearchInput } from "@packages/ui/components/search-input";
 import { Table, TableCell, TableRow } from "@packages/ui/components/table";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { cn } from "@packages/ui/lib/utils";
-import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQuery,
-} from "@tanstack/react-query";
+import { createCollection, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
    flexRender,
@@ -29,6 +25,7 @@ import {
 import { Pause, Play, Plus, Trash2, Workflow } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { z } from "zod";
+import { Result } from "better-result";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
@@ -39,6 +36,7 @@ import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { PageFilterSelect } from "@/components/page-filters/page-filter-select";
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
@@ -46,7 +44,18 @@ import {
    SelectionActionButton,
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
-import { orpc } from "@/integrations/orpc/client";
+import {
+   type WorkflowTemplateRow,
+   activateWorkflowAction,
+   bulkActivateWorkflowsAction,
+   bulkDeleteWorkflowsAction,
+   bulkPauseWorkflowsAction,
+   deleteWorkflowAction,
+   pauseWorkflowAction,
+   updateWorkflowAction,
+   workflowTemplatesCollectionOptions,
+   workflowsCollectionOptions,
+} from "@/integrations/tanstack-db/workflows";
 import { DefaultHeader } from "../../-layout/default-header";
 import { WorkflowCreateCredenza } from "../-workflows/workflow-create-credenza";
 import {
@@ -58,6 +67,37 @@ type WorkflowColumnFilter = {
    id: string;
    value: unknown;
 };
+
+type WorkflowGraph = WorkflowRow["graph"];
+type WorkflowScheduleNode = Extract<
+   WorkflowGraph["nodes"][number],
+   { type: "scheduleTrigger" }
+>;
+type WorkflowReportNode = Extract<
+   WorkflowGraph["nodes"][number],
+   { type: "createReport" }
+>;
+
+function getWorkflowScheduleNode(
+   graph: WorkflowGraph,
+): WorkflowScheduleNode | null {
+   return (
+      graph.nodes.find(
+         (node): node is WorkflowScheduleNode =>
+            node.type === "scheduleTrigger",
+      ) ?? null
+   );
+}
+
+function getWorkflowReportNode(
+   graph: WorkflowGraph,
+): WorkflowReportNode | null {
+   return (
+      graph.nodes.find(
+         (node): node is WorkflowReportNode => node.type === "createReport",
+      ) ?? null
+   );
+}
 
 const searchSchema = z.object({
    sorting: z
@@ -76,8 +116,9 @@ const searchSchema = z.object({
 const skeletonColumns = buildWorkflowsColumns({});
 
 function isBlankWorkflowStub(workflow: WorkflowRow) {
-   const scheduleNode = workflow.graph.nodes[0];
-   const reportNode = workflow.graph.nodes[1];
+   const scheduleNode = getWorkflowScheduleNode(workflow.graph);
+   const reportNode = getWorkflowReportNode(workflow.graph);
+   if (!scheduleNode || !reportNode) return false;
 
    return (
       workflow.templateId === "blank" &&
@@ -110,22 +151,26 @@ function updateStringFilterValue(
 }
 
 function isInteractiveEventTarget(target: EventTarget | null) {
+   if (target == null || typeof target !== "object") return false;
+   const closest = Reflect.get(target, "closest");
    return (
-      target instanceof Element &&
-      Boolean(target.closest("button,input,select,textarea,a,[role='button']"))
+      typeof closest === "function" &&
+      Boolean(
+         closest.call(target, "button,input,select,textarea,a,[role='button']"),
+      )
    );
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+   if (typeof error !== "object" || error == null) return fallback;
+   const message = Reflect.get(error, "message");
+   return typeof message === "string" ? message : fallback;
 }
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/workflows/",
 )({
    validateSearch: searchSchema,
-   loader: ({ context }) => {
-      context.queryClient.prefetchQuery(orpc.workflows.list.queryOptions());
-      context.queryClient.prefetchQuery(
-         orpc.workflows.templates.list.queryOptions(),
-      );
-   },
    pendingMs: 300,
    pendingComponent: WorkflowIndexSkeleton,
    head: () => ({
@@ -164,15 +209,41 @@ function WorkflowsIndexContent() {
    const navigate = useNavigate();
    const { openCredenza } = useCredenza();
    const { openAlertDialog } = useAlertDialog();
-   const queryClient = useQueryClient();
+   const { activeTeamId } = useActiveTeam();
+   const { queryClient } = Route.useRouteContext();
    const layout = useDataTableLayout("workflows");
 
-   const { data: workflows } = useSuspenseQuery(
-      orpc.workflows.list.queryOptions(),
+   const workflowsCollection = useMemo(
+      () =>
+         createCollection(
+            workflowsCollectionOptions({
+               queryClient,
+               teamId: activeTeamId ?? "no-team",
+            }),
+         ),
+      [activeTeamId, queryClient],
    );
-   const { data: templates } = useSuspenseQuery(
-      orpc.workflows.templates.list.queryOptions(),
+   const workflowTemplatesCollection = useMemo(
+      () =>
+         createCollection(workflowTemplatesCollectionOptions({ queryClient })),
+      [queryClient],
    );
+
+   const { data: workflows } = useLiveQuery(
+      (q) =>
+         q
+            .from({ workflow: workflowsCollection })
+            .select(({ workflow }) => workflow),
+      [workflowsCollection],
+   );
+   const { data: templates } = useLiveQuery(
+      (q) =>
+         q
+            .from({ template: workflowTemplatesCollection })
+            .select(({ template }) => template),
+      [workflowTemplatesCollection],
+   );
+   const templateRows = templates as WorkflowTemplateRow[];
 
    const searchInput = useDebouncedSearch({
       value: search,
@@ -185,11 +256,11 @@ function WorkflowsIndexContent() {
 
    const templateLabels = useMemo<Map<string, string>>(() => {
       const labels = new Map<string, string>(
-         templates.map((template) => [template.id, template.name]),
+         templateRows.map((template) => [template.id, template.name]),
       );
       labels.set("blank", "Em branco");
       return labels;
-   }, [templates]);
+   }, [templateRows]);
 
    const statusFilter = getStringFilterValue(columnFilters, "status", "all");
    const templateFilter = getStringFilterValue(
@@ -225,96 +296,6 @@ function WorkflowsIndexContent() {
       });
    }, [search, statusFilter, templateFilter, templateLabels, workflows]);
 
-   const pauseMutation = useMutation(
-      orpc.workflows.pause.mutationOptions({
-         onSuccess: async () => {
-            toast.success("Workflow pausado.");
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const activateMutation = useMutation(
-      orpc.workflows.activate.mutationOptions({
-         onSuccess: async () => {
-            toast.success("Workflow ativado.");
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const removeMutation = useMutation(
-      orpc.workflows.remove.mutationOptions({
-         onSuccess: async () => {
-            toast.success("Workflow excluído.");
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const updateMutation = useMutation(
-      orpc.workflows.update.mutationOptions({
-         onSuccess: async () => {
-            toast.success("Workflow atualizado.");
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const bulkPauseMutation = useMutation(
-      orpc.workflows.bulkPause.mutationOptions({
-         onSuccess: async (result) => {
-            toast.success(
-               result.updated === 1
-                  ? "Workflow pausado."
-                  : "Workflows pausados.",
-            );
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const bulkActivateMutation = useMutation(
-      orpc.workflows.bulkActivate.mutationOptions({
-         onSuccess: async (result) => {
-            toast.success(
-               result.updated === 1
-                  ? "Workflow ativado."
-                  : "Workflows ativados.",
-            );
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const bulkRemoveMutation = useMutation(
-      orpc.workflows.bulkRemove.mutationOptions({
-         onSuccess: async (result) => {
-            toast.success(
-               result.deleted === 1
-                  ? "Workflow excluído."
-                  : "Workflows excluídos.",
-            );
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-
    const openWorkflow = useCallback(
       (workflow: WorkflowRow) =>
          navigate({
@@ -328,9 +309,14 @@ function WorkflowsIndexContent() {
       openCredenza({
          className:
             "max-h-[90vh] flex flex-col overflow-hidden p-0 sm:max-h-[85vh] sm:max-w-[1200px]",
-         renderChildren: () => <WorkflowCreateCredenza templates={templates} />,
+         renderChildren: () => (
+            <WorkflowCreateCredenza
+               collection={workflowsCollection}
+               templates={templateRows}
+            />
+         ),
       });
-   }, [openCredenza, templates]);
+   }, [openCredenza, templateRows, workflowsCollection]);
 
    const handleRemove = useCallback(
       (workflow: WorkflowRow) => {
@@ -341,24 +327,141 @@ function WorkflowsIndexContent() {
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               await removeMutation.mutateAsync({ id: workflow.id });
+               const remove = deleteWorkflowAction(workflowsCollection);
+               const transaction = remove({ id: workflow.id });
+               const result = await Result.tryPromise({
+                  try: () => transaction.isPersisted.promise,
+                  catch: (error) => error,
+               });
+               if (Result.isError(result)) {
+                  toast.error(
+                     getErrorMessage(result.error, "Erro ao excluir workflow."),
+                  );
+                  return;
+               }
+               toast.success("Workflow excluído.");
             },
          });
       },
-      [openAlertDialog, removeMutation],
+      [openAlertDialog, workflowsCollection],
    );
 
    const handleRename = useCallback(
-      async (workflow: WorkflowRow, name: string) => {
+      (workflow: WorkflowRow, name: string) => {
          const nextName = name.trim();
-         if (!nextName || nextName === workflow.name) return;
-         await updateMutation.mutateAsync({
+         if (!nextName || nextName === workflow.name) return Promise.resolve();
+         const update = updateWorkflowAction(workflowsCollection);
+         const transaction = update({
             id: workflow.id,
-            name: nextName,
-            graph: workflow.graph,
+            patch: {
+               name: nextName,
+               graph: workflow.graph,
+            },
          });
+         return transaction.isPersisted.promise.then(
+            () => {
+               toast.success("Workflow atualizado.");
+            },
+            (error: unknown) => {
+               toast.error(
+                  getErrorMessage(error, "Erro ao atualizar workflow."),
+               );
+            },
+         );
       },
-      [updateMutation],
+      [workflowsCollection],
+   );
+
+   const handlePause = useCallback(
+      (workflow: WorkflowRow) => {
+         const pause = pauseWorkflowAction(workflowsCollection);
+         const transaction = pause({ id: workflow.id });
+         void transaction.isPersisted.promise.then(
+            () => toast.success("Workflow pausado."),
+            (error: unknown) =>
+               toast.error(getErrorMessage(error, "Erro ao pausar workflow.")),
+         );
+      },
+      [workflowsCollection],
+   );
+
+   const handleActivate = useCallback(
+      (workflow: WorkflowRow) => {
+         const activate = activateWorkflowAction(workflowsCollection);
+         const transaction = activate({ id: workflow.id });
+         void transaction.isPersisted.promise.then(
+            () => toast.success("Workflow ativado."),
+            (error: unknown) =>
+               toast.error(getErrorMessage(error, "Erro ao ativar workflow.")),
+         );
+      },
+      [workflowsCollection],
+   );
+
+   const handleBulkActivate = useCallback(
+      async (ids: string[]) => {
+         const activate = bulkActivateWorkflowsAction(workflowsCollection);
+         const transaction = activate({ ids });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao ativar workflows."),
+            );
+            return false;
+         }
+         toast.success(
+            ids.length === 1 ? "Workflow ativado." : "Workflows ativados.",
+         );
+         return true;
+      },
+      [workflowsCollection],
+   );
+
+   const handleBulkPause = useCallback(
+      async (ids: string[]) => {
+         const pause = bulkPauseWorkflowsAction(workflowsCollection);
+         const transaction = pause({ ids });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao pausar workflows."),
+            );
+            return false;
+         }
+         toast.success(
+            ids.length === 1 ? "Workflow pausado." : "Workflows pausados.",
+         );
+         return true;
+      },
+      [workflowsCollection],
+   );
+
+   const handleBulkRemove = useCallback(
+      async (ids: string[]) => {
+         const remove = bulkDeleteWorkflowsAction(workflowsCollection);
+         const transaction = remove({ ids });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao excluir workflows."),
+            );
+            return false;
+         }
+         toast.success(
+            ids.length === 1 ? "Workflow excluído." : "Workflows excluídos.",
+         );
+         return true;
+      },
+      [workflowsCollection],
    );
 
    const columns = useMemo<ColumnDef<WorkflowRow>[]>(() => {
@@ -398,21 +501,14 @@ function WorkflowsIndexContent() {
          selectColumn,
          ...buildWorkflowsColumns({
             onOpen: openWorkflow,
-            onPause: (workflow) => pauseMutation.mutate({ id: workflow.id }),
-            onActivate: (workflow) =>
-               activateMutation.mutate({ id: workflow.id }),
+            onPause: handlePause,
+            onActivate: handleActivate,
             isActivationBlocked: isBlankWorkflowStub,
             onRemove: handleRemove,
             onRename: handleRename,
          }),
       ];
-   }, [
-      activateMutation,
-      handleRemove,
-      handleRename,
-      openWorkflow,
-      pauseMutation,
-   ]);
+   }, [handleActivate, handleRemove, handleRename, handlePause, openWorkflow]);
 
    const urlState = useTableUrlState({
       search: { sorting, columnFilters: tableColumnFilters, page, pageSize },
@@ -479,12 +575,12 @@ function WorkflowsIndexContent() {
    const templateFilterOptions = useMemo(
       () => [
          { value: "all", label: "Todos" },
-         ...templates.map((template) => ({
+         ...templateRows.map((template) => ({
             value: template.id,
             label: template.name,
          })),
       ],
-      [templates],
+      [templateRows],
    );
    const selectedRows = table.getSelectedRowModel().rows;
    const selectedIds = selectedRows.map((row) => row.original.id);
@@ -505,36 +601,30 @@ function WorkflowsIndexContent() {
       children: (
          <>
             <SelectionActionButton
-               disabled={
-                  selectedActivatableIds.length === 0 ||
-                  bulkActivateMutation.isPending
-               }
+               disabled={selectedActivatableIds.length === 0}
                icon={<Play className="size-4" />}
-               onClick={async () => {
-                  await bulkActivateMutation.mutateAsync({
-                     ids: selectedActivatableIds,
-                  });
-                  table.resetRowSelection();
+               onClick={() => {
+                  void handleBulkActivate(selectedActivatableIds).then(
+                     (success) => {
+                        if (success) table.resetRowSelection();
+                     },
+                  );
                }}
             >
                Ativar
             </SelectionActionButton>
             <SelectionActionButton
-               disabled={
-                  selectedActiveIds.length === 0 || bulkPauseMutation.isPending
-               }
+               disabled={selectedActiveIds.length === 0}
                icon={<Pause className="size-4" />}
-               onClick={async () => {
-                  await bulkPauseMutation.mutateAsync({
-                     ids: selectedActiveIds,
+               onClick={() => {
+                  void handleBulkPause(selectedActiveIds).then((success) => {
+                     if (success) table.resetRowSelection();
                   });
-                  table.resetRowSelection();
                }}
             >
                Pausar
             </SelectionActionButton>
             <SelectionActionButton
-               disabled={bulkRemoveMutation.isPending}
                icon={<Trash2 className="size-4" />}
                onClick={() => {
                   openAlertDialog({
@@ -544,12 +634,10 @@ function WorkflowsIndexContent() {
                      actionLabel: "Excluir",
                      cancelLabel: "Cancelar",
                      variant: "destructive",
-                     onAction: async () => {
-                        await bulkRemoveMutation.mutateAsync({
-                           ids: selectedIds,
-                        });
-                        table.resetRowSelection();
-                     },
+                     onAction: () =>
+                        handleBulkRemove(selectedIds).then((success) => {
+                           if (success) table.resetRowSelection();
+                        }),
                   });
                }}
                variant="destructive"

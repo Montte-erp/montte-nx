@@ -11,7 +11,8 @@ export default defineConfig({
       env: {
          DATABASE_URL: "postgresql://test:test@localhost:5432/test",
          REDIS_URL: "redis://localhost:6379",
-         POSTHOG_HOST: "https://us.i.posthog.com",
+         POSTHOG_HOST: "http://localhost:8000",
+
          POSTHOG_KEY: "phc_test",
          POSTHOG_PERSONAL_API_KEY: "phx_test",
          STRIPE_SECRET_KEY: "sk_test_xxx",

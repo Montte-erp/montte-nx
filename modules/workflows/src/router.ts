@@ -1,11 +1,15 @@
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, max } from "drizzle-orm";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { protectedProcedure } from "@core/orpc/server";
 import type { DatabaseInstance } from "@core/database/client";
-import { workflowGraphSchema, workflowRuns, workflows } from "./schema";
+import {
+   workflowGraphSchema,
+   workflowRuns,
+   workflows,
+} from "@core/database/schemas/workflows";
 import {
    buildHumanLabel,
    buildNextRunAt,
@@ -76,7 +80,7 @@ function isSupportedWorkflowCron(cron: string) {
    if (month !== "*") return false;
 
    const isMonthly = dayOfWeek === "*" && isIntegerInRange(dayOfMonth, 1, 31);
-   const isWeekly = dayOfMonth === "*" && isIntegerInRange(dayOfWeek, 0, 6);
+   const isWeekly = dayOfMonth === "*" && isIntegerInRange(dayOfWeek, 0, 7);
    return isMonthly || isWeekly;
 }
 
@@ -138,11 +142,12 @@ async function loadWorkflowsForTeam(
    context: { db: DatabaseInstance; teamId: string },
    ids: string[],
 ) {
+   const uniqueIds = [...new Set(ids)];
    const result = await Result.tryPromise({
       try: () =>
          context.db.query.workflows.findMany({
             where: (f, { and, eq, inArray: inArr }) =>
-               and(eq(f.teamId, context.teamId), inArr(f.id, ids)),
+               and(eq(f.teamId, context.teamId), inArr(f.id, uniqueIds)),
          }),
       catch: () =>
          new WorkflowsRouterError({
@@ -151,7 +156,7 @@ async function loadWorkflowsForTeam(
          }),
    });
    if (Result.isError(result)) throw result.error;
-   if (result.value.length !== ids.length)
+   if (result.value.length !== uniqueIds.length)
       throw new WorkflowsRouterError({
          error: workflowsRouterErrors.NOT_FOUND(),
          message: "Um ou mais workflows não foram encontrados.",
@@ -219,19 +224,58 @@ export const list = protectedProcedure.handler(async ({ context }) => {
          }),
    });
    if (Result.isError(result)) throw result.error;
-   const rows = await Promise.all(
-      result.value.map(async (workflow) => ({
-         ...workflow,
-         latestRun: await context.db
-            .select()
+   if (result.value.length === 0) return [];
+
+   const workflowIds = result.value.map((workflow) => workflow.id);
+   const latestRunTimesResult = await Result.tryPromise({
+      try: () => {
+         const latestRunTimes = context.db
+            .select({
+               workflowId: workflowRuns.workflowId,
+               scheduledFor: max(workflowRuns.scheduledFor).as("scheduledFor"),
+            })
             .from(workflowRuns)
-            .where(eq(workflowRuns.workflowId, workflow.id))
-            .orderBy(desc(workflowRuns.scheduledFor))
-            .limit(1)
-            .then((runs) => runs[0] ?? null),
-      })),
+            .where(inArray(workflowRuns.workflowId, workflowIds))
+            .groupBy(workflowRuns.workflowId)
+            .as("latestRunTimes");
+
+         return context.db
+            .select({
+               id: workflowRuns.id,
+               workflowId: workflowRuns.workflowId,
+               status: workflowRuns.status,
+               scheduledFor: workflowRuns.scheduledFor,
+               startedAt: workflowRuns.startedAt,
+               endedAt: workflowRuns.endedAt,
+               reportId: workflowRuns.reportId,
+               idempotencyKey: workflowRuns.idempotencyKey,
+               error: workflowRuns.error,
+               triggeredBy: workflowRuns.triggeredBy,
+            })
+            .from(workflowRuns)
+            .innerJoin(
+               latestRunTimes,
+               and(
+                  eq(workflowRuns.workflowId, latestRunTimes.workflowId),
+                  eq(workflowRuns.scheduledFor, latestRunTimes.scheduledFor),
+               ),
+            );
+      },
+      catch: () =>
+         new WorkflowsRouterError({
+            error: workflowsRouterErrors.INTERNAL(),
+            message: "Falha ao carregar a última execução dos workflows.",
+         }),
+   });
+   if (Result.isError(latestRunTimesResult)) throw latestRunTimesResult.error;
+   const latestRunsByWorkflowId = new Map(
+      latestRunTimesResult.value.map((run) => [run.workflowId, run]),
    );
-   return rows;
+
+   return result.value.map((workflow) => ({
+      ...workflow,
+      latestRun: latestRunsByWorkflowId.get(workflow.id) ?? null,
+   }));
 });
 
 export const get = protectedProcedure
@@ -466,6 +510,7 @@ export const bulkActivate = protectedProcedure
    .input(idsSchema)
    .handler(async ({ context, input }) => {
       const owned = await loadWorkflowsForTeam(context, input.ids);
+      const workflowIds = owned.map((workflow) => workflow.id);
       const now = dayjs().toDate();
       const nextRuns = owned.map((workflow) => {
          const scheduleNode = getWorkflowScheduleNode(workflow.graph);
@@ -510,13 +555,14 @@ export const bulkActivate = protectedProcedure
             }),
       });
       if (Result.isError(result)) throw result.error;
-      return { updated: owned.length };
+      return { updated: workflowIds.length };
    });
 
 export const bulkPause = protectedProcedure
    .input(idsSchema)
    .handler(async ({ context, input }) => {
       const owned = await loadWorkflowsForTeam(context, input.ids);
+      const workflowIds = owned.map((workflow) => workflow.id);
       const result = await Result.tryPromise({
          try: () =>
             context.db.transaction(async (tx) =>
@@ -530,7 +576,7 @@ export const bulkPause = protectedProcedure
                   .where(
                      and(
                         eq(workflows.teamId, context.teamId),
-                        inArray(workflows.id, input.ids),
+                        inArray(workflows.id, workflowIds),
                      ),
                   ),
             ),
@@ -541,13 +587,14 @@ export const bulkPause = protectedProcedure
             }),
       });
       if (Result.isError(result)) throw result.error;
-      return { updated: owned.length };
+      return { updated: workflowIds.length };
    });
 
 export const bulkRemove = protectedProcedure
    .input(idsSchema)
    .handler(async ({ context, input }) => {
       const owned = await loadWorkflowsForTeam(context, input.ids);
+      const workflowIds = owned.map((workflow) => workflow.id);
       const result = await Result.tryPromise({
          try: () =>
             context.db.transaction(async (tx) =>
@@ -556,7 +603,7 @@ export const bulkRemove = protectedProcedure
                   .where(
                      and(
                         eq(workflows.teamId, context.teamId),
-                        inArray(workflows.id, input.ids),
+                        inArray(workflows.id, workflowIds),
                      ),
                   ),
             ),
@@ -567,7 +614,7 @@ export const bulkRemove = protectedProcedure
             }),
       });
       if (Result.isError(result)) throw result.error;
-      return { deleted: owned.length };
+      return { deleted: workflowIds.length };
    });
 
 export const runNow = protectedProcedure

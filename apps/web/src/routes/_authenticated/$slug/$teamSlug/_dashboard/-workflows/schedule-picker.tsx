@@ -31,6 +31,13 @@ const MONTH_DAYS = Array.from({ length: 31 }, (_, index) => {
    return { value: String(day), label: `Dia ${day}` };
 });
 
+function normalizeWeekday(dayOfWeek: string) {
+   const numeric = Number(dayOfWeek);
+   if (Number.isNaN(numeric)) return dayOfWeek;
+   const normalized = ((numeric % 7) + 7) % 7;
+   return String(normalized);
+}
+
 export function parseWorkflowScheduleFromCron(
    cron: string,
 ): WorkflowScheduleDraft {
@@ -42,7 +49,7 @@ export function parseWorkflowScheduleFromCron(
       cadence: isMonthly ? "monthly" : "weekly",
       hour: hour.padStart(2, "0"),
       minute: minute.padStart(2, "0"),
-      weekday: dayOfWeek === "*" ? "1" : dayOfWeek,
+      weekday: dayOfWeek === "*" ? "1" : normalizeWeekday(dayOfWeek),
       dayOfMonth: dayOfMonth === "*" ? "1" : dayOfMonth,
    };
 }

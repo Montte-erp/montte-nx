@@ -53,7 +53,12 @@ describe("pollDueWorkflowsOnce", () => {
    it("cria execução para workflow devido e enfileira workflow DBOS", async () => {
       const { teamId } = await seedTeam(testDb.db);
       const userId = await seedUser(testDb.db);
-      const template = workflowTemplates[0];
+      const template = workflowTemplates.find(
+         (current) => current.id === "dre-monthly",
+      );
+      if (!template) {
+         throw new Error("Template esperado 'dre-monthly' não encontrado.");
+      }
       const graph = createWorkflowGraphFromTemplate(template, {
          cron: template.defaultCron,
          humanLabel: "Todo dia 1 às 09:00",

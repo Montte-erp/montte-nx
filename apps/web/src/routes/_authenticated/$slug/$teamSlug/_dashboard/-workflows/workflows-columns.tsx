@@ -22,6 +22,19 @@ import type { Outputs } from "@/integrations/orpc/client";
 
 export type WorkflowRow = Outputs["workflows"]["list"][number];
 type WorkflowStatus = WorkflowRow["status"];
+type WorkflowGraph = WorkflowRow["graph"];
+type WorkflowScheduleNode = WorkflowGraph["nodes"][0];
+
+function getWorkflowScheduleNode(
+   graph: WorkflowGraph,
+): WorkflowScheduleNode | null {
+   return (
+      graph.nodes.find(
+         (node): node is WorkflowScheduleNode =>
+            node.type === "scheduleTrigger",
+      ) ?? null
+   );
+}
 
 type BuildWorkflowsColumnsOptions = {
    onOpen?: (workflow: WorkflowRow) => void;
@@ -89,13 +102,17 @@ export function buildWorkflowsColumns({
       {
          id: "schedule",
          header: "Agenda",
-         accessorFn: (workflow) => workflow.graph.nodes[0]?.data.humanLabel,
+         accessorFn: (workflow) =>
+            getWorkflowScheduleNode(workflow.graph)?.data.humanLabel,
          meta: { label: "Agenda", exportable: true },
-         cell: ({ row }) => (
-            <span className="text-muted-foreground">
-               {row.original.graph.nodes[0]?.data.humanLabel ?? "Sem agenda"}
-            </span>
-         ),
+         cell: ({ row }) => {
+            const scheduleNode = getWorkflowScheduleNode(row.original.graph);
+            return (
+               <span className="text-muted-foreground">
+                  {scheduleNode?.data.humanLabel ?? "Sem agenda"}
+               </span>
+            );
+         },
       },
       {
          id: "status",

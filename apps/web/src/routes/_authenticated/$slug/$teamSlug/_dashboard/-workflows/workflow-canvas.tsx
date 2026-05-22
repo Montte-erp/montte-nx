@@ -1,3 +1,4 @@
+import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import "@xyflow/react/dist/style.css";
 import {
@@ -289,50 +290,40 @@ export function WorkflowCanvas({
 
 function RailwayControls() {
    const { zoomIn, zoomOut, fitView } = useReactFlow();
+   const buttonClass =
+      "rounded-none border-border border-b last:border-b-0 text-muted-foreground hover:text-foreground";
    return (
       <div className="bg-popover/85 absolute bottom-4 left-4 z-10 flex flex-col overflow-hidden rounded-xl border shadow-sm backdrop-blur">
-         <RailwayControlButton
-            label="Aproximar"
+         <Button
+            className={buttonClass}
             onClick={() => zoomIn({ duration: 160 })}
+            size="icon"
+            tooltip="Aproximar"
+            tooltipSide="right"
+            variant="ghost"
          >
-            <Plus className="size-4" />
-         </RailwayControlButton>
-         <RailwayControlButton
-            label="Afastar"
+            <Plus />
+         </Button>
+         <Button
+            className={buttonClass}
             onClick={() => zoomOut({ duration: 160 })}
+            size="icon"
+            tooltip="Afastar"
+            tooltipSide="right"
+            variant="ghost"
          >
-            <Minus className="size-4" />
-         </RailwayControlButton>
-         <RailwayControlButton
-            label="Ajustar à tela"
+            <Minus />
+         </Button>
+         <Button
+            className={buttonClass}
             onClick={() => fitView({ duration: 240, padding: 0.35 })}
+            size="icon"
+            tooltip="Ajustar à tela"
+            tooltipSide="right"
+            variant="ghost"
          >
-            <Maximize2 className="size-4" />
-         </RailwayControlButton>
+            <Maximize2 />
+         </Button>
       </div>
-   );
-}
-
-function RailwayControlButton({
-   children,
-   label,
-   onClick,
-}: {
-   children: ReactNode;
-   label: string;
-   onClick: () => void;
-}) {
-   return (
-      <button
-         aria-label={label}
-         className={cn(
-            "text-muted-foreground hover:bg-muted hover:text-foreground flex size-9 items-center justify-center transition-colors",
-            "border-border border-b last:border-b-0",
-         )}
-         onClick={onClick}
-         type="button"
-      >
-         {children}
-      </button>
    );
 }
