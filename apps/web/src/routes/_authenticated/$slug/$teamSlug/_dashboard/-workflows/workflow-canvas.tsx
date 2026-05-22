@@ -30,7 +30,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, type ReactNode } from "react";
-import type { Outputs } from "@/integrations/orpc/client";
+import type {
+   WorkflowGraph,
+   WorkflowReportNode,
+   WorkflowReportType,
+   WorkflowScheduleNode,
+} from "@/integrations/tanstack-db/workflows";
+import { PERIOD_LABELS, REPORT_LABELS } from "./workflow-model";
 
 const REPORT_ICONS: Record<WorkflowReportType, LucideIcon> = {
    dre: ChartColumn,
@@ -40,32 +46,12 @@ const REPORT_ICONS: Record<WorkflowReportType, LucideIcon> = {
    categories: Tags,
 };
 
-const REPORT_LABELS: Record<WorkflowReportType, string> = {
-   dre: "DRE",
-   "cash-flow": "Fluxo de caixa",
-   "cost-centers": "Centro de Custo",
-   aging: "A receber/pagar",
-   categories: "Categorias",
-};
-
-const PERIOD_LABELS: Record<
-   WorkflowGraph["nodes"][1]["data"]["period"]["kind"],
-   string
-> = {
-   "previous-month": "Mês anterior",
-   "previous-week": "Semana anterior",
-   "current-month": "Mês atual",
-   "current-week": "Semana atual",
-};
-
-type WorkflowGraph = Outputs["workflows"]["get"]["graph"];
-type WorkflowReportType = WorkflowGraph["nodes"][1]["data"]["reportType"];
 type WorkflowScheduleTriggerNode = Node<
-   WorkflowGraph["nodes"][0]["data"],
+   WorkflowScheduleNode["data"],
    "scheduleTrigger"
 >;
 type WorkflowCreateReportNode = Node<
-   WorkflowGraph["nodes"][1]["data"],
+   WorkflowReportNode["data"],
    "createReport"
 >;
 export type WorkflowFlowNode =

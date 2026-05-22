@@ -16,20 +16,20 @@ import {
 } from "@packages/ui/components/select";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { cn } from "@packages/ui/lib/utils";
-import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Plus, Workflow } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Result } from "better-result";
 import { closeCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import {
+   buildOptimisticWorkflowRow,
+   buildOptimisticWorkflowRowId,
    createWorkflowFromTemplateAction,
+   type WorkflowCreateFromTemplateInput,
    type WorkflowTemplateRow,
    type WorkflowsCollection,
 } from "@/integrations/tanstack-db/workflows";
-
-type WorkflowTemplate = WorkflowTemplateRow;
 
 type DomainFilterId = "all" | "reports";
 
@@ -40,7 +40,7 @@ const DOMAIN_FILTER_OPTIONS: { id: DomainFilterId; label: string }[] = [
 
 const ILLUSTRATIONS_BASE_PATH = "/workflow-templates";
 
-function cadenceLabel(cadence: WorkflowTemplate["cadence"]) {
+function cadenceLabel(cadence: WorkflowTemplateRow["cadence"]) {
    return cadence === "weekly" ? "Semanal" : "Mensal";
 }
 
@@ -50,27 +50,18 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export function WorkflowCreateCredenza({
    collection,
+   teamId,
    templates,
 }: {
    collection: WorkflowsCollection;
-   templates: WorkflowTemplate[];
+   teamId: string;
+   templates: WorkflowTemplateRow[];
 }) {
    const [searchInput, setSearchInput] = useState("");
-   const [search, setSearch] = useState("");
    const [domainFilter, setDomainFilter] = useState<DomainFilterId>("all");
    const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
       null,
    );
-
-   const commitSearch = useDebouncedCallback(
-      (next: string) => setSearch(next),
-      { wait: 200 },
-   );
-
-   function handleSearchChange(next: string) {
-      setSearchInput(next);
-      commitSearch(next);
-   }
 
    function handleDomainFilterChange(value: string) {
       if (value !== "all" && value !== "reports") {
@@ -82,40 +73,49 @@ export function WorkflowCreateCredenza({
    const { slug, teamSlug } = useDashboardSlugs();
    const navigate = useNavigate();
 
-   const filteredTemplates = useMemo(() => {
-      const query = search.trim().toLowerCase();
-      return templates.filter((template) => {
-         if (template.category === "blank") return false;
-         if (domainFilter !== "all" && template.category !== domainFilter)
-            return false;
-         if (!query) return true;
-         return [template.name, template.description].some((value) =>
-            value.toLowerCase().includes(query),
-         );
-      });
-   }, [domainFilter, search, templates]);
+   const query = searchInput.trim().toLowerCase();
+   const filteredTemplates = templates.filter((template) => {
+      if (template.category === "blank") return false;
+      if (domainFilter !== "all" && template.category !== domainFilter) {
+         return false;
+      }
+      if (!query) return true;
+      return [template.name, template.description].some((value) =>
+         value.toLowerCase().includes(query),
+      );
+   });
 
-   const showEmptyCard = domainFilter === "all" && !search.trim();
+   const showEmptyCard = domainFilter === "all" && !query;
    const isPending = pendingTemplateId !== null;
+   const blankTemplate =
+      templates.find((template) => template.id === "blank") ?? null;
 
-   async function createFromTemplate(template: WorkflowTemplate | null) {
+   async function createFromTemplate(template: WorkflowTemplateRow) {
       if (isPending) return;
-      setPendingTemplateId(template?.id ?? "blank");
-      const create = createWorkflowFromTemplateAction(collection);
-      const transaction = create(
-         template
-            ? {
+      setPendingTemplateId(template.id);
+      const input: WorkflowCreateFromTemplateInput =
+         template.id === "blank"
+            ? { templateId: "blank" }
+            : {
                  templateId: template.id,
                  name: template.name,
                  schedule: {
                     cron: template.defaultCron,
                     timezone: "America/Sao_Paulo",
                  },
-              }
-            : { templateId: "blank" },
-      );
+              };
+      const create = createWorkflowFromTemplateAction(collection);
+      const workflow = create({
+         input,
+         row: buildOptimisticWorkflowRow({
+            id: buildOptimisticWorkflowRowId(),
+            input,
+            teamId,
+            template,
+         }),
+      });
       const result = await Result.tryPromise({
-         try: () => transaction.isPersisted.promise,
+         try: () => workflow.createdId,
          catch: (error) => error,
       });
       if (Result.isError(result)) {
@@ -127,16 +127,20 @@ export function WorkflowCreateCredenza({
       closeCredenza();
       await navigate({
          to: "/$slug/$teamSlug/workflows/$workflowId",
-         params: { slug, teamSlug, workflowId: result.value.id },
+         params: { slug, teamSlug, workflowId: result.value },
       });
    }
 
-   function handleSelect(template: WorkflowTemplate) {
+   function handleSelect(template: WorkflowTemplateRow) {
       void createFromTemplate(template);
    }
 
    function handleSelectBlank() {
-      void createFromTemplate(null);
+      if (!blankTemplate) {
+         toast.error("Template vazio não encontrado.");
+         return;
+      }
+      void createFromTemplate(blankTemplate);
    }
 
    return (
@@ -156,7 +160,7 @@ export function WorkflowCreateCredenza({
                   className="min-w-0 flex-1"
                   placeholder="Filtrar templates"
                   value={searchInput}
-                  onChange={(event) => handleSearchChange(event.target.value)}
+                  onChange={(event) => setSearchInput(event.target.value)}
                />
                <Select
                   value={domainFilter}
@@ -211,10 +215,10 @@ function TemplateCard({
    isLoading,
    onSelect,
 }: {
-   template: WorkflowTemplate;
+   template: WorkflowTemplateRow;
    disabled: boolean;
    isLoading: boolean;
-   onSelect: (template: WorkflowTemplate) => void;
+   onSelect: (template: WorkflowTemplateRow) => void;
 }) {
    const [imageFailed, setImageFailed] = useState(false);
 

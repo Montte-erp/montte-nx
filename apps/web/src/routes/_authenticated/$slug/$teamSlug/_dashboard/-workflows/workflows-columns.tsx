@@ -18,23 +18,11 @@ import {
    Play,
    Trash2,
 } from "lucide-react";
-import type { Outputs } from "@/integrations/orpc/client";
-
-export type WorkflowRow = Outputs["workflows"]["list"][number];
-type WorkflowStatus = WorkflowRow["status"];
-type WorkflowGraph = WorkflowRow["graph"];
-type WorkflowScheduleNode = WorkflowGraph["nodes"][0];
-
-function getWorkflowScheduleNode(
-   graph: WorkflowGraph,
-): WorkflowScheduleNode | null {
-   return (
-      graph.nodes.find(
-         (node): node is WorkflowScheduleNode =>
-            node.type === "scheduleTrigger",
-      ) ?? null
-   );
-}
+import type {
+   WorkflowRow,
+   WorkflowStatus,
+} from "@/integrations/tanstack-db/workflows";
+import { getWorkflowScheduleNode } from "./workflow-model";
 
 type BuildWorkflowsColumnsOptions = {
    onOpen?: (workflow: WorkflowRow) => void;

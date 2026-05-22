@@ -45,7 +45,7 @@ import {
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
 import {
-   type WorkflowTemplateRow,
+   type WorkflowRow,
    activateWorkflowAction,
    bulkActivateWorkflowsAction,
    bulkDeleteWorkflowsAction,
@@ -58,46 +58,13 @@ import {
 } from "@/integrations/tanstack-db/workflows";
 import { DefaultHeader } from "../../-layout/default-header";
 import { WorkflowCreateCredenza } from "../-workflows/workflow-create-credenza";
-import {
-   buildWorkflowsColumns,
-   type WorkflowRow,
-} from "../-workflows/workflows-columns";
+import { isBlankWorkflowStub } from "../-workflows/workflow-model";
+import { buildWorkflowsColumns } from "../-workflows/workflows-columns";
 
 type WorkflowColumnFilter = {
    id: string;
    value: unknown;
 };
-
-type WorkflowGraph = WorkflowRow["graph"];
-type WorkflowScheduleNode = Extract<
-   WorkflowGraph["nodes"][number],
-   { type: "scheduleTrigger" }
->;
-type WorkflowReportNode = Extract<
-   WorkflowGraph["nodes"][number],
-   { type: "createReport" }
->;
-
-function getWorkflowScheduleNode(
-   graph: WorkflowGraph,
-): WorkflowScheduleNode | null {
-   return (
-      graph.nodes.find(
-         (node): node is WorkflowScheduleNode =>
-            node.type === "scheduleTrigger",
-      ) ?? null
-   );
-}
-
-function getWorkflowReportNode(
-   graph: WorkflowGraph,
-): WorkflowReportNode | null {
-   return (
-      graph.nodes.find(
-         (node): node is WorkflowReportNode => node.type === "createReport",
-      ) ?? null
-   );
-}
 
 const searchSchema = z.object({
    sorting: z
@@ -114,22 +81,6 @@ const searchSchema = z.object({
 });
 
 const skeletonColumns = buildWorkflowsColumns({});
-
-function isBlankWorkflowStub(workflow: WorkflowRow) {
-   const scheduleNode = getWorkflowScheduleNode(workflow.graph);
-   const reportNode = getWorkflowReportNode(workflow.graph);
-   if (!scheduleNode || !reportNode) return false;
-
-   return (
-      workflow.templateId === "blank" &&
-      scheduleNode.data.cron === "0 9 1 * *" &&
-      scheduleNode.data.timezone === "America/Sao_Paulo" &&
-      scheduleNode.data.humanLabel === "Todo dia 1 às 09:00" &&
-      reportNode.data.reportType === "dre" &&
-      reportNode.data.period.kind === "previous-month" &&
-      reportNode.data.nameTemplate === "Workflow vazio"
-   );
-}
 
 function getStringFilterValue(
    filters: WorkflowColumnFilter[],
@@ -243,11 +194,6 @@ function WorkflowsIndexContent() {
             .select(({ template }) => template),
       [workflowTemplatesCollection],
    );
-   const templateRows = useMemo<WorkflowTemplateRow[]>(
-      () => templates.map((template) => template),
-      [templates],
-   );
-
    const searchInput = useDebouncedSearch({
       value: search,
       onCommit: (value) =>
@@ -259,11 +205,11 @@ function WorkflowsIndexContent() {
 
    const templateLabels = useMemo<Map<string, string>>(() => {
       const labels = new Map<string, string>(
-         templateRows.map((template) => [template.id, template.name]),
+         templates.map((template) => [template.id, template.name]),
       );
       labels.set("blank", "Em branco");
       return labels;
-   }, [templateRows]);
+   }, [templates]);
 
    const statusFilter = getStringFilterValue(columnFilters, "status", "all");
    const templateFilter = getStringFilterValue(
@@ -315,11 +261,12 @@ function WorkflowsIndexContent() {
          renderChildren: () => (
             <WorkflowCreateCredenza
                collection={workflowsCollection}
-               templates={templateRows}
+               teamId={activeTeamId ?? "no-team"}
+               templates={templates}
             />
          ),
       });
-   }, [openCredenza, templateRows, workflowsCollection]);
+   }, [activeTeamId, openCredenza, templates, workflowsCollection]);
 
    const handleRemove = useCallback(
       (workflow: WorkflowRow) => {
@@ -578,12 +525,12 @@ function WorkflowsIndexContent() {
    const templateFilterOptions = useMemo(
       () => [
          { value: "all", label: "Todos" },
-         ...templateRows.map((template) => ({
+         ...templates.map((template) => ({
             value: template.id,
             label: template.name,
          })),
       ],
-      [templateRows],
+      [templates],
    );
    const selectedRows = table.getSelectedRowModel().rows;
    const selectedIds = selectedRows.map((row) => row.original.id);

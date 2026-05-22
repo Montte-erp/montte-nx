@@ -27,6 +27,7 @@ import {
 } from "@packages/ui/components/tabs";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
+import type { QueryClient } from "@tanstack/query-core";
 import { createCollection, eq, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -54,14 +55,27 @@ import {
    updateWorkflowAction,
    workflowRunsCollectionOptions,
    workflowsCollectionOptions,
-   type WorkflowCollectionRow,
+   type WorkflowGraph,
+   type WorkflowGraphNode,
    type WorkflowRunRow,
+   type WorkflowRunStatus,
 } from "@/integrations/tanstack-db/workflows";
 import {
    closeContextPanel,
    openContextPanel,
    useContextPanelInfo,
 } from "../../../-context-panel/use-context-panel";
+import {
+   PERIOD_KIND_VALUES,
+   PERIOD_LABELS,
+   REPORT_LABELS,
+   REPORT_TYPE_VALUES,
+   getWorkflowReportNode,
+   getWorkflowScheduleNode,
+   isBlankWorkflowStub,
+   parseWorkflowPeriodKind,
+   parseWorkflowReportType,
+} from "../../-workflows/workflow-model";
 import {
    buildWorkflowCron,
    buildWorkflowHumanLabel,
@@ -73,20 +87,6 @@ import {
    type WorkflowFlowNode,
    type WorkflowNodePosition,
 } from "../../-workflows/workflow-canvas";
-
-const REPORT_TYPE_VALUES: readonly [
-   "dre",
-   "cash-flow",
-   "cost-centers",
-   "aging",
-   "categories",
-] = ["dre", "cash-flow", "cost-centers", "aging", "categories"];
-const PERIOD_KIND_VALUES: readonly [
-   "previous-month",
-   "previous-week",
-   "current-month",
-   "current-week",
-] = ["previous-month", "previous-week", "current-month", "current-week"];
 
 const formSchema = z.object({
    schedule: z.object({
@@ -103,76 +103,7 @@ const formSchema = z.object({
    }),
 });
 
-type WorkflowDetail = WorkflowCollectionRow;
-type WorkflowRun = WorkflowRunRow;
-type WorkflowRunStatus = WorkflowRun["status"];
-type WorkflowGraph = WorkflowDetail["graph"];
-type WorkflowGraphNode = WorkflowGraph["nodes"][number];
-type WorkflowReportType = (typeof REPORT_TYPE_VALUES)[number];
-type WorkflowPeriodKind = (typeof PERIOD_KIND_VALUES)[number];
 type FormValues = z.input<typeof formSchema>;
-
-const REPORT_LABELS: Record<WorkflowReportType, string> = {
-   dre: "DRE",
-   "cash-flow": "Fluxo de caixa",
-   "cost-centers": "Centro de Custo",
-   aging: "A receber/pagar",
-   categories: "Categorias",
-};
-
-const PERIOD_LABELS: Record<WorkflowPeriodKind, string> = {
-   "previous-month": "Mês anterior",
-   "previous-week": "Semana anterior",
-   "current-month": "Mês atual",
-   "current-week": "Semana atual",
-};
-
-function parseWorkflowReportType(value: string): WorkflowReportType {
-   return REPORT_TYPE_VALUES.find((item) => item === value) ?? "dre";
-}
-
-function parseWorkflowPeriodKind(value: string): WorkflowPeriodKind {
-   return PERIOD_KIND_VALUES.find((item) => item === value) ?? "previous-month";
-}
-
-type WorkflowScheduleNode = WorkflowGraph["nodes"][0];
-type WorkflowReportNode = WorkflowGraph["nodes"][1];
-
-function getWorkflowScheduleNode(
-   graph: WorkflowGraph,
-): WorkflowScheduleNode | null {
-   return (
-      graph.nodes.find(
-         (node): node is WorkflowScheduleNode =>
-            node.type === "scheduleTrigger",
-      ) ?? null
-   );
-}
-
-function getWorkflowReportNode(
-   graph: WorkflowGraph,
-): WorkflowReportNode | null {
-   return (
-      graph.nodes.find(
-         (node): node is WorkflowReportNode => node.type === "createReport",
-      ) ?? null
-   );
-}
-
-function isBlankWorkflowStub(graph: WorkflowGraph) {
-   const scheduleNode = getWorkflowScheduleNode(graph);
-   const reportNode = getWorkflowReportNode(graph);
-   if (!scheduleNode || !reportNode) return false;
-
-   return (
-      scheduleNode.data.cron === "0 9 1 * *" &&
-      scheduleNode.data.timezone === "America/Sao_Paulo" &&
-      scheduleNode.data.humanLabel === "Todo dia 1 às 09:00" &&
-      reportNode.data.reportType === "dre" &&
-      reportNode.data.period.kind === "previous-month" &&
-      reportNode.data.nameTemplate === "Workflow vazio"
-   );
-}
 
 function WorkflowRunStatusBadge({ status }: { status: WorkflowRunStatus }) {
    if (status === "failed") {
@@ -249,17 +180,6 @@ function WorkflowDetailContent() {
          ),
       [activeTeamId, queryClient],
    );
-   const workflowRunsCollection = useMemo(
-      () =>
-         createCollection(
-            workflowRunsCollectionOptions({
-               queryClient,
-               workflowId,
-            }),
-         ),
-      [queryClient, workflowId],
-   );
-
    const { data: workflowRows } = useLiveQuery(
       (q) =>
          q
@@ -268,11 +188,6 @@ function WorkflowDetailContent() {
             .select(({ workflow }) => workflow),
       [workflowsCollection, workflowId],
    );
-   const { data: runs } = useLiveQuery(
-      (q) => q.from({ run: workflowRunsCollection }).select(({ run }) => run),
-      [workflowRunsCollection],
-   );
-
    const workflow = workflowRows[0] ?? null;
 
    const selectedNode = selectedNodeId
@@ -283,8 +198,7 @@ function WorkflowDetailContent() {
       ? getWorkflowScheduleNode(workflow.graph)
       : null;
    const reportNode = workflow ? getWorkflowReportNode(workflow.graph) : null;
-   const isBlankDraft =
-      workflow?.templateId === "blank" && isBlankWorkflowStub(workflow.graph);
+   const isBlankDraft = workflow ? isBlankWorkflowStub(workflow) : false;
 
    async function persistWorkflowUpdate(input: {
       graph: WorkflowGraph;
@@ -567,7 +481,10 @@ function WorkflowDetailContent() {
             </Button>
          )}
 
-         <WorkflowRunsFloatingButton runs={runs} />
+         <WorkflowRunsLiveQuery
+            queryClient={queryClient}
+            workflowId={workflow.id}
+         />
       </div>
    );
 }
@@ -696,7 +613,33 @@ function FieldBlock({
    );
 }
 
-function WorkflowRunsFloatingButton({ runs }: { runs: WorkflowRun[] }) {
+function WorkflowRunsLiveQuery({
+   queryClient,
+   workflowId,
+}: {
+   queryClient: QueryClient;
+   workflowId: string;
+}) {
+   const workflowRunsCollection = useMemo(
+      () =>
+         createCollection(
+            workflowRunsCollectionOptions({
+               queryClient,
+               workflowId,
+            }),
+         ),
+      [queryClient, workflowId],
+   );
+
+   const { data: runs } = useLiveQuery(
+      (q) => q.from({ run: workflowRunsCollection }).select(({ run }) => run),
+      [workflowRunsCollection],
+   );
+
+   return <WorkflowRunsFloatingButton runs={runs} />;
+}
+
+function WorkflowRunsFloatingButton({ runs }: { runs: WorkflowRunRow[] }) {
    return (
       <Popover>
          <PopoverTrigger asChild>
