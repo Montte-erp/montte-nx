@@ -232,7 +232,7 @@ export function WorkflowCanvas({
                minZoom={0.35}
                nodes={nodes}
                nodesConnectable={false}
-               nodesDraggable
+               nodesDraggable={false}
                nodeTypes={nodeTypes}
                onNodeClick={handleNodeClick}
                onPaneClick={onPaneClick}

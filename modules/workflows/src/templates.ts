@@ -5,8 +5,7 @@ export type WorkflowTemplateId =
    | "cash-flow-weekly"
    | "cost-centers-monthly"
    | "aging-weekly"
-   | "categories-monthly"
-   | "blank-workflow";
+   | "categories-monthly";
 
 export type WorkflowTemplatePeriod =
    | "previous-month"
@@ -164,25 +163,6 @@ export const workflowTemplates = [
          nameTemplate: "Despesas por categoria — {month} {year}",
       }),
    },
-   {
-      id: "blank-workflow",
-      name: "Workflow em branco",
-      icon: "workflow",
-      description: "Comece do zero com uma agenda base.",
-      cadence: "monthly",
-      defaultCron: "0 9 1 * *",
-      reportType: "dre",
-      period: "previous-month",
-      defaultNameTemplate: "Novo workflow",
-      editableFields: ["schedule"],
-      defaultGraph: createTemplateGraph({
-         cron: "0 9 1 * *",
-         humanLabel: "Todo dia 1 às 09:00",
-         reportType: "dre",
-         period: "previous-month",
-         nameTemplate: "Novo workflow",
-      }),
-   },
 ] satisfies readonly WorkflowTemplate[];
 
 export function getWorkflowTemplate(templateId: string) {
@@ -198,7 +178,10 @@ export function createWorkflowGraphFromTemplate(
          {
             id: "trigger",
             type: "scheduleTrigger",
-            position: template.defaultGraph.nodes[0].position,
+            position: {
+               x: template.defaultGraph.nodes[0].position.x,
+               y: template.defaultGraph.nodes[0].position.y,
+            },
             data: {
                cron: schedule.cron,
                timezone: "America/Sao_Paulo",
@@ -208,7 +191,10 @@ export function createWorkflowGraphFromTemplate(
          {
             id: "action",
             type: "createReport",
-            position: template.defaultGraph.nodes[1].position,
+            position: {
+               x: template.defaultGraph.nodes[1].position.x,
+               y: template.defaultGraph.nodes[1].position.y,
+            },
             data: {
                reportType: template.reportType,
                period: { kind: template.period },
@@ -216,6 +202,12 @@ export function createWorkflowGraphFromTemplate(
             },
          },
       ],
-      edges: template.defaultGraph.edges,
+      edges: [
+         {
+            id: template.defaultGraph.edges[0].id,
+            source: template.defaultGraph.edges[0].source,
+            target: template.defaultGraph.edges[0].target,
+         },
+      ],
    };
 }

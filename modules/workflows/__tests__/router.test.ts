@@ -4,8 +4,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { setupTestDb } from "@core/database/testing/setup-test-db";
 import { seedTeam, seedUser } from "@core/database/testing/factories";
 import { createTestContext } from "@core/orpc/testing/create-test-context";
-import { createMockServerModule } from "@core/orpc/testing/mock-server";
-import { reports } from "@core/database/schemas/reports";
 import { workflowRuns, workflows } from "@core/database/schemas/workflows";
 
 vi.mock("@core/orpc/server", async () =>
@@ -104,6 +102,61 @@ describe("workflows router", () => {
       expect(updated.graph.nodes[0].data.cron).toBe("0 10 1 * *");
    });
 
+   it("rejeita cron inválido ao criar workflow", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+
+      await expect(
+         call(
+            workflowsRouter.createFromTemplate,
+            {
+               templateId: "dre-monthly",
+               schedule: {
+                  cron: "cron inválido",
+                  timezone: "America/Sao_Paulo",
+               },
+            },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+
+   it("rejeita timezone inválido ao atualizar graph", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+      const created = await call(
+         workflowsRouter.createFromTemplate,
+         {
+            templateId: "dre-monthly",
+            schedule: { cron: "0 9 1 * *", timezone: "America/Sao_Paulo" },
+         },
+         { context: ctx },
+      );
+      const invalidGraph = JSON.parse(JSON.stringify(created.graph));
+      invalidGraph.nodes[0].data.timezone = "Foo/Bar";
+
+      await expect(
+         call(
+            workflowsRouter.update,
+            {
+               id: created.id,
+               graph: invalidGraph,
+            },
+            { context: ctx },
+         ),
+      ).rejects.toThrow();
+   });
+
    it("pause e activate alternam status e nextRunAt", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const userId = await seedUser(testDb.db);
@@ -136,6 +189,57 @@ describe("workflows router", () => {
       );
       expect(activated.status).toBe("active");
       expect(activated.nextRunAt).not.toBeNull();
+   });
+
+   it("bulk pause, activate e remove processam workflows no servidor", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+      const first = await call(
+         workflowsRouter.createFromTemplate,
+         {
+            templateId: "aging-weekly",
+            schedule: { cron: "0 9 * * 1", timezone: "America/Sao_Paulo" },
+         },
+         { context: ctx },
+      );
+      const second = await call(
+         workflowsRouter.createFromTemplate,
+         {
+            templateId: "dre-monthly",
+            schedule: { cron: "0 9 1 * *", timezone: "America/Sao_Paulo" },
+         },
+         { context: ctx },
+      );
+      const ids = [first.id, second.id];
+
+      const paused = await call(
+         workflowsRouter.bulk.pause,
+         { ids },
+         { context: ctx },
+      );
+      expect(paused.succeeded).toHaveLength(2);
+      expect(paused.failed).toHaveLength(0);
+
+      const activated = await call(
+         workflowsRouter.bulk.activate,
+         { ids },
+         { context: ctx },
+      );
+      expect(activated.succeeded).toHaveLength(2);
+      expect(activated.failed).toHaveLength(0);
+
+      const removed = await call(
+         workflowsRouter.bulk.remove,
+         { ids },
+         { context: ctx },
+      );
+      expect(removed.succeeded).toHaveLength(2);
+      expect(removed.failed).toHaveLength(0);
    });
 
    it("runNow cria execução manual e enfileira workflow", async () => {
@@ -173,14 +277,50 @@ describe("workflows router", () => {
       expect(persisted?.status).toBe("pending");
    });
 
-   it("templates.list retorna os 6 templates", async () => {
+   it("runNow marca execução como falha quando enqueue falha", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const workflowClient = {
+         enqueue: vi.fn().mockRejectedValue(new Error("Queue indisponível")),
+      };
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+         extras: { workflowClient },
+      });
+      const created = await call(
+         workflowsRouter.createFromTemplate,
+         {
+            templateId: "categories-monthly",
+            schedule: { cron: "0 9 1 * *", timezone: "America/Sao_Paulo" },
+         },
+         { context: ctx },
+      );
+
+      await expect(
+         call(workflowsRouter.runNow, { id: created.id }, { context: ctx }),
+      ).rejects.toThrow("Falha ao enfileirar execução do workflow.");
+
+      const [persisted] = await testDb.db
+         .select()
+         .from(workflowRuns)
+         .where(eq(workflowRuns.workflowId, created.id));
+      expect(persisted?.status).toBe("failed");
+      expect(persisted?.error).toBe(
+         "Falha ao enfileirar execução do workflow.",
+      );
+      expect(persisted?.endedAt).not.toBeNull();
+   });
+
+   it("templates.list retorna os 5 templates", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ctx = createTestContext(testDb.db, { teamId, organizationId });
 
       const result = await call(workflowsRouter.templates.list, undefined, {
          context: ctx,
       });
-      expect(result).toHaveLength(6);
+      expect(result).toHaveLength(5);
    });
 
    it("list retorna workflows do time", async () => {

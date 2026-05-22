@@ -44,7 +44,7 @@ import {
    SelectionActionButton,
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
-import { orpc } from "@/integrations/orpc/client";
+import { orpc, type Outputs } from "@/integrations/orpc/client";
 import { DefaultHeader } from "../../-layout/default-header";
 import { WorkflowCreateCredenza } from "../-workflows/workflow-create-credenza";
 import {
@@ -67,9 +67,28 @@ const searchSchema = z.object({
 });
 
 const EMPTY_TEMPLATE_LABELS = new Map<string, string>();
+type WorkflowBulkResult = Outputs["workflows"]["bulk"]["activate"];
 const skeletonColumns = buildWorkflowsColumns({
    templateLabels: EMPTY_TEMPLATE_LABELS,
 });
+
+function showBulkWorkflowToast(
+   result: WorkflowBulkResult,
+   successMessage: string,
+   failureMessage: string,
+) {
+   if (result.failed.length === 0) {
+      toast.success(successMessage);
+      return;
+   }
+   if (result.succeeded.length === 0) {
+      toast.error(failureMessage);
+      return;
+   }
+   toast.error(
+      `${result.failed.length} ${result.failed.length === 1 ? "workflow falhou" : "workflows falharam"}. ${result.succeeded.length} ${result.succeeded.length === 1 ? "foi processado" : "foram processados"}.`,
+   );
+}
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/workflows/",
@@ -183,6 +202,51 @@ function WorkflowsIndexContent() {
       orpc.workflows.remove.mutationOptions({
          onSuccess: async () => {
             toast.success("Workflow excluído.");
+            await queryClient.invalidateQueries(
+               orpc.workflows.list.queryOptions(),
+            );
+         },
+         onError: (error) => toast.error(error.message),
+      }),
+   );
+   const bulkActivateMutation = useMutation(
+      orpc.workflows.bulk.activate.mutationOptions({
+         onSuccess: async (result) => {
+            showBulkWorkflowToast(
+               result,
+               "Workflows ativados.",
+               "Falha ao ativar workflows.",
+            );
+            await queryClient.invalidateQueries(
+               orpc.workflows.list.queryOptions(),
+            );
+         },
+         onError: (error) => toast.error(error.message),
+      }),
+   );
+   const bulkPauseMutation = useMutation(
+      orpc.workflows.bulk.pause.mutationOptions({
+         onSuccess: async (result) => {
+            showBulkWorkflowToast(
+               result,
+               "Workflows pausados.",
+               "Falha ao pausar workflows.",
+            );
+            await queryClient.invalidateQueries(
+               orpc.workflows.list.queryOptions(),
+            );
+         },
+         onError: (error) => toast.error(error.message),
+      }),
+   );
+   const bulkRemoveMutation = useMutation(
+      orpc.workflows.bulk.remove.mutationOptions({
+         onSuccess: async (result) => {
+            showBulkWorkflowToast(
+               result,
+               "Workflows excluídos.",
+               "Falha ao excluir workflows.",
+            );
             await queryClient.invalidateQueries(
                orpc.workflows.list.queryOptions(),
             );
@@ -316,11 +380,7 @@ function WorkflowsIndexContent() {
             <SelectionActionButton
                icon={<Play className="size-4" />}
                onClick={async () => {
-                  await Promise.allSettled(
-                     selectedIds.map((id) =>
-                        activateMutation.mutateAsync({ id }),
-                     ),
-                  );
+                  await bulkActivateMutation.mutateAsync({ ids: selectedIds });
                   table.resetRowSelection();
                }}
             >
@@ -329,9 +389,7 @@ function WorkflowsIndexContent() {
             <SelectionActionButton
                icon={<Pause className="size-4" />}
                onClick={async () => {
-                  await Promise.allSettled(
-                     selectedIds.map((id) => pauseMutation.mutateAsync({ id })),
-                  );
+                  await bulkPauseMutation.mutateAsync({ ids: selectedIds });
                   table.resetRowSelection();
                }}
             >
@@ -348,11 +406,9 @@ function WorkflowsIndexContent() {
                      cancelLabel: "Cancelar",
                      variant: "destructive",
                      onAction: async () => {
-                        await Promise.allSettled(
-                           selectedIds.map((id) =>
-                              removeMutation.mutateAsync({ id }),
-                           ),
-                        );
+                        await bulkRemoveMutation.mutateAsync({
+                           ids: selectedIds,
+                        });
                         table.resetRowSelection();
                      },
                   });
@@ -403,6 +459,7 @@ function WorkflowsIndexContent() {
                         key={row.id}
                         onClick={() => openWorkflow(row.original)}
                         onKeyDown={(event) => {
+                           if (event.target !== event.currentTarget) return;
                            if (event.key !== "Enter" && event.key !== " ") {
                               return;
                            }

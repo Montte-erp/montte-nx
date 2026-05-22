@@ -102,5 +102,67 @@ describe("executeWorkflowWorkflow", () => {
 
       expect(updatedRun.status).toBe("succeeded");
       expect(report?.source).toBe("workflow");
+      if (!report) throw new Error("Relatório do workflow não encontrado.");
+
+      await testDb.db.delete(reports).where(eq(reports.id, report.id));
+
+      const [runAfterReportDelete] = await testDb.db
+         .select()
+         .from(workflowRuns)
+         .where(eq(workflowRuns.id, run.id));
+      expect(runAfterReportDelete.reportId).toBeNull();
+   });
+
+   it("rejeita run que não pertence ao workflow informado", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const userId = await seedUser(testDb.db);
+      const ctx = createTestContext(testDb.db, {
+         teamId,
+         organizationId,
+         userId,
+      });
+      const firstWorkflow = await call(
+         workflowsRouter.createFromTemplate,
+         {
+            templateId: "dre-monthly",
+            schedule: { cron: "0 9 1 * *", timezone: "America/Sao_Paulo" },
+         },
+         { context: ctx },
+      );
+      const secondWorkflow = await call(
+         workflowsRouter.createFromTemplate,
+         {
+            templateId: "cash-flow-weekly",
+            schedule: { cron: "0 9 * * 1", timezone: "America/Sao_Paulo" },
+         },
+         { context: ctx },
+      );
+      const scheduledFor = new Date("2026-06-01T09:00:00.000Z");
+      const [run] = await testDb.db
+         .insert(workflowRuns)
+         .values({
+            workflowId: secondWorkflow.id,
+            status: "pending",
+            scheduledFor,
+            idempotencyKey: `${secondWorkflow.id}-${scheduledFor.toISOString()}`,
+            triggeredBy: "schedule",
+         })
+         .returning();
+
+      await expect(
+         executeWorkflowWorkflow({
+            workflowId: firstWorkflow.id,
+            runId: run.id,
+            scheduledFor,
+            triggeredBy: "schedule",
+         }),
+      ).rejects.toThrow("Execução do workflow não encontrada");
+
+      const [persistedRun] = await testDb.db
+         .select()
+         .from(workflowRuns)
+         .where(eq(workflowRuns.id, run.id));
+      expect(persistedRun.status).toBe("pending");
+      expect(persistedRun.reportId).toBeNull();
    });
 });

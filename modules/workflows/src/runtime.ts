@@ -4,7 +4,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { CronExpressionParser } from "cron-parser";
 import {
    reports,
@@ -30,7 +30,12 @@ export const WORKFLOW_SCHEDULER_QUEUE_NAME = "workflow:workflows/scheduler";
 export const WORKFLOW_EXECUTE_WORKFLOW_NAME = "executeWorkflowWorkflowFn";
 export const WORKFLOW_SCHEDULER_WORKFLOW_NAME = "pollDueWorkflowsWorkflowFn";
 
-const workflowsRuntimeErrors = defineErrorCatalog("workflows.runtime", {
+export const workflowsRuntimeErrors = defineErrorCatalog("workflows.runtime", {
+   EXECUTE_FAILED: {
+      status: 500,
+      message: "Falha ao executar workflow.",
+      tags: ["workflows", "runtime"],
+   },
    LOAD_WORKFLOW_FAILED: {
       status: 500,
       message: "Falha ao carregar workflow.",
@@ -39,6 +44,11 @@ const workflowsRuntimeErrors = defineErrorCatalog("workflows.runtime", {
    MARK_RUN_FAILED: {
       status: 500,
       message: "Falha ao atualizar execução do workflow.",
+      tags: ["workflows", "runtime"],
+   },
+   WORKFLOW_RUN_NOT_FOUND: {
+      status: 404,
+      message: "Execução do workflow não encontrada.",
       tags: ["workflows", "runtime"],
    },
    NEXT_RUN_FAILED: {
@@ -65,8 +75,10 @@ declare module "evlog" {
 }
 
 export type WorkflowsRuntimeCatalogError =
+   | ReturnType<typeof workflowsRuntimeErrors.EXECUTE_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.LOAD_WORKFLOW_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.MARK_RUN_FAILED>
+   | ReturnType<typeof workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND>
    | ReturnType<typeof workflowsRuntimeErrors.NEXT_RUN_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.REPORT_CREATE_FAILED>
    | ReturnType<typeof workflowsRuntimeErrors.WORKFLOW_NOT_FOUND>;
@@ -236,7 +248,10 @@ export async function loadWorkflowById(workflowId: string) {
    return result.value;
 }
 
-export async function loadWorkflowRunById(runId: string) {
+export async function loadWorkflowRunForWorkflow(input: {
+   workflowId: string;
+   runId: string;
+}) {
    const result = await Result.tryPromise({
       try: () =>
          workflowsDataSource.runTransaction(
@@ -245,23 +260,28 @@ export async function loadWorkflowRunById(runId: string) {
                const [row] = await tx
                   .select()
                   .from(workflowRuns)
-                  .where(eq(workflowRuns.id, runId))
+                  .where(
+                     and(
+                        eq(workflowRuns.id, input.runId),
+                        eq(workflowRuns.workflowId, input.workflowId),
+                     ),
+                  )
                   .limit(1);
                return row ?? null;
             },
-            { name: "load-workflow-run-by-id" },
+            { name: "load-workflow-run-for-workflow" },
          ),
       catch: () =>
          new WorkflowsRuntimeError({
-            error: workflowsRuntimeErrors.MARK_RUN_FAILED(),
+            error: workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND(),
             message: "Falha ao carregar execução do workflow.",
          }),
    });
    if (Result.isError(result)) throw result.error;
    if (!result.value)
       throw new WorkflowsRuntimeError({
-         error: workflowsRuntimeErrors.MARK_RUN_FAILED(),
-         message: "Execução do workflow não encontrada.",
+         error: workflowsRuntimeErrors.WORKFLOW_RUN_NOT_FOUND(),
+         message: "Execução do workflow não encontrada para este workflow.",
       });
    return result.value;
 }

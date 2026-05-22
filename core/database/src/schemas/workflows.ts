@@ -35,6 +35,34 @@ const workflowPeriodKindEnum = z.enum([
    "current-week",
 ]);
 
+export const workflowTimezoneSchema = z.literal("America/Sao_Paulo");
+
+function isIntegerInRange(value: string, min: number, max: number) {
+   if (!/^\d+$/.test(value)) return false;
+   const numeric = Number(value);
+   return Number.isInteger(numeric) && numeric >= min && numeric <= max;
+}
+
+function isSupportedWorkflowCron(cron: string) {
+   const [minute, hour, dayOfMonth, month, dayOfWeek, extra] = cron
+      .trim()
+      .split(/\s+/);
+   if (!minute || !hour || !dayOfMonth || !month || !dayOfWeek || extra)
+      return false;
+   if (!isIntegerInRange(minute, 0, 59)) return false;
+   if (!isIntegerInRange(hour, 0, 23)) return false;
+   if (month !== "*") return false;
+
+   const isMonthly = dayOfWeek === "*" && isIntegerInRange(dayOfMonth, 1, 31);
+   const isWeekly = dayOfMonth === "*" && isIntegerInRange(dayOfWeek, 0, 6);
+   return isMonthly || isWeekly;
+}
+
+export const workflowCronSchema = z
+   .string()
+   .trim()
+   .refine(isSupportedWorkflowCron, "Cron de workflow inválido.");
+
 const workflowNodePositionSchema = z.object({
    x: z.number(),
    y: z.number(),
@@ -45,8 +73,8 @@ const workflowScheduleTriggerNodeSchema = z.object({
    type: z.literal("scheduleTrigger"),
    position: workflowNodePositionSchema,
    data: z.object({
-      cron: z.string(),
-      timezone: z.string(),
+      cron: workflowCronSchema,
+      timezone: workflowTimezoneSchema,
       humanLabel: z.string(),
    }),
 });
@@ -125,7 +153,9 @@ export const workflowRuns = platformSchema.table(
       }).notNull(),
       startedAt: timestamp("started_at", { withTimezone: true }),
       endedAt: timestamp("ended_at", { withTimezone: true }),
-      reportId: uuid("report_id").references(() => reports.id),
+      reportId: uuid("report_id").references(() => reports.id, {
+         onDelete: "set null",
+      }),
       idempotencyKey: text("idempotency_key").notNull(),
       error: text("error"),
       triggeredBy: workflowRunTriggeredByEnum("triggered_by").notNull(),

@@ -8,12 +8,15 @@ import {
    getWorkflowActionNode,
    getWorkflowScheduleNode,
    loadWorkflowById,
-   loadWorkflowRunById,
+   loadWorkflowRunForWorkflow,
    markWorkflowRunFailed,
    markWorkflowRunRunning,
    markWorkflowRunSucceeded,
+   normalizeWorkflowTimezone,
    renderWorkflowName,
    updateWorkflowNextRunAt,
+   workflowsRuntimeErrors,
+   WorkflowsRuntimeError,
    WORKFLOW_EXECUTE_WORKFLOW_NAME,
 } from "../runtime";
 
@@ -27,30 +30,36 @@ async function executeWorkflowWorkflowFn(input: {
       () => loadWorkflowById(input.workflowId),
       { name: "load-workflow" },
    );
-   const run = await DBOS.runStep(() => loadWorkflowRunById(input.runId), {
-      name: "load-workflow-run",
-   });
+   const run = await DBOS.runStep(
+      () =>
+         loadWorkflowRunForWorkflow({
+            workflowId: input.workflowId,
+            runId: input.runId,
+         }),
+      { name: "load-workflow-run" },
+   );
    const scheduleNode = getWorkflowScheduleNode(workflow.graph);
    const actionNode = getWorkflowActionNode(workflow.graph);
    const scheduledFor = run.scheduledFor ?? input.scheduledFor;
-   const period = computeWorkflowPeriod(
-      actionNode.data.period.kind,
-      scheduledFor,
-      scheduleNode.data.timezone,
-   );
-   const reportConfig = buildWorkflowReportConfig({
-      reportType: actionNode.data.reportType,
-      period,
-      timezone: scheduleNode.data.timezone,
-   });
-   const reportName = renderWorkflowName(
-      actionNode.data.nameTemplate,
-      period,
-      scheduleNode.data.timezone,
-   );
+   const timezone = normalizeWorkflowTimezone(scheduleNode.data.timezone);
 
    const result = await Result.tryPromise({
       try: async () => {
+         const period = computeWorkflowPeriod(
+            actionNode.data.period.kind,
+            scheduledFor,
+            timezone,
+         );
+         const reportConfig = buildWorkflowReportConfig({
+            reportType: actionNode.data.reportType,
+            period,
+            timezone,
+         });
+         const reportName = renderWorkflowName(
+            actionNode.data.nameTemplate,
+            period,
+            timezone,
+         );
          await DBOS.runStep(() => markWorkflowRunRunning(run.id), {
             name: "mark-workflow-run-running",
          });
@@ -75,7 +84,7 @@ async function executeWorkflowWorkflowFn(input: {
                   updateWorkflowNextRunAt({
                      workflowId: workflow.id,
                      cron: scheduleNode.data.cron,
-                     timezone: scheduleNode.data.timezone,
+                     timezone,
                      scheduledFor,
                   }),
                { name: "update-workflow-next-run-at" },
@@ -83,7 +92,13 @@ async function executeWorkflowWorkflowFn(input: {
          }
          return report;
       },
-      catch: (cause) => cause,
+      catch: (cause) =>
+         WorkflowsRuntimeError.is(cause)
+            ? cause
+            : new WorkflowsRuntimeError({
+                 error: workflowsRuntimeErrors.EXECUTE_FAILED(),
+                 message: "Falha ao executar workflow.",
+              }),
    });
 
    if (Result.isError(result)) {
@@ -91,10 +106,7 @@ async function executeWorkflowWorkflowFn(input: {
          () =>
             markWorkflowRunFailed({
                runId: run.id,
-               errorMessage:
-                  result.error instanceof Error
-                     ? result.error.message
-                     : "Falha ao executar workflow.",
+               errorMessage: result.error.message,
             }),
          { name: "mark-workflow-run-failed" },
       );
@@ -104,7 +116,7 @@ async function executeWorkflowWorkflowFn(input: {
                updateWorkflowNextRunAt({
                   workflowId: workflow.id,
                   cron: scheduleNode.data.cron,
-                  timezone: scheduleNode.data.timezone,
+                  timezone,
                   scheduledFor,
                }),
             { name: "update-workflow-next-run-at-failed" },

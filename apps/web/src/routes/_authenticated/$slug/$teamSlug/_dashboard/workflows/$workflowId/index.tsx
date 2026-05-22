@@ -29,7 +29,7 @@ import { useForm } from "@tanstack/react-form";
 import {
    useMutation,
    useQueryClient,
-   useSuspenseQuery,
+   useSuspenseQueries,
 } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -162,14 +162,14 @@ function WorkflowDetailContent() {
    const queryClient = useQueryClient();
    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-   const { data: workflow } = useSuspenseQuery(
-      orpc.workflows.get.queryOptions({ input: { id: workflowId } }),
-   );
-   const { data: runs } = useSuspenseQuery(
-      orpc.workflows.runs.list.queryOptions({
-         input: { workflowId, limit: 5 },
-      }),
-   );
+   const [{ data: workflow }, { data: runs }] = useSuspenseQueries({
+      queries: [
+         orpc.workflows.get.queryOptions({ input: { id: workflowId } }),
+         orpc.workflows.runs.list.queryOptions({
+            input: { workflowId, limit: 5 },
+         }),
+      ],
+   });
 
    const selectedNode = selectedNodeId
       ? (workflow.graph.nodes.find((node) => node.id === selectedNodeId) ??

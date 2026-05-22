@@ -16,6 +16,7 @@ interface DefaultHeaderProps {
    onBack?: () => void;
    editable?: boolean;
    onTitleChange?: (value: string) => void;
+   onDescriptionChange?: (value: string) => void;
    titlePlaceholder?: string;
    descriptionPlaceholder?: string;
 }
@@ -29,6 +30,7 @@ export function DefaultHeader({
    onBack,
    editable,
    onTitleChange,
+   onDescriptionChange,
    titlePlaceholder,
    descriptionPlaceholder,
 }: DefaultHeaderProps) {
@@ -52,7 +54,7 @@ export function DefaultHeader({
                   actions={actions}
                   description={description}
                   editable={editable}
-                  onDescriptionChange={undefined}
+                  onDescriptionChange={onDescriptionChange}
                   onTitleChange={onTitleChange}
                   descriptionPlaceholder={descriptionPlaceholder}
                   panelActions={panelActions}

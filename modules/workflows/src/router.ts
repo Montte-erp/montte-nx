@@ -59,13 +59,42 @@ class WorkflowsRouterError extends TaggedError("WorkflowsRouterError")<{
    message: string;
 }>() {}
 
+function isIntegerInRange(value: string, min: number, max: number) {
+   if (!/^\d+$/.test(value)) return false;
+   const numeric = Number(value);
+   return Number.isInteger(numeric) && numeric >= min && numeric <= max;
+}
+
+function isSupportedWorkflowCron(cron: string) {
+   const [minute, hour, dayOfMonth, month, dayOfWeek, extra] = cron
+      .trim()
+      .split(/\s+/);
+   if (!minute || !hour || !dayOfMonth || !month || !dayOfWeek || extra)
+      return false;
+   if (!isIntegerInRange(minute, 0, 59)) return false;
+   if (!isIntegerInRange(hour, 0, 23)) return false;
+   if (month !== "*") return false;
+
+   const isMonthly = dayOfWeek === "*" && isIntegerInRange(dayOfMonth, 1, 31);
+   const isWeekly = dayOfMonth === "*" && isIntegerInRange(dayOfWeek, 0, 6);
+   return isMonthly || isWeekly;
+}
+
+const workflowCronInputSchema = z
+   .string()
+   .trim()
+   .refine(isSupportedWorkflowCron, "Cron de workflow inválido.");
+const workflowTimezoneInputSchema = z.literal("America/Sao_Paulo");
 const idSchema = z.object({ id: z.string().uuid() });
+const bulkIdsSchema = z.object({
+   ids: z.array(z.string().uuid()).min(1).max(100),
+});
 const createFromTemplateSchema = z.object({
    templateId: z.string(),
    name: z.string().min(2).max(120).optional(),
    schedule: z.object({
-      cron: z.string().min(1),
-      timezone: z.string().default("America/Sao_Paulo"),
+      cron: workflowCronInputSchema,
+      timezone: workflowTimezoneInputSchema.default("America/Sao_Paulo"),
    }),
 });
 const updateSchema = z.object({
@@ -77,6 +106,7 @@ const runsListSchema = z.object({
    workflowId: z.string().uuid(),
    limit: z.number().int().min(1).max(100).catch(20).default(20),
 });
+const throwableMessageSchema = z.object({ message: z.string() });
 
 async function loadWorkflowForTeam(
    context: { db: DatabaseInstance; teamId: string },
@@ -126,6 +156,29 @@ async function loadWorkflowRunForTeam(
       });
    const workflow = await loadWorkflowForTeam(context, result.value.workflowId);
    return { workflow, run: result.value };
+}
+
+function buildNextRunAtOrThrow(
+   cron: string,
+   timezoneValue: string,
+   currentDate: Date,
+) {
+   const result = Result.try({
+      try: () => buildNextRunAt(cron, timezoneValue, currentDate),
+      catch: () =>
+         new WorkflowsRouterError({
+            error: workflowsRouterErrors.INVALID_GRAPH(),
+            message: "Agenda do workflow inválida.",
+         }),
+   });
+   if (Result.isError(result)) throw result.error;
+   return result.value;
+}
+
+function getErrorMessage(cause: unknown) {
+   const parsed = throwableMessageSchema.safeParse(cause);
+   if (parsed.success) return parsed.data.message;
+   return "Falha ao processar workflow.";
 }
 
 export const templates = {
@@ -181,7 +234,7 @@ export const createFromTemplate = protectedProcedure
          cron: input.schedule.cron,
          humanLabel: buildHumanLabel(input.schedule.cron),
       });
-      const nextRunAt = buildNextRunAt(
+      const nextRunAt = buildNextRunAtOrThrow(
          input.schedule.cron,
          timezoneValue,
          dayjs().toDate(),
@@ -228,7 +281,7 @@ export const update = protectedProcedure
       );
       const nextRunAt =
          workflow.status === "active"
-            ? buildNextRunAt(
+            ? buildNextRunAtOrThrow(
                  scheduleNode.data.cron,
                  timezoneValue,
                  dayjs().toDate(),
@@ -264,105 +317,172 @@ export const update = protectedProcedure
       return result.value;
    });
 
+async function activateWorkflowForTeam(
+   context: { db: DatabaseInstance; teamId: string },
+   id: string,
+) {
+   const workflow = await loadWorkflowForTeam(context, id);
+   const scheduleNode = getWorkflowScheduleNode(workflow.graph);
+   const nextRunAt = buildNextRunAtOrThrow(
+      scheduleNode.data.cron,
+      normalizeWorkflowTimezone(scheduleNode.data.timezone),
+      dayjs().toDate(),
+   );
+   const result = await Result.tryPromise({
+      try: () =>
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(workflows)
+               .set({
+                  status: "active",
+                  nextRunAt,
+                  updatedAt: dayjs().toDate(),
+               })
+               .where(eq(workflows.id, workflow.id))
+               .returning();
+            return row;
+         }),
+      catch: () =>
+         new WorkflowsRouterError({
+            error: workflowsRouterErrors.INTERNAL(),
+            message: "Falha ao ativar workflow.",
+         }),
+   });
+   if (Result.isError(result)) throw result.error;
+   if (!result.value)
+      throw new WorkflowsRouterError({
+         error: workflowsRouterErrors.NOT_FOUND(),
+         message: "Workflow não encontrado.",
+      });
+   return result.value;
+}
+
+async function pauseWorkflowForTeam(
+   context: { db: DatabaseInstance; teamId: string },
+   id: string,
+) {
+   const workflow = await loadWorkflowForTeam(context, id);
+   const result = await Result.tryPromise({
+      try: () =>
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .update(workflows)
+               .set({
+                  status: "paused",
+                  nextRunAt: null,
+                  updatedAt: dayjs().toDate(),
+               })
+               .where(eq(workflows.id, workflow.id))
+               .returning();
+            return row;
+         }),
+      catch: () =>
+         new WorkflowsRouterError({
+            error: workflowsRouterErrors.INTERNAL(),
+            message: "Falha ao pausar workflow.",
+         }),
+   });
+   if (Result.isError(result)) throw result.error;
+   if (!result.value)
+      throw new WorkflowsRouterError({
+         error: workflowsRouterErrors.NOT_FOUND(),
+         message: "Workflow não encontrado.",
+      });
+   return result.value;
+}
+
+async function removeWorkflowForTeam(
+   context: { db: DatabaseInstance; teamId: string },
+   id: string,
+) {
+   const workflow = await loadWorkflowForTeam(context, id);
+   const result = await Result.tryPromise({
+      try: () =>
+         context.db.transaction(async (tx) => {
+            const [row] = await tx
+               .delete(workflows)
+               .where(eq(workflows.id, workflow.id))
+               .returning();
+            return row;
+         }),
+      catch: () =>
+         new WorkflowsRouterError({
+            error: workflowsRouterErrors.INTERNAL(),
+            message: "Falha ao excluir workflow.",
+         }),
+   });
+   if (Result.isError(result)) throw result.error;
+   if (!result.value)
+      throw new WorkflowsRouterError({
+         error: workflowsRouterErrors.NOT_FOUND(),
+         message: "Workflow não encontrado.",
+      });
+   return { success: true };
+}
+
+async function runBulkWorkflowAction(
+   ids: string[],
+   action: (id: string) => Promise<unknown>,
+) {
+   const results = await Promise.allSettled(ids.map((id) => action(id)));
+   const succeeded: string[] = [];
+   const failed: { id: string; message: string }[] = [];
+
+   for (let index = 0; index < results.length; index += 1) {
+      const id = ids[index];
+      const result = results[index];
+      if (!id || !result) continue;
+      if (result.status === "fulfilled") {
+         succeeded.push(id);
+         continue;
+      }
+      failed.push({ id, message: getErrorMessage(result.reason) });
+   }
+
+   return { succeeded, failed };
+}
+
 export const activate = protectedProcedure
    .input(idSchema)
-   .handler(async ({ context, input }) => {
-      const workflow = await loadWorkflowForTeam(context, input.id);
-      const scheduleNode = getWorkflowScheduleNode(workflow.graph);
-      const nextRunAt = buildNextRunAt(
-         scheduleNode.data.cron,
-         normalizeWorkflowTimezone(scheduleNode.data.timezone),
-         dayjs().toDate(),
-      );
-      const result = await Result.tryPromise({
-         try: () =>
-            context.db.transaction(async (tx) => {
-               const [row] = await tx
-                  .update(workflows)
-                  .set({
-                     status: "active",
-                     nextRunAt,
-                     updatedAt: dayjs().toDate(),
-                  })
-                  .where(eq(workflows.id, workflow.id))
-                  .returning();
-               return row;
-            }),
-         catch: () =>
-            new WorkflowsRouterError({
-               error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao ativar workflow.",
-            }),
-      });
-      if (Result.isError(result)) throw result.error;
-      if (!result.value)
-         throw new WorkflowsRouterError({
-            error: workflowsRouterErrors.NOT_FOUND(),
-            message: "Workflow não encontrado.",
-         });
-      return result.value;
-   });
+   .handler(async ({ context, input }) =>
+      activateWorkflowForTeam(context, input.id),
+   );
 
 export const pause = protectedProcedure
    .input(idSchema)
-   .handler(async ({ context, input }) => {
-      const workflow = await loadWorkflowForTeam(context, input.id);
-      const result = await Result.tryPromise({
-         try: () =>
-            context.db.transaction(async (tx) => {
-               const [row] = await tx
-                  .update(workflows)
-                  .set({
-                     status: "paused",
-                     nextRunAt: null,
-                     updatedAt: dayjs().toDate(),
-                  })
-                  .where(eq(workflows.id, workflow.id))
-                  .returning();
-               return row;
-            }),
-         catch: () =>
-            new WorkflowsRouterError({
-               error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao pausar workflow.",
-            }),
-      });
-      if (Result.isError(result)) throw result.error;
-      if (!result.value)
-         throw new WorkflowsRouterError({
-            error: workflowsRouterErrors.NOT_FOUND(),
-            message: "Workflow não encontrado.",
-         });
-      return result.value;
-   });
+   .handler(async ({ context, input }) =>
+      pauseWorkflowForTeam(context, input.id),
+   );
 
 export const remove = protectedProcedure
    .input(idSchema)
-   .handler(async ({ context, input }) => {
-      const workflow = await loadWorkflowForTeam(context, input.id);
-      const result = await Result.tryPromise({
-         try: () =>
-            context.db.transaction(async (tx) => {
-               const [row] = await tx
-                  .delete(workflows)
-                  .where(eq(workflows.id, workflow.id))
-                  .returning();
-               return row;
-            }),
-         catch: () =>
-            new WorkflowsRouterError({
-               error: workflowsRouterErrors.INTERNAL(),
-               message: "Falha ao excluir workflow.",
-            }),
-      });
-      if (Result.isError(result)) throw result.error;
-      if (!result.value)
-         throw new WorkflowsRouterError({
-            error: workflowsRouterErrors.NOT_FOUND(),
-            message: "Workflow não encontrado.",
-         });
-      return { success: true };
-   });
+   .handler(async ({ context, input }) =>
+      removeWorkflowForTeam(context, input.id),
+   );
+
+export const bulk = {
+   activate: protectedProcedure
+      .input(bulkIdsSchema)
+      .handler(async ({ context, input }) =>
+         runBulkWorkflowAction(input.ids, (id) =>
+            activateWorkflowForTeam(context, id),
+         ),
+      ),
+   pause: protectedProcedure
+      .input(bulkIdsSchema)
+      .handler(async ({ context, input }) =>
+         runBulkWorkflowAction(input.ids, (id) =>
+            pauseWorkflowForTeam(context, id),
+         ),
+      ),
+   remove: protectedProcedure
+      .input(bulkIdsSchema)
+      .handler(async ({ context, input }) =>
+         runBulkWorkflowAction(input.ids, (id) =>
+            removeWorkflowForTeam(context, id),
+         ),
+      ),
+};
 
 export const runNow = protectedProcedure
    .input(idSchema)
@@ -422,7 +542,30 @@ export const runNow = protectedProcedure
                message: "Falha ao enfileirar execução do workflow.",
             }),
       });
-      if (Result.isError(enqueueResult)) throw enqueueResult.error;
+      if (Result.isError(enqueueResult)) {
+         const markFailedResult = await Result.tryPromise({
+            try: () =>
+               context.db.transaction(async (tx) => {
+                  const [row] = await tx
+                     .update(workflowRuns)
+                     .set({
+                        status: "failed",
+                        endedAt: dayjs().toDate(),
+                        error: enqueueResult.error.message,
+                     })
+                     .where(eq(workflowRuns.id, run.id))
+                     .returning();
+                  return row;
+               }),
+            catch: () =>
+               new WorkflowsRouterError({
+                  error: workflowsRouterErrors.INTERNAL(),
+                  message: "Falha ao registrar falha da execução do workflow.",
+               }),
+         });
+         if (Result.isError(markFailedResult)) throw markFailedResult.error;
+         throw enqueueResult.error;
+      }
       return run;
    });
 
@@ -447,6 +590,7 @@ export const runs = {
 
 export default {
    activate,
+   bulk,
    createFromTemplate,
    get,
    list,

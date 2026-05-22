@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS "platform"."workflow_runs" (
    "scheduled_for" timestamp with time zone NOT NULL,
    "started_at" timestamp with time zone,
    "ended_at" timestamp with time zone,
-   "report_id" uuid REFERENCES "platform"."reports"("id"),
+   "report_id" uuid REFERENCES "platform"."reports"("id") ON DELETE SET NULL,
    "idempotency_key" text NOT NULL,
    "error" text,
    "triggered_by" "platform"."workflow_run_triggered_by" NOT NULL

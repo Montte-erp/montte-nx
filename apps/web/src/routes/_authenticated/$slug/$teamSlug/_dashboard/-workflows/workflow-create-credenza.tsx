@@ -1,4 +1,5 @@
 import { Badge } from "@packages/ui/components/badge";
+import { Button } from "@packages/ui/components/button";
 import {
    CredenzaBody,
    CredenzaDescription,
@@ -8,6 +9,7 @@ import {
 import { Input } from "@packages/ui/components/input";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { toast } from "@packages/ui/hooks/use-toast";
+import { cn } from "@packages/ui/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import type { Outputs } from "@/integrations/orpc/client";
@@ -19,12 +21,17 @@ import {
    CalendarRange,
    ChartColumn,
    LineChart,
-   Plus,
    Search,
    Tags,
    Workflow,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+   buildWorkflowCron,
+   parseWorkflowScheduleFromCron,
+   SchedulePicker,
+   type WorkflowScheduleDraft,
+} from "./schedule-picker";
 
 const TEMPLATE_ICONS: Record<string, typeof Workflow> = {
    "dre-monthly": ChartColumn,
@@ -32,10 +39,7 @@ const TEMPLATE_ICONS: Record<string, typeof Workflow> = {
    "cost-centers-monthly": BadgeDollarSign,
    "aging-weekly": CalendarRange,
    "categories-monthly": Tags,
-   "blank-workflow": Plus,
 };
-
-const BLANK_WORKFLOW_TEMPLATE_ID = "blank-workflow";
 
 type WorkflowTemplate = Outputs["workflows"]["templates"]["list"][number];
 
@@ -44,7 +48,15 @@ export function WorkflowCreateCredenza({
 }: {
    templates: WorkflowTemplate[];
 }) {
+   const firstTemplate = templates[0] ?? null;
    const [search, setSearch] = useState("");
+   const [selectedTemplateId, setSelectedTemplateId] = useState(
+      firstTemplate?.id ?? "",
+   );
+   const [workflowName, setWorkflowName] = useState(firstTemplate?.name ?? "");
+   const [schedule, setSchedule] = useState<WorkflowScheduleDraft>(() =>
+      parseWorkflowScheduleFromCron(firstTemplate?.defaultCron ?? "0 9 1 * *"),
+   );
    const { slug, teamSlug } = useDashboardSlugs();
    const navigate = useNavigate();
 
@@ -62,34 +74,36 @@ export function WorkflowCreateCredenza({
       }),
    );
 
+   const selectedTemplate = useMemo(
+      () =>
+         templates.find((template) => template.id === selectedTemplateId) ??
+         firstTemplate,
+      [firstTemplate, selectedTemplateId, templates],
+   );
+
    const filteredTemplates = useMemo(() => {
       const query = search.trim().toLowerCase();
-      const matchesSearch = (template: WorkflowTemplate) => {
-         if (!query) return true;
-         return [template.name, template.description].some((value) =>
+      if (!query) return templates;
+      return templates.filter((template) =>
+         [template.name, template.description].some((value) =>
             value.toLowerCase().includes(query),
-         );
-      };
-      const blankTemplate = templates.find(
-         (template) => template.id === BLANK_WORKFLOW_TEMPLATE_ID,
+         ),
       );
-      const templateList = templates.filter(
-         (template) => template.id !== BLANK_WORKFLOW_TEMPLATE_ID,
-      );
-      return [
-         ...(blankTemplate && matchesSearch(blankTemplate)
-            ? [blankTemplate]
-            : []),
-         ...templateList.filter(matchesSearch),
-      ];
    }, [search, templates]);
 
-   function handleCreate(template: WorkflowTemplate) {
+   function handleSelectTemplate(template: WorkflowTemplate) {
+      setSelectedTemplateId(template.id);
+      setWorkflowName(template.name);
+      setSchedule(parseWorkflowScheduleFromCron(template.defaultCron));
+   }
+
+   function handleCreate() {
+      if (!selectedTemplate) return;
       createMutation.mutate({
-         templateId: template.id,
-         name: template.name,
+         templateId: selectedTemplate.id,
+         name: workflowName.trim() || selectedTemplate.name,
          schedule: {
-            cron: template.defaultCron,
+            cron: buildWorkflowCron(schedule),
             timezone: "America/Sao_Paulo",
          },
       });
@@ -101,7 +115,7 @@ export function WorkflowCreateCredenza({
             <div className="flex flex-col gap-1">
                <CredenzaTitle>Criar workflow</CredenzaTitle>
                <CredenzaDescription>
-                  Escolha um template pronto ou comece do zero.
+                  Escolha um template pronto, ajuste o nome e defina a agenda.
                </CredenzaDescription>
             </div>
          </CredenzaHeader>
@@ -117,55 +131,101 @@ export function WorkflowCreateCredenza({
                />
             </div>
 
-            <ScrollArea className="min-h-0 flex-1 pr-2">
-               <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                  {filteredTemplates.map((template) => {
-                     const Icon = TEMPLATE_ICONS[template.id] ?? Workflow;
-                     const isBlank = template.id === BLANK_WORKFLOW_TEMPLATE_ID;
-                     return (
-                        <button
-                           className="group min-h-[210px] overflow-hidden rounded-lg border bg-card text-left transition-colors hover:border-foreground/25 hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-60"
-                           disabled={createMutation.isPending}
-                           key={template.id}
-                           onClick={() => handleCreate(template)}
-                           type="button"
-                        >
-                           <div className="flex h-28 items-center justify-center bg-gradient-to-br from-primary/15 via-muted to-muted/40">
-                              <div className="bg-background/70 text-foreground flex size-14 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-105">
-                                 <Icon className="size-7" />
+            <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+               <ScrollArea className="min-h-0 pr-2">
+                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                     {filteredTemplates.map((template) => {
+                        const Icon = TEMPLATE_ICONS[template.id] ?? Workflow;
+                        const isSelected = template.id === selectedTemplate?.id;
+                        return (
+                           <button
+                              aria-pressed={isSelected}
+                              className={cn(
+                                 "group min-h-[210px] overflow-hidden rounded-lg border bg-card text-left transition-colors hover:border-foreground/25 hover:bg-muted/30 disabled:cursor-not-allowed disabled:opacity-60",
+                                 isSelected && "border-primary bg-primary/5",
+                              )}
+                              disabled={createMutation.isPending}
+                              key={template.id}
+                              onClick={() => handleSelectTemplate(template)}
+                              type="button"
+                           >
+                              <div className="flex h-28 items-center justify-center bg-gradient-to-br from-primary/15 via-muted to-muted/40">
+                                 <div className="bg-background/70 text-foreground flex size-14 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-105">
+                                    <Icon className="size-7" />
+                                 </div>
                               </div>
-                           </div>
-                           <div className="flex flex-col gap-3 p-3">
-                              <div className="flex flex-col gap-1">
-                                 <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
-                                    {template.name}
-                                 </span>
-                                 <span className="text-muted-foreground line-clamp-2 text-sm">
-                                    {template.description}
-                                 </span>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                 {isBlank ? (
-                                    <>
-                                       <Badge variant="outline">Do zero</Badge>
-                                       <Badge variant="secondary">
-                                          Agenda base
-                                       </Badge>
-                                    </>
-                                 ) : (
+                              <div className="flex flex-col gap-3 p-3">
+                                 <div className="flex flex-col gap-1">
+                                    <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+                                       {template.name}
+                                    </span>
+                                    <span className="text-muted-foreground line-clamp-2 text-sm">
+                                       {template.description}
+                                    </span>
+                                 </div>
+                                 <div className="flex flex-wrap items-center gap-2">
                                     <Badge variant="outline">
                                        {template.cadence === "weekly"
                                           ? "Semanal"
                                           : "Mensal"}
                                     </Badge>
-                                 )}
+                                 </div>
                               </div>
-                           </div>
-                        </button>
-                     );
-                  })}
+                           </button>
+                        );
+                     })}
+                  </div>
+               </ScrollArea>
+
+               <div className="flex min-h-0 flex-col gap-4 rounded-lg border bg-card p-4">
+                  <div className="grid gap-1">
+                     <h3 className="text-sm font-semibold">
+                        Configurar ativação
+                     </h3>
+                     <p className="text-muted-foreground text-sm">
+                        Defina como este workflow será criado no espaço atual.
+                     </p>
+                  </div>
+
+                  {selectedTemplate ? (
+                     <>
+                        <div className="grid gap-2">
+                           <label
+                              className="text-sm font-medium"
+                              htmlFor="workflow-name"
+                           >
+                              Nome
+                           </label>
+                           <Input
+                              disabled={createMutation.isPending}
+                              id="workflow-name"
+                              value={workflowName}
+                              onChange={(event) =>
+                                 setWorkflowName(event.target.value)
+                              }
+                              placeholder={selectedTemplate.name}
+                           />
+                        </div>
+                        <SchedulePicker
+                           disabled={createMutation.isPending}
+                           value={schedule}
+                           onChange={setSchedule}
+                        />
+                        <Button
+                           disabled={createMutation.isPending}
+                           onClick={handleCreate}
+                           type="button"
+                        >
+                           Criar workflow
+                        </Button>
+                     </>
+                  ) : (
+                     <p className="text-muted-foreground text-sm">
+                        Selecione um template para configurar a ativação.
+                     </p>
+                  )}
                </div>
-            </ScrollArea>
+            </div>
          </CredenzaBody>
       </div>
    );
