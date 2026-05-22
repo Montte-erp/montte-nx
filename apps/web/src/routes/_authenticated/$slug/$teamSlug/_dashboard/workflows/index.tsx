@@ -1,5 +1,4 @@
 import { Button } from "@packages/ui/components/button";
-import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyDescription,
@@ -26,7 +25,7 @@ import {
    useReactTable,
    type ColumnDef,
 } from "@tanstack/react-table";
-import { Pause, Play, Plus, Trash2, Workflow } from "lucide-react";
+import { Plus, Workflow } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { z } from "zod";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
@@ -40,11 +39,7 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import {
-   SelectionActionButton,
-   useTableBulkActions,
-} from "@/hooks/use-selection-toolbar";
-import { orpc, type Outputs } from "@/integrations/orpc/client";
+import { orpc } from "@/integrations/orpc/client";
 import { DefaultHeader } from "../../-layout/default-header";
 import { WorkflowCreateCredenza } from "../-workflows/workflow-create-credenza";
 import {
@@ -67,28 +62,9 @@ const searchSchema = z.object({
 });
 
 const EMPTY_TEMPLATE_LABELS = new Map<string, string>();
-type WorkflowBulkResult = Outputs["workflows"]["bulk"]["activate"];
 const skeletonColumns = buildWorkflowsColumns({
    templateLabels: EMPTY_TEMPLATE_LABELS,
 });
-
-function showBulkWorkflowToast(
-   result: WorkflowBulkResult,
-   successMessage: string,
-   failureMessage: string,
-) {
-   if (result.failed.length === 0) {
-      toast.success(successMessage);
-      return;
-   }
-   if (result.succeeded.length === 0) {
-      toast.error(failureMessage);
-      return;
-   }
-   toast.error(
-      `${result.failed.length} ${result.failed.length === 1 ? "workflow falhou" : "workflows falharam"}. ${result.succeeded.length} ${result.succeeded.length === 1 ? "foi processado" : "foram processados"}.`,
-   );
-}
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/workflows/",
@@ -209,51 +185,6 @@ function WorkflowsIndexContent() {
          onError: (error) => toast.error(error.message),
       }),
    );
-   const bulkActivateMutation = useMutation(
-      orpc.workflows.bulk.activate.mutationOptions({
-         onSuccess: async (result) => {
-            showBulkWorkflowToast(
-               result,
-               "Workflows ativados.",
-               "Falha ao ativar workflows.",
-            );
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const bulkPauseMutation = useMutation(
-      orpc.workflows.bulk.pause.mutationOptions({
-         onSuccess: async (result) => {
-            showBulkWorkflowToast(
-               result,
-               "Workflows pausados.",
-               "Falha ao pausar workflows.",
-            );
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const bulkRemoveMutation = useMutation(
-      orpc.workflows.bulk.remove.mutationOptions({
-         onSuccess: async (result) => {
-            showBulkWorkflowToast(
-               result,
-               "Workflows excluídos.",
-               "Falha ao excluir workflows.",
-            );
-            await queryClient.invalidateQueries(
-               orpc.workflows.list.queryOptions(),
-            );
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
 
    const openWorkflow = useCallback(
       (workflow: WorkflowRow) =>
@@ -288,49 +219,13 @@ function WorkflowsIndexContent() {
    );
 
    const columns = useMemo<ColumnDef<WorkflowRow>[]>(() => {
-      const selectColumn: ColumnDef<WorkflowRow> = {
-         id: "__select",
-         size: 48,
-         enableSorting: false,
-         enableHiding: false,
-         meta: { importIgnore: true },
-         header: ({ table }) => (
-            <Checkbox
-               aria-label="Selecionar todos"
-               checked={
-                  table.getIsAllPageRowsSelected()
-                     ? true
-                     : table.getIsSomePageRowsSelected()
-                       ? "indeterminate"
-                       : false
-               }
-               onCheckedChange={(value) =>
-                  table.toggleAllPageRowsSelected(Boolean(value))
-               }
-            />
-         ),
-         cell: ({ row }) => (
-            <Checkbox
-               aria-label="Selecionar linha"
-               checked={row.getIsSelected()}
-               disabled={!row.getCanSelect()}
-               onClick={(event) => event.stopPropagation()}
-               onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
-            />
-         ),
-      };
-
-      return [
-         selectColumn,
-         ...buildWorkflowsColumns({
-            templateLabels,
-            onOpen: openWorkflow,
-            onPause: (workflow) => pauseMutation.mutate({ id: workflow.id }),
-            onActivate: (workflow) =>
-               activateMutation.mutate({ id: workflow.id }),
-            onRemove: handleRemove,
-         }),
-      ];
+      return buildWorkflowsColumns({
+         templateLabels,
+         onOpen: openWorkflow,
+         onPause: (workflow) => pauseMutation.mutate({ id: workflow.id }),
+         onActivate: (workflow) => activateMutation.mutate({ id: workflow.id }),
+         onRemove: handleRemove,
+      });
    }, [
       activateMutation,
       handleRemove,
@@ -359,7 +254,6 @@ function WorkflowsIndexContent() {
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
-      onRowSelectionChange: urlState.onRowSelectionChange,
       onColumnSizingChange: layout.onColumnSizingChange,
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
@@ -367,58 +261,6 @@ function WorkflowsIndexContent() {
       getCoreRowModel: getCoreRowModel(),
       getSortedRowModel: getSortedRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
-   });
-
-   const selectedRows = table.getSelectedRowModel().rows;
-   const selectedIds = selectedRows.map((row) => row.original.id);
-
-   useTableBulkActions({
-      selectedCount: selectedRows.length,
-      onClear: () => table.resetRowSelection(),
-      children: (
-         <>
-            <SelectionActionButton
-               icon={<Play className="size-4" />}
-               onClick={async () => {
-                  await bulkActivateMutation.mutateAsync({ ids: selectedIds });
-                  table.resetRowSelection();
-               }}
-            >
-               Ativar
-            </SelectionActionButton>
-            <SelectionActionButton
-               icon={<Pause className="size-4" />}
-               onClick={async () => {
-                  await bulkPauseMutation.mutateAsync({ ids: selectedIds });
-                  table.resetRowSelection();
-               }}
-            >
-               Pausar
-            </SelectionActionButton>
-            <SelectionActionButton
-               icon={<Trash2 className="size-4" />}
-               onClick={() => {
-                  openAlertDialog({
-                     title: `Excluir ${selectedIds.length} ${selectedIds.length === 1 ? "workflow" : "workflows"}`,
-                     description:
-                        "Tem certeza que deseja excluir os workflows selecionados? Esta ação não pode ser desfeita.",
-                     actionLabel: "Excluir",
-                     cancelLabel: "Cancelar",
-                     variant: "destructive",
-                     onAction: async () => {
-                        await bulkRemoveMutation.mutateAsync({
-                           ids: selectedIds,
-                        });
-                        table.resetRowSelection();
-                     },
-                  });
-               }}
-               variant="destructive"
-            >
-               Excluir
-            </SelectionActionButton>
-         </>
-      ),
    });
 
    return (
@@ -450,12 +292,7 @@ function WorkflowsIndexContent() {
                <DataTableBody<WorkflowRow>
                   renderRow={({ row }) => (
                      <TableRow
-                        aria-selected={row.getIsSelected()}
                         className="hover:bg-muted/50 cursor-pointer"
-                        data-selected={row.getIsSelected()}
-                        data-state={
-                           row.getIsSelected() ? "selected" : undefined
-                        }
                         key={row.id}
                         onClick={() => openWorkflow(row.original)}
                         onKeyDown={(event) => {

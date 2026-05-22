@@ -100,7 +100,7 @@ export const navGroups: NavGroupDef[] = [
    },
    {
       id: "automation",
-      label: "Automação",
+      label: "Ferramentas",
       items: [
          {
             id: "workflows",

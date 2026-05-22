@@ -1,3 +1,4 @@
+import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
    ContextPanel,
@@ -35,8 +36,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import {
    ArrowLeft,
+   AlertTriangle,
    CalendarClock,
    ChartColumn,
+   CircleCheckBig,
+   Clock3,
    History,
    Pause,
    Play,
@@ -63,7 +67,6 @@ import {
    WorkflowCanvas,
    type WorkflowFlowNode,
 } from "../../-workflows/workflow-canvas";
-import { WorkflowRunStatusBadge } from "../../-workflows/workflow-status-badge";
 
 const REPORT_TYPE_VALUES = [
    "dre",
@@ -96,6 +99,7 @@ const formSchema = z.object({
 
 type WorkflowDetail = Outputs["workflows"]["get"];
 type WorkflowRun = Outputs["workflows"]["runs"]["list"][number];
+type WorkflowRunStatus = WorkflowRun["status"];
 type WorkflowGraph = WorkflowDetail["graph"];
 type WorkflowGraphNode = WorkflowGraph["nodes"][number];
 type WorkflowReportType = (typeof REPORT_TYPE_VALUES)[number];
@@ -116,6 +120,31 @@ const PERIOD_LABELS: Record<WorkflowPeriodKind, string> = {
    "current-month": "Mês atual",
    "current-week": "Semana atual",
 };
+
+function WorkflowRunStatusBadge({ status }: { status: WorkflowRunStatus }) {
+   if (status === "failed") {
+      return (
+         <Badge variant="destructive">
+            <AlertTriangle className="size-3" />
+            Falhou
+         </Badge>
+      );
+   }
+   if (status === "succeeded") {
+      return (
+         <Badge variant="success">
+            <CircleCheckBig className="size-3" />
+            Concluída
+         </Badge>
+      );
+   }
+   return (
+      <Badge variant={status === "running" ? "secondary" : "outline"}>
+         <Clock3 className="size-3" />
+         {status === "running" ? "Executando" : "Na fila"}
+      </Badge>
+   );
+}
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/workflows/$workflowId/",

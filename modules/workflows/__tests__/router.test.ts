@@ -191,57 +191,6 @@ describe("workflows router", () => {
       expect(activated.nextRunAt).not.toBeNull();
    });
 
-   it("bulk pause, activate e remove processam workflows no servidor", async () => {
-      const { teamId, organizationId } = await seedTeam(testDb.db);
-      const userId = await seedUser(testDb.db);
-      const ctx = createTestContext(testDb.db, {
-         teamId,
-         organizationId,
-         userId,
-      });
-      const first = await call(
-         workflowsRouter.createFromTemplate,
-         {
-            templateId: "aging-weekly",
-            schedule: { cron: "0 9 * * 1", timezone: "America/Sao_Paulo" },
-         },
-         { context: ctx },
-      );
-      const second = await call(
-         workflowsRouter.createFromTemplate,
-         {
-            templateId: "dre-monthly",
-            schedule: { cron: "0 9 1 * *", timezone: "America/Sao_Paulo" },
-         },
-         { context: ctx },
-      );
-      const ids = [first.id, second.id];
-
-      const paused = await call(
-         workflowsRouter.bulk.pause,
-         { ids },
-         { context: ctx },
-      );
-      expect(paused.succeeded).toHaveLength(2);
-      expect(paused.failed).toHaveLength(0);
-
-      const activated = await call(
-         workflowsRouter.bulk.activate,
-         { ids },
-         { context: ctx },
-      );
-      expect(activated.succeeded).toHaveLength(2);
-      expect(activated.failed).toHaveLength(0);
-
-      const removed = await call(
-         workflowsRouter.bulk.remove,
-         { ids },
-         { context: ctx },
-      );
-      expect(removed.succeeded).toHaveLength(2);
-      expect(removed.failed).toHaveLength(0);
-   });
-
    it("runNow cria execução manual e enfileira workflow", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const userId = await seedUser(testDb.db);

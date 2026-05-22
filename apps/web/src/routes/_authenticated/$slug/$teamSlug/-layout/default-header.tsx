@@ -14,11 +14,6 @@ interface DefaultHeaderProps {
    panelActions?: PanelAction[];
    /** When provided, renders an ArrowLeft back button before the title. */
    onBack?: () => void;
-   editable?: boolean;
-   onTitleChange?: (value: string) => void;
-   onDescriptionChange?: (value: string) => void;
-   titlePlaceholder?: string;
-   descriptionPlaceholder?: string;
 }
 
 export function DefaultHeader({
@@ -28,11 +23,6 @@ export function DefaultHeader({
    secondaryActions,
    panelActions,
    onBack,
-   editable,
-   onTitleChange,
-   onDescriptionChange,
-   titlePlaceholder,
-   descriptionPlaceholder,
 }: DefaultHeaderProps) {
    return (
       <div className="flex flex-col gap-4">
@@ -53,13 +43,8 @@ export function DefaultHeader({
                <PageHeader
                   actions={actions}
                   description={description}
-                  editable={editable}
-                  onDescriptionChange={onDescriptionChange}
-                  onTitleChange={onTitleChange}
-                  descriptionPlaceholder={descriptionPlaceholder}
                   panelActions={panelActions}
                   title={title}
-                  titlePlaceholder={titlePlaceholder}
                />
             </div>
          </div>

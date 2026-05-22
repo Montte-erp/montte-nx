@@ -1,11 +1,19 @@
+import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Eye, Pause, Play, Trash2 } from "lucide-react";
+import {
+   CircleCheckBig,
+   CircleDashed,
+   Eye,
+   Pause,
+   Play,
+   Trash2,
+} from "lucide-react";
 import type { Outputs } from "@/integrations/orpc/client";
-import { WorkflowStatusBadge } from "./workflow-status-badge";
 
 export type WorkflowRow = Outputs["workflows"]["list"][number];
+type WorkflowStatus = WorkflowRow["status"];
 
 type BuildWorkflowsColumnsOptions = {
    templateLabels: Map<string, string>;
@@ -14,6 +22,24 @@ type BuildWorkflowsColumnsOptions = {
    onActivate?: (workflow: WorkflowRow) => void;
    onRemove?: (workflow: WorkflowRow) => void;
 };
+
+function WorkflowStatusBadge({ status }: { status: WorkflowStatus }) {
+   if (status === "active") {
+      return (
+         <Badge variant="success">
+            <CircleCheckBig className="size-3" />
+            Ativo
+         </Badge>
+      );
+   }
+
+   return (
+      <Badge variant="outline">
+         <CircleDashed className="size-3" />
+         Pausado
+      </Badge>
+   );
+}
 
 export function buildWorkflowsColumns({
    templateLabels,
