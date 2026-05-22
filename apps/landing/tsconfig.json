@@ -7,6 +7,9 @@
    "exclude": ["dist"],
    "references": [
       {
+         "path": "../../core/utils"
+      },
+      {
          "path": "../../packages/ui"
       }
    ]

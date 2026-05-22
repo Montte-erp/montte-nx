@@ -19,6 +19,7 @@
       "@astrojs/react": "catalog:astro",
       "@astrojs/rss": "catalog:astro",
       "@astrojs/sitemap": "catalog:astro",
+      "@core/utils": "workspace:*",
       "@lucide/astro": "catalog:astro",
       "@packages/ui": "workspace:*",
       "@tailwindcss/vite": "catalog:vite",

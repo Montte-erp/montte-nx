@@ -9,23 +9,19 @@ import { readingTime } from "reading-time-estimator";
 import BaseLayout from "../../layouts/base-layout.astro";
 import FooterBlock from "../../blocks/footer-block.astro";
 import { getAuthor, getInitials } from "../../data/authors";
-import { getRelatedPosts } from "../../lib/blog";
+import { getRelatedPosts, sortBlogPosts } from "../../lib/blog";
 
 dayjs.locale("pt-br");
 
 export async function getStaticPaths() {
-   const posts = await getCollection("blog");
+   const posts = sortBlogPosts(await getCollection("blog"));
    return posts.map((post) => ({
       params: { slug: post.id },
-      props: { post },
+      props: { post, relatedPosts: getRelatedPosts(post, posts) },
    }));
 }
 
-const { post } = Astro.props;
-const allPosts = (await getCollection("blog")).sort(
-   (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime(),
-);
-const relatedPosts = getRelatedPosts(post, allPosts);
+const { post, relatedPosts } = Astro.props;
 const { Content, headings } = await render(post);
 const tocHeadings = headings.filter((h) => h.depth === 2);
 const author = getAuthor(post.data.author);
@@ -113,11 +109,11 @@ const trackingProps = {
 };
 
 const ctaTitle = post.data.releaseVersion
-   ? "Quer testar as próximas releases do Montte?"
-   : "Quer acompanhar a construção do Montte?";
+   ? "Quer acompanhar as próximas releases do Montte?"
+   : "Quer acompanhar o desenvolvimento do Montte?";
 const ctaDescription = post.data.releaseVersion
-   ? "Entre na lista e receba convite quando abrirmos o próximo lote."
-   : "Entre na lista para ver a camada de billing que estamos construindo para SaaS brasileiro.";
+   ? "Entre na lista para receber novidades e testar quando fizer sentido."
+   : "Acompanhe o projeto, teste quando fizer sentido e contribua com feedback.";
 ---
 
 <BaseLayout
@@ -399,13 +395,13 @@ const ctaDescription = post.data.releaseVersion
                      class="flex flex-col gap-2 rounded-lg border border-border/60 bg-card/40 p-4"
                   >
                      <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Em breve no Montte?
+                        Acompanhe o Montte
                      </p>
                      <a
                         href="/#waitlist"
                         class="text-sm font-semibold text-primary hover:underline"
                      >
-                        Entre na lista de espera →
+                        Entrar na lista →
                      </a>
                   </div>
                </div>

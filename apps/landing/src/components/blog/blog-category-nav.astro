@@ -1,0 +1,49 @@
+---
+import type { BlogCategoryTab } from "../../lib/blog";
+
+interface Props {
+   tabs: BlogCategoryTab[];
+}
+
+const { tabs } = Astro.props;
+---
+
+<aside>
+   <div class="flex flex-col items-center gap-3 lg:sticky lg:top-24 lg:items-stretch">
+      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground lg:px-3">
+         Categorias
+      </p>
+      <nav aria-label="Categorias do blog">
+         <ul class="-mb-px flex items-center justify-center gap-6 overflow-x-auto border-b border-border/60 px-2 sm:gap-8 lg:mb-0 lg:flex-col lg:gap-0 lg:border-b-0 lg:overflow-x-visible lg:px-0">
+            {
+               tabs.map((tab) => (
+                  <li class="shrink-0 lg:w-full">
+                     <a
+                        href={tab.href}
+                        aria-current={tab.active ? "page" : undefined}
+                        class:list={[
+                           "inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-1 pb-3 text-sm transition-colors lg:w-full lg:justify-between lg:border-b-0 lg:border-l-2 lg:px-3 lg:py-2 lg:pb-2",
+                           tab.active
+                              ? "border-primary font-semibold text-primary lg:bg-primary/10"
+                              : "border-transparent text-muted-foreground hover:text-foreground",
+                        ]}
+                     >
+                        <span>{tab.name}</span>
+                        <span
+                           class:list={[
+                              "text-xs",
+                              tab.active
+                                 ? "text-primary/80"
+                                 : "text-muted-foreground/60",
+                           ]}
+                        >
+                           {tab.count}
+                        </span>
+                     </a>
+                  </li>
+               ))
+            }
+         </ul>
+      </nav>
+   </div>
+</aside>

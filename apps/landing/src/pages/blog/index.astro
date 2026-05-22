@@ -1,57 +1,30 @@
 ---
 export const prerender = true;
 import { Picture } from "astro:assets";
-import { getCollection } from "astro:content";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
+import BlogCategoryNav from "../../components/blog/blog-category-nav.astro";
+import BlogPostList from "../../components/blog/blog-post-list.astro";
 import BaseLayout from "../../layouts/base-layout.astro";
 import FooterBlock from "../../blocks/footer-block.astro";
 import { getAuthor, getInitials } from "../../data/authors";
-import { slugifyCategory } from "../../lib/blog";
+import {
+   getBlogCategoryTabs,
+   getBlogItemListLd,
+   getSortedBlogPosts,
+} from "../../lib/blog";
 
 dayjs.locale("pt-br");
 
-const posts = (await getCollection("blog")).sort(
-   (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime(),
-);
-
+const posts = await getSortedBlogPosts();
 const topCards = posts.slice(0, 3);
-
-const categoryCounts = posts.reduce<Record<string, number>>((acc, post) => {
-   acc[post.data.category] = (acc[post.data.category] ?? 0) + 1;
-   return acc;
-}, {});
-const categories = Object.entries(categoryCounts).sort(
-   ([, a], [, b]) => b - a,
-);
-
-const siteUrl = "https://montte.co";
-const tabs = [
-   { name: "Todos os posts", count: posts.length, active: true, href: "/blog" },
-   ...categories.map(([name, count]) => ({
-      name,
-      count,
-      active: false,
-      href: `/blog/categoria/${slugifyCategory(name)}`,
-   })),
-];
-
-const itemListLd = {
-   "@context": "https://schema.org",
-   "@type": "ItemList",
-   name: "Blog do Montte",
-   itemListElement: posts.map((post, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      url: new URL(`/blog/${post.id}`, siteUrl).toString(),
-      name: post.data.title,
-   })),
-};
+const tabs = getBlogCategoryTabs(posts);
+const itemListLd = getBlogItemListLd(posts, "Blog do Montte");
 ---
 
 <BaseLayout
    title="Blog do Montte"
-   description="Releases, decisões de produto, postmortems e o que estamos aprendendo construindo a camada de billing que falta no SaaS brasileiro."
+   description="Notas de release, decisões técnicas, postmortems e aprendizados do desenvolvimento aberto do Montte."
    ogImage="/open-graph/blog.png"
    jsonLd={[itemListLd]}
 >
@@ -71,10 +44,10 @@ const itemListLd = {
          <h1
             class="font-serif text-4xl leading-tight font-black text-foreground text-balance sm:text-5xl md:text-6xl"
          >
-            Bastidores do Montte
+            Blog do Montte
          </h1>
          <p class="max-w-2xl text-base leading-relaxed text-muted-foreground text-balance sm:text-lg">
-            Releases, decisões de produto, postmortems, opiniões e o que estamos aprendendo. Escrito por quem está construindo o Montte.
+            Notas de release, decisões técnicas, postmortems e aprendizados do desenvolvimento aberto do Montte.
          </p>
       </div>
    </section>
@@ -165,110 +138,10 @@ const itemListLd = {
    <section class="py-12 sm:py-16">
       <div class="mx-auto w-full max-w-6xl px-4 sm:px-4">
          <div class="grid grid-cols-1 gap-8 lg:grid-cols-[200px_1fr] lg:gap-12">
-            <aside>
-               <div class="flex flex-col items-center gap-3 lg:sticky lg:top-24 lg:items-stretch">
-                  <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground lg:px-3">
-                     Categorias
-                  </p>
-                  <nav aria-label="Categorias do blog">
-                     <ul class="-mb-px flex items-center justify-center gap-6 overflow-x-auto border-b border-border/60 px-2 sm:gap-8 lg:mb-0 lg:flex-col lg:gap-0 lg:border-b-0 lg:overflow-x-visible lg:px-0">
-                        {
-                           tabs.map((tab) => (
-                              <li class="shrink-0 lg:w-full">
-                                 <a
-                                    href={tab.href}
-                                    aria-current={tab.active ? "page" : undefined}
-                                    class:list={[
-                                       "inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-1 pb-3 text-sm transition-colors lg:w-full lg:justify-between lg:border-b-0 lg:border-l-2 lg:px-3 lg:py-2 lg:pb-2",
-                                       tab.active
-                                          ? "border-primary font-semibold text-primary lg:bg-primary/10"
-                                          : "border-transparent text-muted-foreground hover:text-foreground",
-                                    ]}
-                                 >
-                                    <span>{tab.name}</span>
-                                    <span
-                                       class:list={[
-                                          "text-xs",
-                                          tab.active
-                                             ? "text-primary/80"
-                                             : "text-muted-foreground/60",
-                                       ]}
-                                    >
-                                       {tab.count}
-                                    </span>
-                                 </a>
-                              </li>
-                           ))
-                        }
-                     </ul>
-                  </nav>
-               </div>
-            </aside>
+            <BlogCategoryNav tabs={tabs} />
 
             <div class="flex flex-col">
-               {
-                  posts.length === 0 ? (
-                     <p class="text-muted-foreground">
-                        Nenhum post publicado ainda. Volte em breve.
-                     </p>
-                  ) : (
-                     <ul class="flex flex-col">
-                        {posts.map((post) => {
-                           const a = getAuthor(post.data.author);
-                           const avatar = a ? (
-                              <Picture
-                                 src={a.avatar}
-                                 alt={a.name}
-                                 formats={["webp"]}
-                                 widths={[20, 40]}
-                                 sizes="20px"
-                                 loading="lazy"
-                                 decoding="async"
-                                 class="size-5 shrink-0 rounded-full border border-border/60 object-cover"
-                              />
-                           ) : (
-                              <span
-                                 class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary"
-                                 aria-hidden="true"
-                              >
-                                 {getInitials(post.data.author)}
-                              </span>
-                           );
-
-                           return (
-                              <li class="border-b border-border/40 last:border-b-0">
-                                 <a
-                                    href={`/blog/${post.id}`}
-                                    class="group flex flex-col gap-2 py-4 lg:flex-row lg:items-center lg:gap-3"
-                                 >
-                                    <div class="flex min-w-0 items-center gap-2 lg:flex-1">
-                                       <span class="line-clamp-2 text-sm font-medium text-foreground group-hover:text-primary group-hover:underline underline-offset-4 sm:text-base lg:line-clamp-1 lg:truncate">
-                                          {post.data.title}
-                                       </span>
-                                       <span class="hidden shrink-0 lg:inline-flex">
-                                          {avatar}
-                                       </span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-3 text-xs text-muted-foreground lg:justify-end">
-                                       <span class="inline-flex shrink-0 lg:hidden">
-                                          {avatar}
-                                       </span>
-                                       <time
-                                          datetime={post.data.publishedAt.toISOString()}
-                                          class="shrink-0 whitespace-nowrap"
-                                       >
-                                          {dayjs(post.data.publishedAt).format(
-                                             "DD [de] MMM, YYYY",
-                                          )}
-                                       </time>
-                                    </div>
-                                 </a>
-                              </li>
-                           );
-                        })}
-                     </ul>
-                  )
-               }
+               <BlogPostList posts={posts} />
             </div>
          </div>
       </div>
