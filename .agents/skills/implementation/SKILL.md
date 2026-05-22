@@ -498,29 +498,14 @@ E2E guidelines:
 - Use Nx MCP tools quando disponiveis.
 - Nunca adivinhe flags; cheque `nx_docs` ou `--help`.
 
-## TanStack Intent skill mappings
+## Referencias TanStack locais
 
-Carregue `use` com `npx @tanstack/intent@latest load <use>` quando a tarefa bater no `when`. Sub-skills carregam pelo parent.
+No fluxo de implementacao, use primeiro as referencias do Montte. TanStack Intent e fonte complementar para manutencao destas referencias, nao roteamento padrao de tarefa.
 
-Se nenhum mapping servir, rode `npx @tanstack/intent@latest list` para skills locais menos comuns.
-
-```yaml
-skills:
-  - when: "Working on the Montte AI agent — chat endpoints, tools, middleware, structured outputs, adapter configuration, debug logging"
-    use: "@tanstack/ai#ai-core"
-  - when: "Writing or debugging fixtures for AI / OpenRouter HTTP responses in classification or agent tests"
-    use: "@copilotkit/aimock#write-fixtures"
-  - when: "TanStack Router routes, loaders, search params, navigation, code splitting, type safety, auth guards, SSR, errors"
-    use: "@tanstack/router-core#router-core"
-  - when: "TanStack Start setup — server functions, server routes, middleware, deployment, execution model, isomorphic boundaries"
-    use: "@tanstack/start-client-core#start-core"
-  - when: "React-specific TanStack Start — createStart, StartClient, StartServer, useServerFn, RSC"
-    use: "@tanstack/react-start#react-start"
-  - when: "TanStack Devtools setup, plugin panels, marketplace, production stripping"
-    use: "@tanstack/devtools#devtools-app-setup"
-  - when: "Working with .env files, dotenv config, encrypted env, variable expansion"
-    use: "dotenv#dotenv"
-```
+- CRUD frontend, TanStack DB, collections, live queries, mutations otimistas, preload e SSR: `references/tanstack-db.md`.
+- AI agents, TanStack AI runtime, chat lifecycle, tools, structured outputs, AG-UI/OpenUI e AI telemetry: `references/tanstack-ai.md`.
+- Rotas, loaders, search params, SSR, server functions e devtools seguem as secoes locais desta skill: `Client - oRPC + TanStack Query`, `Routes - TanStack Start`, `State, storage e pacing` e `Environment`.
+- Se a referencia local estiver incompleta, use TanStack Intent apenas como pesquisa para atualizar a reference local antes de aplicar a regra no codigo.
 
 ## Validacao base
 

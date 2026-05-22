@@ -20,6 +20,7 @@ import {
 } from "@modules/cards/jobs/close-statements-job";
 import { setupAgentsWorkflows } from "@modules/agents/workflows/setup";
 import { setupClassificationWorkflows } from "@modules/classification/workflows/setup";
+import { setupWorkflowsWorkflows } from "@modules/workflows/setup-workflows";
 import { Result, TaggedError } from "better-result";
 
 class WorkerInitError extends TaggedError("WorkerInitError")<{
@@ -57,6 +58,7 @@ async function initWorker() {
             prompts: promptsClient,
             workerConcurrency: 10,
          });
+         const workflowsQueues = await setupWorkflowsWorkflows();
          const agentsQueues = await setupAgentsWorkflows({
             posthog,
             prompts: promptsClient,
@@ -65,6 +67,7 @@ async function initWorker() {
 
          await launchDbosWorker([
             ...classificationWorkflows.queues,
+            ...workflowsQueues.queues,
             ...agentsQueues,
          ]);
          log.info("worker", "DBOS runtime started");

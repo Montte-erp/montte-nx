@@ -2,11 +2,12 @@ import type { LucideIcon } from "lucide-react";
 import {
    ArrowLeftRight,
    Building2,
+   ChartNoAxesCombined,
    CreditCard,
    Inbox,
-   ChartNoAxesCombined,
    Tag,
    Tags,
+   Workflow,
 } from "lucide-react";
 export type NavItemDef = {
    id: string;
@@ -94,6 +95,19 @@ export const navGroups: NavGroupDef[] = [
             iconColor: "text-teal-500",
             route: "/$slug/$teamSlug/tags",
             configurable: true,
+         },
+      ],
+   },
+   {
+      id: "automation",
+      label: "Automação",
+      items: [
+         {
+            id: "workflows",
+            label: "Automações",
+            icon: Workflow,
+            iconColor: "text-violet-500",
+            route: "/$slug/$teamSlug/workflows",
          },
       ],
    },

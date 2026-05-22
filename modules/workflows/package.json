@@ -1,0 +1,46 @@
+{
+   "name": "@modules/workflows",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "type": "module",
+   "exports": {
+      "./router/*": "./src/router/*.ts",
+      "./workflows/*": "./src/workflows/*.ts",
+      "./*": "./src/*.ts"
+   },
+   "scripts": {
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/database": "workspace:*",
+      "@core/dbos": "workspace:*",
+      "@core/environment": "workspace:*",
+      "@core/logging": "workspace:*",
+      "@core/orpc": "workspace:*",
+      "@dbos-inc/dbos-sdk": "catalog:workers",
+      "@dbos-inc/drizzle-datasource": "catalog:workers",
+      "@orpc/server": "catalog:orpc",
+      "better-result": "catalog:validation",
+      "cron-parser": "catalog:workers",
+      "dayjs": "catalog:ui",
+      "drizzle-orm": "catalog:database",
+      "evlog": "catalog:logging",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@electric-sql/pglite": "^0.3.15",
+      "@electric-sql/pglite-socket": "^0.0.20",
+      "@tooling/typescript": "workspace:*",
+      "@types/pg": "catalog:database",
+      "drizzle-kit": "catalog:database",
+      "drizzle-seed": "catalog:database",
+      "pg": "catalog:database",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   }
+}

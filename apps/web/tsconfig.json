@@ -26,7 +26,8 @@
          "@modules/cards/*": ["../../modules/cards/src/*"],
          "@modules/cashbook/*": ["../../modules/cashbook/src/*"],
          "@modules/classification/*": ["../../modules/classification/src/*"],
-         "@modules/inbox/*": ["../../modules/inbox/src/*"]
+         "@modules/inbox/*": ["../../modules/inbox/src/*"],
+         "@modules/workflows/*": ["../../modules/workflows/src/*"]
       }
    },
    "include": ["src", "__tests__"],

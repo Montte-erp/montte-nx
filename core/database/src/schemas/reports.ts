@@ -14,6 +14,11 @@ export const reportTypeEnum = platformSchema.enum("report_type", [
    "categories",
 ]);
 
+export const reportSourceEnum = platformSchema.enum("report_source", [
+   "manual",
+   "workflow",
+]);
+
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export const reportConfigSchema = z
@@ -52,6 +57,7 @@ export const reports = platformSchema.table("reports", {
    teamId: uuid("team_id").notNull(),
    name: text("name").notNull(),
    type: reportTypeEnum("type").notNull(),
+   source: reportSourceEnum("source").notNull().default("manual"),
    config: jsonb("config").$type<ReportConfig>().notNull(),
    createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -83,4 +89,5 @@ export const createReportSchema = createInsertSchema(reports, {
    });
 
 export type ReportType = (typeof reportTypeEnum.enumValues)[number];
+export type ReportSource = (typeof reportSourceEnum.enumValues)[number];
 export type Report = z.infer<typeof reportSchema>;

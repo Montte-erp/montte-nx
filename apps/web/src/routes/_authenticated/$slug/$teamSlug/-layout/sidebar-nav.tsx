@@ -115,7 +115,13 @@ function useVisibleItems(group: NavGroupDef) {
    );
 }
 
-function NavSection({ group }: { group: NavGroupDef }) {
+function NavSection({
+   group,
+   showCustomizeButton,
+}: {
+   group: NavGroupDef;
+   showCustomizeButton: boolean;
+}) {
    const { slug, teamSlug } = useDashboardSlugs();
    const sidebar = useSidebar();
    const { openCredenza } = useCredenza();
@@ -142,30 +148,33 @@ function NavSection({ group }: { group: NavGroupDef }) {
                      className="size-4 transition-transform duration-200 group-data-[state=open]/group:rotate-90"
                   />
                </CollapsibleTrigger>
-               <Tooltip>
-                  <TooltipTrigger asChild>
-                     <Button
-                        aria-label="Customizar sidebar"
-                        className="text-muted-foreground"
-                        onClick={() =>
-                           openCredenza({
-                              className: "max-w-lg bg-background sm:max-w-lg",
-                              renderChildren: () => (
-                                 <SidebarCustomizeCredenza />
-                              ),
-                           })
-                        }
-                        size="icon-xs"
-                        type="button"
-                        variant="ghost"
-                     >
-                        <Pencil aria-hidden="true" className="size-4" />
-                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                     Customizar sidebar
-                  </TooltipContent>
-               </Tooltip>
+               {showCustomizeButton && (
+                  <Tooltip>
+                     <TooltipTrigger asChild>
+                        <Button
+                           aria-label="Customizar sidebar"
+                           className="text-muted-foreground"
+                           onClick={() =>
+                              openCredenza({
+                                 className:
+                                    "max-w-lg bg-background sm:max-w-lg",
+                                 renderChildren: () => (
+                                    <SidebarCustomizeCredenza />
+                                 ),
+                              })
+                           }
+                           size="icon-xs"
+                           type="button"
+                           variant="ghost"
+                        >
+                           <Pencil aria-hidden="true" className="size-4" />
+                        </Button>
+                     </TooltipTrigger>
+                     <TooltipContent side="right">
+                        Customizar sidebar
+                     </TooltipContent>
+                  </Tooltip>
+               )}
             </SidebarGroupLabel>
             <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                <SidebarGroupContent>
@@ -217,8 +226,12 @@ export function SidebarNav() {
    return (
       <>
          {mainGroup && <MainNavSection group={mainGroup} />}
-         {moduleGroups.map((group) => (
-            <NavSection group={group} key={group.id} />
+         {moduleGroups.map((group, index) => (
+            <NavSection
+               group={group}
+               key={group.id}
+               showCustomizeButton={index === 0}
+            />
          ))}
       </>
    );
