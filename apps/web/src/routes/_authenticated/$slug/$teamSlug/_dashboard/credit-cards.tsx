@@ -14,7 +14,7 @@ import {
    SelectionActionButton,
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
-import { useMutation, useSuspenseQueries } from "@tanstack/react-query";
+import { createCollection, eq, ilike, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute } from "@tanstack/react-router";
 import {
    getCoreRowModel,
@@ -34,6 +34,7 @@ import {
    Plus,
    Trash2,
 } from "lucide-react";
+import { Result } from "better-result";
 import { startTransition, useCallback, useMemo } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
@@ -55,8 +56,22 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
 import { useCsvFile } from "@/hooks/use-csv-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { orpc } from "@/integrations/orpc/client";
+import { bankAccountsCollectionOptions } from "@/integrations/tanstack-db/bank-accounts";
+import {
+   bulkCreateCreditCardsAction,
+   bulkDeleteCreditCardsAction,
+   buildOptimisticCreditCardRow,
+   buildOptimisticCreditCardRowId,
+   createCreditCardAction,
+   creditCardsCollectionOptions,
+   creditCardsPageInfoCollectionOptions,
+   deleteCreditCardAction,
+   type CreditCardCreateInput,
+   type CreditCardUpdateInput,
+   updateCreditCardAction,
+} from "@/integrations/tanstack-db/credit-cards";
 import { CreditCardFormSheet } from "./-credit-cards/credit-card-form-sheet";
 import {
    buildCreditCardColumns,
@@ -207,33 +222,81 @@ function normalizeLast4(value: unknown): string | null {
    return digits.length === 4 ? digits : null;
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return fallback;
+}
+
+function escapeIlikePattern(value: string) {
+   return value
+      .replace(/\\/g, "\\\\")
+      .replace(/%/g, "\\%")
+      .replace(/_/g, "\\_");
+}
+
+type CreditCardUpdatePatch = Omit<CreditCardUpdateInput, "id">;
+
+function getCreditCardRowPatch(
+   payload: Record<string, unknown>,
+): CreditCardUpdatePatch {
+   const patch: CreditCardUpdatePatch = {};
+
+   if (typeof payload.name === "string") patch.name = payload.name;
+   if (typeof payload.color === "string") patch.color = payload.color;
+   if (payload.iconUrl === null || typeof payload.iconUrl === "string") {
+      patch.iconUrl = payload.iconUrl;
+   }
+   if (typeof payload.creditLimit === "number") {
+      patch.creditLimit = String(payload.creditLimit);
+   }
+   if (typeof payload.creditLimit === "string") {
+      patch.creditLimit = payload.creditLimit;
+   }
+   if (payload.last4 === null || typeof payload.last4 === "string") {
+      patch.last4 = payload.last4;
+   }
+   if (typeof payload.closingDay === "number") {
+      patch.closingDay = payload.closingDay;
+   }
+   if (typeof payload.dueDay === "number") patch.dueDay = payload.dueDay;
+   if (typeof payload.bankAccountId === "string") {
+      patch.bankAccountId = payload.bankAccountId;
+   }
+   if (
+      payload.status === "active" ||
+      payload.status === "blocked" ||
+      payload.status === "cancelled"
+   ) {
+      patch.status = payload.status;
+   }
+   if (
+      payload.brand === null ||
+      payload.brand === "visa" ||
+      payload.brand === "mastercard" ||
+      payload.brand === "elo" ||
+      payload.brand === "amex" ||
+      payload.brand === "hipercard" ||
+      payload.brand === "other"
+   ) {
+      patch.brand = payload.brand;
+   }
+
+   return patch;
+}
+
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards",
 )({
    validateSearch: creditCardsSearchSchema,
-   loaderDeps: ({ search: { page, pageSize, search, sorting, status } }) => ({
-      page,
-      pageSize,
-      search,
-      sorting,
-      status,
-   }),
-   loader: ({ context, deps }) => {
-      context.queryClient.prefetchQuery(
-         orpc.creditCards.getAll.queryOptions({
-            input: {
-               page: deps.page,
-               pageSize: deps.pageSize,
-               search: deps.search || undefined,
-               sorting: normalizeCreditCardSorting(deps.sorting),
-               status: deps.status,
-            },
-         }),
-      );
-      context.queryClient.prefetchQuery(
-         orpc.bankAccounts.getAll.queryOptions({}),
-      );
-   },
+   ssr: false,
    pendingMs: 300,
    pendingComponent: CreditCardsSkeleton,
    head: () => ({
@@ -252,7 +315,8 @@ function CreditCardsList() {
       Route.useSearch();
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
-   const { publicEnv } = Route.useRouteContext();
+   const { activeTeamId } = useActiveTeam();
+   const { queryClient, publicEnv } = Route.useRouteContext();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout("credit-cards");
@@ -270,69 +334,204 @@ function CreditCardsList() {
          }),
    });
 
-   const [{ data: result }, { data: bankAccounts }] = useSuspenseQueries({
-      queries: [
-         orpc.creditCards.getAll.queryOptions({
-            input: {
-               page,
-               pageSize,
-               search: search || undefined,
-               sorting: normalizeCreditCardSorting(sorting),
-               status,
-            },
-         }),
-         orpc.bankAccounts.getAll.queryOptions({}),
-      ],
-   });
-
-   const deleteMutation = useMutation(
-      orpc.creditCards.remove.mutationOptions({
-         onSuccess: () => {
-            toast.success("Cartão de crédito excluído com sucesso.");
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao excluir cartão de crédito.");
-         },
-      }),
+   const creditCardsCollection = useMemo(
+      () =>
+         createCollection(
+            creditCardsCollectionOptions({
+               queryClient,
+               teamId: activeTeamId ?? "no-team",
+            }),
+         ),
+      [activeTeamId, queryClient],
    );
 
-   const updateMutation = useMutation(
-      orpc.creditCards.update.mutationOptions({
-         onError: (error) => {
-            toast.error(error.message || "Erro ao atualizar cartão.");
-         },
-      }),
+   const bankAccountsCollection = useMemo(
+      () =>
+         createCollection(
+            bankAccountsCollectionOptions({
+               queryClient,
+               teamId: activeTeamId ?? "no-team",
+            }),
+         ),
+      [activeTeamId, queryClient],
+   );
+
+   const trimmedSearch = search.trim();
+   const creditCardsPageInfoCollection = useMemo(
+      () =>
+         createCollection(
+            creditCardsPageInfoCollectionOptions({
+               queryClient,
+               teamId: activeTeamId ?? "no-team",
+               search: trimmedSearch || undefined,
+               status,
+            }),
+         ),
+      [activeTeamId, queryClient, status, trimmedSearch],
+   );
+
+   const { data: liveCreditCards } = useLiveQuery(
+      (q) => {
+         let query = q.from({ creditCard: creditCardsCollection });
+
+         if (status) {
+            query = query.where(({ creditCard }) =>
+               eq(creditCard.status, status),
+            );
+         }
+
+         if (trimmedSearch) {
+            const pattern = `%${escapeIlikePattern(trimmedSearch)}%`;
+            query = query.where(({ creditCard }) =>
+               ilike(creditCard.name, pattern),
+            );
+         }
+
+         const normalizedSorting = normalizeCreditCardSorting(sorting);
+         if (normalizedSorting.length > 0) {
+            for (const rule of normalizedSorting) {
+               switch (rule.id) {
+                  case "bankAccountId":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.bankAccountId,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "brand":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.brand,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "closingDay":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.closingDay,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "creditLimit":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.creditLimit,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "dueDay":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.dueDay,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "name":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.name,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "status":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.status,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+               }
+            }
+         } else {
+            query = query.orderBy(({ creditCard }) => creditCard.name, "asc");
+         }
+
+         return query
+            .limit(pageSize)
+            .offset((page - 1) * pageSize)
+            .select(({ creditCard }) => creditCard);
+      },
+      [creditCardsCollection, page, pageSize, sorting, status, trimmedSearch],
+   );
+
+   const { data: bankAccounts } = useLiveQuery(
+      (q) =>
+         q
+            .from({ bankAccount: bankAccountsCollection })
+            .select(({ bankAccount }) => bankAccount),
+      [bankAccountsCollection],
+   );
+
+   const { data: pageInfoRows } = useLiveQuery(
+      (q) =>
+         q
+            .from({ pageInfo: creditCardsPageInfoCollection })
+            .select(({ pageInfo }) => pageInfo),
+      [creditCardsPageInfoCollection],
+   );
+
+   const safeLiveCreditCards = liveCreditCards ?? [];
+   const safeBankAccounts = bankAccounts ?? [];
+   const totalCreditCards = pageInfoRows?.[0]?.totalCount ?? 0;
+
+   const creditCards = useMemo(
+      () => ({ all: safeLiveCreditCards, rows: safeLiveCreditCards }),
+      [safeLiveCreditCards],
+   );
+
+   const handleCreate = useCallback(
+      async (input: CreditCardCreateInput) => {
+         if (!activeTeamId) {
+            toast.error("Time ativo não encontrado.");
+            return false;
+         }
+         const createCreditCard = createCreditCardAction(creditCardsCollection);
+         const transaction = createCreditCard({
+            row: buildOptimisticCreditCardRow({
+               id: buildOptimisticCreditCardRowId(),
+               input,
+               teamId: activeTeamId,
+            }),
+            input,
+         });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(getErrorMessage(result.error, "Erro ao criar cartão."));
+            return false;
+         }
+         toast.success("Cartão criado com sucesso.");
+         return true;
+      },
+      [activeTeamId, creditCardsCollection],
    );
 
    const handleInlineUpdate = useCallback(
       async (id: string, patch: Record<string, unknown>) => {
-         await updateMutation.mutateAsync({ id, ...patch });
-      },
-      [updateMutation],
-   );
-
-   const bulkCreateMutation = useMutation(
-      orpc.creditCards.bulkCreate.mutationOptions({
-         onError: (e) => toast.error(e.message),
-      }),
-   );
-
-   const bulkDeleteMutation = useMutation(
-      orpc.creditCards.bulkRemove.mutationOptions({
-         onSuccess: ({ deleted }) => {
-            toast.success(
-               `${deleted} ${deleted === 1 ? "cartão excluído" : "cartões excluídos"} com sucesso.`,
+         const updateCreditCard = updateCreditCardAction(creditCardsCollection);
+         const transaction = updateCreditCard({
+            id,
+            patch: getCreditCardRowPatch(patch),
+         });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao atualizar cartão."),
             );
-         },
-         onError: (error) => {
-            toast.error(error.message || "Erro ao excluir cartões.");
-         },
-      }),
+         }
+      },
+      [creditCardsCollection],
    );
 
    const handleOpenCreate = useCallback(() => {
-      openSheet({ renderChildren: () => <CreditCardFormSheet /> });
-   }, [openSheet]);
+      openSheet({
+         renderChildren: () => (
+            <CreditCardFormSheet
+               bankAccounts={safeBankAccounts}
+               logoDevToken={publicEnv?.LOGO_DEV_TOKEN}
+               onCreate={handleCreate}
+            />
+         ),
+      });
+   }, [handleCreate, openSheet, publicEnv?.LOGO_DEV_TOKEN, safeBankAccounts]);
 
    const importConfig: DataImportConfig = useMemo(
       () => ({
@@ -358,7 +557,7 @@ function CreditCardsList() {
             closingDay: parseImportDay(row.closingDay ?? row.fechamento, 1),
             dueDay: parseImportDay(row.dueDay ?? row.vencimento, 1),
             bankAccountId: resolveBankAccountId(
-               bankAccounts ?? [],
+               safeBankAccounts,
                row.bankAccountId,
             ),
             status: parseCreditCardStatus(row.status),
@@ -381,7 +580,7 @@ function CreditCardsList() {
                               Limite: "5000.00",
                               Fechamento: "10",
                               Vencimento: "20",
-                              "Conta Bancária": bankAccounts?.[0]?.name ?? "",
+                              "Conta Bancária": safeBankAccounts[0]?.name ?? "",
                               Status: "Ativo",
                            },
                         ],
@@ -410,7 +609,7 @@ function CreditCardsList() {
                               Limite: "5000.00",
                               Fechamento: "10",
                               Vencimento: "20",
-                              "Conta Bancária": bankAccounts?.[0]?.name ?? "",
+                              "Conta Bancária": safeBankAccounts[0]?.name ?? "",
                               Status: "Ativo",
                            },
                         ],
@@ -429,40 +628,66 @@ function CreditCardsList() {
             ],
          },
          onImport: async (rows) => {
-            const firstBankAccountId = bankAccounts?.[0]?.id;
+            if (!activeTeamId) {
+               toast.error("Time ativo não encontrado.");
+               return;
+            }
+            const firstBankAccountId = safeBankAccounts[0]?.id;
             if (!firstBankAccountId) {
                toast.error(
                   "Nenhuma conta bancária disponível para importação.",
                );
                return;
             }
-            await bulkCreateMutation.mutateAsync({
-               cards: rows.map((r) => ({
-                  name: String(r.name ?? ""),
-                  closingDay:
-                     typeof r.closingDay === "number" ? r.closingDay : 1,
-                  dueDay: typeof r.dueDay === "number" ? r.dueDay : 1,
-                  bankAccountId:
-                     resolveBankAccountId(
-                        bankAccounts ?? [],
-                        r.bankAccountId,
-                     ) ?? firstBankAccountId,
-                  color: "#6366f1",
-                  creditLimit: String(r.creditLimit ?? "0"),
-                  last4: normalizeLast4(r.last4),
-                  brand: parseCreditCardBrand(r.brand),
-                  status: parseCreditCardStatus(r.status),
+
+            const inputs = rows.map((r) => ({
+               name: String(r.name ?? ""),
+               closingDay: typeof r.closingDay === "number" ? r.closingDay : 1,
+               dueDay: typeof r.dueDay === "number" ? r.dueDay : 1,
+               bankAccountId:
+                  resolveBankAccountId(safeBankAccounts, r.bankAccountId) ??
+                  firstBankAccountId,
+               color: "#6366f1",
+               creditLimit: String(r.creditLimit ?? "0"),
+               last4: normalizeLast4(r.last4),
+               brand: parseCreditCardBrand(r.brand),
+               status: parseCreditCardStatus(r.status),
+            }));
+            const bulkCreate = bulkCreateCreditCardsAction(
+               creditCardsCollection,
+            );
+            const transaction = bulkCreate({
+               rows: inputs.map((input) => ({
+                  input,
+                  row: buildOptimisticCreditCardRow({
+                     id: buildOptimisticCreditCardRowId(),
+                     input,
+                     teamId: activeTeamId,
+                  }),
                })),
             });
+            const result = await Result.tryPromise({
+               try: () => transaction.isPersisted.promise,
+               catch: (error) => error,
+            });
+            if (Result.isError(result)) {
+               toast.error(
+                  getErrorMessage(
+                     result.error,
+                     "Erro ao importar cartões de crédito.",
+                  ),
+               );
+            }
          },
       }),
       [
-         bulkCreateMutation,
+         activeTeamId,
+         creditCardsCollection,
+         safeBankAccounts,
          generateCsv,
          generateXlsx,
          parseCsv,
          parseXlsx,
-         bankAccounts,
       ],
    );
 
@@ -475,16 +700,33 @@ function CreditCardsList() {
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               await deleteMutation.mutateAsync({ id: card.id });
+               const deleteCreditCard = deleteCreditCardAction(
+                  creditCardsCollection,
+               );
+               const transaction = deleteCreditCard({ id: card.id });
+               const result = await Result.tryPromise({
+                  try: () => transaction.isPersisted.promise,
+                  catch: (error) => error,
+               });
+               if (Result.isError(result)) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao excluir cartão de crédito.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Cartão de crédito excluído com sucesso.");
             },
          });
       },
-      [openAlertDialog, deleteMutation],
+      [creditCardsCollection, openAlertDialog],
    );
 
    const columns = useMemo<ColumnDef<CreditCardRow>[]>(() => {
       const base = buildCreditCardColumns({
-         bankAccounts: (bankAccounts ?? []).map((b) => ({
+         bankAccounts: safeBankAccounts.map((b) => ({
             id: b.id,
             name: b.name,
             bankName: b.bankName,
@@ -561,8 +803,8 @@ function CreditCardsList() {
       };
       return [selectColumn, expandColumn, ...base, actionsColumn];
    }, [
-      bankAccounts,
       publicEnv?.LOGO_DEV_TOKEN,
+      safeBankAccounts,
       handleDelete,
       handleInlineUpdate,
    ]);
@@ -610,7 +852,7 @@ function CreditCardsList() {
             search: (prev) => ({ ...prev, ...next }),
             replace: true,
          }),
-      totalRows: result.totalCount,
+      totalRows: totalCreditCards,
    });
 
    const handleColumnOrderChange = useCallback<OnChangeFn<ColumnOrderState>>(
@@ -639,9 +881,10 @@ function CreditCardsList() {
    );
 
    const table = useReactTable({
-      data: result.data,
+      data: creditCards.rows,
       columns,
       getRowId: (row) => row.id,
+      rowCount: totalCreditCards,
       pageCount: urlState.pageCount,
       manualPagination: true,
       manualSorting: true,
@@ -683,8 +926,27 @@ function CreditCardsList() {
                   cancelLabel: "Cancelar",
                   variant: "destructive",
                   onAction: async () => {
-                     await bulkDeleteMutation.mutateAsync({ ids: selectedIds });
+                     const bulkDelete = bulkDeleteCreditCardsAction(
+                        creditCardsCollection,
+                     );
+                     const result = await Result.tryPromise({
+                        try: () =>
+                           bulkDelete({ ids: selectedIds }).isPersisted.promise,
+                        catch: (error) => error,
+                     });
+                     if (Result.isError(result)) {
+                        toast.error(
+                           getErrorMessage(
+                              result.error,
+                              "Erro ao excluir cartões.",
+                           ),
+                        );
+                        return;
+                     }
                      table.resetRowSelection();
+                     toast.success(
+                        `${selectedIds.length} ${selectedIds.length === 1 ? "cartão excluído" : "cartões excluídos"} com sucesso.`,
+                     );
                   },
                });
             }}
@@ -726,7 +988,10 @@ function CreditCardsList() {
                   <DataTableBody<CreditCardRow>
                      table={table}
                      renderExpandedRow={({ row }) => (
-                        <CreditCardFaturaRow creditCardId={row.original.id} />
+                        <CreditCardFaturaRow
+                           creditCardId={row.original.id}
+                           queryClient={queryClient}
+                        />
                      )}
                   />
                   <DataImportSection
@@ -750,7 +1015,7 @@ function CreditCardsList() {
                   </Empty>
                )}
             </ScrollArea>
-            {result.totalCount > 0 && <DataTablePagination table={table} />}
+            {totalCreditCards > 0 && <DataTablePagination table={table} />}
          </div>
       </div>
    );

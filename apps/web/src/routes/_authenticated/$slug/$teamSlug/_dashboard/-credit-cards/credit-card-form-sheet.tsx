@@ -18,16 +18,11 @@ import {
    SheetHeader,
    SheetTitle,
 } from "@packages/ui/components/sheet";
-import { toast } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { useRouter } from "@tanstack/react-router";
-import { fromPromise } from "neverthrow";
 import { z } from "zod";
 import { CreditCardBrandAvatar } from "@/components/credit-card-brand-avatar";
-import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
-import { orpc } from "@/integrations/orpc/client";
+import type { CreditCardCreateInput } from "@/integrations/tanstack-db/credit-cards";
 import { BRAND_LABEL, type CreditCardBrand } from "@/lib/logos";
 
 const CARD_BRANDS = [
@@ -111,63 +106,36 @@ function CreditCardBrandOption({
    );
 }
 
-export function CreditCardFormSheet() {
-   return (
-      <QueryBoundary
-         fallback={
-            <div className="flex flex-col gap-4 p-4">
-               <SheetHeader>
-                  <SheetTitle>Novo cartão de crédito</SheetTitle>
-                  <SheetDescription>Carregando contas...</SheetDescription>
-               </SheetHeader>
-            </div>
-         }
-         errorTitle="Erro ao carregar contas"
-      >
-         <CreditCardFormSheetContent />
-      </QueryBoundary>
-   );
-}
+export type CreditCardFormSheetProps = {
+   bankAccounts: Array<{ id: string; name: string }>;
+   logoDevToken?: string;
+   onCreate: (input: CreditCardCreateInput) => Promise<boolean>;
+};
 
-function CreditCardFormSheetContent() {
+export function CreditCardFormSheet({
+   bankAccounts,
+   logoDevToken,
+   onCreate,
+}: CreditCardFormSheetProps) {
    const { closeTopSheet } = useSheet();
-   const router = useRouter();
-   const logoDevToken = router.options.context.publicEnv?.LOGO_DEV_TOKEN;
-
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
-
-   const createMutation = useMutation(
-      orpc.creditCards.create.mutationOptions({
-         onSuccess: () => {
-            toast.success("Cartão criado com sucesso.");
-            closeTopSheet();
-         },
-         onError: (e) => toast.error(e.message),
-      }),
-   );
 
    const form = useForm({
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
-         const result = await fromPromise(
-            createMutation.mutateAsync({
-               name: value.name.trim(),
-               bankAccountId: value.bankAccountId,
-               brand: value.brand || null,
-               last4: value.last4 || null,
-               color: "#6366f1",
-               creditLimit: toMajorUnitsString(
-                  of(String(value.creditLimit), "BRL"),
-               ),
-               closingDay: value.closingDay,
-               dueDay: value.dueDay,
-            }),
-            (e) => e,
-         );
-         if (result.isErr()) return;
+         const created = await onCreate({
+            name: value.name.trim(),
+            bankAccountId: value.bankAccountId,
+            brand: value.brand || null,
+            last4: value.last4 || null,
+            color: "#6366f1",
+            creditLimit: toMajorUnitsString(
+               of(String(value.creditLimit), "BRL"),
+            ),
+            closingDay: value.closingDay,
+            dueDay: value.dueDay,
+         });
+         if (created) closeTopSheet();
       },
    });
 
