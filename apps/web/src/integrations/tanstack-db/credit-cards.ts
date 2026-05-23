@@ -28,6 +28,13 @@ type CreditCardsCollectionOptionsParams = {
    teamId: string;
 };
 
+type CreditCardsPageInfoCollectionOptionsParams = {
+   queryClient: QueryClient;
+   teamId: string;
+   search?: string;
+   status?: "active" | "blocked" | "cancelled";
+};
+
 type CreditCardsWhereInput = {
    search?: string;
    status?: "active" | "blocked" | "cancelled";
@@ -85,7 +92,10 @@ const creditCardCollectionSchema = z.object({
 
 function cleanSearchPattern(value: unknown) {
    if (typeof value !== "string") return undefined;
-   const cleaned = value.replace(/^%+|%+$/g, "").trim();
+   const cleaned = value
+      .replace(/^%+|%+$/g, "")
+      .replace(/\\([\\%_])/g, "$1")
+      .trim();
    return cleaned || undefined;
 }
 
@@ -178,8 +188,10 @@ function hasLoadSubsetOptions(options: LoadSubsetOptions | undefined) {
    );
 }
 
-async function safeRefetchCreditCards(collection: CreditCardsCollection) {
-   await collection.utils.refetch().catch(() => {});
+async function refetchCreditCardsAfterMutation(
+   collection: CreditCardsCollection,
+) {
+   await collection.utils.refetch();
 }
 
 export function buildOptimisticCreditCardRowId(prefix = "__credit_card_") {
@@ -257,6 +269,47 @@ export function creditCardsCollectionOptions({
    });
 }
 
+export type CreditCardsPageInfoCollectionRow = {
+   id: string;
+   totalCount: number;
+   page: number;
+   pageSize: number;
+   totalPages: number;
+};
+
+export function creditCardsPageInfoCollectionOptions({
+   queryClient,
+   teamId,
+   search,
+   status,
+}: CreditCardsPageInfoCollectionOptionsParams) {
+   const id = `${teamId}:${search ?? ""}:${status ?? "all"}`;
+   return queryCollectionOptions({
+      id: `credit-cards-page-info:${id}`,
+      queryKey: () => ["credit-cards", teamId, "page-info", search, status],
+      queryFn: async () => {
+         const result = await orpc.creditCards.getAll.call({
+            page: 1,
+            pageSize: 1,
+            search,
+            status,
+         });
+         return [
+            {
+               id,
+               totalCount: result.totalCount,
+               page: result.page,
+               pageSize: result.pageSize,
+               totalPages: result.totalPages,
+            },
+         ];
+      },
+      queryClient,
+      getKey: (row: CreditCardsPageInfoCollectionRow) => row.id,
+      refetchInterval: 5_000,
+   });
+}
+
 export function createCreditCardAction(collection: CreditCardsCollection) {
    return createOptimisticAction<CreditCardCreateActionInput>({
       onMutate: ({ row }) => {
@@ -264,7 +317,7 @@ export function createCreditCardAction(collection: CreditCardsCollection) {
       },
       mutationFn: async ({ input }) => {
          const created = await orpc.creditCards.create.call(input);
-         await safeRefetchCreditCards(collection);
+         await refetchCreditCardsAfterMutation(collection);
          return created;
       },
    });
@@ -292,7 +345,7 @@ export function updateCreditCardAction(collection: CreditCardsCollection) {
       },
       mutationFn: async ({ id, patch }) => {
          const updated = await orpc.creditCards.update.call({ id, ...patch });
-         await safeRefetchCreditCards(collection);
+         await refetchCreditCardsAfterMutation(collection);
          return updated;
       },
    });
@@ -305,7 +358,7 @@ export function deleteCreditCardAction(collection: CreditCardsCollection) {
       },
       mutationFn: async ({ id }) => {
          const removed = await orpc.creditCards.remove.call({ id });
-         await safeRefetchCreditCards(collection);
+         await refetchCreditCardsAfterMutation(collection);
          return removed;
       },
    });
@@ -318,7 +371,7 @@ export function bulkDeleteCreditCardsAction(collection: CreditCardsCollection) {
       },
       mutationFn: async ({ ids }) => {
          const removed = await orpc.creditCards.bulkRemove.call({ ids });
-         await safeRefetchCreditCards(collection);
+         await refetchCreditCardsAfterMutation(collection);
          return removed;
       },
    });
@@ -333,7 +386,7 @@ export function bulkCreateCreditCardsAction(collection: CreditCardsCollection) {
          const created = await orpc.creditCards.bulkCreate.call({
             cards: rows.map((row) => row.input),
          });
-         await safeRefetchCreditCards(collection);
+         await refetchCreditCardsAfterMutation(collection);
          return created;
       },
    });

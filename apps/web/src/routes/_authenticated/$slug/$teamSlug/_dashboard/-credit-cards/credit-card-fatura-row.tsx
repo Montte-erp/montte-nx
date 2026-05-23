@@ -37,11 +37,22 @@ export function CreditCardFaturaRow({ creditCardId, queryClient }: Props) {
       [summaryCollection],
    );
 
-   const summary = summaries[0];
+   const safeSummaries = summaries ?? [];
 
-   if (isLoading || !summary) {
+   if (isLoading) {
       return <Skeleton className="h-10 w-full" />;
    }
+
+   if (safeSummaries.length === 0) {
+      return (
+         <div className="flex items-center gap-4 px-4 py-3 bg-muted/30 text-sm text-muted-foreground">
+            Nenhum lançamento nesta fatura.
+         </div>
+      );
+   }
+
+   const summary = safeSummaries[0];
+   if (!summary) return null;
 
    const expenseFormatted = format(
       of(summary.expenseTotal ?? "0", "BRL"),

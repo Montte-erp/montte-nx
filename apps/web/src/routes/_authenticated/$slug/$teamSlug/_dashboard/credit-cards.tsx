@@ -66,6 +66,7 @@ import {
    buildOptimisticCreditCardRowId,
    createCreditCardAction,
    creditCardsCollectionOptions,
+   creditCardsPageInfoCollectionOptions,
    deleteCreditCardAction,
    type CreditCardCreateInput,
    type CreditCardUpdateInput,
@@ -234,38 +235,11 @@ function getErrorMessage(error: unknown, fallback: string) {
    return fallback;
 }
 
-function compareCreditCardValues(
-   left: CreditCardRow,
-   right: CreditCardRow,
-   sortId: z.infer<typeof creditCardSortIdSchema>,
-) {
-   switch (sortId) {
-      case "bankAccountId":
-         return left.bankAccountId.localeCompare(right.bankAccountId, "pt-BR");
-      case "brand":
-         return (left.brand ?? "").localeCompare(right.brand ?? "", "pt-BR");
-      case "closingDay":
-         return left.closingDay - right.closingDay;
-      case "creditLimit":
-         return Number(left.creditLimit) - Number(right.creditLimit);
-      case "dueDay":
-         return left.dueDay - right.dueDay;
-      case "name":
-         return left.name.localeCompare(right.name, "pt-BR");
-      case "status":
-         return left.status.localeCompare(right.status, "pt-BR");
-   }
-}
-
-function sortCreditCards(rows: CreditCardRow[], sorting: SortingState) {
-   const normalized = normalizeCreditCardSorting(sorting);
-   return [...rows].sort((left, right) => {
-      for (const rule of normalized) {
-         const result = compareCreditCardValues(left, right, rule.id);
-         if (result !== 0) return rule.desc ? -result : result;
-      }
-      return left.name.localeCompare(right.name, "pt-BR");
-   });
+function escapeIlikePattern(value: string) {
+   return value
+      .replace(/\\/g, "\\\\")
+      .replace(/%/g, "\\%")
+      .replace(/_/g, "\\_");
 }
 
 type CreditCardUpdatePatch = Omit<CreditCardUpdateInput, "id">;
@@ -382,10 +356,23 @@ function CreditCardsList() {
       [activeTeamId, queryClient],
    );
 
+   const trimmedSearch = search.trim();
+   const creditCardsPageInfoCollection = useMemo(
+      () =>
+         createCollection(
+            creditCardsPageInfoCollectionOptions({
+               queryClient,
+               teamId: activeTeamId ?? "no-team",
+               search: trimmedSearch || undefined,
+               status,
+            }),
+         ),
+      [activeTeamId, queryClient, status, trimmedSearch],
+   );
+
    const { data: liveCreditCards } = useLiveQuery(
       (q) => {
          let query = q.from({ creditCard: creditCardsCollection });
-         const pattern = `%${search.trim()}%`;
 
          if (status) {
             query = query.where(({ creditCard }) =>
@@ -393,15 +380,71 @@ function CreditCardsList() {
             );
          }
 
-         if (search.trim()) {
+         if (trimmedSearch) {
+            const pattern = `%${escapeIlikePattern(trimmedSearch)}%`;
             query = query.where(({ creditCard }) =>
                ilike(creditCard.name, pattern),
             );
          }
 
-         return query.select(({ creditCard }) => creditCard);
+         const normalizedSorting = normalizeCreditCardSorting(sorting);
+         if (normalizedSorting.length > 0) {
+            for (const rule of normalizedSorting) {
+               switch (rule.id) {
+                  case "bankAccountId":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.bankAccountId,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "brand":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.brand,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "closingDay":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.closingDay,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "creditLimit":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.creditLimit,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "dueDay":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.dueDay,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "name":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.name,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "status":
+                     query = query.orderBy(
+                        ({ creditCard }) => creditCard.status,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+               }
+            }
+         } else {
+            query = query.orderBy(({ creditCard }) => creditCard.name, "asc");
+         }
+
+         return query
+            .limit(pageSize)
+            .offset((page - 1) * pageSize)
+            .select(({ creditCard }) => creditCard);
       },
-      [creditCardsCollection, search, status],
+      [creditCardsCollection, page, pageSize, sorting, status, trimmedSearch],
    );
 
    const { data: bankAccounts } = useLiveQuery(
@@ -412,14 +455,22 @@ function CreditCardsList() {
       [bankAccountsCollection],
    );
 
-   const creditCards = useMemo(() => {
-      const sorted = sortCreditCards(liveCreditCards, sorting);
-      const start = (page - 1) * pageSize;
-      return {
-         all: sorted,
-         rows: sorted.slice(start, start + pageSize),
-      };
-   }, [liveCreditCards, page, pageSize, sorting]);
+   const { data: pageInfoRows } = useLiveQuery(
+      (q) =>
+         q
+            .from({ pageInfo: creditCardsPageInfoCollection })
+            .select(({ pageInfo }) => pageInfo),
+      [creditCardsPageInfoCollection],
+   );
+
+   const safeLiveCreditCards = liveCreditCards ?? [];
+   const safeBankAccounts = bankAccounts ?? [];
+   const totalCreditCards = pageInfoRows?.[0]?.totalCount ?? 0;
+
+   const creditCards = useMemo(
+      () => ({ all: safeLiveCreditCards, rows: safeLiveCreditCards }),
+      [safeLiveCreditCards],
+   );
 
    const handleCreate = useCallback(
       async (input: CreditCardCreateInput) => {
@@ -474,13 +525,13 @@ function CreditCardsList() {
       openSheet({
          renderChildren: () => (
             <CreditCardFormSheet
-               bankAccounts={bankAccounts}
+               bankAccounts={safeBankAccounts}
                logoDevToken={publicEnv?.LOGO_DEV_TOKEN}
                onCreate={handleCreate}
             />
          ),
       });
-   }, [bankAccounts, handleCreate, openSheet, publicEnv?.LOGO_DEV_TOKEN]);
+   }, [handleCreate, openSheet, publicEnv?.LOGO_DEV_TOKEN, safeBankAccounts]);
 
    const importConfig: DataImportConfig = useMemo(
       () => ({
@@ -506,7 +557,7 @@ function CreditCardsList() {
             closingDay: parseImportDay(row.closingDay ?? row.fechamento, 1),
             dueDay: parseImportDay(row.dueDay ?? row.vencimento, 1),
             bankAccountId: resolveBankAccountId(
-               bankAccounts ?? [],
+               safeBankAccounts,
                row.bankAccountId,
             ),
             status: parseCreditCardStatus(row.status),
@@ -529,7 +580,7 @@ function CreditCardsList() {
                               Limite: "5000.00",
                               Fechamento: "10",
                               Vencimento: "20",
-                              "Conta Bancária": bankAccounts?.[0]?.name ?? "",
+                              "Conta Bancária": safeBankAccounts[0]?.name ?? "",
                               Status: "Ativo",
                            },
                         ],
@@ -558,7 +609,7 @@ function CreditCardsList() {
                               Limite: "5000.00",
                               Fechamento: "10",
                               Vencimento: "20",
-                              "Conta Bancária": bankAccounts?.[0]?.name ?? "",
+                              "Conta Bancária": safeBankAccounts[0]?.name ?? "",
                               Status: "Ativo",
                            },
                         ],
@@ -581,7 +632,7 @@ function CreditCardsList() {
                toast.error("Time ativo não encontrado.");
                return;
             }
-            const firstBankAccountId = bankAccounts[0]?.id;
+            const firstBankAccountId = safeBankAccounts[0]?.id;
             if (!firstBankAccountId) {
                toast.error(
                   "Nenhuma conta bancária disponível para importação.",
@@ -594,7 +645,7 @@ function CreditCardsList() {
                closingDay: typeof r.closingDay === "number" ? r.closingDay : 1,
                dueDay: typeof r.dueDay === "number" ? r.dueDay : 1,
                bankAccountId:
-                  resolveBankAccountId(bankAccounts, r.bankAccountId) ??
+                  resolveBankAccountId(safeBankAccounts, r.bankAccountId) ??
                   firstBankAccountId,
                color: "#6366f1",
                creditLimit: String(r.creditLimit ?? "0"),
@@ -631,8 +682,8 @@ function CreditCardsList() {
       }),
       [
          activeTeamId,
-         bankAccounts,
          creditCardsCollection,
+         safeBankAccounts,
          generateCsv,
          generateXlsx,
          parseCsv,
@@ -675,7 +726,7 @@ function CreditCardsList() {
 
    const columns = useMemo<ColumnDef<CreditCardRow>[]>(() => {
       const base = buildCreditCardColumns({
-         bankAccounts: bankAccounts.map((b) => ({
+         bankAccounts: safeBankAccounts.map((b) => ({
             id: b.id,
             name: b.name,
             bankName: b.bankName,
@@ -752,8 +803,8 @@ function CreditCardsList() {
       };
       return [selectColumn, expandColumn, ...base, actionsColumn];
    }, [
-      bankAccounts,
       publicEnv?.LOGO_DEV_TOKEN,
+      safeBankAccounts,
       handleDelete,
       handleInlineUpdate,
    ]);
@@ -801,7 +852,7 @@ function CreditCardsList() {
             search: (prev) => ({ ...prev, ...next }),
             replace: true,
          }),
-      totalRows: creditCards.all.length,
+      totalRows: totalCreditCards,
    });
 
    const handleColumnOrderChange = useCallback<OnChangeFn<ColumnOrderState>>(
@@ -833,7 +884,7 @@ function CreditCardsList() {
       data: creditCards.rows,
       columns,
       getRowId: (row) => row.id,
-      rowCount: creditCards.all.length,
+      rowCount: totalCreditCards,
       pageCount: urlState.pageCount,
       manualPagination: true,
       manualSorting: true,
@@ -964,9 +1015,7 @@ function CreditCardsList() {
                   </Empty>
                )}
             </ScrollArea>
-            {creditCards.all.length > 0 && (
-               <DataTablePagination table={table} />
-            )}
+            {totalCreditCards > 0 && <DataTablePagination table={table} />}
          </div>
       </div>
    );

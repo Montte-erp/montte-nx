@@ -106,17 +106,13 @@ function CreditCardBrandOption({
    );
 }
 
-type CreditCardFormSheetProps = {
+export type CreditCardFormSheetProps = {
    bankAccounts: Array<{ id: string; name: string }>;
    logoDevToken?: string;
    onCreate: (input: CreditCardCreateInput) => Promise<boolean>;
 };
 
-export function CreditCardFormSheet(props: CreditCardFormSheetProps) {
-   return <CreditCardFormSheetContent {...props} />;
-}
-
-function CreditCardFormSheetContent({
+export function CreditCardFormSheet({
    bankAccounts,
    logoDevToken,
    onCreate,
