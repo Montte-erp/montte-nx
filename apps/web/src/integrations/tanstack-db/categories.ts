@@ -11,7 +11,7 @@ import { orpc, type Inputs, type Outputs } from "@/integrations/orpc/client";
 export type CategoriesCollectionRow = Outputs["categories"]["getAll"][number];
 
 type CategoriesCollectionInput = Inputs["categories"]["getAll"];
-type CategoryCreateInput = Inputs["categories"]["create"];
+export type CategoryCreateInput = Inputs["categories"]["create"];
 type CategoryUpdateInput = Inputs["categories"]["update"];
 type CategoryImportInput = Inputs["categoriesBulk"]["importBatch"];
 

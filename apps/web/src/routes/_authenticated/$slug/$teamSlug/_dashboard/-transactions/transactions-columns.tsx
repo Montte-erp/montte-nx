@@ -12,7 +12,6 @@ import {
    TooltipContent,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import {
    ArrowUpDown,
@@ -30,7 +29,6 @@ import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-se
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 import { BankLogoAvatar } from "@/components/bank-logo-avatar";
 import type { Outputs } from "@/integrations/orpc/client";
-import { orpc } from "@/integrations/orpc/client";
 
 export type TransactionRow = Outputs["transactions"]["getAll"]["data"][number];
 
@@ -59,17 +57,14 @@ function isImportRow(row: Row<TransactionRow>): number | null {
 function SuggestedCategoryCell({
    id,
    categoryName,
+   onAccept,
+   onDismiss,
 }: {
    id: string;
    categoryName: string | null;
+   onAccept?: (id: string) => void;
+   onDismiss?: (id: string) => void;
 }) {
-   const accept = useMutation(
-      orpc.transactions.acceptSuggestedCategory.mutationOptions(),
-   );
-   const dismiss = useMutation(
-      orpc.transactions.dismissSuggestedCategory.mutationOptions(),
-   );
-
    return (
       <Popover>
          <PopoverTrigger asChild>
@@ -88,8 +83,7 @@ function SuggestedCategoryCell({
                <Button
                   size="sm"
                   className="flex-1"
-                  disabled={accept.isPending || dismiss.isPending}
-                  onClick={() => accept.mutate({ id })}
+                  onClick={() => onAccept?.(id)}
                >
                   Aceitar
                </Button>
@@ -97,8 +91,7 @@ function SuggestedCategoryCell({
                   size="sm"
                   variant="outline"
                   className="flex-1"
-                  disabled={accept.isPending || dismiss.isPending}
-                  onClick={() => dismiss.mutate({ id })}
+                  onClick={() => onDismiss?.(id)}
                >
                   Ignorar
                </Button>
@@ -116,6 +109,8 @@ export function buildTransactionColumns(options?: {
    onUpdateImport?: (index: number, patch: Record<string, unknown>) => void;
    onCreateBankAccount?: (name: string) => Promise<string>;
    onCreateCategory?: (name: string) => Promise<string>;
+   onAcceptSuggestedCategory?: (id: string) => void;
+   onDismissSuggestedCategory?: (id: string) => void;
    getRowStatus?: (id: string) => string | undefined;
    logoDevToken?: string;
 }): ColumnDef<TransactionRow>[] {
@@ -324,6 +319,8 @@ export function buildTransactionColumns(options?: {
                   <SuggestedCategoryCell
                      id={row.original.id}
                      categoryName={row.original.suggestedCategoryName ?? null}
+                     onAccept={options?.onAcceptSuggestedCategory}
+                     onDismiss={options?.onDismissSuggestedCategory}
                   />
                );
             }

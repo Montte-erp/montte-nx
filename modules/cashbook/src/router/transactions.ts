@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { matchError, Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
@@ -18,6 +18,7 @@ import {
 } from "@modules/classification/workflows/enqueue";
 import {
    enforceCostCenterPolicy,
+   requireOwnedTransactionIds,
    requireTransactionRecurrence,
    requireTransaction,
    requireValidFinancialReferences,
@@ -654,6 +655,102 @@ export const update = protectedProcedure
       return updated.value;
    });
 
+export const bulkUpdate = protectedProcedure
+   .input(
+      z
+         .object({
+            ids: z.array(z.string().uuid()).min(1).max(500),
+         })
+         .merge(updateTransactionSchema),
+   )
+   .use(requireOwnedTransactionIds, (input) => input.ids)
+   .handler(async ({ context, input }) => {
+      const { ids, tagId, ...data } = input;
+      if ("tagId" in input) {
+         const policyResult = await Result.tryPromise({
+            try: () =>
+               context.db.query.financialConfig.findFirst({
+                  where: (f, { eq }) => eq(f.teamId, context.teamId),
+               }),
+            catch: () =>
+               new TransactionRouterError({
+                  error: transactionRouterErrors.INTERNAL(),
+                  message: "Falha ao verificar configurações.",
+               }),
+         });
+         if (policyResult.isErr()) throw policyResult.error;
+         if (policyResult.value?.costCenterRequired && !input.tagId) {
+            throw new TransactionRouterError({
+               error: transactionRouterErrors.FORBIDDEN(),
+               message: "Centro de Custo é obrigatório para este espaço.",
+            });
+         }
+      }
+
+      const existingRows = await Result.tryPromise({
+         try: () =>
+            context.db.query.transactions.findMany({
+               where: (f, { and, inArray, eq }) =>
+                  and(inArray(f.id, ids), eq(f.teamId, context.teamId)),
+            }),
+         catch: () =>
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
+               message: "Falha ao verificar lançamentos.",
+            }),
+      });
+      if (existingRows.isErr()) throw existingRows.error;
+
+      await Promise.all(
+         existingRows.value.map((row) =>
+            requireValidFinancialReferences(context.db, context.teamId, {
+               bankAccountId: data.bankAccountId ?? row.bankAccountId,
+               destinationBankAccountId:
+                  data.destinationBankAccountId ?? row.destinationBankAccountId,
+               categoryId: data.categoryId ?? row.categoryId,
+               tagId: tagId ?? row.tagId,
+               date: data.date ?? row.date,
+            }),
+         ),
+      );
+
+      const updateData = (() => {
+         if (tagId !== undefined && data.categoryId !== undefined) {
+            return {
+               ...data,
+               tagId,
+               suggestedTagId: null,
+               suggestedCategoryId: null,
+            };
+         }
+         if (tagId !== undefined) {
+            return { ...data, tagId, suggestedTagId: null };
+         }
+         if (data.categoryId !== undefined) {
+            return { ...data, suggestedCategoryId: null };
+         }
+         return data;
+      })();
+
+      const updated = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .update(transactions)
+                  .set(updateData)
+                  .where(inArray(transactions.id, ids))
+                  .returning(),
+            ),
+         catch: () =>
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
+               message: "Falha ao atualizar lançamentos.",
+            }),
+      });
+      if (updated.isErr()) throw updated.error;
+      return updated.value;
+   });
+
 export const remove = protectedProcedure
    .input(idSchema)
    .use(requireTransaction, (input) => input.id)
@@ -667,6 +764,27 @@ export const remove = protectedProcedure
             new TransactionRouterError({
                error: transactionRouterErrors.INTERNAL(),
                message: "Falha ao excluir lançamento.",
+            }),
+      });
+      if (result.isErr()) throw result.error;
+      return { success: true };
+   });
+
+export const bulkRemove = protectedProcedure
+   .input(z.object({ ids: z.array(z.string().uuid()).min(1).max(500) }))
+   .use(requireOwnedTransactionIds, (input) => input.ids)
+   .handler(async ({ context, input }) => {
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) =>
+               tx
+                  .delete(transactions)
+                  .where(inArray(transactions.id, input.ids)),
+            ),
+         catch: () =>
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
+               message: "Falha ao excluir lançamentos.",
             }),
       });
       if (result.isErr()) throw result.error;

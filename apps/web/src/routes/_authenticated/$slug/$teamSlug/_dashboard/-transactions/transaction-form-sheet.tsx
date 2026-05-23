@@ -47,7 +47,6 @@ import { useUploadFiles } from "@better-upload/client";
 import imageCompression from "browser-image-compression";
 import { format, of } from "@f-o-t/money";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
    CheckIcon,
@@ -57,17 +56,23 @@ import {
    CornerDownRight,
    FileText,
 } from "lucide-react";
-import { fromPromise } from "neverthrow";
 import * as React from "react";
 import { z } from "zod";
-import { QueryBoundary } from "@/components/query-boundary";
 import { useSheet } from "@/hooks/use-sheet";
-import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
+import type { TransactionCreateInput } from "@/integrations/tanstack-db/transactions";
 import { buildInstallmentPreview } from "@/utils/finance/installments";
 import { CATEGORY_ICON_MAP } from "../-categories/category-icons";
 
 type CategoryNode = Outputs["categories"]["getAll"][number];
+
+type BankAccountNode = Outputs["bankAccounts"]["getAll"][number];
+
+type TransactionFormSheetProps = {
+   bankAccounts: BankAccountNode[];
+   categories: CategoryNode[];
+   onCreate: (input: TransactionCreateInput) => Promise<boolean>;
+};
 
 const TRANSACTION_TYPES = ["income", "expense", "transfer"] as const;
 type TransactionType = (typeof TRANSACTION_TYPES)[number];
@@ -628,90 +633,67 @@ function CategoryPicker({
    );
 }
 
-export function TransactionFormSheet() {
-   return (
-      <QueryBoundary
-         fallback={
-            <div className="flex flex-col gap-4 p-4">
-               <SheetHeader>
-                  <SheetTitle>Novo lançamento</SheetTitle>
-                  <SheetDescription>Carregando dados...</SheetDescription>
-               </SheetHeader>
-            </div>
-         }
-         errorTitle="Erro ao carregar dados"
-      >
-         <TransactionFormSheetContent />
-      </QueryBoundary>
-   );
-}
-
-function TransactionFormSheetContent() {
+export function TransactionFormSheet({
+   bankAccounts,
+   categories,
+   onCreate,
+}: TransactionFormSheetProps) {
    const { closeTopSheet } = useSheet();
-
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
-   );
-   const { data: categoriesResult } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
 
    const bankOptions = bankAccounts.map((b) => ({
       value: b.id,
       label: b.name,
    }));
 
-   const createMutation = useMutation(
-      orpc.transactions.create.mutationOptions({
-         onSuccess: () => {
+   const submitCreate = React.useCallback(
+      async (input: TransactionCreateInput) => {
+         const created = await onCreate(input);
+         if (created) {
             toast.success("Lançamento criado com sucesso.");
             closeTopSheet();
-         },
-         onError: (e) => toast.error(e.message),
-      }),
+         }
+      },
+      [closeTopSheet, onCreate],
    );
+
    const form = useForm({
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
          const attachments = value.attachments;
-         const result = await fromPromise(
-            createMutation.mutateAsync({
-               type: value.type,
-               name: value.name.trim(),
-               amount: String(value.amount),
-               date: value.date,
-               status: value.status,
-               ignored: value.ignored,
-               isInstallment:
-                  value.type !== "transfer" && !value.isRecurring
-                     ? value.isInstallment
-                     : false,
-               installmentCount:
-                  value.type !== "transfer" &&
-                  !value.isRecurring &&
-                  value.isInstallment
-                     ? value.installmentCount
-                     : undefined,
-               isRecurring: value.isRecurring,
-               recurrenceFrequency: value.isRecurring
-                  ? value.recurrenceFrequency
+         await submitCreate({
+            type: value.type,
+            name: value.name.trim(),
+            amount: String(value.amount),
+            date: value.date,
+            status: value.status,
+            ignored: value.ignored,
+            isInstallment:
+               value.type !== "transfer" && !value.isRecurring
+                  ? value.isInstallment
+                  : false,
+            installmentCount:
+               value.type !== "transfer" &&
+               !value.isRecurring &&
+               value.isInstallment
+                  ? value.installmentCount
                   : undefined,
-               dueDate: value.dueDate || null,
-               bankAccountId: value.bankAccountId || null,
-               destinationBankAccountId:
-                  value.type === "transfer"
-                     ? value.destinationBankAccountId || null
-                     : null,
-               categoryId:
-                  value.type === "transfer" ? null : value.categoryId || null,
-               attachments,
-               description: value.description.trim() || null,
-               paymentMethod: null,
-            }),
-            (e) => e,
-         );
-         if (result.isErr()) return;
+            isRecurring: value.isRecurring,
+            recurrenceFrequency: value.isRecurring
+               ? value.recurrenceFrequency
+               : undefined,
+            dueDate: value.dueDate || null,
+            bankAccountId: value.bankAccountId || null,
+            destinationBankAccountId:
+               value.type === "transfer"
+                  ? value.destinationBankAccountId || null
+                  : null,
+            categoryId:
+               value.type === "transfer" ? null : value.categoryId || null,
+            attachments,
+            description: value.description.trim() || null,
+            paymentMethod: null,
+         });
       },
    });
 
@@ -809,7 +791,7 @@ function TransactionFormSheetContent() {
 
             <form.Subscribe selector={(s) => s.values.type}>
                {(type) => {
-                  const filteredCategories = categoriesResult.filter((c) =>
+                  const filteredCategories = categories.filter((c) =>
                      type === "transfer"
                         ? false
                         : type === "income"
