@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { Result } from "better-result";
 import {
    parseOrderByExpression,
    parseWhereExpression,
@@ -191,7 +192,12 @@ function hasLoadSubsetOptions(options: LoadSubsetOptions | undefined) {
 async function refetchCreditCardsAfterMutation(
    collection: CreditCardsCollection,
 ) {
-   await collection.utils.refetch();
+   const result = await Result.tryPromise({
+      try: () => collection.utils.refetch(),
+      catch: (error) => error,
+   });
+
+   if (Result.isError(result)) return;
 }
 
 export function buildOptimisticCreditCardRowId(prefix = "__credit_card_") {
@@ -263,6 +269,10 @@ export function creditCardsCollectionOptions({
       },
       queryClient,
       getKey: (card: CreditCardsCollectionRow) => card.id,
+      meta: {
+         notifyOnError: true,
+         errorMessage: "Não foi possível sincronizar os cartões de crédito.",
+      },
       schema: creditCardCollectionSchema,
       refetchInterval: 5_000,
       syncMode: "on-demand",
@@ -306,6 +316,10 @@ export function creditCardsPageInfoCollectionOptions({
       },
       queryClient,
       getKey: (row: CreditCardsPageInfoCollectionRow) => row.id,
+      meta: {
+         notifyOnError: true,
+         errorMessage: "Não foi possível sincronizar os cartões de crédito.",
+      },
       refetchInterval: 5_000,
    });
 }
@@ -427,6 +441,10 @@ export function creditCardSummaryCollectionOptions({
       },
       queryClient,
       getKey: (summary: CreditCardSummaryCollectionRow) => summary.id,
+      meta: {
+         notifyOnError: true,
+         errorMessage: "Não foi possível sincronizar a fatura do cartão.",
+      },
       refetchInterval: 5_000,
       syncMode: "on-demand",
    });
