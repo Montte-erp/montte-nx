@@ -5,7 +5,7 @@ import type { QueryClient } from "@tanstack/query-core";
 import dayjs from "dayjs";
 import { Receipt } from "lucide-react";
 import { useMemo } from "react";
-import { creditCardSummaryCollectionOptions } from "@/integrations/tanstack-db/credit-card-summaries";
+import { creditCardSummaryCollectionOptions } from "@/integrations/tanstack-db/credit-cards";
 
 interface Props {
    creditCardId: string;
