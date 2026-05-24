@@ -1,3 +1,4 @@
+import { Result } from "better-result";
 import { format, of } from "@f-o-t/money";
 import dayjs from "dayjs";
 import { Badge } from "@packages/ui/components/badge";
@@ -13,6 +14,7 @@ import {
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
 import type { ColumnDef, Row } from "@tanstack/react-table";
+import { useState } from "react";
 import {
    ArrowUpDown,
    CalendarClock,
@@ -62,9 +64,34 @@ function SuggestedCategoryCell({
 }: {
    id: string;
    categoryName: string | null;
-   onAccept?: (id: string) => void;
-   onDismiss?: (id: string) => void;
+   onAccept?: (id: string) => void | Promise<void>;
+   onDismiss?: (id: string) => void | Promise<void>;
 }) {
+   const [pendingAction, setPendingAction] = useState<
+      "accept" | "dismiss" | null
+   >(null);
+   const isPending = pendingAction !== null;
+
+   async function handleAccept() {
+      if (isPending) return;
+      setPendingAction("accept");
+      await Result.tryPromise({
+         try: () => Promise.resolve(onAccept?.(id)),
+         catch: (error) => error,
+      });
+      setPendingAction(null);
+   }
+
+   async function handleDismiss() {
+      if (isPending) return;
+      setPendingAction("dismiss");
+      await Result.tryPromise({
+         try: () => Promise.resolve(onDismiss?.(id)),
+         catch: (error) => error,
+      });
+      setPendingAction(null);
+   }
+
    return (
       <Popover>
          <PopoverTrigger asChild>
@@ -83,17 +110,19 @@ function SuggestedCategoryCell({
                <Button
                   size="sm"
                   className="flex-1"
-                  onClick={() => onAccept?.(id)}
+                  disabled={isPending}
+                  onClick={handleAccept}
                >
-                  Aceitar
+                  {pendingAction === "accept" ? "Aceitando..." : "Aceitar"}
                </Button>
                <Button
                   size="sm"
                   variant="outline"
                   className="flex-1"
-                  onClick={() => onDismiss?.(id)}
+                  disabled={isPending}
+                  onClick={handleDismiss}
                >
-                  Ignorar
+                  {pendingAction === "dismiss" ? "Ignorando..." : "Ignorar"}
                </Button>
             </div>
          </PopoverContent>
@@ -109,8 +138,8 @@ export function buildTransactionColumns(options?: {
    onUpdateImport?: (index: number, patch: Record<string, unknown>) => void;
    onCreateBankAccount?: (name: string) => Promise<string>;
    onCreateCategory?: (name: string) => Promise<string>;
-   onAcceptSuggestedCategory?: (id: string) => void;
-   onDismissSuggestedCategory?: (id: string) => void;
+   onAcceptSuggestedCategory?: (id: string) => void | Promise<void>;
+   onDismissSuggestedCategory?: (id: string) => void | Promise<void>;
    getRowStatus?: (id: string) => string | undefined;
    logoDevToken?: string;
 }): ColumnDef<TransactionRow>[] {

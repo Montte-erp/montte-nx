@@ -508,21 +508,35 @@ export function TransactionsList() {
                   lt(transaction.dueDate, dayjs().format("YYYY-MM-DD")),
                );
          }
-         if (status.length === 1) {
-            const firstStatus = status[0];
+         const selectedStatuses = status.filter(
+            (selectedStatus) => selectedStatus !== undefined,
+         );
+         if (selectedStatuses.length === 1) {
+            const firstStatus = selectedStatuses[0];
             if (firstStatus) {
                query = query.where(({ transaction }) =>
                   eq(transaction.status, firstStatus),
                );
             }
          }
-         if (status.length > 1) {
-            query = query.where(({ transaction }) =>
-               or(
-                  eq(transaction.status, "pending"),
-                  eq(transaction.status, "paid"),
-               ),
-            );
+         if (selectedStatuses.length > 1) {
+            const [firstStatus, secondStatus, ...remainingStatuses] =
+               selectedStatuses;
+            if (firstStatus && secondStatus) {
+               query = query.where(({ transaction }) => {
+                  let statusFilter = or(
+                     eq(transaction.status, firstStatus),
+                     eq(transaction.status, secondStatus),
+                  );
+                  for (const selectedStatus of remainingStatuses) {
+                     statusFilter = or(
+                        statusFilter,
+                        eq(transaction.status, selectedStatus),
+                     );
+                  }
+                  return statusFilter;
+               });
+            }
          }
          if (bankId) {
             query = query.where(({ transaction }) =>
@@ -677,6 +691,7 @@ export function TransactionsList() {
    );
 
    const transactionData = safeTransactions;
+   const isTransactionsLoaded = liveTransactions !== undefined;
    const total = pageInfoRows?.[0]?.total ?? 0;
 
    const handleUpdate = useCallback(
@@ -856,34 +871,44 @@ export function TransactionsList() {
    );
 
    const handleMarkPaid = useCallback(
-      (tx: TransactionRow) => {
+      async (tx: TransactionRow) => {
          const markAsPaid = markTransactionAsPaidAction(transactionsCollection);
          const transaction = markAsPaid({
             id: tx.id,
             paidDate: dayjs().format("YYYY-MM-DD"),
          });
-         void transaction.isPersisted.promise.then(
-            () => toast.success("Lançamento marcado como pago."),
-            (error: unknown) =>
-               toast.error(getErrorMessage(error, "Erro ao marcar como pago.")),
-         );
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao marcar como pago."),
+            );
+            return;
+         }
+         toast.success("Lançamento marcado como pago.");
       },
       [transactionsCollection],
    );
 
    const handleMarkUnpaid = useCallback(
-      (tx: TransactionRow) => {
+      async (tx: TransactionRow) => {
          const markAsUnpaid = markTransactionAsUnpaidAction(
             transactionsCollection,
          );
          const transaction = markAsUnpaid({ id: tx.id });
-         void transaction.isPersisted.promise.then(
-            () => toast.success("Pagamento desmarcado."),
-            (error: unknown) =>
-               toast.error(
-                  getErrorMessage(error, "Erro ao desmarcar pagamento."),
-               ),
-         );
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao desmarcar pagamento."),
+            );
+            return;
+         }
+         toast.success("Pagamento desmarcado.");
       },
       [transactionsCollection],
    );
@@ -920,46 +945,62 @@ export function TransactionsList() {
    );
 
    const handleReactivate = useCallback(
-      (tx: TransactionRow) => {
+      async (tx: TransactionRow) => {
          const reactivate = reactivateTransactionAction(transactionsCollection);
          const transaction = reactivate({ id: tx.id });
-         void transaction.isPersisted.promise.then(
-            () => toast.success("Lançamento reativado."),
-            (error: unknown) =>
-               toast.error(
-                  getErrorMessage(error, "Erro ao reativar lançamento."),
-               ),
-         );
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao reativar lançamento."),
+            );
+            return;
+         }
+         toast.success("Lançamento reativado.");
       },
       [transactionsCollection],
    );
 
    const handleAcceptSuggestedCategory = useCallback(
-      (id: string) => {
+      async (id: string) => {
          const accept = acceptSuggestedTransactionCategoryAction(
             transactionsCollection,
          );
          const transaction = accept({ id });
-         void transaction.isPersisted.promise.then(
-            () => toast.success("Categoria aplicada."),
-            (error: unknown) =>
-               toast.error(getErrorMessage(error, "Erro ao aplicar sugestão.")),
-         );
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao aplicar sugestão."),
+            );
+            return;
+         }
+         toast.success("Categoria aplicada.");
       },
       [transactionsCollection],
    );
 
    const handleDismissSuggestedCategory = useCallback(
-      (id: string) => {
+      async (id: string) => {
          const dismiss = dismissSuggestedTransactionCategoryAction(
             transactionsCollection,
          );
          const transaction = dismiss({ id });
-         void transaction.isPersisted.promise.then(
-            () => toast.success("Sugestão ignorada."),
-            (error: unknown) =>
-               toast.error(getErrorMessage(error, "Erro ao ignorar sugestão.")),
-         );
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao ignorar sugestão."),
+            );
+            return;
+         }
+         toast.success("Sugestão ignorada.");
       },
       [transactionsCollection],
    );
@@ -1542,7 +1583,7 @@ export function TransactionsList() {
                         table={table}
                      />
                   </Table>
-                  {table.getRowCount() === 0 && (
+                  {isTransactionsLoaded && table.getRowCount() === 0 && (
                      <Empty>
                         <EmptyHeader>
                            <EmptyMedia variant="icon">

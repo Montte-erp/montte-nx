@@ -43,6 +43,7 @@ import { Textarea } from "@packages/ui/components/textarea";
 import { UploadDropzone } from "@packages/ui/components/upload-dropzone";
 import { UploadProgress } from "@packages/ui/components/upload-progress";
 import { cn } from "@packages/ui/lib/utils";
+import { Result } from "better-result";
 import { useUploadFiles } from "@better-upload/client";
 import imageCompression from "browser-image-compression";
 import { format, of } from "@f-o-t/money";
@@ -73,6 +74,19 @@ type TransactionFormSheetProps = {
    categories: CategoryNode[];
    onCreate: (input: TransactionCreateInput) => Promise<boolean>;
 };
+
+function getErrorMessage(error: unknown, fallback: string) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return fallback;
+}
 
 const TRANSACTION_TYPES = ["income", "expense", "transfer"] as const;
 type TransactionType = (typeof TRANSACTION_TYPES)[number];
@@ -647,11 +661,22 @@ export function TransactionFormSheet({
 
    const submitCreate = React.useCallback(
       async (input: TransactionCreateInput) => {
-         const created = await onCreate(input);
-         if (created) {
-            toast.success("Lançamento criado com sucesso.");
-            closeTopSheet();
+         const result = await Result.tryPromise({
+            try: () => onCreate(input),
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao criar lançamento."),
+            );
+            return;
          }
+         if (!result.value) {
+            toast.error("Não foi possível criar o lançamento.");
+            return;
+         }
+         toast.success("Lançamento criado com sucesso.");
+         closeTopSheet();
       },
       [closeTopSheet, onCreate],
    );

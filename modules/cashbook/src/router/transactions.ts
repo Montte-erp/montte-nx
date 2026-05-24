@@ -701,18 +701,156 @@ export const bulkUpdate = protectedProcedure
       });
       if (existingRows.isErr()) throw existingRows.error;
 
-      await Promise.all(
-         existingRows.value.map((row) =>
-            requireValidFinancialReferences(context.db, context.teamId, {
-               bankAccountId: data.bankAccountId ?? row.bankAccountId,
-               destinationBankAccountId:
-                  data.destinationBankAccountId ?? row.destinationBankAccountId,
-               categoryId: data.categoryId ?? row.categoryId,
-               tagId: tagId ?? row.tagId,
-               date: data.date ?? row.date,
+      const finalReferences = existingRows.value.map((row) => ({
+         bankAccountId:
+            data.bankAccountId !== undefined
+               ? data.bankAccountId
+               : row.bankAccountId,
+         destinationBankAccountId:
+            data.destinationBankAccountId !== undefined
+               ? data.destinationBankAccountId
+               : row.destinationBankAccountId,
+         categoryId:
+            data.categoryId !== undefined ? data.categoryId : row.categoryId,
+         tagId: tagId !== undefined ? tagId : row.tagId,
+         date: data.date !== undefined ? data.date : row.date,
+      }));
+
+      const bankAccountIds = new Set<string>();
+      const categoryIds = new Set<string>();
+      const tagIds = new Set<string>();
+      for (const refs of finalReferences) {
+         if (refs.bankAccountId) bankAccountIds.add(refs.bankAccountId);
+         if (refs.destinationBankAccountId) {
+            bankAccountIds.add(refs.destinationBankAccountId);
+         }
+         if (refs.categoryId) categoryIds.add(refs.categoryId);
+         if (refs.tagId) tagIds.add(refs.tagId);
+      }
+
+      const bankAccountRowsResult = await Result.tryPromise({
+         try: () =>
+            bankAccountIds.size > 0
+               ? context.db.query.bankAccounts.findMany({
+                    where: (f, { inArray }) =>
+                       inArray(f.id, Array.from(bankAccountIds)),
+                 })
+               : Promise.resolve([]),
+         catch: () =>
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
+               message: "Falha ao verificar contas bancárias.",
             }),
-         ),
+      });
+      if (bankAccountRowsResult.isErr()) throw bankAccountRowsResult.error;
+
+      const categoryRowsResult = await Result.tryPromise({
+         try: () =>
+            categoryIds.size > 0
+               ? context.db.query.categories.findMany({
+                    where: (f, { inArray }) =>
+                       inArray(f.id, Array.from(categoryIds)),
+                 })
+               : Promise.resolve([]),
+         catch: () =>
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
+               message: "Falha ao verificar categorias.",
+            }),
+      });
+      if (categoryRowsResult.isErr()) throw categoryRowsResult.error;
+
+      const tagRowsResult = await Result.tryPromise({
+         try: () =>
+            tagIds.size > 0
+               ? context.db.query.tags.findMany({
+                    where: (f, { inArray }) =>
+                       inArray(f.id, Array.from(tagIds)),
+                 })
+               : Promise.resolve([]),
+         catch: () =>
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
+               message: "Falha ao verificar Centros de Custo.",
+            }),
+      });
+      if (tagRowsResult.isErr()) throw tagRowsResult.error;
+
+      const bankAccountRows = new Map(
+         bankAccountRowsResult.value.map((account) => [account.id, account]),
       );
+      const categoryRows = new Map(
+         categoryRowsResult.value.map((category) => [category.id, category]),
+      );
+      const tagRows = new Map(tagRowsResult.value.map((tag) => [tag.id, tag]));
+
+      for (const refs of finalReferences) {
+         if (refs.bankAccountId) {
+            const account = bankAccountRows.get(refs.bankAccountId);
+            if (!account || account.teamId !== context.teamId) {
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.BAD_REQUEST(),
+                  message: "Conta bancária inválida.",
+               });
+            }
+            if (
+               account.initialBalanceDate &&
+               refs.date &&
+               dayjs(refs.date).isBefore(dayjs(account.initialBalanceDate))
+            ) {
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.BAD_REQUEST(),
+                  message: `Não é possível registrar lançamentos antes da data do saldo inicial (${dayjs(account.initialBalanceDate).format("DD/MM/YYYY")}).`,
+               });
+            }
+         }
+
+         if (refs.destinationBankAccountId) {
+            const account = bankAccountRows.get(refs.destinationBankAccountId);
+            if (!account || account.teamId !== context.teamId) {
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.BAD_REQUEST(),
+                  message: "Conta de destino inválida.",
+               });
+            }
+            if (
+               account.initialBalanceDate &&
+               refs.date &&
+               dayjs(refs.date).isBefore(dayjs(account.initialBalanceDate))
+            ) {
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.BAD_REQUEST(),
+                  message: `Não é possível registrar lançamentos antes da data do saldo inicial da conta de destino (${dayjs(account.initialBalanceDate).format("DD/MM/YYYY")}).`,
+               });
+            }
+         }
+
+         if (refs.categoryId) {
+            const category = categoryRows.get(refs.categoryId);
+            if (!category || category.teamId !== context.teamId) {
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.BAD_REQUEST(),
+                  message: "Categoria inválida.",
+               });
+            }
+            if (category.isArchived) {
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.BAD_REQUEST(),
+                  message: "Categoria arquivada.",
+               });
+            }
+         }
+
+         if (refs.tagId) {
+            const tag = tagRows.get(refs.tagId);
+            if (!tag || tag.teamId !== context.teamId) {
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.BAD_REQUEST(),
+                  message: "Centro de Custo inválido.",
+               });
+            }
+         }
+      }
 
       const updateData = (() => {
          if (tagId !== undefined && data.categoryId !== undefined) {

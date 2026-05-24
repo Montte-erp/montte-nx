@@ -258,6 +258,7 @@ export function buildOptimisticTransactionRow({
    bankAccountName,
    categoryName,
    creditCardName,
+   tagName,
 }: {
    id: string;
    input: TransactionCreateInput;
@@ -265,6 +266,7 @@ export function buildOptimisticTransactionRow({
    bankAccountName?: string | null;
    categoryName?: string | null;
    creditCardName?: string | null;
+   tagName?: string | null;
 }): TransactionsCollectionRow {
    const now = dayjs().toDate();
    return {
@@ -292,7 +294,7 @@ export function buildOptimisticTransactionRow({
       recurrenceOccurrenceNumber: null,
       paidAt: input.paidAt ?? null,
       statementPeriod: input.statementPeriod ?? null,
-      tagId: null,
+      tagId: input.tagId ?? null,
       suggestedTagId: null,
       createdAt: now,
       updatedAt: now,
@@ -300,7 +302,7 @@ export function buildOptimisticTransactionRow({
       creditCardName: creditCardName ?? null,
       bankAccountName: bankAccountName ?? null,
       suggestedCategoryName: null,
-      tagName: null,
+      tagName: tagName ?? null,
       suggestedTagName: null,
    };
 }
@@ -422,11 +424,12 @@ export function updateTransactionAction(collection: TransactionsCollection) {
                draft.bankAccountName = patch.bankAccountName;
             if (patch.categoryId !== undefined) {
                draft.categoryId = patch.categoryId;
+               draft.categoryName = patch.categoryName ?? null;
                draft.suggestedCategoryId = null;
                draft.suggestedCategoryName = null;
-            }
-            if (patch.categoryName !== undefined)
+            } else if (patch.categoryName !== undefined) {
                draft.categoryName = patch.categoryName;
+            }
             if (patch.creditCardId !== undefined)
                draft.creditCardId = patch.creditCardId;
             if (patch.creditCardName !== undefined)
@@ -490,6 +493,7 @@ export function bulkUpdateTransactionsAction(
                }
                if (patch.categoryId !== undefined) {
                   draft.categoryId = patch.categoryId;
+                  draft.categoryName = null;
                   draft.suggestedCategoryId = null;
                   draft.suggestedCategoryName = null;
                }
