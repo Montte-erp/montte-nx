@@ -68,8 +68,16 @@ const TYPE_ICONS: Record<BankAccountRow["type"], ReactNode> = {
    investment: <TrendingUp className="size-3" />,
 };
 
-function formatBRL(value: string | number): string {
-   return format(of(String(value), "BRL"), "pt-BR");
+function formatBRL(value: string | number | null | undefined): string {
+   if (value === null || value === undefined || value === "") return "—";
+
+   const raw = String(value).trim();
+   if (raw === "") return "—";
+
+   const parsed = Number(raw);
+   if (!Number.isFinite(parsed)) return "—";
+
+   return format(of(raw, "BRL"), "pt-BR");
 }
 
 interface BuildBankAccountColumnsOptions {
@@ -160,7 +168,8 @@ export function buildBankAccountColumns(
          accessorKey: "currentBalance",
          header: "Saldo Atual",
          cell: ({ row }) => {
-            const balance = Number(row.original.currentBalance);
+            const parsedBalance = Number(row.original.currentBalance);
+            const balance = Number.isFinite(parsedBalance) ? parsedBalance : 0;
             return (
                <Announcement>
                   <AnnouncementTag
@@ -202,7 +211,8 @@ export function buildBankAccountColumns(
             </TooltipProvider>
          ),
          cell: ({ row }) => {
-            const balance = Number(row.original.projectedBalance);
+            const parsedBalance = Number(row.original.projectedBalance);
+            const balance = Number.isFinite(parsedBalance) ? parsedBalance : 0;
             return (
                <Announcement>
                   <AnnouncementTag

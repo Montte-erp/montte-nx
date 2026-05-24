@@ -179,7 +179,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
 
    return (
       <TableBody>
-         <TableRow className="hover:bg-transparent">
+         <TableRow className="sticky top-10 z-30 bg-muted hover:bg-transparent">
             <TableCell className="bg-muted px-4 py-2" colSpan={colCount}>
                <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
             </TableCell>
          </TableRow>
 
-         <TableRow className="bg-muted/20 hover:bg-muted/20">
+         <TableRow className="sticky top-20 z-20 bg-muted/20 hover:bg-muted/20">
             {visibleCols.map((col) => {
                if (col.id === "__select") {
                   return (

@@ -158,6 +158,54 @@ function normalizeImportLookup(value: unknown): string {
       .replace(/[̀-ͯ]/g, "");
 }
 
+const IMPORT_HEADER_LABELS: Record<string, string> = {
+   data: "Data",
+   date: "Data",
+   datetxn: "Data",
+   duedate: "Vencimento",
+   valor: "Valor",
+   amount: "Valor",
+   valorbr: "Valor",
+   desc: "Nome",
+   description: "Nome",
+   descr: "Nome",
+   memo: "Nome",
+   detalhe: "Nome",
+   tipo: "Tipo",
+   type: "Tipo",
+   status: "Status",
+   conta: "Conta",
+   bankaccountname: "Conta",
+   bankaccount: "Conta",
+   contaid: "Conta",
+   banco: "Conta",
+   cartao: "Cartão",
+   card: "Cartão",
+   creditcard: "Cartão",
+   creditcardname: "Cartão",
+   categoria: "Categoria",
+   category: "Categoria",
+   categoryname: "Categoria",
+   categoriaid: "Categoria",
+   vencimento: "Vencimento",
+   fitid: "Identificador",
+   reference: "Referência",
+};
+
+function normalizeImportHeader(value: string): string {
+   const normalized = normalizeImportLookup(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+   return (IMPORT_HEADER_LABELS[normalized] ?? value.trim()) || "";
+}
+
+function localizeImportHeaders<T extends { headers: string[] }>(result: T): T {
+   return {
+      ...result,
+      headers: result.headers.map(normalizeImportHeader),
+   };
+}
+
 function resolveImportId(
    options: ImportLookupItem[],
    value: unknown,
@@ -1016,9 +1064,16 @@ export function TransactionsList() {
          },
          parseFile: async (file: File) => {
             const ext = file.name.split(".").pop()?.toLowerCase();
-            if (ext === "ofx") return parseOfx(file);
-            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
-            return parseCsv(file);
+            if (ext === "ofx") {
+               const parsed = await parseOfx(file);
+               return localizeImportHeaders(parsed);
+            }
+            if (ext === "xlsx" || ext === "xls") {
+               const parsed = await parseXlsx(file);
+               return localizeImportHeaders(parsed);
+            }
+            const parsed = await parseCsv(file);
+            return localizeImportHeaders(parsed);
          },
          mapRow: (row, i) => {
             const parsedAmount = parseImportAmount(row.amount);

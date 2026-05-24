@@ -104,6 +104,46 @@ function resolveType(raw: unknown): BankAccountRow["type"] | undefined {
    return undefined;
 }
 
+function normalizeImportAmount(raw: unknown): string | undefined {
+   const trimmed = String(raw ?? "").trim();
+   if (!trimmed) return undefined;
+   if (!/^-?[\d.,]+$/.test(trimmed)) return undefined;
+   const hasComma = trimmed.includes(",");
+   const hasDot = trimmed.includes(".");
+
+   if (hasComma && hasDot) {
+      const isCommaDecimal =
+         trimmed.lastIndexOf(",") > trimmed.lastIndexOf(".");
+      return isCommaDecimal
+         ? trimmed.replace(/\./g, "").replace(",", ".")
+         : trimmed.replace(/,/g, "");
+   }
+   if (hasComma) return trimmed.replace(",", ".");
+   return trimmed;
+}
+
+function parseImportBalance(raw: unknown): {
+   raw: string;
+   normalized: string;
+   isValid: boolean;
+} {
+   const rawValue = String(raw ?? "").trim();
+   if (!rawValue) {
+      return { raw: "", normalized: "0", isValid: true };
+   }
+   const normalized = normalizeImportAmount(rawValue);
+   const isValid =
+      normalized !== undefined &&
+      !Number.isNaN(Number(normalized)) &&
+      /^-?\d+(?:\.\d+)?$/.test(normalized);
+
+   if (!isValid) {
+      return { raw: rawValue, normalized: "0", isValid: false };
+   }
+
+   return { raw: rawValue, normalized, isValid: true };
+}
+
 const searchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
@@ -361,18 +401,25 @@ function BankAccountsList() {
             { key: "branch", label: "Agência" },
             { key: "accountNumber", label: "Conta" },
          ],
-         mapRow: (row, i) => ({
-            id: `__import_${i + 1}`,
-            name: String(row.name ?? "").trim(),
-            type: row.type,
-            color: "#6366f1",
-            bankCode: String(row.bankCode ?? "").trim(),
-            bankName: String(row.bankName ?? "").trim(),
-            branch: String(row.branch ?? "").trim(),
-            accountNumber: String(row.accountNumber ?? "").trim(),
-            initialBalance: String(row.initialBalance ?? "0"),
-            iconUrl: null,
-         }),
+         mapRow: (row, i) => {
+            const initialBalance =
+               String(row.initialBalance ?? "").trim() || "0";
+            return {
+               id: `__import_${i + 1}`,
+               importLine: i + 2,
+               name: String(row.name ?? "").trim(),
+               type: row.type,
+               color: "#6366f1",
+               bankCode: String(row.bankCode ?? "").trim(),
+               bankName: String(row.bankName ?? "").trim(),
+               branch: String(row.branch ?? "").trim(),
+               accountNumber: String(row.accountNumber ?? "").trim(),
+               initialBalance,
+               currentBalance: initialBalance,
+               projectedBalance: initialBalance,
+               iconUrl: null,
+            };
+         },
          template: {
             label: "Baixar modelo",
             description:
@@ -483,21 +530,47 @@ function BankAccountsList() {
             }
 
             const normalizedRows = rows
-               .map((r) => {
+               .map((r, index) => {
                   const type = resolveType(r.type);
                   if (!type) return null;
+                  const parsedBalance = parseImportBalance(r.initialBalance);
                   return {
+                     line:
+                        typeof r.importLine === "number" && r.importLine > 0
+                           ? r.importLine
+                           : index + 2,
                      r,
                      type,
                      bankCode: String(r.bankCode ?? "").trim(),
                      bankName: String(r.bankName ?? "").trim(),
                      branch: String(r.branch ?? "").trim(),
                      accountNumber: String(r.accountNumber ?? "").trim(),
+                     parsedBalance,
                   };
                })
                .filter((entry): entry is NonNullable<typeof entry> =>
                   Boolean(entry),
                );
+
+            const invalidBalances = normalizedRows.filter(
+               (entry) => !entry.parsedBalance.isValid,
+            );
+            if (invalidBalances.length > 0) {
+               const maxDetails = 3;
+               const details = invalidBalances
+                  .slice(0, maxDetails)
+                  .map(
+                     (entry) =>
+                        `linha ${entry.line}: "${entry.parsedBalance.raw || "vazio"}"`,
+                  )
+                  .join(", ");
+               const extraCount = invalidBalances.length - maxDetails;
+               const extraText =
+                  extraCount > 0 ? ` (mais ${extraCount} linha(s))` : "";
+               throw new Error(
+                  `Saldo Inicial inválido em ${invalidBalances.length} linha(s): ${details}${extraText}. Use somente números. Exemplo: 1500.00`,
+               );
+            }
 
             const invalidBankCode = normalizedRows.some((entry) => {
                if (entry.type === "cash") return false;
@@ -541,7 +614,7 @@ function BankAccountsList() {
                      bankName: isCash ? null : entry.bankName,
                      branch: isCash ? null : entry.branch || null,
                      accountNumber: isCash ? null : entry.accountNumber || null,
-                     initialBalance: String(entry.r.initialBalance ?? "0"),
+                     initialBalance: entry.parsedBalance.normalized,
                   };
                   return {
                      input,
