@@ -1,0 +1,25 @@
+{
+   "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "composite": false,
+      "declaration": false,
+      "declarationMap": false,
+      "noEmit": true,
+      "rootDir": "../..",
+      "jsx": "react-jsx",
+      "paths": {
+         "@core/authentication/*": ["../../core/authentication/src/*"],
+         "@core/database": ["../../core/database/src/index.ts"],
+         "@core/database/*": ["../../core/database/src/*"],
+
+         "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@modules/relationships/*": ["./src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": [
+      {
+         "path": "../../core/database"
+      }
+   ]
+}
