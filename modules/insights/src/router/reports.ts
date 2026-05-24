@@ -325,45 +325,53 @@ export const bulkRemove = protectedProcedure
    .input(idsSchema)
    .handler(async ({ context, input }) => {
       const ids = [...new Set(input.ids)];
-      const existing = await Result.tryPromise({
+      const deletedResult = await Result.tryPromise({
          try: () =>
-            context.db.query.reports.findMany({
-               where: (f, { and, eq, inArray }) =>
-                  and(eq(f.teamId, context.teamId), inArray(f.id, ids)),
-            }),
-         catch: () =>
-            new InsightsError({
-               error: insightsRouterErrors.LOAD_FAILED(),
-               message: "Falha ao validar relatórios selecionados.",
-            }),
-      });
-      if (Result.isError(existing)) throw existing.error;
-      if (existing.value.length !== ids.length) {
-         throw new InsightsError({
-            error: insightsRouterErrors.NOT_FOUND(),
-            message: "Algum relatório selecionado não foi encontrado.",
-         });
-      }
+            context.db.transaction(async (tx) => {
+               const existing = await tx.query.reports.findMany({
+                  where: (f, { and, eq, inArray }) =>
+                     and(eq(f.teamId, context.teamId), inArray(f.id, ids)),
+               });
 
-      const removed = await Result.tryPromise({
-         try: () =>
-            context.db
-               .delete(reports)
-               .where(
-                  and(
-                     eq(reports.teamId, context.teamId),
-                     inArray(reports.id, ids),
-                  ),
-               )
-               .returning({ id: reports.id }),
+               if (existing.length !== ids.length) {
+                  return null;
+               }
+
+               const deleted = await tx
+                  .delete(reports)
+                  .where(
+                     and(
+                        eq(reports.teamId, context.teamId),
+                        inArray(reports.id, ids),
+                     ),
+                  )
+                  .returning({ id: reports.id });
+
+               return {
+                  deleted,
+                  expected: ids.length,
+               };
+            }),
          catch: () =>
             new InsightsError({
                error: insightsRouterErrors.DELETE_FAILED(),
                message: "Falha ao excluir relatórios.",
             }),
       });
-      if (Result.isError(removed)) throw removed.error;
-      return { deleted: removed.value.length };
+      if (Result.isError(deletedResult)) throw deletedResult.error;
+      if (!deletedResult.value) {
+         throw new InsightsError({
+            error: insightsRouterErrors.NOT_FOUND(),
+            message: "Algum relatório selecionado não foi encontrado.",
+         });
+      }
+      if (deletedResult.value.deleted.length !== deletedResult.value.expected) {
+         throw new InsightsError({
+            error: insightsRouterErrors.DELETE_FAILED(),
+            message: "Falha ao excluir todos os relatórios selecionados.",
+         });
+      }
+      return { deleted: deletedResult.value.deleted.length };
    });
 
 function moneyValue(value: string | number | null | undefined) {

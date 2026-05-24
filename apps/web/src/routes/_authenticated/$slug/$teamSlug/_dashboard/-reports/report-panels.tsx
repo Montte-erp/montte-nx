@@ -92,33 +92,61 @@ function marginValue(report: ProfitAndLossReport) {
 export function ReportData({
    report,
    queryClient,
+   teamId,
 }: {
    report: SavedReport;
    queryClient: QueryClient;
+   teamId: string;
 }) {
    if (report.type === "dre")
       return (
-         <ProfitAndLossData config={report.config} queryClient={queryClient} />
+         <ProfitAndLossData
+            config={report.config}
+            queryClient={queryClient}
+            teamId={teamId}
+         />
       );
    if (report.type === "cash-flow")
-      return <CashFlowData config={report.config} queryClient={queryClient} />;
+      return (
+         <CashFlowData
+            config={report.config}
+            queryClient={queryClient}
+            teamId={teamId}
+         />
+      );
    if (report.type === "cost-centers")
       return (
-         <CostCentersData config={report.config} queryClient={queryClient} />
+         <CostCentersData
+            config={report.config}
+            queryClient={queryClient}
+            teamId={teamId}
+         />
       );
    if (report.type === "aging")
-      return <AgingData config={report.config} queryClient={queryClient} />;
+      return (
+         <AgingData
+            config={report.config}
+            queryClient={queryClient}
+            teamId={teamId}
+         />
+      );
    return (
-      <CategoryExpensesData config={report.config} queryClient={queryClient} />
+      <CategoryExpensesData
+         config={report.config}
+         queryClient={queryClient}
+         teamId={teamId}
+      />
    );
 }
 
 function ProfitAndLossData({
    config,
    queryClient,
+   teamId,
 }: {
    config: ReportConfig;
    queryClient: QueryClient;
+   teamId: string;
 }) {
    const reportInput = useMemo(
       () => ({
@@ -186,9 +214,10 @@ function ProfitAndLossData({
             profitAndLossReportCollectionOptions({
                queryClient,
                input: reportInput,
+               teamId,
             }),
          ),
-      [queryClient, reportInput],
+      [queryClient, teamId, reportInput],
    );
    const transactionsCollection = useMemo(
       () =>
@@ -196,9 +225,10 @@ function ProfitAndLossData({
             reportTransactionsCollectionOptions({
                queryClient,
                input: transactionsInput,
+               teamId,
             }),
          ),
-      [queryClient, transactionsInput],
+      [queryClient, teamId, transactionsInput],
    );
    const transactionsSummaryCollection = useMemo(
       () =>
@@ -206,9 +236,10 @@ function ProfitAndLossData({
             reportTransactionsSummaryCollectionOptions({
                queryClient,
                input: summaryInput,
+               teamId,
             }),
          ),
-      [queryClient, summaryInput],
+      [queryClient, teamId, summaryInput],
    );
    const { data: reports, isLoading: isReportLoading } = useLiveQuery(
       (q) =>
@@ -259,9 +290,11 @@ function ProfitAndLossData({
 function CashFlowData({
    config,
    queryClient,
+   teamId,
 }: {
    config: ReportConfig;
    queryClient: QueryClient;
+   teamId: string;
 }) {
    const collectionInput = useMemo(
       () => ({
@@ -287,9 +320,10 @@ function CashFlowData({
             cashFlowReportCollectionOptions({
                queryClient,
                input: collectionInput,
+               teamId,
             }),
          ),
-      [queryClient, collectionInput],
+      [queryClient, teamId, collectionInput],
    );
    const { data, isLoading: isReportLoading } = useLiveQuery(
       (q) => q.from({ report: collection }).select(({ report }) => report),
@@ -304,9 +338,11 @@ function CashFlowData({
 function CostCentersData({
    config,
    queryClient,
+   teamId,
 }: {
    config: ReportConfig;
    queryClient: QueryClient;
+   teamId: string;
 }) {
    const collectionInput = useMemo(
       () => ({
@@ -332,9 +368,10 @@ function CostCentersData({
             costCentersReportCollectionOptions({
                queryClient,
                input: collectionInput,
+               teamId,
             }),
          ),
-      [queryClient, collectionInput],
+      [queryClient, teamId, collectionInput],
    );
    const { data, isLoading: isReportLoading } = useLiveQuery(
       (q) => q.from({ report: collection }).select(({ report }) => report),
@@ -349,9 +386,11 @@ function CostCentersData({
 function AgingData({
    config,
    queryClient,
+   teamId,
 }: {
    config: ReportConfig;
    queryClient: QueryClient;
+   teamId: string;
 }) {
    const collectionInput = useMemo(
       () => ({
@@ -377,9 +416,10 @@ function AgingData({
             agingReportCollectionOptions({
                queryClient,
                input: collectionInput,
+               teamId,
             }),
          ),
-      [queryClient, collectionInput],
+      [queryClient, teamId, collectionInput],
    );
    const { data, isLoading: isReportLoading } = useLiveQuery(
       (q) => q.from({ report: collection }).select(({ report }) => report),
@@ -394,9 +434,11 @@ function AgingData({
 function CategoryExpensesData({
    config,
    queryClient,
+   teamId,
 }: {
    config: ReportConfig;
    queryClient: QueryClient;
+   teamId: string;
 }) {
    const collectionInput = useMemo(
       () => ({
@@ -426,9 +468,10 @@ function CategoryExpensesData({
             categoryExpensesReportCollectionOptions({
                queryClient,
                input: collectionInput,
+               teamId,
             }),
          ),
-      [queryClient, collectionInput],
+      [queryClient, teamId, collectionInput],
    );
    const { data, isLoading: isReportLoading } = useLiveQuery(
       (q) => q.from({ report: collection }).select(({ report }) => report),

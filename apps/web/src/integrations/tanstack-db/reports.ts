@@ -68,44 +68,81 @@ type TransactionsSummaryInput = Inputs["transactions"]["getSummary"];
 type ProfitAndLossCollectionInput = {
    queryClient: QueryClient;
    input: ProfitAndLossInput;
+   teamId: string;
 };
 
 type CashFlowCollectionInput = {
    queryClient: QueryClient;
    input: CashFlowInput;
+   teamId: string;
 };
 
 type CostCentersCollectionInput = {
    queryClient: QueryClient;
    input: CostCentersInput;
+   teamId: string;
 };
 
 type AgingCollectionInput = {
    queryClient: QueryClient;
    input: AgingInput;
+   teamId: string;
 };
 
 type CategoryExpensesCollectionInput = {
    queryClient: QueryClient;
    input: CategoryExpensesInput;
+   teamId: string;
 };
 
 type ReportTransactionsCollectionInput = {
    queryClient: QueryClient;
    input: TransactionsGetAllInput;
+   teamId: string;
 };
 
 type ReportTransactionSummaryCollectionInput = {
    queryClient: QueryClient;
    input: TransactionsSummaryInput;
+   teamId: string;
 };
 
 async function safeRefetchReportCollection(collection: ReportCollection) {
-   await collection.utils.refetch().catch(() => {});
+   await collection.utils.refetch().catch((error: unknown) => {
+      // eslint-disable-next-line no-console -- refetch failures must be observable but should not break successful mutations.
+      console.error(
+         "safeRefetchReportCollection: falha ao sincronizar coleção de relatórios",
+         {
+            collectionId: collection.id,
+            error,
+         },
+      );
+   });
+}
+
+function stableStringify(value: unknown): string {
+   if (value === null || typeof value !== "object") {
+      return JSON.stringify(value);
+   }
+
+   if (Array.isArray(value)) {
+      return `[${value.map(stableStringify).join(",")}]`;
+   }
+
+   if (value instanceof Date) {
+      return JSON.stringify(value.toISOString());
+   }
+
+   const entries = Object.entries(value).sort(([a], [b]) => a.localeCompare(b));
+   return `{${entries
+      .map(
+         ([key, nested]) => `${JSON.stringify(key)}:${stableStringify(nested)}`,
+      )
+      .join(",")}}`;
 }
 
 function buildReportOutputId(namespace: string, input: unknown) {
-   return `${namespace}:${JSON.stringify(input ?? {})}`;
+   return `${namespace}:${stableStringify(input ?? {})}`;
 }
 
 export function buildOptimisticReportRow({
@@ -229,11 +266,12 @@ export function bulkRemoveReportAction(collection: ReportCollection) {
 export function profitAndLossReportCollectionOptions({
    queryClient,
    input,
+   teamId,
 }: ProfitAndLossCollectionInput) {
-   const id = buildReportOutputId("profit-and-loss", input);
+   const id = buildReportOutputId("profit-and-loss", { ...input, teamId });
    return queryCollectionOptions({
       id,
-      queryKey: ["reports", "profit-and-loss", input],
+      queryKey: ["reports", "profit-and-loss", teamId, input],
       queryFn: async () => {
          const report = await orpc.reports.profitAndLoss.call(input);
          const row: ProfitAndLossReportRow = { ...report, id };
@@ -252,11 +290,12 @@ export function profitAndLossReportCollectionOptions({
 export function cashFlowReportCollectionOptions({
    queryClient,
    input,
+   teamId,
 }: CashFlowCollectionInput) {
-   const id = buildReportOutputId("cash-flow", input);
+   const id = buildReportOutputId("cash-flow", { ...input, teamId });
    return queryCollectionOptions({
       id,
-      queryKey: ["reports", "cash-flow", input],
+      queryKey: ["reports", "cash-flow", teamId, input],
       queryFn: async () => {
          const report = await orpc.reports.cashFlow.call(input);
          const row: CashFlowReportRow = { ...report, id };
@@ -275,11 +314,12 @@ export function cashFlowReportCollectionOptions({
 export function costCentersReportCollectionOptions({
    queryClient,
    input,
+   teamId,
 }: CostCentersCollectionInput) {
-   const id = buildReportOutputId("cost-centers", input);
+   const id = buildReportOutputId("cost-centers", { ...input, teamId });
    return queryCollectionOptions({
       id,
-      queryKey: ["reports", "cost-centers", input],
+      queryKey: ["reports", "cost-centers", teamId, input],
       queryFn: async () => {
          const report = await orpc.reports.expensesByCostCenter.call(input);
          const row: CostCentersReportRow = { ...report, id };
@@ -299,11 +339,12 @@ export function costCentersReportCollectionOptions({
 export function agingReportCollectionOptions({
    queryClient,
    input,
+   teamId,
 }: AgingCollectionInput) {
-   const id = buildReportOutputId("aging", input);
+   const id = buildReportOutputId("aging", { ...input, teamId });
    return queryCollectionOptions({
       id,
-      queryKey: ["reports", "aging", input],
+      queryKey: ["reports", "aging", teamId, input],
       queryFn: async () => {
          const report = await orpc.reports.aging.call(input);
          const row: AgingReportRow = { ...report, id };
@@ -322,11 +363,12 @@ export function agingReportCollectionOptions({
 export function categoryExpensesReportCollectionOptions({
    queryClient,
    input,
+   teamId,
 }: CategoryExpensesCollectionInput) {
-   const id = buildReportOutputId("categories", input);
+   const id = buildReportOutputId("categories", { ...input, teamId });
    return queryCollectionOptions({
       id,
-      queryKey: ["reports", "categories", input],
+      queryKey: ["reports", "categories", teamId, input],
       queryFn: async () => {
          const report = await orpc.reports.expensesByCategory.call(input);
          const row: CategoryExpensesReportRow = { ...report, id };
@@ -345,13 +387,16 @@ export function categoryExpensesReportCollectionOptions({
 export function reportTransactionsCollectionOptions({
    queryClient,
    input,
+   teamId,
 }: ReportTransactionsCollectionInput) {
+   const id = buildReportOutputId("transactions", {
+      ...input,
+      reportSnapshot: true,
+      teamId,
+   });
    return queryCollectionOptions({
-      id: buildReportOutputId("transactions", {
-         ...input,
-         reportSnapshot: true,
-      }),
-      queryKey: ["reports", "transactions", input],
+      id,
+      queryKey: ["reports", "transactions", teamId, input],
       queryFn: async () => {
          const result = await orpc.transactions.getAll.call(input);
          return result.data;
@@ -369,14 +414,16 @@ export function reportTransactionsCollectionOptions({
 export function reportTransactionsSummaryCollectionOptions({
    queryClient,
    input,
+   teamId,
 }: ReportTransactionSummaryCollectionInput) {
+   const id = buildReportOutputId("transactions-summary", { ...input, teamId });
    return queryCollectionOptions({
-      id: buildReportOutputId("transactions-summary", input),
-      queryKey: ["reports", "transactions-summary", input],
+      id,
+      queryKey: ["reports", "transactions-summary", teamId, input],
       queryFn: async () => {
          const summary = await orpc.transactions.getSummary.call(input);
          const row: TransactionSummaryRow = {
-            id: buildReportOutputId("transactions-summary", input),
+            id,
             total: summary.totalCount,
          };
          return [row];

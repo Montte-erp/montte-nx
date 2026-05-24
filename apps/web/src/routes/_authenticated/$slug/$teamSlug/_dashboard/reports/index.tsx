@@ -114,6 +114,57 @@ function getErrorMessage(error: unknown, fallback: string) {
    return fallback;
 }
 
+type ReportQuery<T> = {
+   where: (callback: (refs: any) => unknown) => T;
+   orderBy: (callback: (refs: any) => unknown, direction?: "asc" | "desc") => T;
+};
+
+function applyFiltersAndSorting<TQuery extends ReportQuery<TQuery>>(
+   query: TQuery,
+   baseSearch: string,
+   sorting: Array<{ id: string; desc: boolean }>,
+) {
+   let filteredQuery: TQuery = query;
+
+   if (baseSearch) {
+      filteredQuery = filteredQuery.where(({ report }) =>
+         ilike(report.name, `%${baseSearch}%`),
+      );
+   }
+
+   for (const rule of sorting) {
+      switch (rule.id) {
+         case "name":
+            filteredQuery = filteredQuery.orderBy(
+               ({ report }) => report.name,
+               rule.desc ? "desc" : "asc",
+            );
+            break;
+         case "type":
+            filteredQuery = filteredQuery.orderBy(
+               ({ report }) => report.type,
+               rule.desc ? "desc" : "asc",
+            );
+            break;
+         case "createdAt":
+            filteredQuery = filteredQuery.orderBy(
+               ({ report }) => report.createdAt,
+               rule.desc ? "desc" : "asc",
+            );
+            break;
+      }
+   }
+
+   if (sorting.length === 0) {
+      filteredQuery = filteredQuery.orderBy(
+         ({ report }) => report.createdAt,
+         "desc",
+      );
+   }
+
+   return filteredQuery;
+}
+
 function ReportsList() {
    const { activeTeamId } = useActiveTeam();
    if (!activeTeamId) {
@@ -154,84 +205,24 @@ function ReportsListWithTeam({ teamId }: { teamId: string }) {
    const baseSearch = search.trim();
    const { data: allReports } = useLiveQuery(
       (q) => {
-         let query = q.from({ report: reportsCollection });
-
-         if (baseSearch) {
-            query = query.where(({ report }) =>
-               ilike(report.name, `%${baseSearch}%`),
-            );
-         }
-
-         for (const rule of sorting) {
-            switch (rule.id) {
-               case "name":
-                  query = query.orderBy(
-                     ({ report }) => report.name,
-                     rule.desc ? "desc" : "asc",
-                  );
-                  break;
-               case "type":
-                  query = query.orderBy(
-                     ({ report }) => report.type,
-                     rule.desc ? "desc" : "asc",
-                  );
-                  break;
-               case "createdAt":
-                  query = query.orderBy(
-                     ({ report }) => report.createdAt,
-                     rule.desc ? "desc" : "asc",
-                  );
-                  break;
-            }
-         }
-
-         if (sorting.length === 0) {
-            query = query.orderBy(({ report }) => report.createdAt, "desc");
-         }
-
-         return query.select(({ report }) => report);
+         const baseQuery = applyFiltersAndSorting(
+            q.from({ report: reportsCollection }),
+            baseSearch,
+            sorting,
+         );
+         return baseQuery.select(({ report }) => report);
       },
       [baseSearch, reportsCollection, sorting],
    );
 
    const { data: reports } = useLiveQuery(
       (q) => {
-         let query = q.from({ report: reportsCollection });
-
-         if (baseSearch) {
-            query = query.where(({ report }) =>
-               ilike(report.name, `%${baseSearch}%`),
-            );
-         }
-
-         for (const rule of sorting) {
-            switch (rule.id) {
-               case "name":
-                  query = query.orderBy(
-                     ({ report }) => report.name,
-                     rule.desc ? "desc" : "asc",
-                  );
-                  break;
-               case "type":
-                  query = query.orderBy(
-                     ({ report }) => report.type,
-                     rule.desc ? "desc" : "asc",
-                  );
-                  break;
-               case "createdAt":
-                  query = query.orderBy(
-                     ({ report }) => report.createdAt,
-                     rule.desc ? "desc" : "asc",
-                  );
-                  break;
-            }
-         }
-
-         if (sorting.length === 0) {
-            query = query.orderBy(({ report }) => report.createdAt, "desc");
-         }
-
-         return query
+         const baseQuery = applyFiltersAndSorting(
+            q.from({ report: reportsCollection }),
+            baseSearch,
+            sorting,
+         );
+         return baseQuery
             .limit(pageSize)
             .offset((page - 1) * pageSize)
             .select(({ report }) => report);

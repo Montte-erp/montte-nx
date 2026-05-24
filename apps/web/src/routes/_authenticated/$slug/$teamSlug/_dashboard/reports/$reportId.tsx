@@ -29,7 +29,7 @@ export const Route = createFileRoute(
    ssr: false,
    pendingMs: 300,
    pendingComponent: ReportDetailSkeleton,
-   errorComponent: ReportDetailError,
+   errorComponent: SplitErrorComponent,
    head: () => ({
       meta: [{ title: "Relatório — Montte" }],
    }),
@@ -45,7 +45,7 @@ function ReportDetailSkeleton() {
    );
 }
 
-function ReportDetailError() {
+function SplitErrorComponent() {
    const { slug, teamSlug } = useDashboardSlugs();
    return (
       <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden px-4 pb-4">
@@ -109,7 +109,7 @@ function ReportDetailWithTeam({ teamId }: { teamId: string }) {
    );
    const report = reportRows[0];
 
-   if (!isLoading && !report) return <ReportDetailError />;
+   if (!isLoading && !report) return <SplitErrorComponent />;
 
    if (!report) {
       return <ReportDetailSkeleton />;
@@ -140,7 +140,11 @@ function ReportDetailWithTeam({ teamId }: { teamId: string }) {
                fallback={<ReportDetailSkeleton />}
                errorTitle="Erro ao carregar dados"
             >
-               <ReportData report={report} queryClient={queryClient} />
+               <ReportData
+                  report={report}
+                  queryClient={queryClient}
+                  teamId={teamId}
+               />
             </QueryBoundary>
          </div>
       </div>
