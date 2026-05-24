@@ -16,6 +16,7 @@ import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { tags } from "@core/database/schemas/tags";
+import { parties } from "@core/database/schemas/relationships";
 import { z } from "zod";
 
 export const attachmentSchema = z.object({
@@ -108,6 +109,9 @@ export const transactions = financeSchema.table(
       suggestedTagId: uuid("suggested_tag_id").references(() => tags.id, {
          onDelete: "set null",
       }),
+      relationshipId: uuid("relationship_id").references(() => parties.id, {
+         onDelete: "set null",
+      }),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -131,6 +135,7 @@ export const transactions = financeSchema.table(
       ),
       index("transactions_tag_id_idx").on(table.tagId),
       index("transactions_suggested_tag_id_idx").on(table.suggestedTagId),
+      index("transactions_relationship_id_idx").on(table.relationshipId),
       index("transactions_status_idx").on(table.status),
       index("transactions_ignored_idx").on(table.ignored),
       index("transactions_due_date_idx").on(table.dueDate),
