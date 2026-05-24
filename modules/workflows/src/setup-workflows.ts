@@ -3,7 +3,7 @@ import { env } from "@core/environment/worker";
 import {
    WORKFLOW_EXECUTE_QUEUE_NAME,
    WORKFLOW_SCHEDULER_QUEUE_NAME,
-} from "./runtime";
+} from "./runtime-constants";
 import { executeWorkflowWorkflow } from "./workflows/execute-workflow.workflow";
 import { pollDueWorkflowsWorkflow } from "./scheduler";
 

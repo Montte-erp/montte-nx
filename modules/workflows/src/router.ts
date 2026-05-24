@@ -15,11 +15,11 @@ import {
    buildHumanLabel,
    buildNextRunAt,
    createWorkflowIdempotencyKey,
-   getWorkflowScheduleNode,
+   findWorkflowScheduleNode,
    normalizeWorkflowTimezone,
    WORKFLOW_EXECUTE_QUEUE_NAME,
    WORKFLOW_EXECUTE_WORKFLOW_NAME,
-} from "./runtime";
+} from "./runtime-constants";
 import {
    createWorkflowGraphFromTemplate,
    getWorkflowTemplate,
@@ -68,6 +68,16 @@ function isIntegerInRange(value: string, min: number, max: number) {
    if (!/^\d+$/.test(value)) return false;
    const numeric = Number(value);
    return Number.isInteger(numeric) && numeric >= min && numeric <= max;
+}
+
+function getWorkflowScheduleNodeOrThrow(graph: Workflow["graph"]) {
+   const node = findWorkflowScheduleNode(graph);
+   if (!node)
+      throw new WorkflowsRouterError({
+         error: workflowsRouterErrors.INVALID_GRAPH(),
+         message: "Workflow sem nó de agenda esperado.",
+      });
+   return node;
 }
 
 function isSupportedWorkflowCron(cron: string) {
@@ -394,7 +404,7 @@ export const update = protectedProcedure
    .input(updateSchema)
    .handler(async ({ context, input }) => {
       const workflow = await loadWorkflowForTeam(context, input.id);
-      const scheduleNode = getWorkflowScheduleNode(input.graph);
+      const scheduleNode = getWorkflowScheduleNodeOrThrow(input.graph);
       const timezoneValue = normalizeWorkflowTimezone(
          scheduleNode.data.timezone,
       );
@@ -442,7 +452,7 @@ async function activateWorkflowForTeam(
 ) {
    const workflow = await loadWorkflowForTeam(context, id);
    assertWorkflowCanActivate(workflow);
-   const scheduleNode = getWorkflowScheduleNode(workflow.graph);
+   const scheduleNode = getWorkflowScheduleNodeOrThrow(workflow.graph);
    const nextRunAt = buildNextRunAtOrThrow(
       scheduleNode.data.cron,
       normalizeWorkflowTimezone(scheduleNode.data.timezone),
@@ -566,7 +576,7 @@ export const bulkActivate = protectedProcedure
       const workflowIds = owned.map((workflow) => workflow.id);
       const now = dayjs().toDate();
       const nextRuns = owned.map((workflow) => {
-         const scheduleNode = getWorkflowScheduleNode(workflow.graph);
+         const scheduleNode = getWorkflowScheduleNodeOrThrow(workflow.graph);
          return {
             id: workflow.id,
             nextRunAt: buildNextRunAtOrThrow(
