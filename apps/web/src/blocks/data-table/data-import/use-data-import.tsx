@@ -142,6 +142,23 @@ export interface UseDataImportApi {
    restoreRow: (index: number) => void;
 }
 
+function buildImportRows(
+   rawRows: string[][],
+   rawHeaders: string[],
+   mapping: Record<string, string>,
+   mapRow?: DataImportConfig["mapRow"],
+): Record<string, unknown>[] {
+   return rawRows.map((rawRow, i) => {
+      const mapped: Record<string, string> = {};
+      for (const [colKey, fileHeader] of Object.entries(mapping)) {
+         if (!fileHeader) continue;
+         const idx = rawHeaders.indexOf(fileHeader);
+         mapped[colKey] = idx >= 0 ? (rawRow[idx] ?? "") : "";
+      }
+      return mapRow ? mapRow(mapped, i) : mapped;
+   });
+}
+
 export function useDataImport<TData>({
    table,
    config,
@@ -313,15 +330,12 @@ export function useDataImport<TData>({
    const start = useCallback(
       (data: RawImportData) => {
          const mapping = autoMatch(data.headers, importableColumns);
-         const importRows = data.rows.map((rawRow, i) => {
-            const mapped: Record<string, string> = {};
-            for (const [colKey, fileHeader] of Object.entries(mapping)) {
-               if (!fileHeader) continue;
-               const idx = data.headers.indexOf(fileHeader);
-               mapped[colKey] = idx >= 0 ? (rawRow[idx] ?? "") : "";
-            }
-            return config.mapRow ? config.mapRow(mapped, i) : mapped;
-         });
+         const importRows = buildImportRows(
+            data.rows,
+            data.headers,
+            mapping,
+            config.mapRow,
+         );
          setState({
             rawHeaders: data.headers,
             rawRows: data.rows,
@@ -342,8 +356,21 @@ export function useDataImport<TData>({
 
    const updateMapping = useCallback(
       (mapping: Record<string, string>) =>
-         setState((s) => (s ? { ...s, mapping } : s)),
-      [],
+         setState((s) =>
+            s
+               ? {
+                    ...s,
+                    mapping,
+                    importRows: buildImportRows(
+                       s.rawRows,
+                       s.rawHeaders,
+                       mapping,
+                       config.mapRow,
+                    ),
+                 }
+               : s,
+         ),
+      [config.mapRow],
    );
 
    const removeRows = useCallback(

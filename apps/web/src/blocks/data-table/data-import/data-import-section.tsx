@@ -1,4 +1,4 @@
-import type { Table } from "@tanstack/react-table";
+import type { Column, Table } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
@@ -37,6 +37,20 @@ interface InnerProps<TData> extends DataImportSectionProps<TData> {
    state: NonNullable<UseDataImportApi["state"]>;
 }
 
+function getColumnAccessorKey<TData>(col: Column<TData, unknown>) {
+   return "accessorKey" in col.columnDef && col.columnDef.accessorKey != null
+      ? String(col.columnDef.accessorKey)
+      : col.id;
+}
+
+function isImportableColumn<TData>(col: Column<TData, unknown>) {
+   return (
+      col.id !== "__select" &&
+      col.id !== "__actions" &&
+      !col.columnDef.meta?.importIgnore
+   );
+}
+
 function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    const { openAlertDialog } = useAlertDialog();
    const [editingColKey, setEditingColKey] = useState<string | null>(null);
@@ -46,23 +60,46 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    const { selectedIndices, ignoredIndices } = api;
    const hasImportRows = importRows.length > 0;
    const visibleCols = table.getVisibleLeafColumns();
-   const colCount = visibleCols.length;
+   const importableColumns = useMemo(
+      () => visibleCols.filter(isImportableColumn),
+      [visibleCols],
+   );
+   const montteColumns = useMemo(() => {
+      const requiredColumns = importableColumns.filter(
+         (col) => col.columnDef.meta?.required,
+      );
+      const optionalColumns = importableColumns.filter(
+         (col) => !col.columnDef.meta?.required,
+      );
+      return [...requiredColumns, ...optionalColumns];
+   }, [importableColumns]);
+   const hasSelectColumn = visibleCols.some((col) => col.id === "__select");
+   const hasActionsColumn = visibleCols.some((col) => col.id === "__actions");
+   const mappedHeaders = useMemo(
+      () =>
+         new Set(
+            Object.values(mapping).filter(
+               (value) => value && value !== "__none__",
+            ),
+         ),
+      [mapping],
+   );
+   const extraHeaders = useMemo(
+      () => rawHeaders.filter((header) => !mappedHeaders.has(header)),
+      [mappedHeaders, rawHeaders],
+   );
+   const colCount =
+      (hasSelectColumn ? 1 : 0) +
+      montteColumns.length +
+      (hasActionsColumn ? 1 : 0) +
+      extraHeaders.length;
    const activeCount = rawRows.length - ignoredIndices.size;
 
    const duplicateIndices = useMemo(() => {
       if (!hasImportRows) return new Set<number>();
-      const firstCol = visibleCols.find(
-         (col) =>
-            col.id !== "__select" &&
-            col.id !== "__actions" &&
-            !col.columnDef.meta?.importIgnore,
-      );
+      const firstCol = montteColumns[0];
       if (!firstCol) return new Set<number>();
-      const accKey =
-         "accessorKey" in firstCol.columnDef &&
-         firstCol.columnDef.accessorKey != null
-            ? String(firstCol.columnDef.accessorKey)
-            : firstCol.id;
+      const accKey = getColumnAccessorKey(firstCol);
       const existing = new Set(
          table
             .getCoreRowModel()
@@ -76,7 +113,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
          if (val && existing.has(val)) result.add(i);
       });
       return result;
-   }, [importRows, hasImportRows, table, visibleCols]);
+   }, [importRows, hasImportRows, table, montteColumns]);
 
    const headerOptions = useMemo(
       () => [
@@ -103,6 +140,14 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
          return entry;
       },
       [hasImportRows, importRows, rawHeaders, rawRows],
+   );
+
+   const getRawValue = useCallback(
+      (row: string[], header: string) => {
+         const idx = rawHeaders.indexOf(header);
+         return idx >= 0 ? (row[idx] ?? "") : "";
+      },
+      [rawHeaders],
    );
 
    const saveRow = useCallback(
@@ -250,31 +295,57 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
          </TableRow>
 
          <TableRow className="sticky top-20 z-20 bg-muted/20 hover:bg-muted/20">
-            {visibleCols.map((col) => {
-               if (col.id === "__select") {
-                  return (
-                     <TableCell className="w-10 px-2" key={col.id}>
-                        <Checkbox
-                           aria-label="Selecionar todos"
-                           checked={
-                              someSelected ? "indeterminate" : allSelected
-                           }
-                           onCheckedChange={api.toggleAll}
-                        />
-                     </TableCell>
-                  );
-               }
-               if (col.id === "__actions") return <TableCell key={col.id} />;
-               const accKey =
-                  "accessorKey" in col.columnDef &&
-                  col.columnDef.accessorKey != null
-                     ? String(col.columnDef.accessorKey)
-                     : col.id;
-               const currentHeader = mapping[accKey] ?? "";
-               const isEditing = editingColKey === accKey;
+            {hasSelectColumn && <TableCell className="w-10 px-2" />}
+            {montteColumns.map((col) => {
+               const label = col.columnDef.meta?.label ?? col.id;
                const required = col.columnDef.meta?.required;
                return (
-                  <TableCell className="py-1 pr-2" key={col.id}>
+                  <TableCell
+                     className="bg-muted/20 py-1 pr-2"
+                     key={`montte-label-${col.id}`}
+                  >
+                     <span className="text-xs font-medium">
+                        {label}
+                        {required && (
+                           <span
+                              aria-label="Campo obrigatório"
+                              className="ml-0.5 text-destructive"
+                           >
+                              *
+                           </span>
+                        )}
+                     </span>
+                  </TableCell>
+               );
+            })}
+            {hasActionsColumn && <TableCell key="montte-label-actions" />}
+            {extraHeaders.map((header, index) => (
+               <TableCell
+                  className="bg-muted/20 py-1 pr-2"
+                  key={`montte-label-extra-${header}-${index}`}
+               >
+                  <span className="text-xs text-muted-foreground/60">
+                     &nbsp;
+                  </span>
+               </TableCell>
+            ))}
+         </TableRow>
+         <TableRow className="sticky top-32 z-20 bg-muted/20 hover:bg-muted/20">
+            {hasSelectColumn && (
+               <TableCell className="w-10 px-2">
+                  <Checkbox
+                     aria-label="Selecionar todos"
+                     checked={someSelected ? "indeterminate" : allSelected}
+                     onCheckedChange={api.toggleAll}
+                  />
+               </TableCell>
+            )}
+            {montteColumns.map((col) => {
+               const accKey = getColumnAccessorKey(col);
+               const currentHeader = mapping[accKey] ?? "";
+               const isEditing = editingColKey === accKey;
+               return (
+                  <TableCell className="py-1 pr-2" key={`montte-map-${col.id}`}>
                      {isEditing ? (
                         <Combobox
                            defaultOpen
@@ -294,7 +365,11 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                      ) : (
                         <Button
                            className="flex w-full items-center justify-start gap-2 px-2 py-2 text-left text-xs"
-                           data-testid="mapping-header-button"
+                           data-testid={
+                              col.columnDef.meta?.required
+                                 ? "unmapped-required"
+                                 : undefined
+                           }
                            onClick={() => setEditingColKey(accKey)}
                            type="button"
                            variant="ghost"
@@ -302,28 +377,10 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                            {currentHeader ? (
                               <span className="flex-1 truncate font-medium text-foreground">
                                  {currentHeader}
-                                 {required && (
-                                    <span
-                                       aria-label="Obrigatório"
-                                       className="ml-0.5 text-destructive"
-                                    >
-                                       *
-                                    </span>
-                                 )}
                               </span>
                            ) : (
-                              <span
-                                 className={cn(
-                                    "flex-1 truncate italic",
-                                    required
-                                       ? "text-destructive/70"
-                                       : "text-muted-foreground/50",
-                                 )}
-                                 data-testid={
-                                    required ? "unmapped-required" : undefined
-                                 }
-                              >
-                                 {required ? "Não mapeado *" : "Não mapeado"}
+                              <span className="flex-1 truncate italic text-muted-foreground/50">
+                                 Não mapeado
                               </span>
                            )}
                         </Button>
@@ -331,6 +388,15 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                   </TableCell>
                );
             })}
+            {hasActionsColumn && <TableCell key="montte-mapping-actions" />}
+            {extraHeaders.map((header, index) => (
+               <TableCell
+                  className="py-1 pr-2"
+                  key={`montte-extra-${header}-${index}`}
+               >
+                  <span className="text-xs font-medium">{header}</span>
+               </TableCell>
+            ))}
          </TableRow>
 
          {rawRows.map((row, rowIdx) => {
@@ -351,85 +417,20 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                   )}
                   key={`__import_${rowIdx}`}
                >
-                  {visibleCols.map((col) => {
-                     if (col.id === "__select") {
-                        return (
-                           <TableCell className="w-10 px-2" key={col.id}>
-                              <Checkbox
-                                 aria-label="Selecionar linha"
-                                 checked={isSelected}
-                                 disabled={isIgnored}
-                                 onCheckedChange={() => api.toggleRow(rowIdx)}
-                              />
-                           </TableCell>
-                        );
-                     }
-                     if (col.id === "__actions") {
-                        return (
-                           <TableCell key={col.id}>
-                              <div className="flex items-center justify-end gap-2">
-                                 {isIgnored ? (
-                                    <Button
-                                       className="h-7 px-2 text-xs"
-                                       onClick={() => api.restoreRow(rowIdx)}
-                                       size="sm"
-                                       tooltip="Restaurar linha"
-                                       type="button"
-                                       variant="ghost"
-                                    >
-                                       Restaurar
-                                    </Button>
-                                 ) : (
-                                    <>
-                                       {isDuplicate && (
-                                          <span className="flex items-center shrink-0">
-                                             <TriangleAlert
-                                                aria-hidden="true"
-                                                className="size-4 text-destructive"
-                                             />
-                                             <span className="sr-only">
-                                                Linha duplicada
-                                             </span>
-                                          </span>
-                                       )}
-                                       <Button
-                                          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                                          onClick={() => api.ignoreRow(rowIdx)}
-                                          size="sm"
-                                          tooltip="Ignorar linha"
-                                          type="button"
-                                          variant="ghost"
-                                       >
-                                          Ignorar
-                                       </Button>
-                                       <Button
-                                          className="h-7 px-2 text-xs"
-                                          onClick={() => handleSaveRow(rowIdx)}
-                                          size="sm"
-                                          tooltip="Salvar esta linha"
-                                          type="button"
-                                          variant="outline"
-                                       >
-                                          <Check className="size-3" />
-                                          Salvar
-                                       </Button>
-                                    </>
-                                 )}
-                              </div>
-                           </TableCell>
-                        );
-                     }
-                     const accKey =
-                        "accessorKey" in col.columnDef &&
-                        col.columnDef.accessorKey != null
-                           ? String(col.columnDef.accessorKey)
-                           : col.id;
+                  {hasSelectColumn && (
+                     <TableCell className="w-10 px-2">
+                        <Checkbox
+                           aria-label="Selecionar linha"
+                           checked={isSelected}
+                           disabled={isIgnored}
+                           onCheckedChange={() => api.toggleRow(rowIdx)}
+                        />
+                     </TableCell>
+                  )}
+                  {montteColumns.map((col) => {
+                     const accKey = getColumnAccessorKey(col);
                      const fileHeader = mapping[accKey];
-                     const headerIdx = fileHeader
-                        ? rawHeaders.indexOf(fileHeader)
-                        : -1;
-                     const rawVal =
-                        headerIdx >= 0 ? (row[headerIdx] ?? "") : "";
+                     const rawVal = getRawValue(row, fileHeader ?? "");
                      const importedRow = hasImportRows
                         ? (importRows[rowIdx] ?? null)
                         : null;
@@ -514,6 +515,77 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                                     —
                                  </span>
                               )
+                           )}
+                        </TableCell>
+                     );
+                  })}
+                  {hasActionsColumn && (
+                     <TableCell>
+                        <div className="flex items-center justify-end gap-2">
+                           {isIgnored ? (
+                              <Button
+                                 className="h-7 px-2 text-xs"
+                                 onClick={() => api.restoreRow(rowIdx)}
+                                 size="sm"
+                                 tooltip="Restaurar linha"
+                                 type="button"
+                                 variant="ghost"
+                              >
+                                 Restaurar
+                              </Button>
+                           ) : (
+                              <>
+                                 {isDuplicate && (
+                                    <span className="flex items-center shrink-0">
+                                       <TriangleAlert
+                                          aria-hidden="true"
+                                          className="size-4 text-destructive"
+                                       />
+                                       <span className="sr-only">
+                                          Linha duplicada
+                                       </span>
+                                    </span>
+                                 )}
+                                 <Button
+                                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                    onClick={() => api.ignoreRow(rowIdx)}
+                                    size="sm"
+                                    tooltip="Ignorar linha"
+                                    type="button"
+                                    variant="ghost"
+                                 >
+                                    Ignorar
+                                 </Button>
+                                 <Button
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => handleSaveRow(rowIdx)}
+                                    size="sm"
+                                    tooltip="Salvar esta linha"
+                                    type="button"
+                                    variant="outline"
+                                 >
+                                    <Check className="size-3" />
+                                    Salvar
+                                 </Button>
+                              </>
+                           )}
+                        </div>
+                     </TableCell>
+                  )}
+                  {extraHeaders.map((header, index) => {
+                     const rawVal = getRawValue(row, header);
+                     return (
+                        <TableCell
+                           className={cn(
+                              "truncate",
+                              isIgnored && "line-through",
+                           )}
+                           key={`__import_${rowIdx}_extra_${header}_${index}`}
+                        >
+                           {rawVal || (
+                              <span className="text-muted-foreground/30">
+                                 —
+                              </span>
                            )}
                         </TableCell>
                      );
