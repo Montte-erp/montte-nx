@@ -56,6 +56,7 @@
       "@modules/classification": "workspace:*",
       "@modules/inbox": "workspace:*",
       "@modules/insights": "workspace:*",
+      "@modules/relationships": "workspace:*",
       "@modules/workflows": "workspace:*",
       "@orpc/client": "catalog:orpc",
       "@orpc/json-schema": "catalog:orpc",

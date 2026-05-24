@@ -11,6 +11,7 @@ import * as cnpjRouter from "@modules/account/router/cnpj";
 import * as financialSettingsRouter from "@modules/account/router/financial-settings";
 import * as inboxRouter from "@modules/inbox/router/inbox";
 import * as reportsRouter from "@modules/insights/router/reports";
+import * as relationshipsRouter from "@modules/relationships/router";
 import * as workflowsRouter from "@modules/workflows/router";
 import * as onboardingRouter from "@modules/account/router/onboarding";
 import * as organizationRouter from "@modules/account/router/organization";
@@ -48,6 +49,7 @@ export default {
    statements: statementsRouter,
    tags: tagsRouter,
    team: teamRouter,
+   relationships: relationshipsRouter,
    transactions: transactionsRouter,
    workflows: workflowsRouter,
    organization: organizationRouter,

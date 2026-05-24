@@ -10,10 +10,12 @@ import {
    markWorkflowRunFailed,
    normalizeWorkflowTimezone,
    updateWorkflowNextRunAt,
+} from "./runtime";
+import {
    WORKFLOW_EXECUTE_QUEUE_NAME,
    WORKFLOW_SCHEDULER_QUEUE_NAME,
    WORKFLOW_SCHEDULER_WORKFLOW_NAME,
-} from "./runtime";
+} from "./runtime-constants";
 import { executeWorkflowWorkflow } from "./workflows/execute-workflow.workflow";
 
 const BATCH_SIZE = 20;

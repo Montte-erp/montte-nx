@@ -2,8 +2,6 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import { Result } from "better-result";
 import { registerWorkflowOnce } from "@core/dbos/factory";
 import {
-   buildWorkflowReportConfig,
-   computeWorkflowPeriod,
    createWorkflowReport,
    getWorkflowActionNode,
    getWorkflowScheduleNode,
@@ -12,13 +10,17 @@ import {
    markWorkflowRunFailed,
    markWorkflowRunRunning,
    markWorkflowRunSucceeded,
-   normalizeWorkflowTimezone,
-   renderWorkflowName,
    updateWorkflowNextRunAt,
    workflowsRuntimeErrors,
    WorkflowsRuntimeError,
    WORKFLOW_EXECUTE_WORKFLOW_NAME,
 } from "../runtime";
+import {
+   buildWorkflowReportConfig,
+   computeWorkflowPeriod,
+   normalizeWorkflowTimezone,
+   renderWorkflowName,
+} from "../runtime-constants";
 
 async function executeWorkflowWorkflowFn(input: {
    workflowId: string;
