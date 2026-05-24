@@ -1,3 +1,4 @@
+import { Result } from "better-result";
 import { format, of } from "@f-o-t/money";
 import dayjs from "dayjs";
 import { Badge } from "@packages/ui/components/badge";
@@ -12,8 +13,8 @@ import {
    TooltipContent,
    TooltipTrigger,
 } from "@packages/ui/components/tooltip";
-import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef, Row } from "@tanstack/react-table";
+import { useState } from "react";
 import {
    ArrowUpDown,
    CalendarClock,
@@ -30,7 +31,6 @@ import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-se
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 import { BankLogoAvatar } from "@/components/bank-logo-avatar";
 import type { Outputs } from "@/integrations/orpc/client";
-import { orpc } from "@/integrations/orpc/client";
 
 export type TransactionRow = Outputs["transactions"]["getAll"]["data"][number];
 
@@ -59,16 +59,38 @@ function isImportRow(row: Row<TransactionRow>): number | null {
 function SuggestedCategoryCell({
    id,
    categoryName,
+   onAccept,
+   onDismiss,
 }: {
    id: string;
    categoryName: string | null;
+   onAccept?: (id: string) => void | Promise<void>;
+   onDismiss?: (id: string) => void | Promise<void>;
 }) {
-   const accept = useMutation(
-      orpc.transactions.acceptSuggestedCategory.mutationOptions(),
-   );
-   const dismiss = useMutation(
-      orpc.transactions.dismissSuggestedCategory.mutationOptions(),
-   );
+   const [pendingAction, setPendingAction] = useState<
+      "accept" | "dismiss" | null
+   >(null);
+   const isPending = pendingAction !== null;
+
+   async function handleAccept() {
+      if (isPending) return;
+      setPendingAction("accept");
+      await Result.tryPromise({
+         try: () => Promise.resolve(onAccept?.(id)),
+         catch: (error) => error,
+      });
+      setPendingAction(null);
+   }
+
+   async function handleDismiss() {
+      if (isPending) return;
+      setPendingAction("dismiss");
+      await Result.tryPromise({
+         try: () => Promise.resolve(onDismiss?.(id)),
+         catch: (error) => error,
+      });
+      setPendingAction(null);
+   }
 
    return (
       <Popover>
@@ -88,19 +110,19 @@ function SuggestedCategoryCell({
                <Button
                   size="sm"
                   className="flex-1"
-                  disabled={accept.isPending || dismiss.isPending}
-                  onClick={() => accept.mutate({ id })}
+                  disabled={isPending}
+                  onClick={handleAccept}
                >
-                  Aceitar
+                  {pendingAction === "accept" ? "Aceitando..." : "Aceitar"}
                </Button>
                <Button
                   size="sm"
                   variant="outline"
                   className="flex-1"
-                  disabled={accept.isPending || dismiss.isPending}
-                  onClick={() => dismiss.mutate({ id })}
+                  disabled={isPending}
+                  onClick={handleDismiss}
                >
-                  Ignorar
+                  {pendingAction === "dismiss" ? "Ignorando..." : "Ignorar"}
                </Button>
             </div>
          </PopoverContent>
@@ -116,6 +138,8 @@ export function buildTransactionColumns(options?: {
    onUpdateImport?: (index: number, patch: Record<string, unknown>) => void;
    onCreateBankAccount?: (name: string) => Promise<string>;
    onCreateCategory?: (name: string) => Promise<string>;
+   onAcceptSuggestedCategory?: (id: string) => void | Promise<void>;
+   onDismissSuggestedCategory?: (id: string) => void | Promise<void>;
    getRowStatus?: (id: string) => string | undefined;
    logoDevToken?: string;
 }): ColumnDef<TransactionRow>[] {
@@ -324,6 +348,8 @@ export function buildTransactionColumns(options?: {
                   <SuggestedCategoryCell
                      id={row.original.id}
                      categoryName={row.original.suggestedCategoryName ?? null}
+                     onAccept={options?.onAcceptSuggestedCategory}
+                     onDismiss={options?.onDismissSuggestedCategory}
                   />
                );
             }

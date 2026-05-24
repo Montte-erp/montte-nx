@@ -30,10 +30,13 @@ import {
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
 import {
-   useMutation,
-   useQueryClient,
-   useSuspenseQuery,
-} from "@tanstack/react-query";
+   createCollection,
+   eq,
+   ilike,
+   lt,
+   or,
+   useLiveQuery,
+} from "@tanstack/react-db";
 import { getRouteApi } from "@tanstack/react-router";
 import {
    getCoreRowModel,
@@ -57,6 +60,7 @@ import {
    Trash2,
    Undo2,
 } from "lucide-react";
+import { Result } from "better-result";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
@@ -81,7 +85,40 @@ import { useCsvFile } from "@/hooks/use-csv-file";
 import { useOfxFile } from "@/hooks/use-ofx-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
-import { orpc } from "@/integrations/orpc/client";
+import { useActiveTeam } from "@/hooks/use-active-team";
+import {
+   bankAccountsCollectionOptions,
+   buildOptimisticBankAccountRow,
+   buildOptimisticBankAccountRowId,
+   createBankAccountAction,
+   type BankAccountCreateInput,
+} from "@/integrations/tanstack-db/bank-accounts";
+import {
+   categoriesCollectionOptions,
+   createCategoryAction,
+   type CategoryCreateInput,
+   type CategoriesCollectionRow,
+} from "@/integrations/tanstack-db/categories";
+import { creditCardsCollectionOptions } from "@/integrations/tanstack-db/credit-cards";
+import {
+   buildOptimisticTransactionRow,
+   buildOptimisticTransactionRowId,
+   acceptSuggestedTransactionCategoryAction,
+   bulkRemoveTransactionsAction,
+   bulkUpdateTransactionsAction,
+   cancelTransactionAction,
+   createTransactionAction,
+   dismissSuggestedTransactionCategoryAction,
+   importTransactionsAction,
+   markTransactionAsPaidAction,
+   markTransactionAsUnpaidAction,
+   reactivateTransactionAction,
+   removeTransactionAction,
+   transactionsCollectionOptions,
+   transactionsPageInfoCollectionOptions,
+   updateTransactionAction,
+   type TransactionCreateInput,
+} from "@/integrations/tanstack-db/transactions";
 import {
    buildTransactionColumns,
    type BankAccountOption,
@@ -220,9 +257,59 @@ function parseImportStatus(value: unknown): {
    return { status: "pending", ignored: false };
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return fallback;
+}
+
+function escapeIlikePattern(value: string) {
+   return value
+      .replace(/\\/g, "\\\\")
+      .replace(/%/g, "\\%")
+      .replace(/_/g, "\\_");
+}
+
+function buildInlineCategoryRow({
+   id,
+   name,
+   teamId,
+}: {
+   id: string;
+   name: string;
+   teamId: string;
+}): CategoriesCollectionRow {
+   const now = dayjs().toDate();
+   return {
+      id,
+      teamId,
+      parentId: null,
+      name,
+      type: "expense",
+      level: 0,
+      description: null,
+      isDefault: false,
+      color: null,
+      icon: null,
+      isArchived: false,
+      notes: null,
+      participatesDre: true,
+      dreGroupId: null,
+      createdAt: now,
+      updatedAt: now,
+   };
+}
+
 export function TransactionsList() {
    const navigate = routeApi.useNavigate();
-   const { publicEnv } = routeApi.useRouteContext();
+   const { publicEnv, queryClient } = routeApi.useRouteContext();
    const {
       sorting,
       columnFilters,
@@ -238,7 +325,7 @@ export function TransactionsList() {
 
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
-   const queryClient = useQueryClient();
+   const { activeTeamId } = useActiveTeam();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const { parse: parseOfx } = useOfxFile();
@@ -270,6 +357,89 @@ export function TransactionsList() {
          });
       },
       [navigate],
+   );
+
+   const trimmedSearch = search.trim();
+   const collectionTeamId = activeTeamId ?? "no-team";
+   const transactionsCollection = useMemo(
+      () =>
+         createCollection(
+            transactionsCollectionOptions({
+               queryClient,
+               teamId: collectionTeamId,
+               search: trimmedSearch || undefined,
+               view,
+               overdueOnly,
+               status: status.length > 0 ? status : undefined,
+               bankAccountId: bankId || undefined,
+            }),
+         ),
+      [
+         bankId,
+         collectionTeamId,
+         overdueOnly,
+         queryClient,
+         status,
+         trimmedSearch,
+         view,
+      ],
+   );
+
+   const transactionsPageInfoCollection = useMemo(
+      () =>
+         createCollection(
+            transactionsPageInfoCollectionOptions({
+               queryClient,
+               teamId: collectionTeamId,
+               search: trimmedSearch || undefined,
+               view,
+               overdueOnly,
+               status: status.length > 0 ? status : undefined,
+               bankAccountId: bankId || undefined,
+            }),
+         ),
+      [
+         bankId,
+         collectionTeamId,
+         overdueOnly,
+         queryClient,
+         status,
+         trimmedSearch,
+         view,
+      ],
+   );
+
+   const bankAccountsCollection = useMemo(
+      () =>
+         createCollection(
+            bankAccountsCollectionOptions({
+               queryClient,
+               teamId: collectionTeamId,
+            }),
+         ),
+      [collectionTeamId, queryClient],
+   );
+
+   const categoriesCollection = useMemo(
+      () =>
+         createCollection(
+            categoriesCollectionOptions({
+               queryClient,
+               teamId: collectionTeamId,
+            }),
+         ),
+      [collectionTeamId, queryClient],
+   );
+
+   const creditCardsCollection = useMemo(
+      () =>
+         createCollection(
+            creditCardsCollectionOptions({
+               queryClient,
+               teamId: collectionTeamId,
+            }),
+         ),
+      [collectionTeamId, queryClient],
    );
 
    const handleOverdueToggle = useCallback(
@@ -305,140 +475,369 @@ export function TransactionsList() {
       [navigate],
    );
 
-   const { data: result } = useSuspenseQuery(
-      orpc.transactions.getAll.queryOptions({
-         input: {
-            search: search || undefined,
-            view,
-            overdueOnly,
-            status: status.length > 0 ? status : undefined,
-            page,
-            pageSize,
-            sorting: normalizeTransactionSorting(sorting),
-            bankAccountId: bankId || undefined,
-         },
-      }),
+   const { data: liveTransactions } = useLiveQuery(
+      (q) => {
+         let query = q.from({ transaction: transactionsCollection });
+
+         if (view === "payable") {
+            query = query
+               .where(({ transaction }) => eq(transaction.type, "expense"))
+               .where(({ transaction }) => eq(transaction.status, "pending"))
+               .where(({ transaction }) => eq(transaction.ignored, false));
+         }
+         if (view === "receivable") {
+            query = query
+               .where(({ transaction }) => eq(transaction.type, "income"))
+               .where(({ transaction }) => eq(transaction.status, "pending"))
+               .where(({ transaction }) => eq(transaction.ignored, false));
+         }
+         if (view === "settled") {
+            query = query
+               .where(({ transaction }) => eq(transaction.status, "paid"))
+               .where(({ transaction }) => eq(transaction.ignored, false));
+         }
+         if (view === "ignored") {
+            query = query.where(({ transaction }) =>
+               eq(transaction.ignored, true),
+            );
+         }
+         if (overdueOnly) {
+            query = query
+               .where(({ transaction }) => eq(transaction.status, "pending"))
+               .where(({ transaction }) =>
+                  lt(transaction.dueDate, dayjs().format("YYYY-MM-DD")),
+               );
+         }
+         const selectedStatuses = status.filter(
+            (selectedStatus) => selectedStatus !== undefined,
+         );
+         if (selectedStatuses.length === 1) {
+            const firstStatus = selectedStatuses[0];
+            if (firstStatus) {
+               query = query.where(({ transaction }) =>
+                  eq(transaction.status, firstStatus),
+               );
+            }
+         }
+         if (selectedStatuses.length > 1) {
+            const [firstStatus, secondStatus, ...remainingStatuses] =
+               selectedStatuses;
+            if (firstStatus && secondStatus) {
+               query = query.where(({ transaction }) => {
+                  let statusFilter = or(
+                     eq(transaction.status, firstStatus),
+                     eq(transaction.status, secondStatus),
+                  );
+                  for (const selectedStatus of remainingStatuses) {
+                     statusFilter = or(
+                        statusFilter,
+                        eq(transaction.status, selectedStatus),
+                     );
+                  }
+                  return statusFilter;
+               });
+            }
+         }
+         if (bankId) {
+            query = query.where(({ transaction }) =>
+               eq(transaction.bankAccountId, bankId),
+            );
+         }
+         if (trimmedSearch) {
+            const pattern = `%${escapeIlikePattern(trimmedSearch)}%`;
+            query = query.where(({ transaction }) =>
+               or(
+                  ilike(transaction.name, pattern),
+                  ilike(transaction.description, pattern),
+               ),
+            );
+         }
+
+         const normalizedSorting = normalizeTransactionSorting(sorting);
+         if (normalizedSorting.length > 0) {
+            for (const rule of normalizedSorting) {
+               switch (rule.id) {
+                  case "amount":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.amount,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "bankAccountName":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.bankAccountName,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "categoryName":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.categoryName,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "creditCardName":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.creditCardName,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "date":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.date,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "dueDate":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.dueDate,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "name":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.name,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "status":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.status,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "type":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.type,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+               }
+            }
+         } else {
+            query = query
+               .orderBy(({ transaction }) => transaction.date, "desc")
+               .orderBy(({ transaction }) => transaction.createdAt, "desc");
+         }
+
+         return query
+            .limit(pageSize)
+            .offset((page - 1) * pageSize)
+            .select(({ transaction }) => transaction);
+      },
+      [
+         bankId,
+         overdueOnly,
+         page,
+         pageSize,
+         sorting,
+         status,
+         transactionsCollection,
+         trimmedSearch,
+         view,
+      ],
    );
 
-   const { data: bankAccounts } = useSuspenseQuery(
-      orpc.bankAccounts.getAll.queryOptions({}),
+   const { data: pageInfoRows } = useLiveQuery(
+      (q) =>
+         q
+            .from({ pageInfo: transactionsPageInfoCollection })
+            .select(({ pageInfo }) => pageInfo),
+      [transactionsPageInfoCollection],
+   );
+
+   const { data: bankAccounts } = useLiveQuery(
+      (q) =>
+         q
+            .from({ bankAccount: bankAccountsCollection })
+            .select(({ bankAccount }) => bankAccount),
+      [bankAccountsCollection],
+   );
+
+   const { data: categoriesResult } = useLiveQuery(
+      (q) =>
+         q
+            .from({ category: categoriesCollection })
+            .where(({ category }) => eq(category.isArchived, false))
+            .select(({ category }) => category),
+      [categoriesCollection],
+   );
+
+   const { data: creditCardsResult } = useLiveQuery(
+      (q) =>
+         q
+            .from({ creditCard: creditCardsCollection })
+            .where(({ creditCard }) => eq(creditCard.status, "active"))
+            .select(({ creditCard }) => creditCard),
+      [creditCardsCollection],
+   );
+
+   const safeTransactions = useMemo(
+      () => liveTransactions ?? [],
+      [liveTransactions],
+   );
+   const safeBankAccounts = useMemo(() => bankAccounts ?? [], [bankAccounts]);
+   const safeCategories = useMemo(
+      () => categoriesResult ?? [],
+      [categoriesResult],
+   );
+   const safeCreditCards = useMemo(
+      () => creditCardsResult ?? [],
+      [creditCardsResult],
    );
 
    const selectedBankAccount = useMemo(
-      () => bankAccounts.find((account) => account.id === bankId),
-      [bankAccounts, bankId],
+      () => safeBankAccounts.find((account) => account.id === bankId),
+      [safeBankAccounts, bankId],
    );
 
-   const { data: categoriesResult } = useSuspenseQuery(
-      orpc.categories.getAll.queryOptions({}),
-   );
-
-   const { data: creditCardsResult } = useSuspenseQuery(
-      orpc.creditCards.getAll.queryOptions({ input: { pageSize: 100 } }),
-   );
-
-   const transactionData = result.data;
-   const total = result.total;
-
-   const importMutation = useMutation(
-      orpc.transactions.importBulk.mutationOptions({
-         meta: { skipGlobalInvalidation: true },
-      }),
-   );
-
-   const deleteMutation = useMutation(
-      orpc.transactions.remove.mutationOptions({
-         onSuccess: () => toast.success("Lançamento excluído com sucesso."),
-         onError: (error) =>
-            toast.error(error.message || "Erro ao excluir lançamento."),
-      }),
-   );
-
-   const updateMutation = useMutation(
-      orpc.transactions.update.mutationOptions({
-         onError: (error) =>
-            toast.error(error.message || "Erro ao atualizar lançamentos."),
-      }),
-   );
-
-   const markAsPaidMutation = useMutation(
-      orpc.transactions.markAsPaid.mutationOptions({
-         onSuccess: () => toast.success("Lançamento marcado como pago."),
-         onError: (error) =>
-            toast.error(error.message || "Erro ao marcar como pago."),
-      }),
-   );
-
-   const markAsUnpaidMutation = useMutation(
-      orpc.transactions.markAsUnpaid.mutationOptions({
-         onSuccess: () => toast.success("Pagamento desmarcado."),
-         onError: (error) =>
-            toast.error(error.message || "Erro ao desmarcar pagamento."),
-      }),
-   );
-
-   const cancelMutation = useMutation(
-      orpc.transactions.cancel.mutationOptions({
-         onSuccess: () => toast.success("Lançamento ignorado."),
-         onError: (error) =>
-            toast.error(error.message || "Erro ao ignorar lançamento."),
-      }),
-   );
-
-   const reactivateMutation = useMutation(
-      orpc.transactions.reactivate.mutationOptions({
-         onSuccess: () => toast.success("Lançamento reativado."),
-         onError: (error) =>
-            toast.error(error.message || "Erro ao reativar lançamento."),
-      }),
-   );
-
-   const createBankAccountMutation = useMutation(
-      orpc.bankAccounts.create.mutationOptions({
-         onError: (error) =>
-            toast.error(error.message || "Erro ao criar conta bancária."),
-      }),
-   );
-
-   const createCategoryMutation = useMutation(
-      orpc.categories.create.mutationOptions({
-         onError: (error) =>
-            toast.error(error.message || "Erro ao criar categoria."),
-      }),
-   );
+   const transactionData = safeTransactions;
+   const isTransactionsLoaded = liveTransactions !== undefined;
+   const total = pageInfoRows?.[0]?.total ?? 0;
 
    const handleUpdate = useCallback(
       async (id: string, patch: Record<string, unknown>) => {
-         await updateMutation.mutateAsync({ id, ...patch });
+         const update = updateTransactionAction(transactionsCollection);
+         const transaction = update({ id, patch });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao atualizar lançamento."),
+            );
+         }
       },
-      [updateMutation],
+      [transactionsCollection],
    );
 
    const handleCreateBankAccount = useCallback(
       async (name: string): Promise<string> => {
-         const created = await createBankAccountMutation.mutateAsync({
+         if (!activeTeamId) {
+            toast.error("Time ativo não encontrado.");
+            return "";
+         }
+         const input: BankAccountCreateInput = {
             name,
             type: "checking",
+         };
+         const createBankAccount = createBankAccountAction(
+            bankAccountsCollection,
+         );
+         const transaction = createBankAccount({
+            row: buildOptimisticBankAccountRow({
+               id: buildOptimisticBankAccountRowId(),
+               input,
+               teamId: activeTeamId,
+            }),
+            input,
          });
-         return created.id;
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao criar conta bancária."),
+            );
+            return "";
+         }
+         return result.value.id;
       },
-      [createBankAccountMutation],
+      [activeTeamId, bankAccountsCollection],
    );
 
    const handleCreateCategory = useCallback(
       async (name: string): Promise<string> => {
-         const created = await createCategoryMutation.mutateAsync({
+         if (!activeTeamId) {
+            toast.error("Time ativo não encontrado.");
+            return "";
+         }
+         const input: CategoryCreateInput = {
             name,
             type: "expense",
+         };
+         const id = buildOptimisticTransactionRowId("__category_");
+         const createCategory = createCategoryAction(categoriesCollection);
+         const transaction = createCategory({
+            row: buildInlineCategoryRow({ id, name, teamId: activeTeamId }),
+            input,
          });
-         return created.id;
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao criar categoria."),
+            );
+            return "";
+         }
+         return result.value.id;
       },
-      [createCategoryMutation],
+      [activeTeamId, categoriesCollection],
+   );
+
+   const handleCreateTransaction = useCallback(
+      async (input: TransactionCreateInput) => {
+         if (!activeTeamId) {
+            toast.error("Time ativo não encontrado.");
+            return false;
+         }
+         const createTransaction = createTransactionAction(
+            transactionsCollection,
+         );
+         const transaction = createTransaction({
+            row: buildOptimisticTransactionRow({
+               id: buildOptimisticTransactionRowId(),
+               input,
+               teamId: activeTeamId,
+               bankAccountName:
+                  safeBankAccounts.find(
+                     (account) => account.id === input.bankAccountId,
+                  )?.name ?? null,
+               categoryName:
+                  safeCategories.find(
+                     (category) => category.id === input.categoryId,
+                  )?.name ?? null,
+               creditCardName:
+                  safeCreditCards.find((card) => card.id === input.creditCardId)
+                     ?.name ?? null,
+            }),
+            input,
+         });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao criar lançamento."),
+            );
+            return false;
+         }
+         return true;
+      },
+      [
+         activeTeamId,
+         safeBankAccounts,
+         safeCategories,
+         safeCreditCards,
+         transactionsCollection,
+      ],
    );
 
    const handleCreate = useCallback(() => {
-      openSheet({ renderChildren: () => <TransactionFormSheet /> });
-   }, [openSheet]);
+      openSheet({
+         renderChildren: () => (
+            <TransactionFormSheet
+               bankAccounts={safeBankAccounts}
+               categories={safeCategories}
+               onCreate={handleCreateTransaction}
+            />
+         ),
+      });
+   }, [handleCreateTransaction, openSheet, safeBankAccounts, safeCategories]);
 
    const handleDelete = useCallback(
       (transaction: TransactionRow) => {
@@ -450,28 +849,68 @@ export function TransactionsList() {
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               await deleteMutation.mutateAsync({ id: transaction.id });
+               const remove = removeTransactionAction(transactionsCollection);
+               const result = await Result.tryPromise({
+                  try: () => remove({ id: transaction.id }).isPersisted.promise,
+                  catch: (error) => error,
+               });
+               if (Result.isError(result)) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao excluir lançamento.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Lançamento excluído com sucesso.");
             },
          });
       },
-      [openAlertDialog, deleteMutation],
+      [openAlertDialog, transactionsCollection],
    );
 
    const handleMarkPaid = useCallback(
-      (tx: TransactionRow) => {
-         markAsPaidMutation.mutate({
+      async (tx: TransactionRow) => {
+         const markAsPaid = markTransactionAsPaidAction(transactionsCollection);
+         const transaction = markAsPaid({
             id: tx.id,
             paidDate: dayjs().format("YYYY-MM-DD"),
          });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao marcar como pago."),
+            );
+            return;
+         }
+         toast.success("Lançamento marcado como pago.");
       },
-      [markAsPaidMutation],
+      [transactionsCollection],
    );
 
    const handleMarkUnpaid = useCallback(
-      (tx: TransactionRow) => {
-         markAsUnpaidMutation.mutate({ id: tx.id });
+      async (tx: TransactionRow) => {
+         const markAsUnpaid = markTransactionAsUnpaidAction(
+            transactionsCollection,
+         );
+         const transaction = markAsUnpaid({ id: tx.id });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao desmarcar pagamento."),
+            );
+            return;
+         }
+         toast.success("Pagamento desmarcado.");
       },
-      [markAsUnpaidMutation],
+      [transactionsCollection],
    );
 
    const handleCancel = useCallback(
@@ -484,18 +923,86 @@ export function TransactionsList() {
             cancelLabel: "Voltar",
             variant: "destructive",
             onAction: async () => {
-               await cancelMutation.mutateAsync({ id: tx.id });
+               const cancel = cancelTransactionAction(transactionsCollection);
+               const result = await Result.tryPromise({
+                  try: () => cancel({ id: tx.id }).isPersisted.promise,
+                  catch: (error) => error,
+               });
+               if (Result.isError(result)) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao ignorar lançamento.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Lançamento ignorado.");
             },
          });
       },
-      [openAlertDialog, cancelMutation],
+      [openAlertDialog, transactionsCollection],
    );
 
    const handleReactivate = useCallback(
-      (tx: TransactionRow) => {
-         reactivateMutation.mutate({ id: tx.id });
+      async (tx: TransactionRow) => {
+         const reactivate = reactivateTransactionAction(transactionsCollection);
+         const transaction = reactivate({ id: tx.id });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao reativar lançamento."),
+            );
+            return;
+         }
+         toast.success("Lançamento reativado.");
       },
-      [reactivateMutation],
+      [transactionsCollection],
+   );
+
+   const handleAcceptSuggestedCategory = useCallback(
+      async (id: string) => {
+         const accept = acceptSuggestedTransactionCategoryAction(
+            transactionsCollection,
+         );
+         const transaction = accept({ id });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao aplicar sugestão."),
+            );
+            return;
+         }
+         toast.success("Categoria aplicada.");
+      },
+      [transactionsCollection],
+   );
+
+   const handleDismissSuggestedCategory = useCallback(
+      async (id: string) => {
+         const dismiss = dismissSuggestedTransactionCategoryAction(
+            transactionsCollection,
+         );
+         const transaction = dismiss({ id });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao ignorar sugestão."),
+            );
+            return;
+         }
+         toast.success("Sugestão ignorada.");
+      },
+      [transactionsCollection],
    );
 
    const importConfig: DataImportConfig = useMemo(
@@ -529,14 +1036,14 @@ export function TransactionsList() {
                dueDate: row.dueDate ? parseImportDate(row.dueDate) : null,
                bankAccountName: String(row.bankAccountName ?? "").trim(),
                bankAccountId: resolveImportId(
-                  bankAccounts,
+                  safeBankAccounts,
                   row.bankAccountName,
                ),
                categoryName: String(row.categoryName ?? "").trim(),
-               categoryId: resolveImportId(categoriesResult, row.categoryName),
+               categoryId: resolveImportId(safeCategories, row.categoryName),
                creditCardName: String(row.creditCardName ?? "").trim(),
                creditCardId: resolveImportId(
-                  creditCardsResult.data,
+                  safeCreditCards,
                   row.creditCardName,
                ),
                suggestedCategoryId: null,
@@ -561,9 +1068,9 @@ export function TransactionsList() {
                               Valor: "1500.00",
                               Status: "Efetivado",
                               Vencimento: "",
-                              Conta: bankAccounts[0]?.name ?? "",
+                              Conta: safeBankAccounts[0]?.name ?? "",
                               Cartão: "",
-                              Categoria: categoriesResult[0]?.name ?? "",
+                              Categoria: safeCategories[0]?.name ?? "",
                            },
                         ],
                         [
@@ -592,9 +1099,9 @@ export function TransactionsList() {
                               Valor: "1500.00",
                               Status: "Efetivado",
                               Vencimento: "",
-                              Conta: bankAccounts[0]?.name ?? "",
+                              Conta: safeBankAccounts[0]?.name ?? "",
                               Cartão: "",
-                              Categoria: categoriesResult[0]?.name ?? "",
+                              Categoria: safeCategories[0]?.name ?? "",
                            },
                         ],
                         [
@@ -626,12 +1133,12 @@ export function TransactionsList() {
                />
                <ImportBulkCategoryButton
                   bulkUpdate={bulkUpdate}
-                  categories={categoriesResult ?? []}
+                  categories={safeCategories}
                   clear={clear}
                   selectedIndices={selectedIndices}
                />
                <ImportBulkAccountButton
-                  bankAccounts={bankAccounts}
+                  bankAccounts={safeBankAccounts}
                   bulkUpdate={bulkUpdate}
                   clear={clear}
                   selectedIndices={selectedIndices}
@@ -639,16 +1146,19 @@ export function TransactionsList() {
             </>
          ),
          onImport: async (rows) => {
+            if (!activeTeamId) {
+               throw new Error("Time ativo não encontrado.");
+            }
             const transactions = rows.flatMap((r) => {
                const date = String(r.date ?? "");
                const amount = String(r.amount ?? "");
                if (!date || !amount) return [];
                const bankAccountId =
-                  resolveImportId(bankAccounts, r.bankAccountId) ??
-                  resolveImportId(bankAccounts, r.bankAccountName);
+                  resolveImportId(safeBankAccounts, r.bankAccountId) ??
+                  resolveImportId(safeBankAccounts, r.bankAccountName);
                const creditCardId =
-                  resolveImportId(creditCardsResult.data, r.creditCardId) ??
-                  resolveImportId(creditCardsResult.data, r.creditCardName);
+                  resolveImportId(safeCreditCards, r.creditCardId) ??
+                  resolveImportId(safeCreditCards, r.creditCardName);
                if (!bankAccountId && !creditCardId) return [];
                return [
                   {
@@ -659,8 +1169,8 @@ export function TransactionsList() {
                      bankAccountId,
                      destinationBankAccountId: null,
                      categoryId:
-                        resolveImportId(categoriesResult, r.categoryId) ??
-                        resolveImportId(categoriesResult, r.categoryName),
+                        resolveImportId(safeCategories, r.categoryId) ??
+                        resolveImportId(safeCategories, r.categoryName),
                      attachments: [],
                      description: null,
                      creditCardId,
@@ -678,26 +1188,56 @@ export function TransactionsList() {
                   "Nenhum lançamento válido para importar. Preencha data, valor e conta ou cartão.",
                );
             }
-            await importMutation.mutateAsync({
-               transactions,
-               autoCategorize: true,
+            const importTransactions = importTransactionsAction(
+               transactionsCollection,
+            );
+            const transaction = importTransactions({
+               input: { transactions, autoCategorize: true },
+               rows: transactions.map((input) =>
+                  buildOptimisticTransactionRow({
+                     id: buildOptimisticTransactionRowId(),
+                     input,
+                     teamId: activeTeamId,
+                     bankAccountName:
+                        safeBankAccounts.find(
+                           (account) => account.id === input.bankAccountId,
+                        )?.name ?? null,
+                     categoryName:
+                        safeCategories.find(
+                           (category) => category.id === input.categoryId,
+                        )?.name ?? null,
+                     creditCardName:
+                        safeCreditCards.find(
+                           (card) => card.id === input.creditCardId,
+                        )?.name ?? null,
+                  }),
+               ),
             });
-            await queryClient.invalidateQueries({
-               queryKey: orpc.transactions.getAll.queryKey(),
+            const result = await Result.tryPromise({
+               try: () => transaction.isPersisted.promise,
+               catch: (error) => error,
             });
+            if (Result.isError(result)) {
+               throw new Error(
+                  getErrorMessage(
+                     result.error,
+                     "Erro ao importar lançamentos.",
+                  ),
+               );
+            }
          },
       }),
       [
+         activeTeamId,
          parseCsv,
          parseXlsx,
          parseOfx,
          generateCsv,
          generateXlsx,
-         bankAccounts,
-         categoriesResult,
-         creditCardsResult.data,
-         importMutation,
-         queryClient,
+         safeBankAccounts,
+         safeCategories,
+         safeCreditCards,
+         transactionsCollection,
       ],
    );
 
@@ -707,13 +1247,15 @@ export function TransactionsList() {
 
    const columns = useMemo<ColumnDef<TransactionRow>[]>(() => {
       const base = buildTransactionColumns({
-         bankAccounts,
-         categories: categoriesResult,
-         creditCards: creditCardsResult.data,
+         bankAccounts: safeBankAccounts,
+         categories: safeCategories,
+         creditCards: safeCreditCards,
          onUpdate: handleUpdate,
          onUpdateImport: (idx, patch) => importUpdateRef.current?.(idx, patch),
          onCreateBankAccount: handleCreateBankAccount,
          onCreateCategory: handleCreateCategory,
+         onAcceptSuggestedCategory: handleAcceptSuggestedCategory,
+         onDismissSuggestedCategory: handleDismissSuggestedCategory,
          getRowStatus: (id) => transactionData.find((t) => t.id === id)?.status,
          logoDevToken: publicEnv?.LOGO_DEV_TOKEN,
       });
@@ -815,14 +1357,16 @@ export function TransactionsList() {
       };
       return [selectColumn, ...base, actionsColumn];
    }, [
-      bankAccounts,
-      categoriesResult,
-      creditCardsResult,
+      safeBankAccounts,
+      safeCategories,
+      safeCreditCards,
       transactionData,
       publicEnv?.LOGO_DEV_TOKEN,
       handleUpdate,
       handleCreateBankAccount,
       handleCreateCategory,
+      handleAcceptSuggestedCategory,
+      handleDismissSuggestedCategory,
       handleMarkPaid,
       handleMarkUnpaid,
       handleReactivate,
@@ -878,16 +1422,30 @@ export function TransactionsList() {
       onClear: resetSelection,
       children: (
          <>
-            <BulkIgnoreButton ids={selectedIds} onSuccess={resetSelection} />
-            <BulkStatusButton ids={selectedIds} onSuccess={resetSelection} />
-            <BulkDateButton ids={selectedIds} onSuccess={resetSelection} />
+            <BulkIgnoreButton
+               collection={transactionsCollection}
+               ids={selectedIds}
+               onSuccess={resetSelection}
+            />
+            <BulkStatusButton
+               collection={transactionsCollection}
+               ids={selectedIds}
+               onSuccess={resetSelection}
+            />
+            <BulkDateButton
+               collection={transactionsCollection}
+               ids={selectedIds}
+               onSuccess={resetSelection}
+            />
             <BulkCategoryButton
-               categories={categoriesResult ?? []}
+               categories={safeCategories}
+               collection={transactionsCollection}
                ids={selectedIds}
                onSuccess={resetSelection}
             />
             <BulkAccountButton
-               bankAccounts={bankAccounts}
+               bankAccounts={safeBankAccounts}
+               collection={transactionsCollection}
                ids={selectedIds}
                onSuccess={resetSelection}
             />
@@ -903,11 +1461,24 @@ export function TransactionsList() {
                      cancelLabel: "Cancelar",
                      variant: "destructive",
                      onAction: async () => {
-                        await Promise.allSettled(
-                           selectedIds.map((id) =>
-                              deleteMutation.mutateAsync({ id }),
-                           ),
+                        const bulkRemove = bulkRemoveTransactionsAction(
+                           transactionsCollection,
                         );
+                        const result = await Result.tryPromise({
+                           try: () =>
+                              bulkRemove({ ids: selectedIds }).isPersisted
+                                 .promise,
+                           catch: (error) => error,
+                        });
+                        if (Result.isError(result)) {
+                           toast.error(
+                              getErrorMessage(
+                                 result.error,
+                                 "Erro ao excluir lançamentos.",
+                              ),
+                           );
+                           return;
+                        }
                         resetSelection();
                      },
                   })
@@ -1012,7 +1583,7 @@ export function TransactionsList() {
                         table={table}
                      />
                   </Table>
-                  {table.getRowCount() === 0 && (
+                  {isTransactionsLoaded && table.getRowCount() === 0 && (
                      <Empty>
                         <EmptyHeader>
                            <EmptyMedia variant="icon">
@@ -1038,17 +1609,13 @@ export function TransactionsList() {
 function BulkIgnoreButton({
    ids,
    onSuccess,
+   collection,
 }: {
    ids: string[];
    onSuccess: () => void;
+   collection: Parameters<typeof bulkUpdateTransactionsAction>[0];
 }) {
    const { openAlertDialog } = useAlertDialog();
-   const mutation = useMutation(
-      orpc.transactions.update.mutationOptions({
-         onError: (e) =>
-            toast.error(e.message || "Erro ao ignorar lançamentos."),
-      }),
-   );
 
    return (
       <SelectionActionButton
@@ -1061,14 +1628,23 @@ function BulkIgnoreButton({
                actionLabel: "Ignorar",
                cancelLabel: "Cancelar",
                onAction: async () => {
-                  const results = await Promise.allSettled(
-                     ids.map((id) =>
-                        mutation.mutateAsync({ id, ignored: true }),
-                     ),
-                  );
-                  if (results.every((r) => r.status === "fulfilled")) {
-                     onSuccess();
+                  const update = bulkUpdateTransactionsAction(collection);
+                  const result = await Result.tryPromise({
+                     try: () =>
+                        update({ ids, patch: { ignored: true } }).isPersisted
+                           .promise,
+                     catch: (error) => error,
+                  });
+                  if (Result.isError(result)) {
+                     toast.error(
+                        getErrorMessage(
+                           result.error,
+                           "Erro ao ignorar lançamentos.",
+                        ),
+                     );
+                     return;
                   }
+                  onSuccess();
                },
             })
          }
@@ -1081,25 +1657,28 @@ function BulkIgnoreButton({
 function BulkStatusButton({
    ids,
    onSuccess,
+   collection,
 }: {
    ids: string[];
    onSuccess: () => void;
+   collection: Parameters<typeof bulkUpdateTransactionsAction>[0];
 }) {
    const [open, setOpen] = useState(false);
-   const mutation = useMutation(
-      orpc.transactions.update.mutationOptions({
-         onError: (e) => toast.error(e.message || "Erro ao atualizar status."),
-      }),
-   );
 
    const apply = async (status: "pending" | "paid") => {
-      const results = await Promise.allSettled(
-         ids.map((id) => mutation.mutateAsync({ id, status })),
-      );
+      const update = bulkUpdateTransactionsAction(collection);
+      const result = await Result.tryPromise({
+         try: () => update({ ids, patch: { status } }).isPersisted.promise,
+         catch: (error) => error,
+      });
       setOpen(false);
-      if (results.every((r) => r.status === "fulfilled")) {
-         onSuccess();
+      if (Result.isError(result)) {
+         toast.error(
+            getErrorMessage(result.error, "Erro ao atualizar status."),
+         );
+         return;
       }
+      onSuccess();
    };
 
    const statusOptions = [
@@ -1120,7 +1699,6 @@ function BulkStatusButton({
                   <Button
                      key={opt.value}
                      className="justify-start text-sm"
-                     disabled={mutation.isPending}
                      variant="ghost"
                      onClick={() => apply(opt.value)}
                   >
@@ -1136,16 +1714,13 @@ function BulkStatusButton({
 function BulkDateButton({
    ids,
    onSuccess,
+   collection,
 }: {
    ids: string[];
    onSuccess: () => void;
+   collection: Parameters<typeof bulkUpdateTransactionsAction>[0];
 }) {
    const [open, setOpen] = useState(false);
-   const mutation = useMutation(
-      orpc.transactions.update.mutationOptions({
-         onError: (e) => toast.error(e.message || "Erro ao atualizar data."),
-      }),
-   );
 
    return (
       <Popover open={open} onOpenChange={setOpen}>
@@ -1160,10 +1735,22 @@ function BulkDateButton({
                onSelect={async (d) => {
                   if (!d) return;
                   const date = dayjs(d).format("YYYY-MM-DD");
-                  await Promise.allSettled(
-                     ids.map((id) => mutation.mutateAsync({ id, date })),
-                  );
+                  const update = bulkUpdateTransactionsAction(collection);
+                  const result = await Result.tryPromise({
+                     try: () =>
+                        update({ ids, patch: { date } }).isPersisted.promise,
+                     catch: (error) => error,
+                  });
                   setOpen(false);
+                  if (Result.isError(result)) {
+                     toast.error(
+                        getErrorMessage(
+                           result.error,
+                           "Erro ao atualizar data.",
+                        ),
+                     );
+                     return;
+                  }
                   onSuccess();
                }}
             />
@@ -1176,17 +1763,14 @@ function BulkCategoryButton({
    ids,
    categories,
    onSuccess,
+   collection,
 }: {
    ids: string[];
    categories: CategoryOption[];
    onSuccess: () => void;
+   collection: Parameters<typeof bulkUpdateTransactionsAction>[0];
 }) {
    const [open, setOpen] = useState(false);
-   const mutation = useMutation(
-      orpc.transactions.update.mutationOptions({
-         onError: (e) => toast.error(e.message || "Erro ao categorizar."),
-      }),
-   );
 
    return (
       <Popover open={open} onOpenChange={setOpen}>
@@ -1197,17 +1781,26 @@ function BulkCategoryButton({
          </PopoverTrigger>
          <PopoverContent align="start" className="w-64 p-0">
             <BulkLookupCommand
-               disabled={mutation.isPending}
                emptyMessage="Nenhuma categoria."
                options={categories}
                searchPlaceholder="Buscar..."
                onSelect={async (category) => {
-                  await Promise.allSettled(
-                     ids.map((id) =>
-                        mutation.mutateAsync({ id, categoryId: category.id }),
-                     ),
-                  );
+                  const update = bulkUpdateTransactionsAction(collection);
+                  const result = await Result.tryPromise({
+                     try: () =>
+                        update({
+                           ids,
+                           patch: { categoryId: category.id },
+                        }).isPersisted.promise,
+                     catch: (error) => error,
+                  });
                   setOpen(false);
+                  if (Result.isError(result)) {
+                     toast.error(
+                        getErrorMessage(result.error, "Erro ao categorizar."),
+                     );
+                     return;
+                  }
                   onSuccess();
                }}
             />
@@ -1220,17 +1813,14 @@ function BulkAccountButton({
    ids,
    bankAccounts,
    onSuccess,
+   collection,
 }: {
    ids: string[];
    bankAccounts: BankAccountOption[];
    onSuccess: () => void;
+   collection: Parameters<typeof bulkUpdateTransactionsAction>[0];
 }) {
    const [open, setOpen] = useState(false);
-   const mutation = useMutation(
-      orpc.transactions.update.mutationOptions({
-         onError: (e) => toast.error(e.message || "Erro ao alterar conta."),
-      }),
-   );
 
    return (
       <Popover open={open} onOpenChange={setOpen}>
@@ -1241,20 +1831,26 @@ function BulkAccountButton({
          </PopoverTrigger>
          <PopoverContent align="start" className="w-64 p-0">
             <BulkLookupCommand
-               disabled={mutation.isPending}
                emptyMessage="Nenhuma conta."
                options={bankAccounts}
                searchPlaceholder="Buscar..."
                onSelect={async (bankAccount) => {
-                  await Promise.allSettled(
-                     ids.map((id) =>
-                        mutation.mutateAsync({
-                           id,
-                           bankAccountId: bankAccount.id,
-                        }),
-                     ),
-                  );
+                  const update = bulkUpdateTransactionsAction(collection);
+                  const result = await Result.tryPromise({
+                     try: () =>
+                        update({
+                           ids,
+                           patch: { bankAccountId: bankAccount.id },
+                        }).isPersisted.promise,
+                     catch: (error) => error,
+                  });
                   setOpen(false);
+                  if (Result.isError(result)) {
+                     toast.error(
+                        getErrorMessage(result.error, "Erro ao alterar conta."),
+                     );
+                     return;
+                  }
                   onSuccess();
                }}
             />
