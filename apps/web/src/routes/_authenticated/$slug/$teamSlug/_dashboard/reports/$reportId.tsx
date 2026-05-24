@@ -1,7 +1,8 @@
 import { Button } from "@packages/ui/components/button";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { createCollection, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
+import { useMemo } from "react";
 import {
    ArrowLeft,
    CalendarDays,
@@ -15,8 +16,9 @@ import {
    AnnouncementTitle,
 } from "@/components/blocks/announcement";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
-import { orpc } from "@/integrations/orpc/client";
+import { reportByIdCollectionOptions } from "@/integrations/tanstack-db/reports";
 import { REPORT_LABELS, type SavedReport } from "../-reports/report-labels";
 import { ReportData } from "../-reports/report-panels";
 import { DefaultHeader } from "../../-layout/default-header";
@@ -24,14 +26,10 @@ import { DefaultHeader } from "../../-layout/default-header";
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/reports/$reportId",
 )({
-   loader: ({ context, params }) => {
-      context.queryClient.prefetchQuery(
-         orpc.reports.get.queryOptions({ input: { id: params.reportId } }),
-      );
-   },
+   ssr: false,
    pendingMs: 300,
    pendingComponent: ReportDetailSkeleton,
-   errorComponent: ReportDetailError,
+   errorComponent: SplitErrorComponent,
    head: () => ({
       meta: [{ title: "Relatório — Montte" }],
    }),
@@ -47,7 +45,7 @@ function ReportDetailSkeleton() {
    );
 }
 
-function ReportDetailError() {
+function SplitErrorComponent() {
    const { slug, teamSlug } = useDashboardSlugs();
    return (
       <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden px-4 pb-4">
@@ -83,12 +81,39 @@ function ReportDetailPage() {
 }
 
 function ReportDetailContent() {
+   const { activeTeamId } = useActiveTeam();
+   if (!activeTeamId) return <ReportDetailSkeleton />;
+   return <ReportDetailWithTeam teamId={activeTeamId} />;
+}
+
+function ReportDetailWithTeam({ teamId }: { teamId: string }) {
    const { reportId } = Route.useParams();
+   const { queryClient } = Route.useRouteContext();
    const { slug, teamSlug } = useDashboardSlugs();
    const navigate = useNavigate();
-   const { data: report } = useSuspenseQuery(
-      orpc.reports.get.queryOptions({ input: { id: reportId } }),
+   const reportCollection = useMemo(
+      () =>
+         createCollection(
+            reportByIdCollectionOptions({
+               queryClient,
+               id: reportId,
+               teamId,
+            }),
+         ),
+      [queryClient, reportId, teamId],
    );
+   const { data: reportRows, isLoading } = useLiveQuery(
+      (q) =>
+         q.from({ report: reportCollection }).select(({ report }) => report),
+      [reportCollection],
+   );
+   const report = reportRows[0];
+
+   if (!isLoading && !report) return <SplitErrorComponent />;
+
+   if (!report) {
+      return <ReportDetailSkeleton />;
+   }
 
    return (
       <div className="flex flex-1 min-h-0 flex-col gap-4">
@@ -115,7 +140,11 @@ function ReportDetailContent() {
                fallback={<ReportDetailSkeleton />}
                errorTitle="Erro ao carregar dados"
             >
-               <ReportData report={report} />
+               <ReportData
+                  report={report}
+                  queryClient={queryClient}
+                  teamId={teamId}
+               />
             </QueryBoundary>
          </div>
       </div>

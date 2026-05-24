@@ -41,7 +41,16 @@ function getEnvFilePath(_packageDir: string, env: string) {
    throw new Error(`No environment file found for ${env} in apps/web`);
 }
 
-const REQUIRED_SCHEMAS = ["auth", "finance", "crm", "platform"];
+const REQUIRED_SCHEMAS = [
+   "auth",
+   "finance",
+   "crm",
+   "platform",
+   "inbox",
+   "agents",
+   "settings",
+   "relationships",
+];
 
 async function ensureSchemas(envFile: string): Promise<void> {
    loadDotenv({ path: envFile });

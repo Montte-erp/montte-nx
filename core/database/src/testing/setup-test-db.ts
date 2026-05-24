@@ -18,6 +18,7 @@ export async function setupTestDb() {
       "finance",
       "crm",
       "platform",
+      "relationships",
    ]);
    await apply();
 

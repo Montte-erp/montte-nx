@@ -195,6 +195,10 @@ const expensesByCategoryFilters = z
    });
 const idSchema = z.object({ id: z.string().uuid() });
 
+const idsSchema = z.object({
+   ids: z.array(z.string().uuid()).min(1).max(500),
+});
+
 type BaseFilters = z.infer<typeof baseFilters>;
 
 export const get = protectedProcedure
@@ -315,6 +319,59 @@ export const remove = protectedProcedure
          });
       }
       return { success: true };
+   });
+
+export const bulkRemove = protectedProcedure
+   .input(idsSchema)
+   .handler(async ({ context, input }) => {
+      const ids = [...new Set(input.ids)];
+      const deletedResult = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) => {
+               const existing = await tx.query.reports.findMany({
+                  where: (f, { and, eq, inArray }) =>
+                     and(eq(f.teamId, context.teamId), inArray(f.id, ids)),
+               });
+
+               if (existing.length !== ids.length) {
+                  return null;
+               }
+
+               const deleted = await tx
+                  .delete(reports)
+                  .where(
+                     and(
+                        eq(reports.teamId, context.teamId),
+                        inArray(reports.id, ids),
+                     ),
+                  )
+                  .returning({ id: reports.id });
+
+               return {
+                  deleted,
+                  expected: ids.length,
+               };
+            }),
+         catch: () =>
+            new InsightsError({
+               error: insightsRouterErrors.DELETE_FAILED(),
+               message: "Falha ao excluir relatórios.",
+            }),
+      });
+      if (Result.isError(deletedResult)) throw deletedResult.error;
+      if (!deletedResult.value) {
+         throw new InsightsError({
+            error: insightsRouterErrors.NOT_FOUND(),
+            message: "Algum relatório selecionado não foi encontrado.",
+         });
+      }
+      if (deletedResult.value.deleted.length !== deletedResult.value.expected) {
+         throw new InsightsError({
+            error: insightsRouterErrors.DELETE_FAILED(),
+            message: "Falha ao excluir todos os relatórios selecionados.",
+         });
+      }
+      return { deleted: deletedResult.value.deleted.length };
    });
 
 function moneyValue(value: string | number | null | undefined) {
