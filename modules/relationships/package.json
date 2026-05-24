@@ -5,6 +5,7 @@
    "license": "Apache-2.0",
    "type": "module",
    "exports": {
+      "./router": "./src/router/index.ts",
       "./router/*": "./src/router/*.ts",
       "./*": "./src/*.ts"
    },

@@ -434,6 +434,8 @@ const deleteRelationship = protectedProcedure
             }),
       });
       if (Result.isError(deleted)) throw deleted.error;
+      const result = ensureRow(deleted.value, "Relacionamento não encontrado.");
+      if (Result.isError(result)) throw result.error;
       return { success: true };
    });
 
