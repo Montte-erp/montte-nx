@@ -166,7 +166,7 @@ export function buildOptimisticReportRow({
          dateTo: input.config.dateTo,
          status: input.config.status ?? "all",
          dreOnly: input.config.dreOnly ?? true,
-         agingType: input.config.agingType ?? "income",
+         agingType: input.config.agingType ?? "all",
          agingStatus: input.config.agingStatus ?? "open",
          categoryDepth: input.config.categoryDepth ?? "group",
          minAmount: input.config.minAmount ?? 0,
