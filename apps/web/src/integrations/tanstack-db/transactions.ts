@@ -296,6 +296,7 @@ export function buildOptimisticTransactionRow({
       statementPeriod: input.statementPeriod ?? null,
       tagId: input.tagId ?? null,
       suggestedTagId: null,
+      relationshipId: null,
       createdAt: now,
       updatedAt: now,
       categoryName: categoryName ?? null,

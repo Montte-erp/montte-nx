@@ -15,6 +15,7 @@ import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
+import { parties } from "@core/database/schemas/relationships";
 import { tags } from "@core/database/schemas/tags";
 import {
    transactionRecurrences,
@@ -167,6 +168,10 @@ export const transactionsRelations = relations(
          fields: [transactions.tagId],
          references: [tags.id],
       }),
+      party: one(parties, {
+         fields: [transactions.relationshipId],
+         references: [parties.id],
+      }),
       recurrence: one(transactionRecurrences, {
          fields: [transactions.recurrenceId],
          references: [transactionRecurrences.id],
@@ -175,6 +180,10 @@ export const transactionsRelations = relations(
       items: many(transactionItems),
    }),
 );
+
+export const partiesRelations = relations(parties, ({ many }) => ({
+   transactions: many(transactions),
+}));
 
 export const transactionRecurrencesRelations = relations(
    transactionRecurrences,
