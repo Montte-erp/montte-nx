@@ -111,6 +111,7 @@
         "@modules/classification": "workspace:*",
         "@modules/inbox": "workspace:*",
         "@modules/insights": "workspace:*",
+        "@modules/relationships": "workspace:*",
         "@modules/workflows": "workspace:*",
         "@orpc/client": "catalog:orpc",
         "@orpc/json-schema": "catalog:orpc",
@@ -641,6 +642,25 @@
         "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
         "neverthrow": "catalog:validation",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
+    "modules/relationships": {
+      "name": "@modules/relationships",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/authentication": "workspace:*",
+        "@core/database": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "better-result": "catalog:validation",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "evlog": "catalog:logging",
         "zod": "catalog:validation",
       },
       "devDependencies": {
@@ -1706,6 +1726,8 @@
     "@modules/inbox": ["@modules/inbox@workspace:modules/inbox"],
 
     "@modules/insights": ["@modules/insights@workspace:modules/insights"],
+
+    "@modules/relationships": ["@modules/relationships@workspace:modules/relationships"],
 
     "@modules/workflows": ["@modules/workflows@workspace:modules/workflows"],
 
