@@ -20,5 +20,6 @@ export default {
       "platform",
       "agents",
       "settings",
+      "relationships",
    ],
 } satisfies Config;

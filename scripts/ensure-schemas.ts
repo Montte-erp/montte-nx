@@ -13,6 +13,7 @@ const REQUIRED_SCHEMAS = [
    "inbox",
    "agents",
    "settings",
+   "relationships",
 ];
 
 const colors = {
