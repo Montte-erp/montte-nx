@@ -17,15 +17,22 @@ import {
 } from "@packages/ui/components/sheet";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { type Collection } from "@tanstack/react-db";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { fromPromise } from "neverthrow";
+import { useMemo } from "react";
 import { z } from "zod";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSheet } from "@/hooks/use-sheet";
-import { orpc } from "@/integrations/orpc/client";
+import {
+   buildOptimisticReportRow,
+   buildReportCollectionRowId,
+   createReportAction,
+   type ReportCreateInput,
+   type ReportRow,
+} from "@/integrations/tanstack-db/reports";
 import { REPORT_LABELS, type ReportType } from "./report-labels";
 
 const REPORT_TYPES = [
@@ -97,47 +104,66 @@ function parseStatus(value: string): ReportStatus | undefined {
    return STATUSES.find((status) => status === value);
 }
 
-export function ReportFormSheet() {
+type ReportFormSheetProps = {
+   collection: Collection<ReportRow, string>;
+   teamId: string;
+};
+
+export function ReportFormSheet({ collection, teamId }: ReportFormSheetProps) {
    const { closeTopSheet } = useSheet();
    const navigate = useNavigate();
    const { slug, teamSlug } = useDashboardSlugs();
-
-   const createMutation = useMutation(
-      orpc.reports.create.mutationOptions({
-         onSuccess: (report) => {
-            toast.success("Relatório criado.");
-            closeTopSheet();
-            navigate({
-               to: "/$slug/$teamSlug/reports/$reportId",
-               params: { slug, teamSlug, reportId: report.id },
-            });
-         },
-         onError: (e) => toast.error(e.message),
-      }),
+   const createReport = useMemo(
+      () => createReportAction(collection),
+      [collection],
    );
 
    const form = useForm({
       defaultValues: DEFAULT_VALUES,
       validators: { onMount: formSchema, onChange: formSchema },
       onSubmit: async ({ value }) => {
-         const result = await fromPromise(
-            createMutation.mutateAsync({
-               name: value.name.trim(),
-               type: value.type,
-               config: {
-                  dateFrom: value.dateFrom,
-                  dateTo: value.dateTo,
-                  status: value.status,
-                  dreOnly: true,
-                  agingType: "income",
-                  agingStatus: "open",
-                  categoryDepth: "group",
-                  minAmount: 0,
-               },
+         const input: ReportCreateInput = {
+            name: value.name.trim(),
+            type: value.type,
+            config: {
+               dateFrom: value.dateFrom,
+               dateTo: value.dateTo,
+               status: value.status,
+               dreOnly: true,
+               agingType: "income",
+               agingStatus: "open",
+               categoryDepth: "group",
+               minAmount: 0,
+            },
+         };
+         const create = createReport({
+            row: buildOptimisticReportRow({
+               id: buildReportCollectionRowId(),
+               input,
+               teamId,
             }),
-            (e) => e,
+            input,
+         });
+         const result = await fromPromise(
+            create.isPersisted.promise,
+            (error) => error,
          );
-         if (result.isErr()) return;
+         if (result.isErr()) {
+            const message =
+               result.error instanceof Error
+                  ? result.error.message
+                  : "Não foi possível criar o relatório.";
+            toast.error(message);
+            return;
+         }
+
+         const report = result.value;
+         toast.success("Relatório criado.");
+         closeTopSheet();
+         navigate({
+            to: "/$slug/$teamSlug/reports/$reportId",
+            params: { slug, teamSlug, reportId: report.id },
+         });
       },
    });
 

@@ -11,17 +11,16 @@ import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { SearchInput } from "@packages/ui/components/search-input";
 import { Table, TableCell, TableRow } from "@packages/ui/components/table";
 import { cn } from "@packages/ui/lib/utils";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { createCollection, ilike, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
    flexRender,
    getCoreRowModel,
-   getFilteredRowModel,
-   getSortedRowModel,
    useReactTable,
    type ColumnDef,
 } from "@tanstack/react-table";
 import { Plus, ReceiptText, Trash2 } from "lucide-react";
+import { fromPromise } from "neverthrow";
 import { useCallback, useMemo } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
@@ -33,6 +32,7 @@ import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { QueryBoundary } from "@/components/query-boundary";
+import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import {
@@ -40,12 +40,15 @@ import {
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
 import { useSheet } from "@/hooks/use-sheet";
-import { orpc } from "@/integrations/orpc/client";
+import {
+   bulkRemoveReportAction,
+   removeReportAction,
+   reportsCollectionOptions,
+} from "@/integrations/tanstack-db/reports";
 import { ReportFormSheet } from "../-reports/report-form-sheet";
 import { type SavedReport } from "../-reports/report-labels";
 import { buildReportsColumns } from "../-reports/reports-columns";
 import { DefaultHeader } from "../../-layout/default-header";
-
 const searchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
@@ -65,10 +68,8 @@ const skeletonColumns = buildReportsColumns();
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/reports/",
 )({
+   ssr: false,
    validateSearch: searchSchema,
-   loader: ({ context }) => {
-      context.queryClient.prefetchQuery(orpc.reports.list.queryOptions());
-   },
    pendingMs: 300,
    pendingComponent: ReportsSkeleton,
    head: () => ({
@@ -100,11 +101,33 @@ function ReportsPage() {
    );
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.length > 0
+   ) {
+      return error.message;
+   }
+   return fallback;
+}
+
 function ReportsList() {
+   const { activeTeamId } = useActiveTeam();
+   if (!activeTeamId) {
+      return <ReportsSkeleton />;
+   }
+   return <ReportsListWithTeam teamId={activeTeamId} />;
+}
+
+function ReportsListWithTeam({ teamId }: { teamId: string }) {
    const navigate = useNavigate();
    const routeNavigate = Route.useNavigate();
    const { slug, teamSlug } = useDashboardSlugs();
    const { sorting, columnFilters, search, page, pageSize } = Route.useSearch();
+   const { queryClient } = Route.useRouteContext();
    const { openSheet } = useSheet();
    const { openAlertDialog } = useAlertDialog();
    const layout = useDataTableLayout("reports");
@@ -118,13 +141,110 @@ function ReportsList() {
          }),
    });
 
-   const { data: reports } = useSuspenseQuery(orpc.reports.list.queryOptions());
+   const reportsCollection = useMemo(
+      () =>
+         createCollection(
+            reportsCollectionOptions({
+               queryClient,
+               teamId,
+            }),
+         ),
+      [teamId, queryClient],
+   );
+   const baseSearch = search.trim();
+   const { data: allReports } = useLiveQuery(
+      (q) => {
+         let query = q.from({ report: reportsCollection });
 
-   const removeMutation = useMutation(
-      orpc.reports.remove.mutationOptions({
-         onSuccess: () => toast.success("Relatório excluído."),
-         onError: (error) => toast.error(error.message),
-      }),
+         if (baseSearch) {
+            query = query.where(({ report }) =>
+               ilike(report.name, `%${baseSearch}%`),
+            );
+         }
+
+         for (const rule of sorting) {
+            switch (rule.id) {
+               case "name":
+                  query = query.orderBy(
+                     ({ report }) => report.name,
+                     rule.desc ? "desc" : "asc",
+                  );
+                  break;
+               case "type":
+                  query = query.orderBy(
+                     ({ report }) => report.type,
+                     rule.desc ? "desc" : "asc",
+                  );
+                  break;
+               case "createdAt":
+                  query = query.orderBy(
+                     ({ report }) => report.createdAt,
+                     rule.desc ? "desc" : "asc",
+                  );
+                  break;
+            }
+         }
+
+         if (sorting.length === 0) {
+            query = query.orderBy(({ report }) => report.createdAt, "desc");
+         }
+
+         return query.select(({ report }) => report);
+      },
+      [baseSearch, reportsCollection, sorting],
+   );
+
+   const { data: reports } = useLiveQuery(
+      (q) => {
+         let query = q.from({ report: reportsCollection });
+
+         if (baseSearch) {
+            query = query.where(({ report }) =>
+               ilike(report.name, `%${baseSearch}%`),
+            );
+         }
+
+         for (const rule of sorting) {
+            switch (rule.id) {
+               case "name":
+                  query = query.orderBy(
+                     ({ report }) => report.name,
+                     rule.desc ? "desc" : "asc",
+                  );
+                  break;
+               case "type":
+                  query = query.orderBy(
+                     ({ report }) => report.type,
+                     rule.desc ? "desc" : "asc",
+                  );
+                  break;
+               case "createdAt":
+                  query = query.orderBy(
+                     ({ report }) => report.createdAt,
+                     rule.desc ? "desc" : "asc",
+                  );
+                  break;
+            }
+         }
+
+         if (sorting.length === 0) {
+            query = query.orderBy(({ report }) => report.createdAt, "desc");
+         }
+
+         return query
+            .limit(pageSize)
+            .offset((page - 1) * pageSize)
+            .select(({ report }) => report);
+      },
+      [baseSearch, page, pageSize, reportsCollection, sorting],
+   );
+   const removeReport = useMemo(
+      () => removeReportAction(reportsCollection),
+      [reportsCollection],
+   );
+   const bulkRemoveReport = useMemo(
+      () => bulkRemoveReportAction(reportsCollection),
+      [reportsCollection],
    );
 
    const handleDelete = useCallback(
@@ -136,24 +256,34 @@ function ReportsList() {
             cancelLabel: "Cancelar",
             variant: "destructive",
             onAction: async () => {
-               await removeMutation.mutateAsync({ id: report.id });
+               const transaction = removeReport({ id: report.id });
+               const result = await fromPromise(
+                  transaction.isPersisted.promise,
+                  (error) => error,
+               );
+               if (result.isErr()) {
+                  toast.error(
+                     getErrorMessage(
+                        result.error,
+                        "Erro ao excluir relatório.",
+                     ),
+                  );
+                  return;
+               }
+               toast.success("Relatório excluído.");
             },
          });
       },
-      [openAlertDialog, removeMutation],
+      [openAlertDialog, removeReport],
    );
 
    const handleOpenCreate = useCallback(() => {
-      openSheet({ renderChildren: () => <ReportFormSheet /> });
-   }, [openSheet]);
-
-   const filteredReports = useMemo(() => {
-      const query = search.trim().toLowerCase();
-      if (!query) return reports;
-      return reports.filter((report) =>
-         report.name.toLowerCase().includes(query),
-      );
-   }, [reports, search]);
+      openSheet({
+         renderChildren: () => (
+            <ReportFormSheet collection={reportsCollection} teamId={teamId} />
+         ),
+      });
+   }, [openSheet, reportsCollection, teamId]);
 
    const columns = useMemo<ColumnDef<SavedReport>[]>(() => {
       const selectColumn: ColumnDef<SavedReport> = {
@@ -198,15 +328,18 @@ function ReportsList() {
             search: (prev) => ({ ...prev, ...next }),
             replace: true,
          }),
-      totalRows: filteredReports.length,
+      totalRows: allReports.length,
    });
 
    const table = useReactTable({
-      data: filteredReports,
+      data: reports,
       columns,
       getRowId: (row) => row.id,
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      manualFiltering: true,
+      manualSorting: true,
+      manualPagination: true,
       state: { ...urlState.state, ...layout.state },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
@@ -216,9 +349,8 @@ function ReportsList() {
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
+      pageCount: urlState.pageCount,
       getCoreRowModel: getCoreRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
    });
 
    const selectedRows = table.getSelectedRowModel().rows;
@@ -239,11 +371,21 @@ function ReportsList() {
                   cancelLabel: "Cancelar",
                   variant: "destructive",
                   onAction: async () => {
-                     await Promise.allSettled(
-                        selectedIds.map((id) =>
-                           removeMutation.mutateAsync({ id }),
-                        ),
+                     const result = await fromPromise(
+                        bulkRemoveReport({ ids: selectedIds }).isPersisted
+                           .promise,
+                        (error) => error,
                      );
+                     if (result.isErr()) {
+                        toast.error(
+                           getErrorMessage(
+                              result.error,
+                              "Erro ao excluir relatórios.",
+                           ),
+                        );
+                        return;
+                     }
+                     toast.success("Relatórios excluídos.");
                      table.resetRowSelection();
                   },
                });
@@ -341,12 +483,12 @@ function ReportsList() {
                   </EmptyMedia>
                   <EmptyHeader>
                      <EmptyTitle>
-                        {reports.length === 0
+                        {!baseSearch && allReports.length === 0
                            ? "Nenhum relatório criado"
                            : "Nenhum relatório encontrado"}
                      </EmptyTitle>
                      <EmptyDescription>
-                        {reports.length === 0
+                        {!baseSearch && allReports.length === 0
                            ? "Crie o primeiro relatório para visualizar os dados do espaço atual."
                            : "Ajuste a busca ou crie um novo relatório."}
                      </EmptyDescription>

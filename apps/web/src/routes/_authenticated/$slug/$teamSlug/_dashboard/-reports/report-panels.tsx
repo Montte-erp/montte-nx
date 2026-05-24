@@ -16,7 +16,8 @@ import {
    TableRow,
 } from "@packages/ui/components/table";
 import { cn } from "@packages/ui/lib/utils";
-import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
+import { createCollection, useLiveQuery } from "@tanstack/react-db";
+import type { QueryClient } from "@tanstack/query-core";
 import dayjs from "dayjs";
 import {
    AlertCircle,
@@ -30,9 +31,18 @@ import {
    Table2,
    TrendingUp,
 } from "lucide-react";
+import { useMemo } from "react";
 import type { ReactNode } from "react";
-import { orpc } from "@/integrations/orpc/client";
-import type { Outputs } from "@/integrations/orpc/client";
+import {
+   agingReportCollectionOptions,
+   cashFlowReportCollectionOptions,
+   categoryExpensesReportCollectionOptions,
+   costCentersReportCollectionOptions,
+   profitAndLossReportCollectionOptions,
+   reportTransactionsCollectionOptions,
+   reportTransactionsSummaryCollectionOptions,
+} from "@/integrations/tanstack-db/reports";
+import { type Inputs, type Outputs } from "@/integrations/orpc/client";
 import type { SavedReport } from "./report-labels";
 
 type ReportConfig = SavedReport["config"];
@@ -79,122 +89,355 @@ function marginValue(report: ProfitAndLossReport) {
    return numberValue(report.totals.result) / income;
 }
 
-export function ReportData({ report }: { report: SavedReport }) {
+export function ReportData({
+   report,
+   queryClient,
+}: {
+   report: SavedReport;
+   queryClient: QueryClient;
+}) {
    if (report.type === "dre")
-      return <ProfitAndLossData config={report.config} />;
+      return (
+         <ProfitAndLossData config={report.config} queryClient={queryClient} />
+      );
    if (report.type === "cash-flow")
-      return <CashFlowData config={report.config} />;
+      return <CashFlowData config={report.config} queryClient={queryClient} />;
    if (report.type === "cost-centers")
-      return <CostCentersData config={report.config} />;
-   if (report.type === "aging") return <AgingData config={report.config} />;
-   return <CategoryExpensesData config={report.config} />;
+      return (
+         <CostCentersData config={report.config} queryClient={queryClient} />
+      );
+   if (report.type === "aging")
+      return <AgingData config={report.config} queryClient={queryClient} />;
+   return (
+      <CategoryExpensesData config={report.config} queryClient={queryClient} />
+   );
 }
 
-function ProfitAndLossData({ config }: { config: ReportConfig }) {
-   const [reportQuery, transactionsQuery] = useSuspenseQueries({
-      queries: [
-         orpc.reports.profitAndLoss.queryOptions({
-            input: {
-               dateFrom: config.dateFrom,
-               dateTo: config.dateTo,
-               status: config.status,
-               bankAccountId: config.bankAccountId,
-               categoryId: config.categoryId,
-               tagId: config.tagId,
-               dreOnly: config.dreOnly,
-            },
-         }),
-         orpc.transactions.getAll.queryOptions({
-            input: {
-               dateFrom: config.dateFrom,
-               dateTo: config.dateTo,
-               status: transactionStatusFilter(config.status),
-               bankAccountId: config.bankAccountId,
-               categoryId: config.categoryId,
-               tagId: config.tagId,
-               page: 1,
-               pageSize: 100,
-               sorting: [{ id: "date", desc: true }],
-            },
-         }),
+function ProfitAndLossData({
+   config,
+   queryClient,
+}: {
+   config: ReportConfig;
+   queryClient: QueryClient;
+}) {
+   const reportInput = useMemo(
+      () => ({
+         dateFrom: config.dateFrom,
+         dateTo: config.dateTo,
+         status: config.status,
+         bankAccountId: config.bankAccountId,
+         categoryId: config.categoryId,
+         tagId: config.tagId,
+         dreOnly: config.dreOnly,
+      }),
+      [
+         config.dateFrom,
+         config.dateTo,
+         config.status,
+         config.bankAccountId,
+         config.categoryId,
+         config.tagId,
+         config.dreOnly,
       ],
-   });
+   );
+   const transactionsInput = useMemo<Inputs["transactions"]["getAll"]>(
+      () => ({
+         dateFrom: config.dateFrom,
+         dateTo: config.dateTo,
+         status: transactionStatusFilter(config.status),
+         bankAccountId: config.bankAccountId,
+         categoryId: config.categoryId,
+         tagId: config.tagId,
+         page: 1,
+         pageSize: 100,
+         sorting: [{ id: "date", desc: true }],
+      }),
+      [
+         config.dateFrom,
+         config.dateTo,
+         config.status,
+         config.bankAccountId,
+         config.categoryId,
+         config.tagId,
+      ],
+   );
+   const summaryInput = useMemo(
+      () => ({
+         dateFrom: config.dateFrom,
+         dateTo: config.dateTo,
+         status: transactionStatusFilter(config.status),
+         bankAccountId: config.bankAccountId,
+         categoryId: config.categoryId,
+         tagId: config.tagId,
+      }),
+      [
+         config.dateFrom,
+         config.dateTo,
+         config.status,
+         config.bankAccountId,
+         config.categoryId,
+         config.tagId,
+      ],
+   );
+
+   const reportCollection = useMemo(
+      () =>
+         createCollection(
+            profitAndLossReportCollectionOptions({
+               queryClient,
+               input: reportInput,
+            }),
+         ),
+      [queryClient, reportInput],
+   );
+   const transactionsCollection = useMemo(
+      () =>
+         createCollection(
+            reportTransactionsCollectionOptions({
+               queryClient,
+               input: transactionsInput,
+            }),
+         ),
+      [queryClient, transactionsInput],
+   );
+   const transactionsSummaryCollection = useMemo(
+      () =>
+         createCollection(
+            reportTransactionsSummaryCollectionOptions({
+               queryClient,
+               input: summaryInput,
+            }),
+         ),
+      [queryClient, summaryInput],
+   );
+   const { data: reports, isLoading: isReportLoading } = useLiveQuery(
+      (q) =>
+         q.from({ report: reportCollection }).select(({ report }) => report),
+      [reportCollection],
+   );
+   const { data: transactions, isLoading: isTransactionsLoading } =
+      useLiveQuery(
+         (q) =>
+            q
+               .from({ transaction: transactionsCollection })
+               .select(({ transaction }) => transaction),
+         [transactionsCollection],
+      );
+   const { data: summaries, isLoading: isSummaryLoading } = useLiveQuery(
+      (q) =>
+         q
+            .from({ summary: transactionsSummaryCollection })
+            .select(({ summary }) => summary),
+      [transactionsSummaryCollection],
+   );
+
+   const report = reports[0];
+   const transactionRows = transactions.filter(
+      (row) => row.type !== "transfer",
+   );
+   const summary = summaries[0];
+   const transactionTotal = summary?.total ?? transactions.length;
+
+   if (
+      !report ||
+      isReportLoading ||
+      isTransactionsLoading ||
+      isSummaryLoading
+   ) {
+      return <EmptyReport title="Carregando relatório DRE" />;
+   }
 
    return (
       <ProfitAndLossPanel
-         report={reportQuery.data}
-         transactions={transactionsQuery.data.data.filter(
-            (row) => row.type !== "transfer",
-         )}
-         transactionTotal={transactionsQuery.data.total}
+         report={report}
+         transactions={transactionRows}
+         transactionTotal={transactionTotal}
       />
    );
 }
 
-function CashFlowData({ config }: { config: ReportConfig }) {
-   const { data } = useSuspenseQuery(
-      orpc.reports.cashFlow.queryOptions({
-         input: {
-            dateFrom: config.dateFrom,
-            dateTo: config.dateTo,
-            status: config.status,
-            bankAccountId: config.bankAccountId,
-            categoryId: config.categoryId,
-            tagId: config.tagId,
-         },
+function CashFlowData({
+   config,
+   queryClient,
+}: {
+   config: ReportConfig;
+   queryClient: QueryClient;
+}) {
+   const collectionInput = useMemo(
+      () => ({
+         dateFrom: config.dateFrom,
+         dateTo: config.dateTo,
+         status: config.status,
+         bankAccountId: config.bankAccountId,
+         categoryId: config.categoryId,
+         tagId: config.tagId,
       }),
+      [
+         config.dateFrom,
+         config.dateTo,
+         config.status,
+         config.bankAccountId,
+         config.categoryId,
+         config.tagId,
+      ],
    );
-   return <CashFlowPanel report={data} />;
+   const collection = useMemo(
+      () =>
+         createCollection(
+            cashFlowReportCollectionOptions({
+               queryClient,
+               input: collectionInput,
+            }),
+         ),
+      [queryClient, collectionInput],
+   );
+   const { data, isLoading: isReportLoading } = useLiveQuery(
+      (q) => q.from({ report: collection }).select(({ report }) => report),
+      [collection],
+   );
+   const report = data[0];
+   if (!report || isReportLoading)
+      return <EmptyReport title="Carregando fluxo de caixa" />;
+   return <CashFlowPanel report={report} />;
 }
 
-function CostCentersData({ config }: { config: ReportConfig }) {
-   const { data } = useSuspenseQuery(
-      orpc.reports.expensesByCostCenter.queryOptions({
-         input: {
-            dateFrom: config.dateFrom,
-            dateTo: config.dateTo,
-            status: config.status,
-            bankAccountId: config.bankAccountId,
-            categoryId: config.categoryId,
-            tagId: config.tagId,
-         },
+function CostCentersData({
+   config,
+   queryClient,
+}: {
+   config: ReportConfig;
+   queryClient: QueryClient;
+}) {
+   const collectionInput = useMemo(
+      () => ({
+         dateFrom: config.dateFrom,
+         dateTo: config.dateTo,
+         status: config.status,
+         bankAccountId: config.bankAccountId,
+         categoryId: config.categoryId,
+         tagId: config.tagId,
       }),
+      [
+         config.dateFrom,
+         config.dateTo,
+         config.status,
+         config.bankAccountId,
+         config.categoryId,
+         config.tagId,
+      ],
    );
-   return <CostCentersPanel report={data} />;
+   const collection = useMemo(
+      () =>
+         createCollection(
+            costCentersReportCollectionOptions({
+               queryClient,
+               input: collectionInput,
+            }),
+         ),
+      [queryClient, collectionInput],
+   );
+   const { data, isLoading: isReportLoading } = useLiveQuery(
+      (q) => q.from({ report: collection }).select(({ report }) => report),
+      [collection],
+   );
+   const report = data[0];
+   if (!report || isReportLoading)
+      return <EmptyReport title="Carregando despesas por centro de custo" />;
+   return <CostCentersPanel report={report} />;
 }
 
-function AgingData({ config }: { config: ReportConfig }) {
-   const { data } = useSuspenseQuery(
-      orpc.reports.aging.queryOptions({
-         input: {
-            type: config.agingType,
-            dateFrom: config.dateFrom,
-            dateTo: config.dateTo,
-            categoryId: config.categoryId,
-            tagId: config.tagId,
-            status: config.agingStatus,
-         },
+function AgingData({
+   config,
+   queryClient,
+}: {
+   config: ReportConfig;
+   queryClient: QueryClient;
+}) {
+   const collectionInput = useMemo(
+      () => ({
+         type: config.agingType,
+         dateFrom: config.dateFrom,
+         dateTo: config.dateTo,
+         categoryId: config.categoryId,
+         tagId: config.tagId,
+         status: config.agingStatus,
       }),
+      [
+         config.agingType,
+         config.dateFrom,
+         config.dateTo,
+         config.categoryId,
+         config.tagId,
+         config.agingStatus,
+      ],
    );
-   return <AgingPanel report={data} />;
+   const collection = useMemo(
+      () =>
+         createCollection(
+            agingReportCollectionOptions({
+               queryClient,
+               input: collectionInput,
+            }),
+         ),
+      [queryClient, collectionInput],
+   );
+   const { data, isLoading: isReportLoading } = useLiveQuery(
+      (q) => q.from({ report: collection }).select(({ report }) => report),
+      [collection],
+   );
+   const report = data[0];
+   if (!report || isReportLoading)
+      return <EmptyReport title="Carregando aging" />;
+   return <AgingPanel report={report} />;
 }
 
-function CategoryExpensesData({ config }: { config: ReportConfig }) {
-   const { data } = useSuspenseQuery(
-      orpc.reports.expensesByCategory.queryOptions({
-         input: {
-            dateFrom: config.dateFrom,
-            dateTo: config.dateTo,
-            status: config.status,
-            bankAccountId: config.bankAccountId,
-            categoryId: config.categoryId,
-            tagId: config.tagId,
-            depth: config.categoryDepth,
-            minAmount: config.minAmount,
-         },
+function CategoryExpensesData({
+   config,
+   queryClient,
+}: {
+   config: ReportConfig;
+   queryClient: QueryClient;
+}) {
+   const collectionInput = useMemo(
+      () => ({
+         dateFrom: config.dateFrom,
+         dateTo: config.dateTo,
+         status: config.status,
+         bankAccountId: config.bankAccountId,
+         categoryId: config.categoryId,
+         tagId: config.tagId,
+         depth: config.categoryDepth,
+         minAmount: config.minAmount,
       }),
+      [
+         config.dateFrom,
+         config.dateTo,
+         config.status,
+         config.bankAccountId,
+         config.categoryId,
+         config.tagId,
+         config.categoryDepth,
+         config.minAmount,
+      ],
    );
-   return <CategoryExpensesPanel report={data} />;
+   const collection = useMemo(
+      () =>
+         createCollection(
+            categoryExpensesReportCollectionOptions({
+               queryClient,
+               input: collectionInput,
+            }),
+         ),
+      [queryClient, collectionInput],
+   );
+   const { data, isLoading: isReportLoading } = useLiveQuery(
+      (q) => q.from({ report: collection }).select(({ report }) => report),
+      [collection],
+   );
+   const report = data[0];
+   if (!report || isReportLoading)
+      return <EmptyReport title="Carregando despesas por categoria" />;
+   return <CategoryExpensesPanel report={report} />;
 }
 
 function EmptyReport({ title }: { title: string }) {
