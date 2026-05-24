@@ -19,7 +19,7 @@ const generateFinancialReportInputSchema = z
       startDate: isoDate,
       endDate: isoDate,
       status: z.enum(["paid", "pending", "all"]).default("paid"),
-      type: z.enum(["income", "expense"]).optional(),
+      type: z.enum(["income", "expense", "all"]).optional(),
       categoryId: uuid.optional(),
       costCenterId: uuid.optional(),
       bankAccountId: uuid.optional(),
@@ -81,7 +81,7 @@ export function buildReportReadTools({ client }: ReportReadToolDeps) {
                   return client.reports.aging({
                      dateFrom: input.startDate,
                      dateTo: input.endDate,
-                     type: input.type ?? "income",
+                     type: input.type ?? "all",
                      ...(input.status === "paid"
                         ? { status: "settled" }
                         : input.status === "pending"

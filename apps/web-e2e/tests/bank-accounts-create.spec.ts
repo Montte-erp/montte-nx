@@ -33,6 +33,19 @@ async function clearBankAccountSearch(page: Page) {
    await page.getByPlaceholder("Buscar conta por nome...").fill("");
 }
 
+async function uploadBankAccountsCsv(page: Page, csv: string) {
+   await page.getByRole("button", { name: "Importar dados" }).click();
+   await page
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles({
+         name: "contas-bancarias.csv",
+         mimeType: "text/csv",
+         buffer: Buffer.from(csv, "utf8"),
+      });
+   await expect(page.getByText("Importando")).toBeVisible();
+}
+
 test.afterEach(async ({ e2eSession }) => {
    const team = await findTeamByOrgAndSlug(
       e2eSession.orgSlug,
@@ -42,6 +55,36 @@ test.afterEach(async ({ e2eSession }) => {
    for (const id of createdIds.splice(0)) {
       await deleteBankAccountById(team.id, id);
    }
+});
+
+test("importação permite alterar tipo e mostra ações em massa", async ({
+   page,
+   e2eSession,
+}) => {
+   const name = `Import Tipo E2E ${stamp()}`;
+   await gotoBankAccounts(page, e2eSession);
+   await uploadBankAccountsCsv(
+      page,
+      `Nome,Tipo,Saldo Inicial,Código do Banco,Banco\n${name},,100.00,341,Itaú\n`,
+   );
+
+   const row = page.getByRole("row").filter({ hasText: name });
+   await expect(row).toBeVisible();
+   await expect(row.getByLabel("Tipo")).toHaveText("Conta Corrente");
+
+   await row.getByLabel("Selecionar linha").click();
+   await expect(
+      page.locator("[data-selection-toolbar]").getByText("1"),
+   ).toBeVisible();
+
+   await page.getByRole("button", { name: "Trocar tipo" }).click();
+   await page.getByRole("button", { name: "Caixa Físico" }).click();
+   await expect(row.getByLabel("Tipo")).toHaveText("Caixa Físico");
+
+   await row.getByRole("button", { name: "Salvar" }).click();
+   await expect(page.getByText("Linha importada com sucesso.")).toBeVisible();
+   await rememberCreatedAccount(e2eSession, name);
+   await expectBankAccountRowVisible(page, name);
 });
 
 test("cria conta bancária com validações, máscaras e autocomplete", async ({

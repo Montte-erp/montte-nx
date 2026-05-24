@@ -130,7 +130,7 @@ export function ReportFormSheet({ collection, teamId }: ReportFormSheetProps) {
                dateTo: value.dateTo,
                status: value.status,
                dreOnly: true,
-               agingType: "income",
+               agingType: "all",
                agingStatus: "open",
                categoryDepth: "group",
                minAmount: 0,

@@ -337,6 +337,7 @@ export function buildTransactionColumns(options?: {
             editOptions: categoryOptionsList,
             onCreateOption: options?.onCreateCategory,
             groupable: true,
+            required: true,
             formatGroupLabel: (value) =>
                value ? String(value) : "Sem categoria",
          },

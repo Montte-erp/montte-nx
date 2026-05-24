@@ -158,6 +158,55 @@ function normalizeImportLookup(value: unknown): string {
       .replace(/[̀-ͯ]/g, "");
 }
 
+const IMPORT_HEADER_LABELS: Record<string, string> = {
+   data: "Data",
+   date: "Data",
+   datetxn: "Data",
+   duedate: "Vencimento",
+   valor: "Valor",
+   amount: "Valor",
+   name: "Nome",
+   valorbr: "Valor",
+   desc: "Nome",
+   description: "Nome",
+   descr: "Nome",
+   memo: "Nome",
+   detalhe: "Nome",
+   tipo: "Tipo",
+   type: "Tipo",
+   status: "Status",
+   conta: "Conta",
+   bankaccountname: "Conta",
+   bankaccount: "Conta",
+   contaid: "Conta",
+   banco: "Conta",
+   cartao: "Cartão",
+   card: "Cartão",
+   creditcard: "Cartão",
+   creditcardname: "Cartão",
+   categoria: "Categoria",
+   category: "Categoria",
+   categoryname: "Categoria",
+   categoriaid: "Categoria",
+   vencimento: "Vencimento",
+   fitid: "Identificador",
+   reference: "Referência",
+};
+
+function normalizeImportHeader(value: string): string {
+   const normalized = normalizeImportLookup(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+   return (IMPORT_HEADER_LABELS[normalized] ?? value.trim()) || "";
+}
+
+function localizeImportHeaders<T extends { headers: string[] }>(result: T): T {
+   return {
+      ...result,
+      headers: result.headers.map(normalizeImportHeader),
+   };
+}
+
 function resolveImportId(
    options: ImportLookupItem[],
    value: unknown,
@@ -1016,9 +1065,16 @@ export function TransactionsList() {
          },
          parseFile: async (file: File) => {
             const ext = file.name.split(".").pop()?.toLowerCase();
-            if (ext === "ofx") return parseOfx(file);
-            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
-            return parseCsv(file);
+            if (ext === "ofx") {
+               const parsed = await parseOfx(file);
+               return localizeImportHeaders(parsed);
+            }
+            if (ext === "xlsx" || ext === "xls") {
+               const parsed = await parseXlsx(file);
+               return localizeImportHeaders(parsed);
+            }
+            const parsed = await parseCsv(file);
+            return localizeImportHeaders(parsed);
          },
          mapRow: (row, i) => {
             const parsedAmount = parseImportAmount(row.amount);
@@ -1053,7 +1109,7 @@ export function TransactionsList() {
          template: {
             label: "Baixar modelo",
             description:
-               "Inclui Data, Nome, Tipo, Valor, Status e referências por nome.",
+               "Inclui Data, Nome, Tipo, Valor, Status e referências por nome. A categoria é obrigatória.",
             formats: [
                {
                   filename: "modelo-lancamentos.csv",
@@ -1149,17 +1205,41 @@ export function TransactionsList() {
             if (!activeTeamId) {
                throw new Error("Time ativo não encontrado.");
             }
-            const transactions = rows.flatMap((r) => {
+            const missingCategoryRows: number[] = [];
+            const missingReferenceRows: number[] = [];
+            const invalidDateValueRows: number[] = [];
+            const invalidAmountRows: number[] = [];
+            const transactions = rows.flatMap((r, index) => {
+               const line = index + 2;
                const date = String(r.date ?? "");
                const amount = String(r.amount ?? "");
-               if (!date || !amount) return [];
                const bankAccountId =
                   resolveImportId(safeBankAccounts, r.bankAccountId) ??
                   resolveImportId(safeBankAccounts, r.bankAccountName);
                const creditCardId =
                   resolveImportId(safeCreditCards, r.creditCardId) ??
                   resolveImportId(safeCreditCards, r.creditCardName);
-               if (!bankAccountId && !creditCardId) return [];
+               const categoryId =
+                  resolveImportId(safeCategories, r.categoryId) ??
+                  resolveImportId(safeCategories, r.categoryName);
+
+               if (!date) {
+                  invalidDateValueRows.push(line);
+                  return [];
+               }
+               if (!amount) {
+                  invalidAmountRows.push(line);
+                  return [];
+               }
+               if (!bankAccountId && !creditCardId) {
+                  missingReferenceRows.push(line);
+                  return [];
+               }
+               if (!categoryId) {
+                  missingCategoryRows.push(line);
+                  return [];
+               }
+
                return [
                   {
                      type: parseImportType(r.type, 1),
@@ -1168,9 +1248,7 @@ export function TransactionsList() {
                      name: r.name ? String(r.name) : null,
                      bankAccountId,
                      destinationBankAccountId: null,
-                     categoryId:
-                        resolveImportId(safeCategories, r.categoryId) ??
-                        resolveImportId(safeCategories, r.categoryName),
+                     categoryId,
                      attachments: [],
                      description: null,
                      creditCardId,
@@ -1183,16 +1261,42 @@ export function TransactionsList() {
                   },
                ];
             });
+            if (missingCategoryRows.length > 0) {
+               throw new Error(
+                  `A categoria é obrigatória. Preencha a categoria nas linhas: ${missingCategoryRows.join(", ")}.`,
+               );
+            }
+            if (
+               invalidDateValueRows.length > 0 ||
+               invalidAmountRows.length > 0
+            ) {
+               throw new Error(
+                  `Preencha data e valor nas linhas: ${[
+                     ...invalidDateValueRows,
+                     ...invalidAmountRows,
+                  ]
+                     .filter(
+                        (value, index, array) => array.indexOf(value) === index,
+                     )
+                     .sort((left, right) => left - right)
+                     .join(", ")}.`,
+               );
+            }
+            if (missingReferenceRows.length > 0) {
+               throw new Error(
+                  `Informe conta ou cartão nas linhas: ${missingReferenceRows.join(", ")}.`,
+               );
+            }
             if (transactions.length === 0) {
                throw new Error(
-                  "Nenhum lançamento válido para importar. Preencha data, valor e conta ou cartão.",
+                  "Nenhum lançamento válido para importar. Preencha data, valor, categoria e conta ou cartão.",
                );
             }
             const importTransactions = importTransactionsAction(
                transactionsCollection,
             );
             const transaction = importTransactions({
-               input: { transactions, autoCategorize: true },
+               input: { transactions, autoCategorize: false },
                rows: transactions.map((input) =>
                   buildOptimisticTransactionRow({
                      id: buildOptimisticTransactionRowId(),

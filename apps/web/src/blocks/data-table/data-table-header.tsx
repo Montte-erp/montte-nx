@@ -165,17 +165,25 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
         }
       : {};
 
+   const isPinned = col.getIsPinned();
+   const pinStyles = getPinStyles(col);
+   const headerStyles: CSSProperties = {
+      width: header.getSize(),
+      textAlign: align,
+      ...pinStyles,
+      ...sortableStyle,
+      position: "sticky",
+      top: 0,
+      background: "var(--card)",
+      zIndex: isDragging ? 5 : isPinned ? 4 : col.getCanPin() ? 3 : 4,
+   };
+
    return (
       <TableHead
          ref={reorderable ? setNodeRef : undefined}
          colSpan={header.colSpan}
          aria-sort={canSort ? ariaSort : undefined}
-         style={{
-            width: header.getSize(),
-            textAlign: align,
-            ...getPinStyles(col),
-            ...sortableStyle,
-         }}
+         style={headerStyles}
          className={cn(
             "relative",
             col.getIsPinned() && "shadow-[inset_-1px_0_0_var(--border)]",

@@ -53,6 +53,7 @@ type AgingReport = Outputs["reports"]["aging"];
 type CategoryExpenseReport = Outputs["reports"]["expensesByCategory"];
 type TransactionRow = Outputs["transactions"]["getAll"]["data"][number];
 type TransactionStatus = "pending" | "paid";
+const AGING_REPORT_TYPE: Inputs["reports"]["aging"]["type"] = "all";
 
 function formatBRL(value: string | number): string {
    return format(of(String(value), "BRL"), "pt-BR");
@@ -81,6 +82,12 @@ function transactionStatusFilter(
 ): TransactionStatus | TransactionStatus[] {
    if (status === "all") return ["pending", "paid"];
    return status;
+}
+
+function agingTypeLabel(type: "income" | "expense" | "transfer") {
+   if (type === "income") return "A receber";
+   if (type === "expense") return "A pagar";
+   return "Transferência";
 }
 
 function marginValue(report: ProfitAndLossReport) {
@@ -392,9 +399,9 @@ function AgingData({
    queryClient: QueryClient;
    teamId: string;
 }) {
-   const collectionInput = useMemo(
+   const collectionInput = useMemo<Inputs["reports"]["aging"]>(
       () => ({
-         type: config.agingType,
+         type: AGING_REPORT_TYPE,
          dateFrom: config.dateFrom,
          dateTo: config.dateTo,
          categoryId: config.categoryId,
@@ -402,7 +409,6 @@ function AgingData({
          status: config.agingStatus,
       }),
       [
-         config.agingType,
          config.dateFrom,
          config.dateTo,
          config.categoryId,
@@ -1008,6 +1014,7 @@ function AgingPanel({ report }: { report: AgingReport }) {
          <TableHeader>
             <TableRow>
                <TableHead>Categoria</TableHead>
+               <TableHead>Tipo</TableHead>
                <TableHead>Lançamento</TableHead>
                <TableHead>Vencimento</TableHead>
                <TableHead>Centro de Custo</TableHead>
@@ -1021,6 +1028,7 @@ function AgingPanel({ report }: { report: AgingReport }) {
                   <TableCell className="font-medium">
                      {row.categoryName ?? "Sem categoria"}
                   </TableCell>
+                  <TableCell>{agingTypeLabel(row.type)}</TableCell>
                   <TableCell>{row.name}</TableCell>
                   <TableCell>
                      {dayjs(row.dueDate).format("DD/MM/YYYY")}

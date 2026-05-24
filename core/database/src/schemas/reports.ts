@@ -30,7 +30,7 @@ export const reportConfigSchema = z
       categoryId: z.string().uuid().optional(),
       tagId: z.string().uuid().optional(),
       dreOnly: z.boolean().default(true),
-      agingType: z.enum(["income", "expense"]).default("income"),
+      agingType: z.enum(["income", "expense", "all"]).default("all"),
       agingStatus: z.enum(["open", "overdue", "settled"]).default("open"),
       categoryDepth: z.enum(["group", "subcategory"]).default("group"),
       minAmount: z.number().nonnegative().default(0),

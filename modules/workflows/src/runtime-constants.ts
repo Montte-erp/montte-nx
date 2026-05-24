@@ -136,14 +136,11 @@ export function buildWorkflowReportConfig(input: {
       categoryId: undefined,
       tagId: undefined,
       dreOnly: true,
-      agingType: "income",
+      agingType: "all",
       agingStatus: "open",
       categoryDepth: "group",
       minAmount: 0,
    };
-   if (input.reportType === "aging") {
-      return { ...base, agingType: "expense" };
-   }
    return base;
 }
 

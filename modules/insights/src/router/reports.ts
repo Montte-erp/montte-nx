@@ -156,7 +156,7 @@ const cashFlowFilters = z
 const expensesByCostCenterFilters = cashFlowFilters;
 const agingFilters = z
    .object({
-      type: z.enum(["income", "expense"]).default("income"),
+      type: z.enum(["income", "expense", "all"]).default("all"),
       dateFrom: isoDate,
       dateTo: isoDate,
       categoryId: optionalUuid,
@@ -868,10 +868,12 @@ export const aging = protectedProcedure
       const conditions: SQL[] = [
          eq(transactions.teamId, context.teamId),
          eq(transactions.ignored, false),
-         eq(transactions.type, input.type),
          gte(transactions.dueDate, input.dateFrom),
          lte(transactions.dueDate, input.dateTo),
       ];
+      if (input.type === "all")
+         conditions.push(inArray(transactions.type, ["income", "expense"]));
+      else conditions.push(eq(transactions.type, input.type));
       if (input.status === "settled")
          conditions.push(eq(transactions.status, "paid"));
       if (input.status === "open")
@@ -892,6 +894,7 @@ export const aging = protectedProcedure
                   name: sql<string>`COALESCE(${transactions.name}, ${transactions.description}, 'Lançamento')`,
                   dueDate: transactions.dueDate,
                   amount: transactions.amount,
+                  type: transactions.type,
                   status: transactions.status,
                   tagName: tags.name,
                   categoryName: categories.name,
@@ -932,6 +935,7 @@ export const aging = protectedProcedure
             name: row.name,
             dueDate: row.dueDate,
             amount: money(row.amount),
+            type: row.type,
             status: row.status,
             tagName: row.tagName,
             categoryName: row.categoryName,
