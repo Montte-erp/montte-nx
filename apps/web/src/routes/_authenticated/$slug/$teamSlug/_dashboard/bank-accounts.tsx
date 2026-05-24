@@ -408,7 +408,7 @@ function BankAccountsList() {
                id: `__import_${i + 1}`,
                importLine: i + 2,
                name: String(row.name ?? "").trim(),
-               type: row.type,
+               type: resolveType(row.type) ?? row.type,
                color: "#6366f1",
                bankCode: String(row.bankCode ?? "").trim(),
                bankName: String(row.bankName ?? "").trim(),

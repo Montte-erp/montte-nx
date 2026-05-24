@@ -165,6 +165,7 @@ const IMPORT_HEADER_LABELS: Record<string, string> = {
    duedate: "Vencimento",
    valor: "Valor",
    amount: "Valor",
+   name: "Nome",
    valorbr: "Valor",
    desc: "Nome",
    description: "Nome",

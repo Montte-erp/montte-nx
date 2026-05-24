@@ -11,6 +11,9 @@ import { fromPromise } from "neverthrow";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { InlineEditMoney } from "../inline-edit/inline-edit-money";
+import { InlineEditSelect } from "../inline-edit/inline-edit-select";
+import { InlineEditText } from "../inline-edit/inline-edit-text";
 import type { DataImportConfig } from "./use-data-import";
 import type { UseDataImportApi } from "./use-data-import";
 
@@ -431,6 +434,8 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                         ? (importRows[rowIdx] ?? null)
                         : null;
                      const val = importedRow ? importedRow[accKey] : rawVal;
+                     const meta = col.columnDef.meta;
+                     const ariaLabel = meta?.label ?? accKey;
                      // oxlint-ignore no-explicit-any
                      const fakeCtx: any = importedRow
                         ? {
@@ -464,13 +469,52 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                            )}
                            key={col.id}
                         >
-                           {fakeCtx
-                              ? flexRender(col.columnDef.cell, fakeCtx)
-                              : String(rawVal) || (
-                                   <span className="text-muted-foreground/30">
-                                      —
-                                   </span>
-                                )}
+                           {importedRow &&
+                           meta?.isEditable &&
+                           meta.cellComponent === "select" ? (
+                              <InlineEditSelect
+                                 ariaLabel={ariaLabel}
+                                 onSave={(value) => {
+                                    api.updateRow(rowIdx, { [accKey]: value });
+                                    return Promise.resolve();
+                                 }}
+                                 options={meta.editOptions ?? []}
+                                 value={String(val ?? "")}
+                              />
+                           ) : importedRow &&
+                             meta?.isEditable &&
+                             (meta.cellComponent === "text" ||
+                                meta.cellComponent === "textarea") ? (
+                              <InlineEditText
+                                 ariaLabel={ariaLabel}
+                                 onSave={(value) => {
+                                    api.updateRow(rowIdx, { [accKey]: value });
+                                    return Promise.resolve();
+                                 }}
+                                 placeholder="—"
+                                 value={String(val ?? "")}
+                              />
+                           ) : importedRow &&
+                             meta?.isEditable &&
+                             meta.cellComponent === "money" ? (
+                              <InlineEditMoney
+                                 ariaLabel={ariaLabel}
+                                 onSave={(value) => {
+                                    api.updateRow(rowIdx, { [accKey]: value });
+                                    return Promise.resolve();
+                                 }}
+                                 value={Number(val) || 0}
+                                 valueInCents={false}
+                              />
+                           ) : fakeCtx ? (
+                              flexRender(col.columnDef.cell, fakeCtx)
+                           ) : (
+                              String(rawVal) || (
+                                 <span className="text-muted-foreground/30">
+                                    —
+                                 </span>
+                              )
+                           )}
                         </TableCell>
                      );
                   })}

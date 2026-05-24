@@ -37,9 +37,9 @@ const externalStore = createStore<ExternalState>({
 });
 
 export const clearSelectionToolbar = () =>
-   internalStore.setState(() => ({
+   internalStore.setState((s) => ({
+      ...s,
       selectedIndices: new Set<number>(),
-      renderActions: null,
    }));
 
 const addToSelection = (i: number) =>

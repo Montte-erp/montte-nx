@@ -170,12 +170,12 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
    const headerStyles: CSSProperties = {
       width: header.getSize(),
       textAlign: align,
+      ...pinStyles,
+      ...sortableStyle,
       position: "sticky",
       top: 0,
       background: "var(--card)",
-      zIndex: isPinned ? 3 : 4,
-      ...pinStyles,
-      ...sortableStyle,
+      zIndex: isDragging ? 5 : isPinned ? 4 : col.getCanPin() ? 3 : 4,
    };
 
    return (
