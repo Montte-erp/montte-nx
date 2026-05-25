@@ -153,7 +153,7 @@ jobs:
            if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            uses: actions/checkout@v6
            with:
-              ref: ${{ steps.pr.outputs.base_sha }}
+              ref: ${{ steps.pr.outputs.base_ref }}
               fetch-depth: 0
               persist-credentials: false
 
