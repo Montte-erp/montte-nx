@@ -255,16 +255,12 @@ async function publishReview({
       );
    }
 
-   const payload = {
-      body,
-      event: "COMMENT",
-      comments: comments.map((comment) => ({
-         path: comment.path,
-         line: comment.line,
-         side: comment.side,
-         body: formatInlineComment(comment),
-      })),
-   };
+   const commentsPayload = comments.map((comment) => ({
+      path: comment.path,
+      line: comment.line,
+      side: comment.side,
+      body: formatInlineComment(comment),
+   }));
 
    const [owner, repoName] = repo.split("/");
    const octokit = new Octokit({ auth: token });
@@ -276,9 +272,9 @@ async function publishReview({
                owner,
                repo: repoName,
                pull_number: prNumber,
-               body: payload.body,
-               event: payload.event,
-               comments: payload.comments,
+               body,
+               event: "COMMENT",
+               comments: commentsPayload,
             },
          );
       },
@@ -409,18 +405,14 @@ export default async function ({ init, payload, env }: FlueContext) {
       generalPrComments,
    ] = contextResult.value;
 
-   const commandResults = [
-      prMetadata,
-      changedFiles,
-      fullDiff,
-      commits,
-      ciChecks,
-      generalReviews,
-      inlineReviewComments,
-      generalPrComments,
-   ];
-   const failedCommand = commandResults.find(Result.isError);
-   if (failedCommand) throw failedCommand.error;
+   if (Result.isError(prMetadata)) throw prMetadata.error;
+   if (Result.isError(changedFiles)) throw changedFiles.error;
+   if (Result.isError(fullDiff)) throw fullDiff.error;
+   if (Result.isError(commits)) throw commits.error;
+   if (Result.isError(ciChecks)) throw ciChecks.error;
+   if (Result.isError(generalReviews)) throw generalReviews.error;
+   if (Result.isError(inlineReviewComments)) throw inlineReviewComments.error;
+   if (Result.isError(generalPrComments)) throw generalPrComments.error;
 
    await Promise.all([
       writeFile(`${outputDir}/pr-metadata.json`, prMetadata.value.stdout),

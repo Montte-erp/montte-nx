@@ -1,0 +1,16 @@
+# Montte docs
+
+> Documentação pública canônica do Montte para usuários e grounding do Montte AI.
+
+Site: https://montte.co
+Documentação: https://montte.co/docs
+Repositório: https://github.com/Montte-erp/montte-nx
+
+## Comece aqui
+
+- [Documentação do Montte](https://montte.co/docs) — visão geral, modelo mental e como usar as docs.
+- [Primeiros passos](https://montte.co/docs/primeiros-passos) — conceitos básicos para organizar a operação recorrente no Montte.
+
+## Uso pelo Montte AI
+
+O Montte AI deve usar estas páginas como base confiável para explicar o produto. Quando uma informação não estiver confirmada na documentação, a resposta deve deixar a limitação clara em vez de inventar comportamento.
