@@ -71,9 +71,10 @@ async function runRequiredCommand(
    if (Result.isError(commandResult)) return Result.err(commandResult.error);
 
    if (commandResult.value.exitCode !== 0) {
+      const stderr = commandResult.value.stderr?.trim();
       return Result.err(
          new PrReviewAgentError({
-            message: failureMessage,
+            message: stderr ? `${failureMessage}\n${stderr}` : failureMessage,
             cause: commandResult.value.stderr,
          }),
       );
@@ -420,11 +421,15 @@ export default async function ({ init, payload, env }: FlueContext) {
             runRequiredCommand(
                session,
                ghCommand([
-                  "api",
-                  `repos/${repo}/pulls/${prNumber}/files`,
-                  "--paginate",
+                  "pr",
+                  "view",
+                  prNumber,
+                  "--repo",
+                  repo,
+                  "--json",
+                  "files",
                   "--jq",
-                  '.[] | "- " + .filename + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"',
+                  '.files[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"',
                ]),
                "Falha ao listar arquivos alterados da PR.",
             ),
