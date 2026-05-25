@@ -32,4 +32,17 @@ const blog = defineCollection({
       }),
 });
 
-export const collections = { blog };
+const docs = defineCollection({
+   loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/docs" }),
+   schema: z.object({
+      title: z.string().max(90),
+      description: z.string().min(80).max(240),
+      category: z.string().default("Guia"),
+      order: z.number().int().nonnegative().default(999),
+      updatedAt: z.coerce.date(),
+      aiSummary: z.string().min(40).max(240),
+      commonQuestions: z.array(z.string()).max(8).default([]),
+   }),
+});
+
+export const collections = { blog, docs };

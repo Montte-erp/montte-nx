@@ -266,15 +266,11 @@ export default async function ({ init, payload, env }: FlueContext) {
    const [prMetadata, changedFiles, fullDiff, commits, ciChecks] =
       contextResult.value;
 
-   const commandResults = [
-      prMetadata,
-      changedFiles,
-      fullDiff,
-      commits,
-      ciChecks,
-   ];
-   const failedCommand = commandResults.find(Result.isError);
-   if (failedCommand) throw failedCommand.error;
+   if (Result.isError(prMetadata)) throw prMetadata.error;
+   if (Result.isError(changedFiles)) throw changedFiles.error;
+   if (Result.isError(fullDiff)) throw fullDiff.error;
+   if (Result.isError(commits)) throw commits.error;
+   if (Result.isError(ciChecks)) throw ciChecks.error;
 
    await Promise.all([
       writeFile(`${outputDir}/pr-metadata.json`, prMetadata.value.stdout),

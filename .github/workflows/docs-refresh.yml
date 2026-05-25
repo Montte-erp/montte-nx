@@ -1,0 +1,103 @@
+name: Docs Refresh
+
+on:
+   schedule:
+      - cron: "0 9 * * 1"
+   workflow_dispatch:
+      inputs:
+         dry_run:
+            description: "Generate docs without opening a PR"
+            required: false
+            type: boolean
+            default: false
+
+permissions:
+   contents: write
+   pull-requests: write
+
+jobs:
+   docs-refresh:
+      runs-on: ubuntu-latest
+      steps:
+         - name: Checkout
+           uses: actions/checkout@v4
+           with:
+              fetch-depth: 0
+              fetch-tags: true
+              persist-credentials: false
+
+         - name: Setup Bun
+           uses: oven-sh/setup-bun@v2
+
+         - name: Install dependencies
+           run: bun install --frozen-lockfile
+
+         - name: Generate public docs
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              DRY_RUN: ${{ inputs.dry_run || false }}
+           run: |
+              PAYLOAD=$(jq -c -n \
+                --argjson dryRun "$DRY_RUN" \
+                '{mode: "weekly", target: "landing-docs", dryRun: $dryRun}'
+              )
+
+              bunx flue run docs-refresh \
+                --target node \
+                --id weekly-docs \
+                --payload "$PAYLOAD"
+
+         - name: Validate landing docs
+           env:
+              PUBLIC_POSTHOG_KEY: ${{ vars.PUBLIC_POSTHOG_KEY || 'phc_docs_refresh' }}
+              PUBLIC_POSTHOG_HOST: ${{ vars.PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com' }}
+           run: |
+              bun run landing:build
+              git diff --check -- apps/landing/src/content/docs apps/landing/src/pages/docs apps/landing/src/content.config.ts apps/landing/src/pages/llms.txt.ts docs/llms.txt .flue/agents/docs-refresh.ts .agents/skills/public-docs
+
+         - name: Open documentation pull request
+           if: github.event_name == 'schedule' || inputs.dry_run != true
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+           run: |
+              VERSION=$(date -u '+%Y.%m.%d')
+              BRANCH="automation/docs-refresh-${VERSION}"
+              BASE_BRANCH="${GITHUB_REF_NAME}"
+
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+              git checkout -B "$BRANCH"
+              git add apps/landing/src/content/docs docs/llms.txt
+
+              if git diff --cached --quiet; then
+                echo "No documentation changes to publish"
+                exit 0
+              fi
+
+              git commit -m "docs: update public documentation"
+              git push "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$BRANCH" --force-with-lease
+
+              PR_URL=$(gh pr list --repo "$GH_REPO" --head "$BRANCH" --json url --jq '.[0].url')
+              if [ -n "$PR_URL" ]; then
+                gh pr edit "$PR_URL" --repo "$GH_REPO" \
+                  --title "docs: atualizar documentação pública" \
+                  --body "Atualiza a documentação pública renderizada em /docs e o índice usado pelo Montte AI."
+              else
+                gh pr create --repo "$GH_REPO" \
+                  --base "$BASE_BRANCH" \
+                  --head "$BRANCH" \
+                  --title "docs: atualizar documentação pública" \
+                  --body "Atualiza a documentação pública renderizada em /docs e o índice usado pelo Montte AI."
+              fi
+
+         - name: Upload docs artifact
+           uses: actions/upload-artifact@v4
+           with:
+              name: docs-refresh
+              path: |
+                 .agent-artifacts/docs-refresh/documentation-context.md
+                 apps/landing/src/content/docs/**/*.mdx
+                 docs/llms.txt

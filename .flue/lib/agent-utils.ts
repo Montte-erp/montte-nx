@@ -62,32 +62,25 @@ export const safePathSchema = v.pipe(
    ),
 );
 
-const envStringSchema = v.pipe(v.string(), v.minLength(1));
+function nonEmpty(value: unknown): string | undefined {
+   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
 
-export const flueProviderEnvSchema = v.object({
-   OPENCODE_API_KEY: v.optional(envStringSchema),
-   OPENCODE_GO_BASE_URL: v.optional(v.pipe(envStringSchema, v.url())),
-   OPENCODE_GO_GATEWAY_KEY: v.optional(envStringSchema),
-});
+export function resolveEnv(
+   env: Record<string, unknown>,
+   key: string,
+): string | undefined {
+   return nonEmpty(env[key]) ?? nonEmpty(process.env[key]);
+}
 
-export type FlueProviderEnv = v.InferOutput<typeof flueProviderEnvSchema>;
-
-export function validateFlueProviderEnv(env: Record<string, unknown>) {
-   const parsed = v.safeParse(flueProviderEnvSchema, {
-      OPENCODE_API_KEY: env.OPENCODE_API_KEY ?? process.env.OPENCODE_API_KEY,
-      OPENCODE_GO_BASE_URL:
-         env.OPENCODE_GO_BASE_URL ?? process.env.OPENCODE_GO_BASE_URL,
-      OPENCODE_GO_GATEWAY_KEY:
-         env.OPENCODE_GO_GATEWAY_KEY ?? process.env.OPENCODE_GO_GATEWAY_KEY,
-   });
-
-   if (parsed.success) return Result.ok(parsed.output);
+export function requireEnv(env: Record<string, unknown>, key: string) {
+   const value = resolveEnv(env, key);
+   if (value) return Result.ok(value);
 
    return Result.err(
       new AgentUtilsError({
          error: agentUtilsErrors.INVALID_PROVIDER_ENV(),
-         message: "Ambiente de providers Flue inválido.",
-         detail: formatCause(parsed.issues),
+         message: `${key} não configurada.`,
       }),
    );
 }
@@ -104,6 +97,18 @@ export function formatCause(cause: unknown) {
    return Result.isOk(jsonResult) && jsonResult.value
       ? jsonResult.value
       : String(cause);
+}
+
+function isDefinedEnvEntry(
+   entry: [string, string | undefined],
+): entry is [string, string] {
+   return typeof entry[1] === "string" && entry[1].length > 0;
+}
+
+export function buildLocalSandboxEnv(
+   values: Record<string, string | undefined>,
+) {
+   return Object.fromEntries(Object.entries(values).filter(isDefinedEnvEntry));
 }
 
 export function truncateForPrompt(

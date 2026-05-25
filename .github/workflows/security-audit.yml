@@ -151,7 +151,7 @@ jobs:
 
          - name: Checkout trusted base
            if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
-           uses: actions/checkout@v6
+           uses: actions/checkout@v4
            with:
               ref: ${{ steps.pr.outputs.base_ref }}
               fetch-depth: 0
@@ -195,8 +195,6 @@ jobs:
            if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-              OPENCODE_GO_BASE_URL: ${{ vars.OPENCODE_GO_BASE_URL }}
-              OPENCODE_GO_GATEWAY_KEY: ${{ secrets.OPENCODE_GO_GATEWAY_KEY }}
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               PR_NUMBER: ${{ steps.pr.outputs.number }}
