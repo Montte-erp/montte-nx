@@ -32,6 +32,7 @@ export function InlineEditText({
    className,
    startContent,
 }: InlineEditTextProps) {
+   const [editing, setEditing] = useState(false);
    const [draft, setDraft] = useState(value);
    const [pending, setPending] = useState<string | null>(null);
    const lastCommittedRef = useRef(value);
@@ -50,6 +51,7 @@ export function InlineEditText({
    const commit = useCallback(
       async (next: string) => {
          const trimmed = next.trim();
+         setEditing(false);
          if (trimmed === value.trim()) return;
          setPending(trimmed);
          const result = await fromPromise(onSave(trimmed), (e) => e);
@@ -78,12 +80,34 @@ export function InlineEditText({
       (e: FocusEvent<HTMLInputElement>) => {
          if (cancelledRef.current) {
             cancelledRef.current = false;
+            setEditing(false);
             return;
          }
          commit(e.target.value);
       },
       [commit],
    );
+
+   if (!editing) {
+      return (
+         <button
+            aria-label={ariaLabel}
+            className={cn(
+               "flex h-8 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md border border-dashed border-transparent bg-muted/20 px-2 text-left text-sm transition-colors hover:border-border hover:bg-muted/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none",
+               className,
+            )}
+            onClick={() => setEditing(true)}
+            type="button"
+         >
+            {startContent}
+            <span
+               className={cn("truncate", !displayed && "text-muted-foreground")}
+            >
+               {displayed || placeholder || "—"}
+            </span>
+         </button>
+      );
+   }
 
    if (startContent) {
       return (
@@ -98,6 +122,7 @@ export function InlineEditText({
             </InputGroupAddon>
             <InputGroupInput
                aria-label={ariaLabel}
+               autoFocus
                onBlur={handleBlur}
                onChange={(e) => setDraft(e.target.value)}
                onKeyDown={handleKeyDown}
@@ -111,6 +136,7 @@ export function InlineEditText({
    return (
       <Input
          aria-label={ariaLabel}
+         autoFocus
          className={cn(
             "h-8 w-full border-0 bg-transparent px-1 shadow-none focus-visible:ring-1 focus-visible:ring-ring",
             className,

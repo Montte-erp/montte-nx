@@ -16,9 +16,61 @@ function cellToString(cell: unknown): string {
    return String(cell);
 }
 
+function normalizeHtmlCellText(value: string): string {
+   return value
+      .replace(/\u00a0/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+}
+
+function isHtmlSpreadsheet(prefix: string): boolean {
+   const normalized = prefix.trimStart().toLowerCase();
+   return (
+      normalized.startsWith("<!doctype html") ||
+      normalized.startsWith("<html") ||
+      normalized.includes("<table")
+   );
+}
+
+function parseHtmlSpreadsheet(text: string): XlsxData {
+   const document = new DOMParser().parseFromString(text, "text/html");
+   const tables = Array.from(document.querySelectorAll("table"));
+   if (tables.length === 0) throw new Error("Planilha vazia");
+
+   let bestRows: string[][] = [];
+   for (const table of tables) {
+      const rows = Array.from(table.querySelectorAll("tr"))
+         .map((row) =>
+            Array.from(row.children)
+               .filter((cell) =>
+                  ["TD", "TH"].includes(cell.tagName.toUpperCase()),
+               )
+               .map((cell) => normalizeHtmlCellText(cell.textContent ?? "")),
+         )
+         .filter((row) => row.some((cell) => cell !== ""));
+      if (rows.length > bestRows.length) bestRows = rows;
+   }
+
+   if (bestRows.length < 2) throw new Error("Planilha sem dados");
+   const [headerRow = [], ...bodyRows] = bestRows;
+   return {
+      headers: headerRow,
+      rows: bodyRows,
+   };
+}
+
 export function useXlsxFile() {
    const parse = useCallback(async (file: File): Promise<XlsxData> => {
-      const wb = xlsxRead(new Uint8Array(await file.arrayBuffer()), {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const prefix = new TextDecoder("utf-8").decode(
+         bytes.subarray(0, Math.min(bytes.byteLength, 4096)),
+      );
+      if (isHtmlSpreadsheet(prefix)) {
+         return parseHtmlSpreadsheet(new TextDecoder("utf-8").decode(bytes));
+      }
+
+      const wb = xlsxRead(bytes, {
          type: "array",
          cellDates: true,
       });

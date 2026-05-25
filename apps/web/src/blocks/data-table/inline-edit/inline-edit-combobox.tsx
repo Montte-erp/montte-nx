@@ -23,11 +23,13 @@ export function InlineEditCombobox({
    options,
    onSave,
    onCreate,
+   ariaLabel,
    placeholder,
    className,
    startContent,
    renderSelected,
 }: InlineEditComboboxProps) {
+   const [editing, setEditing] = useState(false);
    const [pending, setPending] = useState<string | null>(null);
    const lastCommittedRef = useRef(value);
 
@@ -41,6 +43,7 @@ export function InlineEditCombobox({
    const displayed = pending ?? value;
 
    async function commit(next: string) {
+      setEditing(false);
       if (next === value) return;
       setPending(next);
       const result = await fromPromise(onSave(next), (e) => e);
@@ -53,13 +56,47 @@ export function InlineEditCombobox({
       if (result.isOk()) commit(result.value);
    }
 
+   const selectedOption = options.find((option) => option.value === displayed);
+
+   if (!editing) {
+      return (
+         <button
+            aria-label={ariaLabel}
+            className={cn(
+               "flex h-8 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md border border-dashed border-transparent bg-muted/20 px-2 text-left text-sm transition-colors hover:border-border hover:bg-muted/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none",
+               className,
+            )}
+            onClick={() => setEditing(true)}
+            type="button"
+         >
+            {selectedOption ? (
+               (renderSelected?.(selectedOption) ?? (
+                  <>
+                     {startContent}
+                     <span className="truncate">{selectedOption.label}</span>
+                  </>
+               ))
+            ) : (
+               <>
+                  {startContent}
+                  <span className="truncate text-muted-foreground">
+                     {placeholder ?? "—"}
+                  </span>
+               </>
+            )}
+         </button>
+      );
+   }
+
    return (
       <Combobox
          className={cn(
             "h-8 w-full border-0 bg-transparent px-1 shadow-none focus-visible:ring-1 focus-visible:ring-ring",
             className,
          )}
+         defaultOpen
          onCreate={onCreate ? handleCreate : undefined}
+         onOpenChange={setEditing}
          onValueChange={commit}
          options={options}
          placeholder={placeholder ?? "—"}

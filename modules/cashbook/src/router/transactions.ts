@@ -216,6 +216,7 @@ export const create = protectedProcedure
             return transactionData.categoryId;
          })(),
          tagId,
+         relationshipId: transactionData.relationshipId,
          date: transactionData.date,
       });
 
@@ -592,6 +593,7 @@ export const update = protectedProcedure
             input.destinationBankAccountId ?? existing.destinationBankAccountId,
          categoryId: input.categoryId ?? existing.categoryId,
          tagId: input.tagId ?? existing.tagId,
+         relationshipId: input.relationshipId ?? existing.relationshipId,
          date: input.date ?? existing.date,
       });
       const { id, tagId, items, ...data } = input;
@@ -713,11 +715,16 @@ export const bulkUpdate = protectedProcedure
          categoryId:
             data.categoryId !== undefined ? data.categoryId : row.categoryId,
          tagId: tagId !== undefined ? tagId : row.tagId,
+         relationshipId:
+            data.relationshipId !== undefined
+               ? data.relationshipId
+               : row.relationshipId,
          date: data.date !== undefined ? data.date : row.date,
       }));
 
       const bankAccountIds = new Set<string>();
       const categoryIds = new Set<string>();
+      const relationshipIds = new Set<string>();
       const tagIds = new Set<string>();
       for (const refs of finalReferences) {
          if (refs.bankAccountId) bankAccountIds.add(refs.bankAccountId);
@@ -725,6 +732,7 @@ export const bulkUpdate = protectedProcedure
             bankAccountIds.add(refs.destinationBankAccountId);
          }
          if (refs.categoryId) categoryIds.add(refs.categoryId);
+         if (refs.relationshipId) relationshipIds.add(refs.relationshipId);
          if (refs.tagId) tagIds.add(refs.tagId);
       }
 
@@ -776,6 +784,22 @@ export const bulkUpdate = protectedProcedure
       });
       if (tagRowsResult.isErr()) throw tagRowsResult.error;
 
+      const relationshipRowsResult = await Result.tryPromise({
+         try: () =>
+            relationshipIds.size > 0
+               ? context.db.query.parties.findMany({
+                    where: (f, { inArray }) =>
+                       inArray(f.id, Array.from(relationshipIds)),
+                 })
+               : Promise.resolve([]),
+         catch: () =>
+            new TransactionRouterError({
+               error: transactionRouterErrors.INTERNAL(),
+               message: "Falha ao verificar relacionamentos.",
+            }),
+      });
+      if (relationshipRowsResult.isErr()) throw relationshipRowsResult.error;
+
       const bankAccountRows = new Map(
          bankAccountRowsResult.value.map((account) => [account.id, account]),
       );
@@ -783,6 +807,12 @@ export const bulkUpdate = protectedProcedure
          categoryRowsResult.value.map((category) => [category.id, category]),
       );
       const tagRows = new Map(tagRowsResult.value.map((tag) => [tag.id, tag]));
+      const relationshipRows = new Map(
+         relationshipRowsResult.value.map((relationship) => [
+            relationship.id,
+            relationship,
+         ]),
+      );
 
       for (const refs of finalReferences) {
          if (refs.bankAccountId) {
@@ -847,6 +877,16 @@ export const bulkUpdate = protectedProcedure
                throw new TransactionRouterError({
                   error: transactionRouterErrors.BAD_REQUEST(),
                   message: "Centro de Custo inválido.",
+               });
+            }
+         }
+
+         if (refs.relationshipId) {
+            const relationship = relationshipRows.get(refs.relationshipId);
+            if (!relationship || relationship.teamId !== context.teamId) {
+               throw new TransactionRouterError({
+                  error: transactionRouterErrors.BAD_REQUEST(),
+                  message: "Relacionamento inválido.",
                });
             }
          }

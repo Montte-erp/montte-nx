@@ -35,6 +35,7 @@ export function InlineEditSelect({
    startContent,
    hideValue,
 }: InlineEditSelectProps) {
+   const [editing, setEditing] = useState(false);
    const [pending, setPending] = useState<string | null>(null);
    const lastCommittedRef = useRef(value);
 
@@ -48,14 +49,48 @@ export function InlineEditSelect({
    const displayed = pending ?? value;
 
    async function commit(next: string) {
+      setEditing(false);
       if (next === value) return;
       setPending(next);
       const result = await fromPromise(onSave(next), (e) => e);
       if (result.isErr()) setPending(null);
    }
 
+   const selectedOption = options.find((option) => option.value === displayed);
+
+   if (!editing) {
+      return (
+         <button
+            aria-label={ariaLabel}
+            className={cn(
+               "flex h-8 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md border border-dashed border-transparent bg-muted/20 px-2 text-left text-sm transition-colors hover:border-border hover:bg-muted/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none",
+               className,
+            )}
+            onClick={() => setEditing(true)}
+            type="button"
+         >
+            {startContent}
+            {!hideValue && (
+               <span
+                  className={cn(
+                     "truncate",
+                     !selectedOption && "text-muted-foreground",
+                  )}
+               >
+                  {selectedOption?.label ?? placeholder ?? "—"}
+               </span>
+            )}
+         </button>
+      );
+   }
+
    return (
-      <Select onValueChange={commit} value={displayed}>
+      <Select
+         onOpenChange={(open) => setEditing(open)}
+         onValueChange={commit}
+         open={editing}
+         value={displayed}
+      >
          <SelectTrigger
             aria-label={ariaLabel}
             className={cn(

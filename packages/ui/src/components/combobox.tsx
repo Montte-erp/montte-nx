@@ -34,6 +34,7 @@ interface ComboboxProps {
    className?: string;
    disabled?: boolean;
    defaultOpen?: boolean;
+   onOpenChange?: (open: boolean) => void;
    id?: string;
    onBlur?: React.FocusEventHandler<HTMLButtonElement>;
    onCreate?: (name: string) => void;
@@ -52,6 +53,7 @@ export function Combobox({
    className,
    disabled = false,
    defaultOpen = false,
+   onOpenChange,
    id,
    onBlur,
    onCreate,
@@ -89,12 +91,20 @@ export function Combobox({
       }
    }, []);
 
+   const handleOpenChange = React.useCallback(
+      (nextOpen: boolean) => {
+         setOpen(nextOpen);
+         onOpenChange?.(nextOpen);
+      },
+      [onOpenChange],
+   );
+
    const handleCreate = () => {
       const trimmedSearch = search.trim();
       if (trimmedSearch && onCreate) {
          onCreate(trimmedSearch);
          setSearch("");
-         setOpen(false);
+         handleOpenChange(false);
       }
    };
 
@@ -106,7 +116,7 @@ export function Combobox({
       );
 
    return (
-      <Popover onOpenChange={setOpen} open={open}>
+      <Popover onOpenChange={handleOpenChange} open={open}>
          <PopoverTrigger asChild>
             <Button
                aria-expanded={open}
@@ -187,7 +197,7 @@ export function Combobox({
                                                 ? ""
                                                 : currentValue,
                                           );
-                                          setOpen(false);
+                                          handleOpenChange(false);
                                        }}
                                        ref={virtualizer.measureElement}
                                        value={option.value}

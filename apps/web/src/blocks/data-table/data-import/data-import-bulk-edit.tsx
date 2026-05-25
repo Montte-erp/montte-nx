@@ -20,7 +20,10 @@ import { useState } from "react";
 interface DataImportBulkEditProps<TData> {
    table: Table<TData>;
    selectedIndices: Set<number>;
-   onUpdate: (key: string, value: unknown) => void;
+   onUpdate: (
+      keyOrPatch: string | Record<string, unknown>,
+      value?: unknown,
+   ) => void;
 }
 
 export function DataImportBulkEdit<TData>({
@@ -122,7 +125,9 @@ export function DataImportBulkEdit<TData>({
                               className="w-full justify-start text-xs"
                               key={opt.value}
                               onClick={() => {
-                                 onUpdate(accKey, opt.value);
+                                 const patch = meta.bulkEditPatch?.(opt);
+                                 if (patch) onUpdate(patch);
+                                 else onUpdate(accKey, opt.value);
                                  setOpenCol(null);
                               }}
                               size="sm"
@@ -161,7 +166,9 @@ export function DataImportBulkEdit<TData>({
                                     keywords={[opt.label]}
                                     value={opt.value}
                                     onSelect={() => {
-                                       onUpdate(accKey, opt.value);
+                                       const patch = meta.bulkEditPatch?.(opt);
+                                       if (patch) onUpdate(patch);
+                                       else onUpdate(accKey, opt.value);
                                        setOpenCol(null);
                                     }}
                                  >

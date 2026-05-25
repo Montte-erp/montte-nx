@@ -9,6 +9,7 @@ export const transactionSortIdSchema = z.enum([
    "date",
    "dueDate",
    "name",
+   "relationshipName",
    "status",
    "type",
 ]);

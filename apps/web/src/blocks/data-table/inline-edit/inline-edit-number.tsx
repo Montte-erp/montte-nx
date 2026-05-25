@@ -22,6 +22,7 @@ export function InlineEditNumber({
    step,
    className,
 }: InlineEditNumberProps) {
+   const [editing, setEditing] = useState(false);
    const [draft, setDraft] = useState(value);
    const lastCommittedRef = useRef(value);
    const latestSaveIdRef = useRef(0);
@@ -46,6 +47,22 @@ export function InlineEditNumber({
       [onSave, value],
    );
 
+   if (!editing) {
+      return (
+         <button
+            aria-label={ariaLabel}
+            className={cn(
+               "flex h-8 w-full min-w-0 cursor-pointer items-center rounded-md border border-dashed border-transparent bg-muted/20 px-2 text-left text-sm tabular-nums transition-colors hover:border-border hover:bg-muted/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none",
+               className,
+            )}
+            onClick={() => setEditing(true)}
+            type="button"
+         >
+            <span className="truncate">{draft}</span>
+         </button>
+      );
+   }
+
    return (
       <NumberInput
          aria-label={ariaLabel}
@@ -55,6 +72,7 @@ export function InlineEditNumber({
          )}
          max={max}
          min={min}
+         onBlur={() => setEditing(false)}
          onChange={commit}
          step={step}
          value={draft}

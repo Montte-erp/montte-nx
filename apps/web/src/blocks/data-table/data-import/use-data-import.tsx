@@ -70,6 +70,30 @@ function normalizeHeader(s: string) {
       .replace(/[^a-z0-9]/g, "");
 }
 
+function canAutoMatchHeader(col: ImportableColumn, normalizedHeader: string) {
+   const normalizedKey = normalizeHeader(col.key);
+   const normalizedLabel = normalizeHeader(col.label);
+   if (
+      (normalizedKey === "amount" || normalizedLabel === "valor") &&
+      /saldo/.test(normalizedHeader)
+   ) {
+      return false;
+   }
+   if (
+      (normalizedKey === "bankaccountname" || normalizedLabel === "conta") &&
+      /(receber|pagar|saldo)/.test(normalizedHeader)
+   ) {
+      return false;
+   }
+   if (
+      (normalizedKey === "categoryname" || normalizedLabel === "categoria") &&
+      /(despesa|receita|tipo)/.test(normalizedHeader)
+   ) {
+      return false;
+   }
+   return true;
+}
+
 function autoMatch(
    fileHeaders: string[],
    cols: ImportableColumn[],
@@ -78,13 +102,22 @@ function autoMatch(
    for (const col of cols) {
       const normLabel = normalizeHeader(col.label);
       const normKey = normalizeHeader(col.key);
+      const exactMatch = fileHeaders.find((h) => {
+         const normH = normalizeHeader(h);
+         if (!canAutoMatchHeader(col, normH)) return false;
+         return normH === normLabel || normH === normKey;
+      });
+      if (exactMatch) {
+         mapping[col.key] = exactMatch;
+         continue;
+      }
+
       const match = fileHeaders.find((h) => {
          const normH = normalizeHeader(h);
+         if (!canAutoMatchHeader(col, normH)) return false;
          return (
-            normH === normLabel ||
-            normH === normKey ||
-            normH.includes(normLabel) ||
-            normH.includes(normKey)
+            (normLabel.length >= 6 && normH.includes(normLabel)) ||
+            (normKey.length >= 6 && normH.includes(normKey))
          );
       });
       if (match) mapping[col.key] = match;

@@ -184,6 +184,7 @@ export type FinancialReferences = {
    destinationBankAccountId?: string | null;
    categoryId?: string | null;
    tagId?: string | null;
+   relationshipId?: string | null;
    date?: Date | string | null;
 };
 
@@ -299,6 +300,27 @@ export async function requireValidFinancialReferences(
          throw new CashbookMiddlewareError({
             error: cashbookMiddlewareErrors.BAD_REQUEST(),
             message: "Centro de Custo inválido.",
+         });
+      }
+   }
+
+   if (refs.relationshipId) {
+      const relationship = await Result.tryPromise({
+         try: () =>
+            db.query.parties.findFirst({
+               where: (f, { eq }) => eq(f.id, refs.relationshipId ?? ""),
+            }),
+         catch: () =>
+            new CashbookMiddlewareError({
+               error: cashbookMiddlewareErrors.INTERNAL(),
+               message: "Falha ao verificar relacionamento.",
+            }),
+      });
+      if (Result.isError(relationship)) throw relationship.error;
+      if (!relationship.value || relationship.value.teamId !== teamId) {
+         throw new CashbookMiddlewareError({
+            error: cashbookMiddlewareErrors.BAD_REQUEST(),
+            message: "Relacionamento inválido.",
          });
       }
    }

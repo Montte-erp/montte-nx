@@ -22,6 +22,7 @@ function ScrollArea({
             {children}
          </ScrollAreaPrimitive.Viewport>
          <ScrollBar />
+         <ScrollBar orientation="horizontal" />
          <ScrollAreaPrimitive.Corner />
       </ScrollAreaPrimitive.Root>
    );

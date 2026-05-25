@@ -101,6 +101,13 @@ import {
 } from "@/integrations/tanstack-db/categories";
 import { creditCardsCollectionOptions } from "@/integrations/tanstack-db/credit-cards";
 import {
+   buildOptimisticRelationshipRow,
+   buildOptimisticRelationshipRowId,
+   createRelationshipAction,
+   relationshipsCollectionOptions,
+   type RelationshipCreateInput,
+} from "@/integrations/tanstack-db/relationships";
+import {
    buildOptimisticTransactionRow,
    buildOptimisticTransactionRowId,
    acceptSuggestedTransactionCategoryAction,
@@ -162,6 +169,7 @@ const IMPORT_HEADER_LABELS: Record<string, string> = {
    data: "Data",
    date: "Data",
    datetxn: "Data",
+   pagamento: "Data",
    duedate: "Vencimento",
    valor: "Valor",
    amount: "Valor",
@@ -174,12 +182,15 @@ const IMPORT_HEADER_LABELS: Record<string, string> = {
    detalhe: "Nome",
    tipo: "Tipo",
    type: "Tipo",
+   despesareceita: "Tipo",
    status: "Status",
    conta: "Conta",
    bankaccountname: "Conta",
    bankaccount: "Conta",
    contaid: "Conta",
    banco: "Conta",
+   cliente: "Cliente",
+   fornecedor: "Fornecedor",
    cartao: "Cartão",
    card: "Cartão",
    creditcard: "Cartão",
@@ -189,6 +200,9 @@ const IMPORT_HEADER_LABELS: Record<string, string> = {
    categoryname: "Categoria",
    categoriaid: "Categoria",
    vencimento: "Vencimento",
+   contaareceberrs: "Conta a receber",
+   contaapagarrs: "Conta a pagar",
+   saldors: "Saldo",
    fitid: "Identificador",
    reference: "Referência",
 };
@@ -288,6 +302,11 @@ function parseImportType(
    return signedAmount < 0 ? "expense" : "income";
 }
 
+function cleanImportText(value: unknown): string {
+   const text = String(value ?? "").trim();
+   return text === "-" ? "" : text;
+}
+
 function parseImportStatus(value: unknown): {
    status: "pending" | "paid";
    ignored: boolean;
@@ -300,7 +319,15 @@ function parseImportStatus(value: unknown): {
    ) {
       return { status: "pending", ignored: true };
    }
-   if (normalized === "paid" || normalized.includes("efetivado")) {
+   const isNegativePaid =
+      /\bnao\s+(pago|efetivado)\b/.test(normalized) ||
+      /\bnão\s+(pago|efetivado)\b/.test(normalized);
+   if (
+      !isNegativePaid &&
+      (normalized === "paid" ||
+         /\befetivado\b/.test(normalized) ||
+         /\bpago\b/.test(normalized))
+   ) {
       return { status: "paid", ignored: false };
    }
    return { status: "pending", ignored: false };
@@ -354,6 +381,46 @@ function buildInlineCategoryRow({
       createdAt: now,
       updatedAt: now,
    };
+}
+
+function getColumnDefId(column: ColumnDef<TransactionRow>): string | null {
+   if (column.id) return column.id;
+   if ("accessorKey" in column && typeof column.accessorKey === "string") {
+      return column.accessorKey;
+   }
+   return null;
+}
+
+function normalizeTransactionsColumnOrder(
+   order: string[] | undefined,
+   defaultOrder: string[],
+): string[] {
+   const known = new Set(defaultOrder);
+   const middle = (order ?? []).filter(
+      (id) => known.has(id) && id !== "__select" && id !== "__actions",
+   );
+
+   const ensureBefore = (id: string, beforeId: string) => {
+      const currentIndex = middle.indexOf(id);
+      if (currentIndex >= 0) middle.splice(currentIndex, 1);
+      const beforeIndex = middle.indexOf(beforeId);
+      if (beforeIndex >= 0) {
+         middle.splice(beforeIndex, 0, id);
+         return;
+      }
+      middle.push(id);
+   };
+
+   ensureBefore("customerName", "bankAccountName");
+   ensureBefore("supplierName", "bankAccountName");
+
+   for (const id of defaultOrder) {
+      if (id !== "__select" && id !== "__actions" && !middle.includes(id)) {
+         middle.push(id);
+      }
+   }
+
+   return ["__select", ...middle, "__actions"];
 }
 
 export function TransactionsList() {
@@ -491,6 +558,32 @@ export function TransactionsList() {
             creditCardsCollectionOptions({
                queryClient,
                teamId: collectionTeamId,
+            }),
+         ),
+      [collectionTeamId, queryClient],
+   );
+
+   const customersCollection = useMemo(
+      () =>
+         createCollection(
+            relationshipsCollectionOptions({
+               queryClient,
+               teamId: collectionTeamId,
+               role: "customer",
+               archived: false,
+            }),
+         ),
+      [collectionTeamId, queryClient],
+   );
+
+   const suppliersCollection = useMemo(
+      () =>
+         createCollection(
+            relationshipsCollectionOptions({
+               queryClient,
+               teamId: collectionTeamId,
+               role: "supplier",
+               archived: false,
             }),
          ),
       [collectionTeamId, queryClient],
@@ -658,6 +751,12 @@ export function TransactionsList() {
                         rule.desc ? "desc" : "asc",
                      );
                      break;
+                  case "relationshipName":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.relationshipName,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
                   case "status":
                      query = query.orderBy(
                         ({ transaction }) => transaction.status,
@@ -731,6 +830,22 @@ export function TransactionsList() {
       [creditCardsCollection],
    );
 
+   const { data: customersResult } = useLiveQuery(
+      (q) =>
+         q
+            .from({ customer: customersCollection })
+            .select(({ customer }) => customer),
+      [customersCollection],
+   );
+
+   const { data: suppliersResult } = useLiveQuery(
+      (q) =>
+         q
+            .from({ supplier: suppliersCollection })
+            .select(({ supplier }) => supplier),
+      [suppliersCollection],
+   );
+
    const safeTransactions = useMemo(
       () => liveTransactions ?? [],
       [liveTransactions],
@@ -743,6 +858,14 @@ export function TransactionsList() {
    const safeCreditCards = useMemo(
       () => creditCardsResult ?? [],
       [creditCardsResult],
+   );
+   const safeCustomers = useMemo(
+      () => customersResult ?? [],
+      [customersResult],
+   );
+   const safeSuppliers = useMemo(
+      () => suppliersResult ?? [],
+      [suppliersResult],
    );
 
    const selectedBankAccount = useMemo(
@@ -838,6 +961,82 @@ export function TransactionsList() {
       [activeTeamId, categoriesCollection],
    );
 
+   const handleCreateCustomer = useCallback(
+      async (name: string): Promise<string> => {
+         if (!activeTeamId) {
+            toast.error("Time ativo não encontrado.");
+            return "";
+         }
+         const input: RelationshipCreateInput = {
+            name,
+            role: "customer",
+            kind: "company",
+            documentNumber: null,
+            email: null,
+            phone: null,
+         };
+         const createCustomer = createRelationshipAction(customersCollection);
+         const transaction = createCustomer({
+            row: buildOptimisticRelationshipRow({
+               id: buildOptimisticRelationshipRowId(),
+               input,
+               teamId: activeTeamId,
+            }),
+            input,
+         });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao criar cliente."),
+            );
+            return "";
+         }
+         return result.value.id;
+      },
+      [activeTeamId, customersCollection],
+   );
+
+   const handleCreateSupplier = useCallback(
+      async (name: string): Promise<string> => {
+         if (!activeTeamId) {
+            toast.error("Time ativo não encontrado.");
+            return "";
+         }
+         const input: RelationshipCreateInput = {
+            name,
+            role: "supplier",
+            kind: "company",
+            documentNumber: null,
+            email: null,
+            phone: null,
+         };
+         const createSupplier = createRelationshipAction(suppliersCollection);
+         const transaction = createSupplier({
+            row: buildOptimisticRelationshipRow({
+               id: buildOptimisticRelationshipRowId(),
+               input,
+               teamId: activeTeamId,
+            }),
+            input,
+         });
+         const result = await Result.tryPromise({
+            try: () => transaction.isPersisted.promise,
+            catch: (error) => error,
+         });
+         if (Result.isError(result)) {
+            toast.error(
+               getErrorMessage(result.error, "Erro ao criar fornecedor."),
+            );
+            return "";
+         }
+         return result.value.id;
+      },
+      [activeTeamId, suppliersCollection],
+   );
+
    const handleCreateTransaction = useCallback(
       async (input: TransactionCreateInput) => {
          if (!activeTeamId) {
@@ -863,6 +1062,14 @@ export function TransactionsList() {
                creditCardName:
                   safeCreditCards.find((card) => card.id === input.creditCardId)
                      ?.name ?? null,
+               relationshipName:
+                  safeCustomers.find(
+                     (customer) => customer.id === input.relationshipId,
+                  )?.name ??
+                  safeSuppliers.find(
+                     (supplier) => supplier.id === input.relationshipId,
+                  )?.name ??
+                  null,
             }),
             input,
          });
@@ -883,6 +1090,8 @@ export function TransactionsList() {
          safeBankAccounts,
          safeCategories,
          safeCreditCards,
+         safeCustomers,
+         safeSuppliers,
          transactionsCollection,
       ],
    );
@@ -1067,6 +1276,10 @@ export function TransactionsList() {
 
    const importConfig: DataImportConfig = useMemo(
       () => ({
+         importColumns: [
+            { key: "receivableAmount", label: "Conta a receber" },
+            { key: "payableAmount", label: "Conta a pagar" },
+         ],
          accept: {
             "text/csv": [".csv"],
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
@@ -1088,27 +1301,48 @@ export function TransactionsList() {
             return localizeImportHeaders(parsed);
          },
          mapRow: (row, i) => {
-            const parsedAmount = parseImportAmount(row.amount);
-            const type = parseImportType(row.type, parsedAmount.signedAmount);
+            const receivableAmount = String(row.receivableAmount ?? "").trim();
+            const payableAmount = String(row.payableAmount ?? "").trim();
+            const amountSource = (() => {
+               if (receivableAmount) return receivableAmount;
+               if (payableAmount) return payableAmount;
+               return row.amount;
+            })();
+            const parsedAmount = parseImportAmount(amountSource);
+            const type = receivableAmount
+               ? "income"
+               : payableAmount
+                 ? "expense"
+                 : parseImportType(row.type, parsedAmount.signedAmount);
             const parsedStatus = parseImportStatus(row.status);
 
             return {
                id: `__import_${i}`,
-               date: parseImportDate(row.date),
+               date: parseImportDate(row.date) || parseImportDate(row.dueDate),
                amount: parsedAmount.amount,
                type,
-               name: String(row.name ?? "").trim() || null,
+               name: cleanImportText(row.name) || null,
                status: parsedStatus.status,
                ignored: parsedStatus.ignored,
                dueDate: row.dueDate ? parseImportDate(row.dueDate) : null,
-               bankAccountName: String(row.bankAccountName ?? "").trim(),
+               bankAccountName: cleanImportText(row.bankAccountName),
                bankAccountId: resolveImportId(
                   safeBankAccounts,
                   row.bankAccountName,
                ),
-               categoryName: String(row.categoryName ?? "").trim(),
+               customerName: cleanImportText(row.customerName),
+               supplierName: cleanImportText(row.supplierName),
+               relationshipName:
+                  type === "income"
+                     ? cleanImportText(row.customerName)
+                     : cleanImportText(row.supplierName),
+               relationshipId:
+                  type === "income"
+                     ? resolveImportId(safeCustomers, row.customerName)
+                     : resolveImportId(safeSuppliers, row.supplierName),
+               categoryName: cleanImportText(row.categoryName),
                categoryId: resolveImportId(safeCategories, row.categoryName),
-               creditCardName: String(row.creditCardName ?? "").trim(),
+               creditCardName: cleanImportText(row.creditCardName),
                creditCardId: resolveImportId(
                   safeCreditCards,
                   row.creditCardName,
@@ -1233,6 +1467,15 @@ export function TransactionsList() {
                const categoryId =
                   resolveImportId(safeCategories, r.categoryId) ??
                   resolveImportId(safeCategories, r.categoryName);
+               const parsedType = parseImportType(r.type, 1);
+               const relationshipId =
+                  resolveImportId(safeCustomers, r.relationshipId) ??
+                  resolveImportId(safeSuppliers, r.relationshipId) ??
+                  (parsedType === "income"
+                     ? (resolveImportId(safeCustomers, r.customerName) ??
+                       resolveImportId(safeCustomers, r.relationshipName))
+                     : (resolveImportId(safeSuppliers, r.supplierName) ??
+                       resolveImportId(safeSuppliers, r.relationshipName)));
 
                if (!date) {
                   invalidDateValueRows.push(line);
@@ -1253,13 +1496,14 @@ export function TransactionsList() {
 
                return [
                   {
-                     type: parseImportType(r.type, 1),
+                     type: parsedType,
                      amount,
                      date,
                      name: r.name ? String(r.name) : null,
                      bankAccountId,
                      destinationBankAccountId: null,
                      categoryId,
+                     relationshipId,
                      attachments: [],
                      description: null,
                      creditCardId,
@@ -1325,6 +1569,14 @@ export function TransactionsList() {
                         safeCreditCards.find(
                            (card) => card.id === input.creditCardId,
                         )?.name ?? null,
+                     relationshipName:
+                        safeCustomers.find(
+                           (customer) => customer.id === input.relationshipId,
+                        )?.name ??
+                        safeSuppliers.find(
+                           (supplier) => supplier.id === input.relationshipId,
+                        )?.name ??
+                        null,
                   }),
                ),
             });
@@ -1352,6 +1604,8 @@ export function TransactionsList() {
          safeBankAccounts,
          safeCategories,
          safeCreditCards,
+         safeCustomers,
+         safeSuppliers,
          transactionsCollection,
       ],
    );
@@ -1365,10 +1619,14 @@ export function TransactionsList() {
          bankAccounts: safeBankAccounts,
          categories: safeCategories,
          creditCards: safeCreditCards,
+         customers: safeCustomers,
+         suppliers: safeSuppliers,
          onUpdate: handleUpdate,
          onUpdateImport: (idx, patch) => importUpdateRef.current?.(idx, patch),
          onCreateBankAccount: handleCreateBankAccount,
          onCreateCategory: handleCreateCategory,
+         onCreateCustomer: handleCreateCustomer,
+         onCreateSupplier: handleCreateSupplier,
          onAcceptSuggestedCategory: handleAcceptSuggestedCategory,
          onDismissSuggestedCategory: handleDismissSuggestedCategory,
          getRowStatus: (id) => transactionData.find((t) => t.id === id)?.status,
@@ -1475,11 +1733,15 @@ export function TransactionsList() {
       safeBankAccounts,
       safeCategories,
       safeCreditCards,
+      safeCustomers,
+      safeSuppliers,
       transactionData,
       publicEnv?.LOGO_DEV_TOKEN,
       handleUpdate,
       handleCreateBankAccount,
       handleCreateCategory,
+      handleCreateCustomer,
+      handleCreateSupplier,
       handleAcceptSuggestedCategory,
       handleDismissSuggestedCategory,
       handleMarkPaid,
@@ -1499,6 +1761,21 @@ export function TransactionsList() {
       totalRows: total,
    });
 
+   const defaultColumnOrder = useMemo(
+      () => columns.map(getColumnDefId).filter((id): id is string => !!id),
+      [columns],
+   );
+   const normalizedLayoutState = useMemo(
+      () => ({
+         ...layout.state,
+         columnOrder: normalizeTransactionsColumnOrder(
+            layout.state.columnOrder,
+            defaultColumnOrder,
+         ),
+      }),
+      [defaultColumnOrder, layout.state],
+   );
+
    const table = useReactTable({
       data: transactionData,
       columns,
@@ -1509,7 +1786,7 @@ export function TransactionsList() {
       manualFiltering: true,
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
-      state: { ...urlState.state, ...layout.state },
+      state: { ...urlState.state, ...normalizedLayoutState },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
@@ -1681,20 +1958,27 @@ export function TransactionsList() {
             </div>
             <TooltipProvider>
                <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
-                  <Table>
+                  <Table
+                     className="min-w-max"
+                     wrapperClassName="w-max min-w-full overflow-visible"
+                     style={{ minWidth: table.getTotalSize() }}
+                  >
                      <DataTableHeader table={table} />
+                     <DataImportSection
+                        api={importApi}
+                        config={importConfig}
+                        table={table}
+                     />
                      <DataTableBody<TransactionRow>
+                        estimateRowHeight={48}
+                        overscan={5}
+                        virtualized
                         getRowClassName={({ row }) =>
                            cn(
                               row.original.ignored &&
                                  "bg-muted/20 text-muted-foreground opacity-60",
                            )
                         }
-                        table={table}
-                     />
-                     <DataImportSection
-                        api={importApi}
-                        config={importConfig}
                         table={table}
                      />
                   </Table>

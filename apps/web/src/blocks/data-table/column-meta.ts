@@ -12,6 +12,7 @@ declare module "@tanstack/react-table" {
       align?: "left" | "center" | "right";
       bulkEditAction?: string;
       bulkEditIcon?: ComponentType<{ className?: string }>;
+      bulkEditPatch?: (option: DataTableOption) => Record<string, unknown>;
       cellComponent?:
          | "combobox"
          | "date"
