@@ -59,6 +59,15 @@ class SecurityAuditAgentError extends TaggedError("SecurityAuditAgentError")<{
    cause?: unknown;
 }>() {}
 
+function prFilesCommand(prNumber: string, repo: string) {
+   return [
+      `gh pr view ${prNumber} --repo ${repo} --json files --jq '.files[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"'`,
+      `gh pr diff ${prNumber} --repo ${repo} --name-only`,
+      `gh api repos/${repo}/pulls/${prNumber}/files --paginate --jq '.[] | "- " + .filename + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"'`,
+      "printf '%s\\n' 'Não foi possível listar arquivos alterados; use o diff completo abaixo.'",
+   ].join(" || ");
+}
+
 async function runRequiredCommand(
    session: FlueSession,
    command: string,
@@ -253,7 +262,7 @@ export default async function ({ init, payload, env }: FlueContext) {
             ),
             runRequiredCommand(
                session,
-               `gh pr view ${prNumber} --repo ${repo} --json files --jq '.files[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"'`,
+               prFilesCommand(prNumber, repo),
                "Falha ao listar arquivos alterados da PR.",
             ),
             runRequiredCommand(
