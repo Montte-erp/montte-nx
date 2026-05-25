@@ -13,16 +13,54 @@ const releasePayloadSchema = z.object({
    releaseNotesReference: z
       .string()
       .default(".agents/skills/release/references/release-notes.md"),
+   automatedReleaseNotesReference: z
+      .string()
+      .default(".agents/skills/release/references/automated-release-notes.md"),
    validationReference: z
       .string()
       .default(".agents/skills/release/references/release-validation.md"),
    outputFile: z.string().default("RELEASE_NOTES.md"),
+   validationFile: z.string().default("validation.json"),
+});
+
+const releaseNotesValidationSchema = z.object({
+   valid: z.boolean(),
+   errors: z.array(z.string()),
+   warnings: z.array(z.string()),
 });
 
 class ReleaseNotesAgentError extends TaggedError("ReleaseNotesAgentError")<{
    message: string;
    cause?: unknown;
 }>() {}
+
+function validateReleaseNotes(markdown: string) {
+   const errors: string[] = [];
+   const warnings: string[] = [];
+
+   if (markdown.length === 0) errors.push("Release notes vazias.");
+   if (
+      /(^|[^\p{L}\p{N}_])TODO([^\p{L}\p{N}_]|$)|!\[Demo\]|\(TODO|link se existir|senão TODO/iu.test(
+         markdown,
+      )
+   ) {
+      errors.push("Release notes contêm placeholder/TODO.");
+   }
+   if (/^# +Montte /u.test(markdown.split("\n")[0] ?? "")) {
+      errors.push("Release notes repetem o título da GitHub Release no corpo.");
+   }
+   if (/\b(schema|router|oRPC|Drizzle|DBOS)\b/u.test(markdown)) {
+      warnings.push(
+         "Corpo pode conter detalhe técnico interno; revisar antes de publicar.",
+      );
+   }
+
+   return {
+      valid: errors.length === 0,
+      errors,
+      warnings,
+   };
+}
 
 export default async function ({ init, payload }: FlueContext) {
    const parsedPayload = releasePayloadSchema.safeParse(payload);
@@ -38,8 +76,10 @@ export default async function ({ init, payload }: FlueContext) {
       changesFile,
       skillFile,
       releaseNotesReference,
+      automatedReleaseNotesReference,
       validationReference,
       outputFile,
+      validationFile,
    } = parsedPayload.data;
 
    const initResult = await Result.tryPromise({
@@ -63,6 +103,7 @@ export default async function ({ init, payload }: FlueContext) {
             readFile(changesFile, "utf8"),
             readFile(skillFile, "utf8"),
             readFile(releaseNotesReference, "utf8"),
+            readFile(automatedReleaseNotesReference, "utf8"),
             readFile(validationReference, "utf8"),
          ]),
       catch: (cause) =>
@@ -79,6 +120,7 @@ export default async function ({ init, payload }: FlueContext) {
       changes,
       skillInstruction,
       notesReference,
+      automatedReleaseNotesReferenceContent,
       validationReferenceContent,
    ] = filesResult.value;
 
@@ -96,6 +138,9 @@ Leia também estes arquivos de referência:
 
 ## Estrutura da release notes
 ${notesReference}
+
+## Automação de release notes
+${automatedReleaseNotesReferenceContent}
 
 ## Diretrizes de validação
 ${validationReferenceContent}
@@ -133,8 +178,10 @@ Retorne somente o Markdown do corpo da release, sem fences e sem explicações e
    });
    if (Result.isError(outputResult)) throw outputResult.error;
 
+   const markdown = outputResult.value.text.trim();
+
    const writeResult = await Result.tryPromise({
-      try: () => writeFile(outputFile, outputResult.value.text),
+      try: () => writeFile(outputFile, markdown),
       catch: (cause) =>
          new ReleaseNotesAgentError({
             message: "Falha ao escrever RELEASE_NOTES.md.",
@@ -143,8 +190,29 @@ Retorne somente o Markdown do corpo da release, sem fences e sem explicações e
    });
    if (Result.isError(writeResult)) throw writeResult.error;
 
+   const validation = releaseNotesValidationSchema.parse(
+      validateReleaseNotes(markdown),
+   );
+   const validationWriteResult = await Result.tryPromise({
+      try: () => writeFile(validationFile, JSON.stringify(validation, null, 2)),
+      catch: (cause) =>
+         new ReleaseNotesAgentError({
+            message: "Falha ao escrever artefato de validação da release.",
+            cause,
+         }),
+   });
+   if (Result.isError(validationWriteResult)) throw validationWriteResult.error;
+
+   if (!validation.valid) {
+      throw new ReleaseNotesAgentError({
+         message: "Release notes falharam na validação estruturada.",
+         cause: validation.errors,
+      });
+   }
+
    return {
       outputFile,
+      validationFile,
       releaseVersion,
       generated: true,
    };

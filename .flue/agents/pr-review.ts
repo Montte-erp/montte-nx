@@ -7,10 +7,18 @@ import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
 
+const safeRepoSchema = z.string().regex(/^[\w.-]+\/[\w.-]+$/u);
+const safeOutputDirSchema = z
+   .string()
+   .regex(/^(?:\.\/[\w./-]+|\.[\w./-]*|[\w][\w./-]*)$/u)
+   .refine((value) => !value.split("/").includes(".."), {
+      message: "outputDir não pode conter segmentos '..'.",
+   });
+
 const prPayloadSchema = z.object({
-   prNumber: z.number().optional(),
-   repo: z.string().optional(),
-   outputDir: z.string().default(".review"),
+   prNumber: z.number().int().nonnegative().optional(),
+   repo: safeRepoSchema.optional(),
+   outputDir: safeOutputDirSchema.default(".agent-artifacts/pr-review"),
 });
 
 const reviewCommentSchema = z.object({
@@ -18,13 +26,17 @@ const reviewCommentSchema = z.object({
    line: z.number().int().positive(),
    side: z.enum(["RIGHT", "LEFT"]).default("RIGHT"),
    severity: z.enum(["critical", "major", "minor", "trivial", "info"]),
+   confidence: z.number().min(0).max(1).default(0.7),
+   actionable: z.boolean().default(false),
+   suggestion: z.string().min(1).optional(),
+   reproSteps: z.string().min(1).optional(),
    title: z.string().min(1),
    body: z.string().min(1),
 });
 
 const reviewResultSchema = z.object({
    summary: z.string().min(1),
-   comments: z.array(reviewCommentSchema).max(20).default([]),
+   comments: z.array(reviewCommentSchema).default([]),
 });
 
 type FlueHarness = Awaited<ReturnType<FlueContext["init"]>>;
@@ -34,6 +46,14 @@ class PrReviewAgentError extends TaggedError("PrReviewAgentError")<{
    message: string;
    cause?: unknown;
 }>() {}
+
+function shellQuote(value: string | number) {
+   return `'${String(value).replace(/'/gu, `'"'"'`)}'`;
+}
+
+function ghCommand(args: Array<string | number>) {
+   return ["gh", ...args.map(shellQuote)].join(" ");
+}
 
 async function runRequiredCommand(
    session: FlueSession,
@@ -154,6 +174,15 @@ function parseDiffReviewLines(patch: string) {
    return allowed;
 }
 
+function hasActionableContent(comment: z.infer<typeof reviewCommentSchema>) {
+   if (comment.actionable || comment.suggestion || comment.reproSteps)
+      return true;
+
+   return /\b(corre[cç][aã]o|sugest[aã]o|reprodu[cç][aã]o|passos?|altere|troque|remova|adicione|valide)\b/iu.test(
+      `${comment.title}\n${comment.body}`,
+   );
+}
+
 function splitValidInlineComments(
    comments: Array<z.infer<typeof reviewCommentSchema>>,
    patch: string,
@@ -165,6 +194,32 @@ function splitValidInlineComments(
    > = [];
 
    for (const comment of comments) {
+      if (comment.severity === "trivial" || comment.severity === "info") {
+         skipped.push({
+            ...comment,
+            reason:
+               "Comentário inline trivial/info não passa nos gates anti-ruído.",
+         });
+         continue;
+      }
+
+      if (comment.confidence < 0.7) {
+         skipped.push({
+            ...comment,
+            reason: "Confidence abaixo do mínimo para comentário inline.",
+         });
+         continue;
+      }
+
+      if (!hasActionableContent(comment)) {
+         skipped.push({
+            ...comment,
+            reason:
+               "Comentário sem correção concreta, passos de reprodução ou marcação actionable.",
+         });
+         continue;
+      }
+
       const fileLines = allowed.get(comment.path);
       if (!fileLines) {
          skipped.push({
@@ -277,20 +332,32 @@ export default async function ({ init, payload, env }: FlueContext) {
       repo: payloadRepo,
       outputDir,
    } = parsedPayload.data;
-   const prNumber = payloadPrNumber ?? Number(env.PR_NUMBER);
-   const repo = payloadRepo ?? env.GITHUB_REPOSITORY;
+   const envPrNumber = z.coerce
+      .number()
+      .int()
+      .positive()
+      .safeParse(env.PR_NUMBER);
+   const prNumber =
+      payloadPrNumber ?? (envPrNumber.success ? envPrNumber.data : undefined);
+   const repoResult = safeRepoSchema.safeParse(
+      payloadRepo ?? env.GITHUB_REPOSITORY,
+   );
 
-   if (!prNumber || Number.isNaN(prNumber)) {
+   if (!prNumber || prNumber <= 0) {
       throw new PrReviewAgentError({
-         message: "Informe prNumber no payload ou PR_NUMBER no ambiente.",
+         message:
+            "Informe prNumber positivo no payload ou PR_NUMBER no ambiente.",
       });
    }
 
-   if (!repo) {
+   if (!repoResult.success) {
       throw new PrReviewAgentError({
-         message: "repo não informado.",
+         message: "repo inválido ou não informado. Use owner/repo.",
+         cause: repoResult.error,
       });
    }
+
+   const repo = repoResult.data;
 
    const harnessResult = await Result.tryPromise({
       try: () =>
@@ -339,42 +406,100 @@ export default async function ({ init, payload, env }: FlueContext) {
          Promise.all([
             runRequiredCommand(
                session,
-               `gh pr view ${prNumber} --repo ${repo} --json number,title,author,state,isDraft,reviewDecision,additions,deletions,changedFiles,labels,url,body`,
+               ghCommand([
+                  "pr",
+                  "view",
+                  prNumber,
+                  "--repo",
+                  repo,
+                  "--json",
+                  "number,title,author,state,isDraft,reviewDecision,additions,deletions,changedFiles,labels,url,body",
+               ]),
                "Falha ao coletar metadados da PR.",
             ),
             runRequiredCommand(
                session,
-               `gh pr files ${prNumber} --repo ${repo} --json path,additions,deletions --jq '.[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"'`,
+               ghCommand([
+                  "pr",
+                  "files",
+                  prNumber,
+                  "--repo",
+                  repo,
+                  "--json",
+                  "path,additions,deletions",
+                  "--jq",
+                  '.[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"',
+               ]),
                "Falha ao listar arquivos alterados da PR.",
             ),
             runRequiredCommand(
                session,
-               `gh pr diff ${prNumber} --repo ${repo}`,
+               ghCommand(["pr", "diff", prNumber, "--repo", repo]),
                "Falha ao coletar diff da PR.",
             ),
             runRequiredCommand(
                session,
-               `gh pr view ${prNumber} --repo ${repo} --json commits --jq '.commits[].message'`,
+               ghCommand([
+                  "pr",
+                  "view",
+                  prNumber,
+                  "--repo",
+                  repo,
+                  "--json",
+                  "commits",
+                  "--jq",
+                  ".commits[].message",
+               ]),
                "Falha ao coletar commits da PR.",
             ),
             runRequiredCommand(
                session,
-               `gh pr checks ${prNumber} --repo ${repo} --json name,status,conclusion || true`,
+               `${ghCommand([
+                  "pr",
+                  "checks",
+                  prNumber,
+                  "--repo",
+                  repo,
+                  "--json",
+                  "name,status,conclusion",
+               ])} || true`,
                "Falha ao coletar checks da PR.",
             ),
             runRequiredCommand(
                session,
-               `gh pr view ${prNumber} --repo ${repo} --json reviews --jq '.reviews[] | "- " + .state + " - " + .author.login + " - " + .body'`,
+               ghCommand([
+                  "pr",
+                  "view",
+                  prNumber,
+                  "--repo",
+                  repo,
+                  "--json",
+                  "reviews",
+                  "--jq",
+                  '.reviews[] | "- " + .state + " - " + .author.login + " - " + .body',
+               ]),
                "Falha ao coletar reviews da PR.",
             ),
             runRequiredCommand(
                session,
-               `gh api repos/${repo}/pulls/${prNumber}/comments --paginate --jq '.[] | "- " + .path + ":" + ((.line // 0)|tostring) + " - " + .user.login + " - " + .body'`,
+               ghCommand([
+                  "api",
+                  `repos/${repo}/pulls/${prNumber}/comments`,
+                  "--paginate",
+                  "--jq",
+                  '.[] | "- " + .path + ":" + ((.line // 0)|tostring) + " - " + .user.login + " - " + .body',
+               ]),
                "Falha ao coletar comentários inline da PR.",
             ),
             runRequiredCommand(
                session,
-               `gh api repos/${repo}/issues/${prNumber}/comments --paginate --jq '.[] | "- " + .user.login + " - " + .body'`,
+               ghCommand([
+                  "api",
+                  `repos/${repo}/issues/${prNumber}/comments`,
+                  "--paginate",
+                  "--jq",
+                  '.[] | "- " + .user.login + " - " + .body',
+               ]),
                "Falha ao coletar comentários gerais da PR.",
             ),
             readFile("AGENTS.md", "utf8"),
@@ -519,6 +644,10 @@ Retorne JSON válido, sem markdown fences, neste formato:
       "line": 123,
       "side": "RIGHT",
       "severity": "critical|major|minor|trivial|info",
+      "confidence": 0.82,
+      "actionable": true,
+      "suggestion": "Correção pequena opcional, ou omita o campo",
+      "reproSteps": "Passos de reprodução opcionais, ou omita o campo",
       "title": "Título curto do achado",
       "body": "Explique por que isso está errado, impacto concreto e correção pequena em pt-BR."
     }
@@ -529,8 +658,10 @@ Regras para comments:
 - cada comentário precisa estar em arquivo/linha do diff;
 - cada comentário precisa explicar por que está errado;
 - incluir severidade correta;
-- publicar no máximo 12 comentários;
-- não inclua comentários trivial salvo violação objetiva de regra local;
+- não limite artificialmente a quantidade de comentários; aplique apenas os gates de qualidade;
+- não inclua comentários trivial ou info;
+- cada comentário precisa ter confidence >= 0.7;
+- cada comentário precisa ter sugestão concreta, passos de reprodução ou actionable: true;
 - se não houver achados acionáveis, retorne "comments": [].
 `.trim();
 
@@ -615,7 +746,15 @@ Regras para comments:
 
       const fallbackCommentResult = await runRequiredCommand(
          session,
-         `gh pr comment ${prNumber} --repo ${repo} --body-file ${outputFile}`,
+         ghCommand([
+            "pr",
+            "comment",
+            prNumber,
+            "--repo",
+            repo,
+            "--body-file",
+            outputFile,
+         ]),
          "Falha ao comentar revisão fallback na PR.",
       );
       if (Result.isError(fallbackCommentResult))

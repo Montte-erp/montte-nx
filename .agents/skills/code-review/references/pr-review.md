@@ -32,18 +32,18 @@ Produzir review comparavel a reviewer senior, nao wrapper de diff:
 ```bash
 gh pr view "$PR_NUMBER" \
   --json number,title,body,baseRefName,headRefName,headRefOid,baseRefOid,isCrossRepository,files,statusCheckRollup \
-  > .review/pr.json
+  > .agent-artifacts/pr-review/pr.json
 
-gh pr diff "$PR_NUMBER" --patch > .review/pr.patch
-gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/comments" --paginate > .review/comments.json
-gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/reviews" --paginate > .review/reviews.json
-gh run list --json databaseId,headSha,conclusion,status,event,workflowName --limit 20 > .review/runs.json
+gh pr diff "$PR_NUMBER" --patch > .agent-artifacts/pr-review/pr.patch
+gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/comments" --paginate > .agent-artifacts/pr-review/comments.json
+gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/reviews" --paginate > .agent-artifacts/pr-review/reviews.json
+gh run list --json databaseId,headSha,conclusion,status,event,workflowName --limit 20 > .agent-artifacts/pr-review/runs.json
 ```
 
 Para CI falho, buscar logs do run correspondente:
 
 ```bash
-gh run view "$RUN_ID" --log-failed > .review/ci-failed.log
+gh run view "$RUN_ID" --log-failed > .agent-artifacts/pr-review/ci-failed.log
 ```
 
 ## Seguranca em PRs
@@ -182,10 +182,10 @@ Nao publicar comentario inline se ele nao couber nesse formato ou se a linha nao
 
 ## Saida esperada
 
-- `.review/findings.raw.json`: achados por chunk.
-- `.review/findings.valid.json`: achados validos apos stale/dedupe.
-- `.review/summary.md`: comentario final.
-- `.review/inline-comments.json`: comentarios publicaveis com path/line/side/severity/body.
-- `.review/inline-comments-skipped.json`: comentarios descartados por linha fora do diff, duplicidade, stale ou baixa confianca.
+- `.agent-artifacts/pr-review/findings.raw.json`: achados por chunk.
+- `.agent-artifacts/pr-review/findings.valid.json`: achados validos apos stale/dedupe.
+- `.agent-artifacts/pr-review/summary.md`: comentario final.
+- `.agent-artifacts/pr-review/inline-comments.json`: comentarios publicaveis com path/line/side/severity/body.
+- `.agent-artifacts/pr-review/inline-comments-skipped.json`: comentarios descartados por linha fora do diff, duplicidade, stale ou baixa confianca.
 
 O agente deve sempre conseguir explicar por que cada comentario foi publicado e por que findings descartados nao foram publicados.

@@ -11,7 +11,6 @@ on:
             type: number
 
 permissions:
-   id-token: write
    contents: read
    pull-requests: write
    issues: write
@@ -24,10 +23,15 @@ jobs:
          (
            github.event.issue.pull_request != null &&
            (
-             startsWith(github.event.comment.body, '/review') ||
-             contains(github.event.comment.body, '\n/review')
+             github.event.comment.body == '/review' ||
+             startsWith(github.event.comment.body, '/review\n') ||
+             endsWith(github.event.comment.body, '\n/review') ||
+             contains(github.event.comment.body, '\n/review\n')
            )
          )
+      concurrency:
+         group: pr-review-${{ github.event.issue.number || inputs.pr_number || github.ref }}
+         cancel-in-progress: false
       runs-on: ubuntu-latest
       timeout-minutes: 30
       steps:
@@ -109,7 +113,7 @@ jobs:
 
          - name: Checkout trusted base
            if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
-           uses: actions/checkout@v6
+           uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
            with:
               ref: ${{ steps.pr.outputs.base_sha }}
               fetch-depth: 0
@@ -117,9 +121,9 @@ jobs:
 
          - name: Setup Bun
            if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
-           uses: oven-sh/setup-bun@v2
+           uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
            with:
-              bun-version: latest
+              bun-version: 1.3.9
 
          - name: Install dependencies
            if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
@@ -140,8 +144,8 @@ jobs:
 
          - name: Upload review artifacts
            if: always() && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
-           uses: actions/upload-artifact@v4
+           uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
            with:
               name: pr-review-ai-${{ steps.pr.outputs.number }}
-              path: .review
+              path: .agent-artifacts/pr-review
               if-no-files-found: ignore

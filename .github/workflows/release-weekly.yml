@@ -21,7 +21,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
          - name: Checkout
-           uses: actions/checkout@v6
+           uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
            with:
               fetch-depth: 0
               fetch-tags: true
@@ -69,9 +69,9 @@ jobs:
 
          - name: Setup Bun for Flue
            if: steps.version.outputs.skip != 'true'
-           uses: oven-sh/setup-bun@v2
+           uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
            with:
-              bun-version: latest
+              bun-version: 1.3.9
 
          - name: Install dependencies
            if: steps.version.outputs.skip != 'true'
@@ -93,8 +93,10 @@ jobs:
                   changesFile: "changes.md",
                   skillFile: ".agents/skills/release/SKILL.md",
                   releaseNotesReference: ".agents/skills/release/references/release-notes.md",
+                  automatedReleaseNotesReference: ".agents/skills/release/references/automated-release-notes.md",
                   validationReference: ".agents/skills/release/references/release-validation.md",
-                  outputFile: "RELEASE_NOTES.md"
+                  outputFile: "RELEASE_NOTES.md",
+                  validationFile: "validation.json"
                 }'
               )
 
@@ -146,9 +148,10 @@ jobs:
 
          - name: Upload notes artifact
            if: steps.version.outputs.skip != 'true'
-           uses: actions/upload-artifact@v4
+           uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
            with:
               name: release-notes-${{ steps.version.outputs.version }}
               path: |
                  changes.md
                  RELEASE_NOTES.md
+                 validation.json
