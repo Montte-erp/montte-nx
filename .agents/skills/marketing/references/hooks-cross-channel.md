@@ -1,6 +1,6 @@
 # Hooks cross-channel - biblioteca reusável
 
-Voz e regras pt-BR: ver [`blog.md`](blog.md). Esta ref cobre 10 hook patterns que servem pra abertura em qualquer canal (blog, LinkedIn, X).
+Voz, posicionamento e regras pt-BR: ver [`writing.md`](writing.md). Esta ref cobre 10 hook patterns que servem pra abertura em qualquer canal (blog, LinkedIn, X).
 
 Curado de [ognjengt/founder-skills/viral-hook-creator](https://github.com/ognjengt/founder-skills) (MIT). 19 patterns originais filtrados pros 10 que **batem com pillars Montte** e não conflitam com voz founder-led.
 
@@ -12,12 +12,12 @@ Cada hook tem: **template**, **psicologia**, **quando usar**, **exemplo adaptado
 
 **Psicologia:** pessoas aprendem com erro alheio. Vulnerabilidade = conexão.
 
-**Template:** `"Eu [ação] e [resultado negativo]. Aqui está o que aprendi."`
+**Template:** `"Eu [ação] e [resultado negativo]. O que aprendemos: [lição específica]."`
 
 **Quando usar:** postmortem, "errei feio", build-log com falha real.
 
 **Exemplo Montte:**
-> Mantivemos o módulo de Contatos por 18 meses só porque todo ERP brasileiro tem um. Aqui está o que aprendemos quando finalmente deletamos.
+> Mantivemos o módulo de Contatos por 18 meses só porque todo ERP brasileiro tem um. A lição veio quando deletamos tudo.
 
 **Antipattern:** falha fabricada / vaga ("aprendi muito com esse processo desafiador").
 
@@ -27,12 +27,12 @@ Cada hook tem: **template**, **psicologia**, **quando usar**, **exemplo adaptado
 
 **Psicologia:** pesquisa = credibilidade. Dado satisfaz a necessidade de prova.
 
-**Template:** `"Analisei [N] [coisa]. Aqui estão os [N] [padrões/dados]."`
+**Template:** `"Analisei [N] [coisa]. Encontrei [N] [padrões/dados]."`
 
 **Quando usar:** padrão de mercado sem ataque nominal, benchmark de categoria, post de dado.
 
 **Exemplo Montte:**
-> Olhei o menu dos 4 maiores ERPs brasileiros. Todos têm módulo CRM. Nenhum cliente Montte usava o nosso. Aqui está o que isso significa.
+> Olhei o menu dos 4 maiores ERPs brasileiros. Todos têm módulo CRM. Nenhum cliente Montte usava o nosso. O padrão ficou óbvio.
 
 **Antipattern:** análise sem fonte/número, "muitos estudos mostram que…".
 
@@ -42,12 +42,12 @@ Cada hook tem: **template**, **psicologia**, **quando usar**, **exemplo adaptado
 
 **Psicologia:** quebra de padrão. Padrão interrompe scroll.
 
-**Template:** `"Todo mundo diz [X]. Estão errados - e aqui estão os números."`
+**Template:** `"Todo mundo diz [X]. Os números apontam o contrário."`
 
 **Quando usar:** opinião contrária com receipt, posicionamento contra status quo.
 
 **Exemplo Montte:**
-> ERP precisa ter CRM, dizem. Removemos o nosso e nenhum cliente reclamou. Aqui está o que estávamos fazendo de errado.
+> ERP precisa ter CRM, dizem. Removemos o nosso e nenhum cliente reclamou. Nós copiávamos uma prateleira que ninguém abria.
 
 **Antipattern:** contrarianismo sem evidência ("vou ser polêmico hoje:").
 
@@ -102,12 +102,12 @@ Cada hook tem: **template**, **psicologia**, **quando usar**, **exemplo adaptado
 
 **Psicologia:** sistema pronto > conselho genérico. "Rouba" sugere exclusividade.
 
-**Template:** `"Aqui está o [processo/framework] exato que usamos pra [resultado]. Rouba."`
+**Template:** `"O [processo/checklist] que usamos pra [resultado]. Rouba."`
 
 **Quando usar:** post de framework/playbook, repurpose de doc interno.
 
 **Exemplo Montte:**
-> Aqui está o checklist de 7 perguntas que usamos antes de remover qualquer módulo do Montte. Rouba e roda no seu produto.
+> O checklist de 7 perguntas que usamos antes de remover qualquer módulo do Montte. Rouba e roda no seu produto.
 
 **Antipattern:** "rouba" sem o processo real anexado, lead-magnet por trás do email.
 
@@ -145,16 +145,16 @@ Cada hook tem: **template**, **psicologia**, **quando usar**, **exemplo adaptado
 
 ## 10. Reset Expectations (Reseta a Expectativa)
 
-**Psicologia:** "esquece o que te disseram, aqui está a verdade". Pattern interrupt.
+**Psicologia:** "esquece o que te disseram, a verdade é outra". Pattern interrupt.
 
-**Template:** `"Esquece [conselho consagrado]. Aqui está o que funciona em [contexto]."`
+**Template:** `"Esquece [conselho consagrado]. Em [contexto], [tese contrária concreta]."`
 
 **Quando usar:** opinião que contradiz consenso de mercado, reframe de positioning.
 
 **Exemplo Montte:**
-> Esquece "ERP precisa ter tudo". O ERP do futuro tem **menos módulos** que o concorrente, não mais. Aqui está por quê.
+> Esquece "ERP precisa ter tudo". O ERP do futuro tem **menos módulos** que o concorrente, não mais. No nosso caso, CRM virou peso morto.
 
-**Antipattern:** "esquece" sem o "aqui está", reframe sem fundamentação.
+**Antipattern:** "esquece" sem tese concreta, reframe sem fundamentação.
 
 ---
 

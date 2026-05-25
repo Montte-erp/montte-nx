@@ -1,6 +1,6 @@
 # X (Twitter) - formatos, arquitetura de thread, algoritmo
 
-Voz e regras pt-BR: ver [`blog.md`](blog.md). Esta ref cobre só o que é específico de X.
+Voz, posicionamento e regras pt-BR: ver [`writing.md`](writing.md). Esta ref cobre só o que é específico de X.
 
 Curado de [ognjengt/founder-skills/x-writer](https://github.com/ognjengt/founder-skills) e [alirezarezvani X/Twitter Growth Engine](https://alirezarezvani.github.io/claude-skills/skills/marketing-skill/x-twitter-growth/). Mantive os 5 formatos que rendem pra voz Montte (founder build-log + opinião contrária + frameworks). Cortei "humor" e "reverse advice" - não casam com tom.
 
@@ -45,7 +45,7 @@ Curado de [ognjengt/founder-skills/x-writer](https://github.com/ognjengt/founder
 
 **Regras:**
 - Cada palavra precisa merecer o lugar
-- 1 ideia. Sem filler. Sem explicar.
+- 1 ideia. Sem enrolação. Sem explicar.
 - Se dá pra tirar uma palavra sem perder sentido, tira.
 
 **Exemplo Montte:**
@@ -191,7 +191,7 @@ Todo ERP brasileiro tem CRM nativo.
 
 Deletei o nosso semana passada. 3.081 linhas, 37 arquivos.
 
-Aqui está o raciocínio - e os dados que confirmam que era módulo decorativo.
+Esse foi o raciocínio. No PostHog, vimos que era módulo decorativo.
 ```
 
 ---
@@ -221,6 +221,8 @@ Aqui está o raciocínio - e os dados que confirmam que era módulo decorativo.
 ---
 
 ## Anti-padrões (recusar antes de mostrar pro user)
+
+Antes de mostrar o draft, rode também [`stop-slop.md`](stop-slop.md).
 
 - "🧵 1/" como abertura. Soa template, corta reach. Hook precisa ser o conteúdo da 1ª linha.
 - "Continuando…" / "↓" no meio dos tweets do thread
