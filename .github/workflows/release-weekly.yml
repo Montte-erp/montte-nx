@@ -21,7 +21,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
          - name: Checkout
-           uses: actions/checkout@v6
+           uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
            with:
               fetch-depth: 0
               fetch-tags: true
@@ -67,32 +67,41 @@ jobs:
               } > changes.md
               cat changes.md
 
-         - name: Generate release notes via opencode
+         - name: Setup Bun for Flue
            if: steps.version.outputs.skip != 'true'
-           continue-on-error: true
-           uses: anomalyco/opencode/github@latest
+           uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+           with:
+              bun-version: 1.3.9
+
+         - name: Install dependencies
+           if: steps.version.outputs.skip != 'true'
+           run: bun install --frozen-lockfile
+
+         - name: Generate release notes via Flue + OpenCode Go
+           if: steps.version.outputs.skip != 'true'
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-              SKILL_FILE: .agents/skills/release/SKILL.md
-              RELEASE_NOTES_REFERENCE: .agents/skills/release/references/release-notes.md
-              VALIDATION_REFERENCE: .agents/skills/release/references/release-validation.md
-              CHANGES_FILE: changes.md
-              OUTPUT_FILE: RELEASE_NOTES.md
+              OPENCODE_GO_BASE_URL: ${{ vars.OPENCODE_GO_BASE_URL }}
+              OPENCODE_GO_GATEWAY_KEY: ${{ secrets.OPENCODE_GO_GATEWAY_KEY }}
               RELEASE_VERSION: ${{ steps.version.outputs.version }}
-           with:
-              model: opencode-go/deepseek-v4-flash
-              prompt: |
-                 Leia `$SKILL_FILE`, `$RELEASE_NOTES_REFERENCE` e `$VALIDATION_REFERENCE`.
+              RELEASE_TAG: ${{ steps.version.outputs.tag }}
+           run: |
+              PAYLOAD=$(jq -c -n \
+                --arg version "$RELEASE_VERSION" \
+                '{
+                  releaseVersion: $version,
+                  changesFile: "changes.md",
+                  skillFile: ".agents/skills/release/SKILL.md",
+                  releaseNotesReference: ".agents/skills/release/references/release-notes.md",
+                  automatedReleaseNotesReference: ".agents/skills/release/references/automated-release-notes.md",
+                  validationReference: ".agents/skills/release/references/release-validation.md",
+                  outputFile: "RELEASE_NOTES.md",
+                  validationFile: "validation.json"
+                }'
+              )
 
-                 Depois leia `$CHANGES_FILE` e gere as release notes semanais do Montte em `$OUTPUT_FILE` para a versão `$RELEASE_VERSION`.
-
-                 Regras absolutas:
-                 - siga a estrutura e a classificação de `$RELEASE_NOTES_REFERENCE`;
-                 - use PR como unidade canônica quando existir;
-                 - escreva em pt-BR com foco em valor para usuário;
-                 - não inclua H1 com o nome ou versão da release;
-                 - não invente links, imagens, documentação, números ou funcionalidades;
-                 - não escreva nada fora de `$OUTPUT_FILE`.
+              bunx flue run release-notes --target node --id "release-notes-${RELEASE_TAG}" \
+                --payload "$PAYLOAD"
 
          - name: Verify release notes
            if: steps.version.outputs.skip != 'true'
@@ -139,9 +148,10 @@ jobs:
 
          - name: Upload notes artifact
            if: steps.version.outputs.skip != 'true'
-           uses: actions/upload-artifact@v4
+           uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
            with:
               name: release-notes-${{ steps.version.outputs.version }}
               path: |
                  changes.md
                  RELEASE_NOTES.md
+                 validation.json

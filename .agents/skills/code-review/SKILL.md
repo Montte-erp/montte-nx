@@ -30,6 +30,7 @@ Leia somente as referencias envolvidas:
 - Jobs, workflows, filas, CI, release, runtime operacional: [ops-workflows](references/ops-workflows.md).
 - Testes unitarios, E2E, fixtures, validacao e flakiness: [tests-validation](references/tests-validation.md).
 - AI agents, chat, AG-UI, tool calls, telemetry e PostHog: [ai-runtime](references/ai-runtime.md).
+- Review de Pull Request acionado por `/review`, com comentarios inline: [pr-review](references/pr-review.md).
 
 Se a tarefa envolve codigo em `apps/`, `modules/`, `core/`, `packages/` ou `tooling/`, abra tambem [implementation](../implementation/SKILL.md) e suas referencias pertinentes.
 

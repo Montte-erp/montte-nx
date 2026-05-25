@@ -1,0 +1,151 @@
+name: PR Review AI
+
+on:
+   issue_comment:
+      types: [created]
+   workflow_dispatch:
+      inputs:
+         pr_number:
+            description: "Número da PR para revisão"
+            required: true
+            type: number
+
+permissions:
+   contents: read
+   pull-requests: write
+   issues: write
+   checks: read
+
+jobs:
+   review:
+      if: |
+         github.event_name == 'workflow_dispatch' ||
+         (
+           github.event.issue.pull_request != null &&
+           (
+             github.event.comment.body == '/review' ||
+             startsWith(github.event.comment.body, '/review\n') ||
+             endsWith(github.event.comment.body, '\n/review') ||
+             contains(github.event.comment.body, '\n/review\n')
+           )
+         )
+      concurrency:
+         group: pr-review-${{ github.event.issue.number || inputs.pr_number || github.ref }}
+         cancel-in-progress: false
+      runs-on: ubuntu-latest
+      timeout-minutes: 30
+      steps:
+         - name: Resolve PR metadata
+           id: pr
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              EVENT_NAME: ${{ github.event_name }}
+              EVENT_PR_NUMBER: ${{ github.event.issue.number }}
+              INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+              COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+           run: |
+              if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+                PR_NUMBER="$INPUT_PR_NUMBER"
+              else
+                PR_NUMBER="$EVENT_PR_NUMBER"
+              fi
+
+              if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "0" ]; then
+                echo "PR_NUMBER not found" >&2
+                exit 1
+              fi
+
+              gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json number,headRefOid,baseRefName,baseRefOid,isCrossRepository --jq '
+                "number=\(.number)\nhead_sha=\(.headRefOid)\nbase_ref=\(.baseRefName)\nbase_sha=\(.baseRefOid)\nis_cross_repository=\(.isCrossRepository)"
+              ' >> "$GITHUB_OUTPUT"
+
+              if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+                echo "authorized=true" >> "$GITHUB_OUTPUT"
+              else
+                PERMISSION="$(gh api "repos/$GH_REPO/collaborators/$COMMENT_AUTHOR/permission" --jq '.permission')"
+                case "$PERMISSION" in
+                  admin|maintain|write)
+                    echo "authorized=true" >> "$GITHUB_OUTPUT"
+                    ;;
+                  *)
+                    echo "authorized=false" >> "$GITHUB_OUTPUT"
+                    ;;
+                esac
+              fi
+
+         - name: Acknowledge review request
+           if: github.event_name == 'issue_comment' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              COMMENT_ID: ${{ github.event.comment.id }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+              RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+           run: |
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                "repos/$GH_REPO/issues/comments/$COMMENT_ID/reactions" \
+                -f content=eyes || true
+
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "👀 Review AI iniciado. Acompanhe: $RUN_URL"
+
+         - name: Skip unauthorized request
+           if: steps.pr.outputs.authorized != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+           run: |
+              echo "Usuário sem permissão para acionar /review." >> "$GITHUB_STEP_SUMMARY"
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "⛔ Usuário sem permissão para acionar /review."
+
+         - name: Skip fork PR
+           if: steps.pr.outputs.is_cross_repository == 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+           run: |
+              echo "Review automático ignorado para PR de fork para não expor secrets." >> "$GITHUB_STEP_SUMMARY"
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "⏭️ Review AI ignorado para PR de fork para não expor secrets."
+
+         - name: Checkout trusted base
+           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+           with:
+              ref: ${{ steps.pr.outputs.base_sha }}
+              fetch-depth: 0
+              persist-credentials: false
+
+         - name: Setup Bun
+           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+           with:
+              bun-version: 1.3.9
+
+         - name: Install dependencies
+           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           run: bun install --frozen-lockfile
+
+         - name: Run PR Review Agent
+           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           env:
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              OPENCODE_GO_BASE_URL: ${{ vars.OPENCODE_GO_BASE_URL }}
+              OPENCODE_GO_GATEWAY_KEY: ${{ secrets.OPENCODE_GO_GATEWAY_KEY }}
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+              REPO: ${{ github.repository }}
+           run: |
+              PAYLOAD=$(jq -c -n --argjson prNumber "${PR_NUMBER}" --arg repo "${REPO}" '{prNumber: $prNumber, repo: $repo}')
+              bunx flue run pr-review --target node --id "pr-review-${PR_NUMBER}" --payload "$PAYLOAD"
+
+         - name: Upload review artifacts
+           if: always() && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+           with:
+              name: pr-review-ai-${{ steps.pr.outputs.number }}
+              path: .agent-artifacts/pr-review
+              if-no-files-found: ignore

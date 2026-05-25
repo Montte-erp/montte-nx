@@ -1,0 +1,170 @@
+name: Security Audit
+
+on:
+   issue_comment:
+      types: [created]
+   workflow_dispatch:
+      inputs:
+         pr_number:
+            description: "Número da PR para auditar"
+            required: true
+            type: number
+         fail_on:
+            description: "Severidade mínima para falhar o gate"
+            required: false
+            default: high
+            type: choice
+            options:
+               - none
+               - medium
+               - high
+               - critical
+
+permissions:
+   contents: read
+   pull-requests: write
+   issues: write
+   checks: read
+
+jobs:
+   audit:
+      if: |
+         github.event_name == 'workflow_dispatch' ||
+         (
+           github.event.issue.pull_request != null &&
+           (
+             startsWith(github.event.comment.body, '/security-audit') ||
+             contains(github.event.comment.body, '\n/security-audit')
+           )
+         )
+      runs-on: ubuntu-latest
+      timeout-minutes: 30
+      steps:
+         - name: Resolve PR metadata
+           id: pr
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              EVENT_NAME: ${{ github.event_name }}
+              EVENT_PR_NUMBER: ${{ github.event.issue.number }}
+              INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+              INPUT_FAIL_ON: ${{ inputs.fail_on }}
+              COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+           run: |
+              if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+                PR_NUMBER="$INPUT_PR_NUMBER"
+                FAIL_ON="${INPUT_FAIL_ON:-high}"
+              else
+                PR_NUMBER="$EVENT_PR_NUMBER"
+                FAIL_ON="high"
+              fi
+
+              if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "0" ]; then
+                echo "PR_NUMBER not found" >&2
+                exit 1
+              fi
+
+              case "$FAIL_ON" in
+                none|medium|high|critical)
+                  ;;
+                *)
+                  echo "Invalid fail_on: $FAIL_ON" >&2
+                  exit 1
+                  ;;
+              esac
+
+              gh pr view "$PR_NUMBER" --repo "$GH_REPO" --json number,headRefOid,baseRefName,baseRefOid,isCrossRepository --jq '
+                "number=\(.number)\nhead_sha=\(.headRefOid)\nbase_ref=\(.baseRefName)\nbase_sha=\(.baseRefOid)\nis_cross_repository=\(.isCrossRepository)"
+              ' >> "$GITHUB_OUTPUT"
+              echo "fail_on=$FAIL_ON" >> "$GITHUB_OUTPUT"
+
+              if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+                echo "authorized=true" >> "$GITHUB_OUTPUT"
+              else
+                PERMISSION="$(gh api "repos/$GH_REPO/collaborators/$COMMENT_AUTHOR/permission" --jq '.permission')"
+                case "$PERMISSION" in
+                  admin|maintain|write)
+                    echo "authorized=true" >> "$GITHUB_OUTPUT"
+                    ;;
+                  *)
+                    echo "authorized=false" >> "$GITHUB_OUTPUT"
+                    ;;
+                esac
+              fi
+
+         - name: Acknowledge security audit request
+           if: github.event_name == 'issue_comment' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              COMMENT_ID: ${{ github.event.comment.id }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+              RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+           run: |
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                "repos/$GH_REPO/issues/comments/$COMMENT_ID/reactions" \
+                -f content=eyes || true
+
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "👀 Security audit iniciado. Acompanhe: $RUN_URL"
+
+         - name: Skip unauthorized request
+           if: steps.pr.outputs.authorized != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+           run: |
+              echo "Usuário sem permissão para acionar /security-audit." >> "$GITHUB_STEP_SUMMARY"
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "⛔ Usuário sem permissão para acionar /security-audit."
+
+         - name: Skip fork PR
+           if: steps.pr.outputs.is_cross_repository == 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+           run: |
+              echo "Security audit ignorado para PR de fork para não expor secrets." >> "$GITHUB_STEP_SUMMARY"
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "⏭️ Security audit ignorado para PR de fork para não expor secrets."
+
+         - name: Checkout trusted base
+           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           uses: actions/checkout@v6
+           with:
+              ref: ${{ steps.pr.outputs.base_sha }}
+              fetch-depth: 0
+              persist-credentials: false
+
+         - name: Setup Bun
+           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           uses: oven-sh/setup-bun@v2
+           with:
+              bun-version: 1.3.9
+
+         - name: Install dependencies
+           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           run: bun install --frozen-lockfile
+
+         - name: Run Security Audit Agent
+           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           env:
+              OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+              OPENCODE_GO_BASE_URL: ${{ vars.OPENCODE_GO_BASE_URL }}
+              OPENCODE_GO_GATEWAY_KEY: ${{ secrets.OPENCODE_GO_GATEWAY_KEY }}
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+              REPO: ${{ github.repository }}
+              FAIL_ON: ${{ steps.pr.outputs.fail_on }}
+           run: |
+              PAYLOAD=$(jq -c -n --argjson prNumber "$PR_NUMBER" --arg repo "$REPO" --arg failOn "$FAIL_ON" '{prNumber: $prNumber, repo: $repo, failOn: $failOn}')
+              bunx flue run security-audit --target node --id "security-audit-${PR_NUMBER}" --payload "$PAYLOAD"
+
+         - name: Upload security audit artifacts
+           if: always() && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           uses: actions/upload-artifact@v4
+           with:
+              name: security-audit-${{ steps.pr.outputs.number }}
+              path: .security-audit
+              if-no-files-found: ignore
