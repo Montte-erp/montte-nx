@@ -469,10 +469,12 @@ export function updateTransactionAction(collection: TransactionsCollection) {
             if (patch.dueDate !== undefined) draft.dueDate = patch.dueDate;
             if (patch.ignored !== undefined) draft.ignored = patch.ignored;
             if (patch.name !== undefined) draft.name = patch.name;
-            if (patch.relationshipId !== undefined)
+            if (patch.relationshipId !== undefined) {
                draft.relationshipId = patch.relationshipId;
-            if (patch.relationshipName !== undefined)
+               draft.relationshipName = patch.relationshipName ?? null;
+            } else if (patch.relationshipName !== undefined) {
                draft.relationshipName = patch.relationshipName;
+            }
             if (patch.paidAt !== undefined) draft.paidAt = patch.paidAt;
             if (patch.paymentMethod !== undefined)
                draft.paymentMethod = patch.paymentMethod;
@@ -530,6 +532,10 @@ export function bulkUpdateTransactionsAction(
                if (patch.date !== undefined) draft.date = patch.date;
                if (patch.dueDate !== undefined) draft.dueDate = patch.dueDate;
                if (patch.ignored !== undefined) draft.ignored = patch.ignored;
+               if (patch.relationshipId !== undefined) {
+                  draft.relationshipId = patch.relationshipId;
+                  draft.relationshipName = null;
+               }
                if (patch.status !== undefined) draft.status = patch.status;
                draft.updatedAt = dayjs().toDate();
             }

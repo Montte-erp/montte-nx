@@ -33,7 +33,8 @@ export function InlineEditMoney({
       }
    }, [value]);
 
-   const displayed = pending ?? draft ?? 0;
+   const displayed = pending ?? draft;
+   const displayValue = displayed ?? 0;
 
    async function commit(next: number | undefined) {
       setEditing(false);
@@ -50,7 +51,7 @@ export function InlineEditMoney({
    const formatted = new Intl.NumberFormat("pt-BR", {
       currency: "BRL",
       style: "currency",
-   }).format(valueInCents ? displayed / 100 : displayed);
+   }).format(valueInCents ? displayValue / 100 : displayValue);
 
    if (!editing) {
       return (
@@ -64,9 +65,12 @@ export function InlineEditMoney({
             type="button"
          >
             <span
-               className={cn("truncate", !displayed && "text-muted-foreground")}
+               className={cn(
+                  "truncate",
+                  displayed == null && "text-muted-foreground",
+               )}
             >
-               {displayed ? formatted : (placeholder ?? formatted)}
+               {displayed == null ? (placeholder ?? formatted) : formatted}
             </span>
          </button>
       );
@@ -83,7 +87,7 @@ export function InlineEditMoney({
          onBlur={() => commit(draft)}
          onChange={(next) => setDraft(next)}
          placeholder={placeholder}
-         value={displayed}
+         value={displayValue}
          valueInCents={valueInCents}
       />
    );

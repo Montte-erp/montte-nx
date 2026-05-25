@@ -91,12 +91,20 @@ export function Combobox({
       }
    }, []);
 
+   const handleOpenChange = React.useCallback(
+      (nextOpen: boolean) => {
+         setOpen(nextOpen);
+         onOpenChange?.(nextOpen);
+      },
+      [onOpenChange],
+   );
+
    const handleCreate = () => {
       const trimmedSearch = search.trim();
       if (trimmedSearch && onCreate) {
          onCreate(trimmedSearch);
          setSearch("");
-         setOpen(false);
+         handleOpenChange(false);
       }
    };
 
@@ -106,14 +114,6 @@ export function Combobox({
       !filteredOptions.some(
          (o) => o.label.toLowerCase() === search.trim().toLowerCase(),
       );
-
-   const handleOpenChange = React.useCallback(
-      (nextOpen: boolean) => {
-         setOpen(nextOpen);
-         onOpenChange?.(nextOpen);
-      },
-      [onOpenChange],
-   );
 
    return (
       <Popover onOpenChange={handleOpenChange} open={open}>
@@ -197,7 +197,7 @@ export function Combobox({
                                                 ? ""
                                                 : currentValue,
                                           );
-                                          setOpen(false);
+                                          handleOpenChange(false);
                                        }}
                                        ref={virtualizer.measureElement}
                                        value={option.value}

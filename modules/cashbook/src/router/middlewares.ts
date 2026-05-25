@@ -313,14 +313,14 @@ export async function requireValidFinancialReferences(
          catch: () =>
             new CashbookMiddlewareError({
                error: cashbookMiddlewareErrors.INTERNAL(),
-               message: "Falha ao verificar cliente.",
+               message: "Falha ao verificar relacionamento.",
             }),
       });
       if (Result.isError(relationship)) throw relationship.error;
       if (!relationship.value || relationship.value.teamId !== teamId) {
          throw new CashbookMiddlewareError({
             error: cashbookMiddlewareErrors.BAD_REQUEST(),
-            message: "Cliente inválido.",
+            message: "Relacionamento inválido.",
          });
       }
    }

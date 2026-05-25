@@ -21,8 +21,10 @@ import {
    CalendarDays,
    CircleDot,
    CreditCard,
+   Handshake,
    Landmark,
    Tag,
+   Users,
 } from "lucide-react";
 import { InlineEditCombobox } from "@/blocks/data-table/inline-edit/inline-edit-combobox";
 import { InlineEditDate } from "@/blocks/data-table/inline-edit/inline-edit-date";
@@ -405,6 +407,13 @@ export function buildTransactionColumns(options?: {
             cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: Users,
+            bulkEditAction: "Definir cliente",
+            bulkEditPatch: (option) => ({
+               customerName: option.label,
+               relationshipId: option.value || null,
+               relationshipName: option.label,
+            }),
             editOptions: customerOptions,
             onCreateOption: options?.onCreateCustomer,
          },
@@ -446,6 +455,13 @@ export function buildTransactionColumns(options?: {
             cellComponent: "combobox",
             isEditable: true,
             editMode: "inline",
+            bulkEditIcon: Handshake,
+            bulkEditAction: "Definir fornecedor",
+            bulkEditPatch: (option) => ({
+               supplierName: option.label,
+               relationshipId: option.value || null,
+               relationshipName: option.label,
+            }),
             editOptions: supplierOptions,
             onCreateOption: options?.onCreateSupplier,
          },

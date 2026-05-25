@@ -319,10 +319,14 @@ function parseImportStatus(value: unknown): {
    ) {
       return { status: "pending", ignored: true };
    }
+   const isNegativePaid =
+      /\bnao\s+(pago|efetivado)\b/.test(normalized) ||
+      /\bnão\s+(pago|efetivado)\b/.test(normalized);
    if (
-      normalized === "paid" ||
-      normalized.includes("efetivado") ||
-      normalized.includes("pago")
+      !isNegativePaid &&
+      (normalized === "paid" ||
+         /\befetivado\b/.test(normalized) ||
+         /\bpago\b/.test(normalized))
    ) {
       return { status: "paid", ignored: false };
    }
