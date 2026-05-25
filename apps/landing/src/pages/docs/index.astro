@@ -1,0 +1,126 @@
+---
+export const prerender = true;
+import { getCollection, render } from "astro:content";
+import dayjs from "dayjs";
+import BaseLayout from "../../layouts/base-layout.astro";
+import FooterBlock from "../../blocks/footer-block.astro";
+import { getDocPath, groupDocsByCategory, sortDocs } from "../../lib/docs";
+
+const docs = sortDocs(await getCollection("docs"));
+const currentDoc = docs.find((doc) => doc.id === "index") ?? docs[0];
+const { Content, headings } = await render(currentDoc);
+const tocHeadings = headings.filter((heading) => heading.depth === 2);
+const groups = groupDocsByCategory(docs);
+const siteUrl = "https://montte.co";
+const canonical = new URL("/docs", siteUrl).toString();
+
+const docsLd = {
+   "@context": "https://schema.org",
+   "@type": "TechArticle",
+   headline: currentDoc.data.title,
+   description: currentDoc.data.description,
+   dateModified: currentDoc.data.updatedAt.toISOString(),
+   inLanguage: "pt-BR",
+   mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+};
+
+const breadcrumbLd = {
+   "@context": "https://schema.org",
+   "@type": "BreadcrumbList",
+   itemListElement: [
+      {
+         "@type": "ListItem",
+         position: 1,
+         name: "Documentação",
+         item: canonical,
+      },
+   ],
+};
+---
+
+<BaseLayout
+   title={`${currentDoc.data.title} — Montte`}
+   description={currentDoc.data.description}
+   canonicalOverride={canonical}
+   jsonLd={[docsLd, breadcrumbLd]}
+>
+   <article class="relative bg-background">
+      <header class="relative isolate overflow-hidden border-b border-border/60 pt-32 pb-12">
+         <div
+            class="absolute inset-0 -z-10"
+            style="background: linear-gradient(to bottom, color-mix(in oklch, var(--secondary) 22%, var(--background)) 0%, var(--background) 100%);"
+            aria-hidden="true"
+         >
+         </div>
+         <div class="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 sm:px-4">
+            <p class="text-xs font-medium uppercase tracking-wider text-primary">
+               Documentação
+            </p>
+            <h1 class="font-serif text-4xl leading-tight font-black text-foreground text-balance sm:text-5xl md:text-6xl">
+               {currentDoc.data.title}
+            </h1>
+            <p class="max-w-2xl text-base leading-relaxed text-foreground/80 sm:text-lg">
+               {currentDoc.data.description}
+            </p>
+            <p class="text-sm text-muted-foreground">
+               Atualizado em {dayjs(currentDoc.data.updatedAt).format("DD/MM/YYYY")}
+            </p>
+         </div>
+      </header>
+
+      <div class="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 py-12 sm:px-4 lg:grid-cols-[220px_1fr_220px]">
+         <aside class="hidden lg:block">
+            <nav class="sticky top-24 flex flex-col gap-4" aria-label="Documentação">
+               {groups.map((group) => (
+                  <div class="flex flex-col gap-2">
+                     <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {group.category}
+                     </p>
+                     <div class="flex flex-col gap-2">
+                        {group.items.map((doc) => (
+                           <a
+                              href={getDocPath(doc)}
+                              class:list={[
+                                 "rounded-lg px-3 py-2 text-sm transition-colors",
+                                 doc.id === currentDoc.id
+                                    ? "bg-primary/10 text-primary"
+                                    : "text-foreground/80 hover:bg-muted hover:text-foreground",
+                              ]}
+                           >
+                              {doc.data.title}
+                           </a>
+                        ))}
+                     </div>
+                  </div>
+               ))}
+            </nav>
+         </aside>
+
+         <div class="prose-invert flex min-w-0 flex-col gap-6 text-foreground/90 [&_a]:font-semibold [&_a]:text-primary [&_a]:underline-offset-4 [&_a]:hover:underline [&_code]:rounded [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_h2]:pt-4 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:scroll-mt-32 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground [&_li]:leading-relaxed [&_ol]:flex [&_ol]:list-decimal [&_ol]:flex-col [&_ol]:gap-2 [&_ol]:pl-6 [&_p]:leading-relaxed [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-4 [&_ul]:flex [&_ul]:list-disc [&_ul]:flex-col [&_ul]:gap-2 [&_ul]:pl-6 [&_hr]:my-8 [&_hr]:border-border/60">
+            <Content />
+         </div>
+
+         <aside class="hidden xl:block">
+            {tocHeadings.length > 0 && (
+               <nav class="sticky top-24 flex flex-col gap-3" aria-label="Nesta página">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                     Nesta página
+                  </p>
+                  <div class="flex flex-col gap-2">
+                     {tocHeadings.map((heading) => (
+                        <a
+                           href={`#${heading.slug}`}
+                           class="text-sm text-foreground/70 transition-colors hover:text-foreground"
+                        >
+                           {heading.text}
+                        </a>
+                     ))}
+                  </div>
+               </nav>
+            )}
+         </aside>
+      </div>
+   </article>
+
+   <FooterBlock />
+</BaseLayout>

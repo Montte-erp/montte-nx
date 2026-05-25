@@ -106,6 +106,18 @@ export function formatCause(cause: unknown) {
       : String(cause);
 }
 
+function isDefinedEnvEntry(
+   entry: [string, string | undefined],
+): entry is [string, string] {
+   return typeof entry[1] === "string" && entry[1].length > 0;
+}
+
+export function buildLocalSandboxEnv(
+   values: Record<string, string | undefined>,
+) {
+   return Object.fromEntries(Object.entries(values).filter(isDefinedEnvEntry));
+}
+
 export function truncateForPrompt(
    value: string,
    maxChars: number,
