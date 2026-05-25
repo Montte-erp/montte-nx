@@ -116,20 +116,14 @@ export default async function ({ init, payload }: FlueContext) {
       });
    }
 
-   const {
-      releaseVersion,
-      changesFile,
-      skillFile,
-      releaseNotesReference,
-      automatedReleaseNotesReference,
-      validationReference,
-      outputFile,
-      validationFile,
-   } = parsedPayload.output;
+   const { releaseVersion, changesFile, outputFile, validationFile } =
+      parsedPayload.output;
 
    const initResult = await Result.tryPromise({
       try: () =>
          init({
+            // local() lets Flue discover AGENTS.md and .agents/skills from cwd.
+            // GitHub tokens are intentionally not exposed to the sandbox env.
             sandbox: local({ env: {} }),
             model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
@@ -144,64 +138,20 @@ export default async function ({ init, payload }: FlueContext) {
    if (Result.isError(initResult)) throw initResult.error;
 
    const filesResult = await Result.tryPromise({
-      try: () =>
-         Promise.all([
-            readFile("AGENTS.md", "utf8"),
-            readFile(changesFile, "utf8"),
-            readFile(skillFile, "utf8"),
-            readFile(releaseNotesReference, "utf8"),
-            readFile(automatedReleaseNotesReference, "utf8"),
-            readFile(validationReference, "utf8"),
-         ]),
+      try: () => readFile(changesFile, "utf8"),
       catch: (cause) =>
          new ReleaseNotesAgentError({
             error: releaseNotesAgentErrors.IO_FAILED(),
-            message:
-               "Falha ao carregar AGENTS.md, skill ou referências de release.",
+            message: "Falha ao carregar arquivo de mudanças da release.",
             releaseVersion,
             detail: formatCause(cause),
          }),
    });
    if (Result.isError(filesResult)) throw filesResult.error;
 
-   const [
-      agentInstructions,
-      changes,
-      skillInstruction,
-      notesReference,
-      automatedReleaseNotesReferenceContent,
-      validationReferenceContent,
-   ] = filesResult.value;
+   const changes = filesResult.value;
 
-   const prompt = `
-Você está rodando dentro de um agente Flue no repositório Montte.
-Siga obrigatoriamente o AGENTS.md e a skill carregada abaixo.
-
-AGENTS.md:
-${agentInstructions}
-
-Skill de release:
-${skillInstruction}
-
-Leia também estes arquivos de referência:
-
-## Estrutura da release notes
-${notesReference}
-
-## Automação de release notes
-${automatedReleaseNotesReferenceContent}
-
-## Diretrizes de validação
-${validationReferenceContent}
-
-Agora gere as release notes da versão ${releaseVersion} em Markdown (sem inventar links, números ou funcionalidades).
-
-Arquivo de mudanças:
-${changes}
-
-Saida deve ser escrita em pt-BR e obedecer à estrutura esperada pelo arquivo de referência de release notes.
-Retorne somente o Markdown do corpo da release, sem fences e sem explicações externas.
-`.trim();
+   const task = `Gere as release notes da versão ${releaseVersion} em Markdown, em pt-BR, sem inventar links, números ou funcionalidades. Use a skill de release e suas referências como fonte de verdade. Retorne somente o Markdown do corpo da release, sem fences e sem explicações externas.`;
 
    const harness = initResult.value;
    const sessionResult = await Result.tryPromise({
@@ -219,7 +169,10 @@ Retorne somente o Markdown do corpo da release, sem fences e sem explicações e
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            sessionResult.value.prompt(prompt, { thinkingLevel: "off" }),
+            sessionResult.value.skill("release", {
+               args: { task, releaseVersion, changes },
+               thinkingLevel: "off",
+            }),
          ),
       catch: (cause) =>
          new ReleaseNotesAgentError({

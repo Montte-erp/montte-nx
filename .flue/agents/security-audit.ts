@@ -2,7 +2,7 @@ import type { FlueContext } from "@flue/runtime";
 import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import * as v from "valibot";
 import {
    formatCause,
@@ -253,29 +253,6 @@ export default async function ({ init, payload, env }: FlueContext) {
                `${contextDir}/checks.json`,
                "Falha ao ler checks preparados da PR.",
             ),
-            readFile("AGENTS.md", "utf8"),
-            readFile(".agents/skills/implementation/SKILL.md", "utf8"),
-            readFile(".agents/skills/security-audit/SKILL.md", "utf8"),
-            readFile(
-               ".agents/skills/security-audit/references/methodology.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/security-audit/references/finding-validation.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/security-audit/references/montte-attack-surface.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/security-audit/references/github-actions-security.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/security-audit/references/report-schema.md",
-               "utf8",
-            ),
          ]),
       catch: (cause) =>
          new SecurityAuditAgentError({
@@ -286,21 +263,8 @@ export default async function ({ init, payload, env }: FlueContext) {
    });
    if (Result.isError(contextResult)) throw contextResult.error;
 
-   const [
-      prMetadata,
-      changedFiles,
-      fullDiff,
-      commits,
-      ciChecks,
-      agentInstructions,
-      implementationSkill,
-      securityAuditSkill,
-      methodologyReference,
-      findingValidationReference,
-      montteAttackSurfaceReference,
-      githubActionsSecurityReference,
-      reportSchemaReference,
-   ] = contextResult.value;
+   const [prMetadata, changedFiles, fullDiff, commits, ciChecks] =
+      contextResult.value;
 
    const commandResults = [
       prMetadata,
@@ -326,85 +290,25 @@ export default async function ({ init, payload, env }: FlueContext) {
       "Full diff",
    );
 
+   const promptContextSize = {
+      fullDiff: fullDiff.value.stdout.length,
+      promptFullDiff: promptFullDiff.length,
+   };
+
    await writeFile(
       `${outputDir}/prompt-context-size.json`,
-      JSON.stringify(
-         {
-            fullDiff: fullDiff.value.stdout.length,
-            promptFullDiff: promptFullDiff.length,
-         },
-         null,
-         2,
-      ),
+      JSON.stringify(promptContextSize, null, 2),
    );
 
-   const context = `# PR #${prNumber}
-
-## Metadata
-${prMetadata.value.stdout}
-
-## Changed files
-${changedFiles.value.stdout}
-
-## Full diff
-${promptFullDiff}
-
-## Commits
-${commits.value.stdout}
-
-## CI checks
-${ciChecks.value.stdout}
-`;
-
-   const prompt = `Você é o agente de security audit do Montte.
-Siga obrigatoriamente AGENTS.md, implementation skill e security-audit skill/references abaixo.
-
-Objetivo: fazer uma auditoria de segurança CI-friendly da PR #${prNumber}, focada em achados reais Medium+.
-
-AGENTS.md:
-${agentInstructions}
-
-Implementation skill:
-${implementationSkill}
-
-Security audit skill:
-${securityAuditSkill}
-
-Reference: methodology
-${methodologyReference}
-
-Reference: finding-validation
-${findingValidationReference}
-
-Reference: montte-attack-surface
-${montteAttackSurfaceReference}
-
-Reference: github-actions-security
-${githubActionsSecurityReference}
-
-Reference: report-schema
-${reportSchemaReference}
-
-Contexto da PR:
-${context}
-
-Tarefa:
-- não use ferramentas/read/bash; o repositório não está disponível no sandbox, use apenas o contexto fornecido neste prompt;
-- audite o diff e callers/contratos evidentes;
-- procure regressões de authz, isolamento org/team, billing/usage, uploads/files, workers/jobs, AI tools, secrets e GitHub Actions;
-- tente refutar cada hipótese antes de reportar;
-- descarte Low/Info/teórico;
-- não invente arquivos, linhas, APIs ou contexto ausente;
-- não recomende mudanças genéricas sem finding concreto;
-- retorne no máximo 10 findings.
-
-Retorne JSON válido, sem markdown fences, exatamente no schema da reference report-schema.
-`.trim();
+   const task = `Audite a PR #${prNumber} usando a skill de security audit do Montte. Use apenas o contexto pré-coletado em args. Não rode comandos nem colete dados pelo GitHub. Foque em achados reais Medium+ e tente refutar hipóteses antes de reportar.`;
 
    const modelHarnessResult = await Result.tryPromise({
       try: () =>
          init({
             name: "security-audit-model",
+            // local() lets Flue discover AGENTS.md and .agents/skills from cwd.
+            // GitHub writes stay on the host through Octokit; tokens are not
+            // exposed to the sandbox env and we do not collect context with gh.
             sandbox: local({ env: {} }),
             model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
@@ -435,12 +339,18 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            modelSessionResult.value.skill("security-audit/SKILL.md", {
+            modelSessionResult.value.skill("security-audit", {
                args: {
-                  task: prompt,
+                  task,
                   repo,
                   prNumber,
                   failOn,
+                  prMetadata: prMetadata.value.stdout,
+                  changedFiles: changedFiles.value.stdout,
+                  patch: promptFullDiff,
+                  commits: commits.value.stdout,
+                  checks: ciChecks.value.stdout,
+                  promptContextSize,
                },
                thinkingLevel: "off",
                result: securityAuditResultSchema,

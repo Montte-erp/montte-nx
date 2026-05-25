@@ -20,6 +20,11 @@ export const agentUtilsErrors = defineErrorCatalog("flue.agent-utils", {
       message: "Falha ao publicar comentário no GitHub.",
       tags: ["flue", "agent-utils", "github"],
    },
+   INVALID_PROVIDER_ENV: {
+      status: 500,
+      message: "Ambiente de providers Flue inválido.",
+      tags: ["flue", "agent-utils", "env"],
+   },
 });
 
 declare module "evlog" {
@@ -31,7 +36,8 @@ declare module "evlog" {
 type AgentUtilsCatalogError =
    | ReturnType<typeof agentUtilsErrors.MISSING_GITHUB_TOKEN>
    | ReturnType<typeof agentUtilsErrors.READ_CONTEXT_FAILED>
-   | ReturnType<typeof agentUtilsErrors.PUBLISH_COMMENT_FAILED>;
+   | ReturnType<typeof agentUtilsErrors.PUBLISH_COMMENT_FAILED>
+   | ReturnType<typeof agentUtilsErrors.INVALID_PROVIDER_ENV>;
 
 export class AgentUtilsError extends TaggedError("AgentUtilsError")<{
    error: AgentUtilsCatalogError;
@@ -67,13 +73,23 @@ export const flueProviderEnvSchema = v.object({
 export type FlueProviderEnv = v.InferOutput<typeof flueProviderEnvSchema>;
 
 export function validateFlueProviderEnv(env: Record<string, unknown>) {
-   return v.parse(flueProviderEnvSchema, {
+   const parsed = v.safeParse(flueProviderEnvSchema, {
       OPENCODE_API_KEY: env.OPENCODE_API_KEY ?? process.env.OPENCODE_API_KEY,
       OPENCODE_GO_BASE_URL:
          env.OPENCODE_GO_BASE_URL ?? process.env.OPENCODE_GO_BASE_URL,
       OPENCODE_GO_GATEWAY_KEY:
          env.OPENCODE_GO_GATEWAY_KEY ?? process.env.OPENCODE_GO_GATEWAY_KEY,
    });
+
+   if (parsed.success) return Result.ok(parsed.output);
+
+   return Result.err(
+      new AgentUtilsError({
+         error: agentUtilsErrors.INVALID_PROVIDER_ENV(),
+         message: "Ambiente de providers Flue inválido.",
+         detail: formatCause(parsed.issues),
+      }),
+   );
 }
 
 export function formatCause(cause: unknown) {

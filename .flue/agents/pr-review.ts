@@ -3,7 +3,7 @@ import { local } from "@flue/runtime/node";
 import { Octokit } from "@octokit/core";
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import * as v from "valibot";
 import {
    formatCause,
@@ -388,20 +388,6 @@ export default async function ({ init, payload, env }: FlueContext) {
                `${contextDir}/general-pr-comments.md`,
                "Falha ao ler comentários gerais preparados da PR.",
             ),
-            readFile("AGENTS.md", "utf8"),
-            readFile(".agents/skills/code-review/SKILL.md", "utf8"),
-            readFile(
-               ".agents/skills/code-review/references/pr-review.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/code-review/references/review-comments.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/code-review/references/tests-validation.md",
-               "utf8",
-            ),
          ]),
       catch: (cause) =>
          new PrReviewAgentError({
@@ -421,11 +407,6 @@ export default async function ({ init, payload, env }: FlueContext) {
       generalReviews,
       inlineReviewComments,
       generalPrComments,
-      agentInstructions,
-      skillInstruction,
-      automatedReviewReference,
-      reviewCommentsReference,
-      testsValidationReference,
    ] = contextResult.value;
 
    const commandResults = [
@@ -479,123 +460,31 @@ export default async function ({ init, payload, env }: FlueContext) {
       "General PR comments",
    );
 
+   const promptContextSize = {
+      fullDiff: fullDiff.value.stdout.length,
+      promptFullDiff: promptFullDiff.length,
+      generalReviews: generalReviews.value.stdout.length,
+      promptGeneralReviews: promptGeneralReviews.length,
+      inlineReviewComments: inlineReviewComments.value.stdout.length,
+      promptInlineReviewComments: promptInlineReviewComments.length,
+      generalPrComments: generalPrComments.value.stdout.length,
+      promptGeneralPrComments: promptGeneralPrComments.length,
+   };
+
    await writeFile(
       `${outputDir}/prompt-context-size.json`,
-      JSON.stringify(
-         {
-            fullDiff: fullDiff.value.stdout.length,
-            promptFullDiff: promptFullDiff.length,
-            generalReviews: generalReviews.value.stdout.length,
-            promptGeneralReviews: promptGeneralReviews.length,
-            inlineReviewComments: inlineReviewComments.value.stdout.length,
-            promptInlineReviewComments: promptInlineReviewComments.length,
-            generalPrComments: generalPrComments.value.stdout.length,
-            promptGeneralPrComments: promptGeneralPrComments.length,
-         },
-         null,
-         2,
-      ),
+      JSON.stringify(promptContextSize, null, 2),
    );
 
-   const context = `
-# Revisão PR #${prNumber}
-
-## PR metadata
-${prMetadata.value.stdout}
-
-## Changed files (metric)
-${changedFiles.value.stdout}
-
-## Full diff
-${promptFullDiff}
-
-## Commits
-${commits.value.stdout}
-
-## CI checks
-${ciChecks.value.stdout}
-
-## Reviews gerais
-${promptGeneralReviews}
-
-## Inline review comments
-${promptInlineReviewComments}
-
-## General PR comments
-${promptGeneralPrComments}
-`;
-
-   const prompt = `
-Você é o agente automático de code review do Montte.
-Siga obrigatoriamente o AGENTS.md, o SKILL.md e as references carregadas abaixo.
-O SKILL.md é apenas o organizador; as references guiam o padrão de execução.
-
-AGENTS.md:
-${agentInstructions}
-
-SKILL.md de code review:
-${skillInstruction}
-
-Reference: pr-review
-${automatedReviewReference}
-
-Reference: review-comments
-${reviewCommentsReference}
-
-Reference: tests-validation
-${testsValidationReference}
-
-Contexto:
-${context}
-
-Tarefa:
-- não use ferramentas/read/bash; o repositório não está disponível no sandbox, use apenas o contexto fornecido neste prompt;
-- revise a PR com foco em bugs reais, regressões, contratos quebrados, segurança, dados incorretos e CI/testes;
-- verifique stale/duplicado contra comentários anteriores;
-- não faça nits cobertos por formatter/linter;
-- não invente fatos fora do contexto;
-- se não houver achados acionáveis, diga isso claramente.
-
-Restrição obrigatória:
-- cada comentário inline deve apontar para path e line exatos do diff;
-- use side "RIGHT" para linha adicionada ou contexto no arquivo novo;
-- use side "LEFT" apenas para linha removida no arquivo antigo;
-- não comente arquivo/linha fora do patch.
-
-Retorne JSON válido, sem markdown fences, neste formato:
-{
-  "summary": "Resumo curto do risco, CI/testes relevantes e validação recomendada.",
-  "comments": [
-    {
-      "path": "arquivo alterado",
-      "line": 123,
-      "side": "RIGHT",
-      "severity": "critical|major|minor|trivial|info",
-      "confidence": 0.82,
-      "actionable": true,
-      "suggestion": "Correção pequena opcional, ou omita o campo",
-      "reproSteps": "Passos de reprodução opcionais, ou omita o campo",
-      "title": "Título curto do achado",
-      "body": "Explique por que isso está errado, impacto concreto e correção pequena em pt-BR."
-    }
-  ]
-}
-
-Regras para comments:
-- cada comentário precisa estar em arquivo/linha do diff;
-- cada comentário precisa explicar por que está errado;
-- incluir severidade correta;
-- não limite artificialmente a quantidade de comentários; aplique apenas os gates de qualidade;
-- não inclua comentários trivial ou info;
-- cada comentário precisa ter confidence >= 0.7;
-- cada comentário precisa ter sugestão concreta, passos de reprodução ou actionable: true;
-- se não houver achados acionáveis, retorne "comments": [].
-`.trim();
+   const task = `Revise a PR #${prNumber} usando a skill de code review do Montte. Use apenas o contexto pré-coletado em args. Não rode comandos nem colete dados pelo GitHub. Retorne comentários inline somente para linhas existentes no patch, com severidade, confiança >= 0.7 e correção concreta.`;
 
    const modelHarnessResult = await Result.tryPromise({
       try: () =>
          init({
             name: "pr-review-model",
+            // local() lets Flue discover AGENTS.md and .agents/skills from cwd.
+            // GitHub writes stay on the host through Octokit; tokens are not
+            // exposed to the sandbox env and we do not collect context with gh.
             sandbox: local({ env: {} }),
             model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
@@ -626,11 +515,20 @@ Regras para comments:
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            modelSessionResult.value.skill("code-review/SKILL.md", {
+            modelSessionResult.value.skill("code-review", {
                args: {
-                  task: prompt,
+                  task,
                   repo,
                   prNumber,
+                  prMetadata: prMetadata.value.stdout,
+                  changedFiles: changedFiles.value.stdout,
+                  patch: promptFullDiff,
+                  commits: commits.value.stdout,
+                  checks: ciChecks.value.stdout,
+                  reviews: promptGeneralReviews,
+                  inlineReviewComments: promptInlineReviewComments,
+                  generalPrComments: promptGeneralPrComments,
+                  promptContextSize,
                },
                thinkingLevel: "off",
                result: reviewResultSchema,

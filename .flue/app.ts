@@ -1,3 +1,4 @@
+import { Result } from "better-result";
 import { flue } from "@flue/runtime/app";
 import { validateFlueProviderEnv } from "./lib/agent-utils.ts";
 import { configureFlueProvidersFromEnv } from "./lib/providers.ts";
@@ -11,7 +12,10 @@ export default {
       env: Record<string, unknown>,
       ctx: FlueExecutionContext,
    ) {
-      configureFlueProvidersFromEnv(validateFlueProviderEnv(env));
+      const providerEnvResult = validateFlueProviderEnv(env);
+      if (Result.isError(providerEnvResult)) throw providerEnvResult.error;
+
+      configureFlueProvidersFromEnv(providerEnvResult.value);
       return flue().fetch(req, env, ctx);
    },
 };
