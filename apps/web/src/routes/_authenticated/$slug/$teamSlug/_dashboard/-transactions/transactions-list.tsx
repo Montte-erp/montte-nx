@@ -182,6 +182,7 @@ const IMPORT_HEADER_LABELS: Record<string, string> = {
    detalhe: "Nome",
    tipo: "Tipo",
    type: "Tipo",
+   despesareceita: "Tipo",
    status: "Status",
    conta: "Conta",
    bankaccountname: "Conta",
@@ -201,6 +202,7 @@ const IMPORT_HEADER_LABELS: Record<string, string> = {
    vencimento: "Vencimento",
    contaareceberrs: "Conta a receber",
    contaapagarrs: "Conta a pagar",
+   saldors: "Saldo",
    fitid: "Identificador",
    reference: "Referência",
 };
@@ -1298,17 +1300,16 @@ export function TransactionsList() {
             const receivableAmount = String(row.receivableAmount ?? "").trim();
             const payableAmount = String(row.payableAmount ?? "").trim();
             const amountSource = (() => {
-               if (String(row.amount ?? "").trim()) return row.amount;
                if (receivableAmount) return receivableAmount;
-               return payableAmount;
+               if (payableAmount) return payableAmount;
+               return row.amount;
             })();
             const parsedAmount = parseImportAmount(amountSource);
-            const type = parseImportType(
-               row.type,
-               receivableAmount
-                  ? parsedAmount.signedAmount
-                  : -parsedAmount.signedAmount,
-            );
+            const type = receivableAmount
+               ? "income"
+               : payableAmount
+                 ? "expense"
+                 : parseImportType(row.type, parsedAmount.signedAmount);
             const parsedStatus = parseImportStatus(row.status);
 
             return {
@@ -1959,18 +1960,21 @@ export function TransactionsList() {
                      style={{ minWidth: table.getTotalSize() }}
                   >
                      <DataTableHeader table={table} />
+                     <DataImportSection
+                        api={importApi}
+                        config={importConfig}
+                        table={table}
+                     />
                      <DataTableBody<TransactionRow>
+                        estimateRowHeight={48}
+                        overscan={5}
+                        virtualized
                         getRowClassName={({ row }) =>
                            cn(
                               row.original.ignored &&
                                  "bg-muted/20 text-muted-foreground opacity-60",
                            )
                         }
-                        table={table}
-                     />
-                     <DataImportSection
-                        api={importApi}
-                        config={importConfig}
                         table={table}
                      />
                   </Table>

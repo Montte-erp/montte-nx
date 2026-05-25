@@ -32,6 +32,9 @@ export interface DatePickerProps {
    className?: string;
    /** Placeholder text shown when no date is selected */
    placeholder?: string;
+   open?: boolean;
+   defaultOpen?: boolean;
+   onOpenChange?: (open: boolean) => void;
 }
 
 export const DatePicker = ({
@@ -39,6 +42,9 @@ export const DatePicker = ({
    onSelect,
    className,
    placeholder,
+   open,
+   defaultOpen,
+   onOpenChange,
 }: DatePickerProps = {}) => {
    const isControlled = dateProp !== undefined || onSelect !== undefined;
    const [internalDate, setInternalDate] = useState<Date | undefined>(
@@ -72,7 +78,11 @@ export const DatePicker = ({
    };
 
    return (
-      <Popover>
+      <Popover
+         defaultOpen={defaultOpen}
+         onOpenChange={onOpenChange}
+         open={open}
+      >
          <PopoverTrigger asChild>
             <Button
                className={cn(

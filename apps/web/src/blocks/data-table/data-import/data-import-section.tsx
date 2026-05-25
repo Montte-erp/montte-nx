@@ -9,7 +9,7 @@ import { TableBody, TableCell, TableRow } from "@packages/ui/components/table";
 import { cn } from "@packages/ui/lib/utils";
 import { Check, Loader2, TriangleAlert, X } from "lucide-react";
 import { fromPromise } from "neverthrow";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { InlineEditMoney } from "../inline-edit/inline-edit-money";
@@ -57,6 +57,9 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    const [editingColKey, setEditingColKey] = useState<string | null>(null);
    const [isSubmitting, setSubmitting] = useState(false);
    const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+   const [sentinelElement, setSentinelElement] =
+      useState<HTMLTableRowElement | null>(null);
+   const [scrollMargin, setScrollMargin] = useState(0);
 
    const { rawHeaders, rawRows, mapping, importRows } = state;
    const { selectedIndices, ignoredIndices } = api;
@@ -66,15 +69,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
       () => visibleCols.filter(isImportableColumn),
       [visibleCols],
    );
-   const montteColumns = useMemo(() => {
-      const requiredColumns = importableColumns.filter(
-         (col) => col.columnDef.meta?.required,
-      );
-      const optionalColumns = importableColumns.filter(
-         (col) => !col.columnDef.meta?.required,
-      );
-      return [...requiredColumns, ...optionalColumns];
-   }, [importableColumns]);
+   const montteColumns = importableColumns;
    const hasSelectColumn = visibleCols.some((col) => col.id === "__select");
    const hasActionsColumn = visibleCols.some((col) => col.id === "__actions");
    const mappedHeaders = useMemo(
@@ -96,6 +91,15 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
       (hasActionsColumn ? 1 : 0) +
       extraHeaders.length;
    const activeCount = rawRows.length - ignoredIndices.size;
+   const typeCounts = useMemo(() => {
+      let income = 0;
+      let expense = 0;
+      for (const row of importRows) {
+         if (row.type === "income") income += 1;
+         if (row.type === "expense") expense += 1;
+      }
+      return { income, expense };
+   }, [importRows]);
 
    const duplicateIndices = useMemo(() => {
       if (!hasImportRows) return new Set<number>();
@@ -130,25 +134,63 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    const someSelected = selectedIndices.size > 0 && !allSelected;
    const virtualizer = useVirtualizer({
       count: rawRows.length,
-      estimateSize: () => 44,
+      estimateSize: () => 54,
+      getItemKey: (index) => `__import_${index}`,
       getScrollElement: () => scrollElement,
-      overscan: 12,
+      overscan: 5,
+      scrollMargin,
    });
    const virtualRows = virtualizer.getVirtualItems();
-   const topPadding = virtualRows[0]?.start ?? 0;
-   const bottomPadding =
-      virtualRows.length > 0
-         ? virtualizer.getTotalSize() -
-           (virtualRows[virtualRows.length - 1]?.end ?? 0)
-         : 0;
+   const topPadding = Math.max(
+      0,
+      virtualRows[0] ? virtualRows[0].start - scrollMargin : 0,
+   );
+   const lastVirtualRow = virtualRows[virtualRows.length - 1];
+   const bottomPadding = Math.max(
+      0,
+      lastVirtualRow
+         ? virtualizer.getTotalSize() - (lastVirtualRow.end - scrollMargin)
+         : 0,
+   );
    const handleImportBodyRef = useCallback(
       (node: HTMLTableSectionElement | null) => {
-         if (!node) return;
+         if (!node) {
+            setScrollElement(null);
+            return;
+         }
          const viewport = node.closest('[data-slot="scroll-area-viewport"]');
-         if (viewport instanceof HTMLElement) setScrollElement(viewport);
+         setScrollElement(viewport instanceof HTMLElement ? viewport : null);
       },
       [],
    );
+
+   const updateScrollMargin = useCallback(() => {
+      if (!sentinelElement || !scrollElement) return;
+      const sentinelRect = sentinelElement.getBoundingClientRect();
+      const scrollRect = scrollElement.getBoundingClientRect();
+      const next = Math.max(
+         0,
+         sentinelRect.top - scrollRect.top + scrollElement.scrollTop,
+      );
+      setScrollMargin((current) =>
+         Math.abs(current - next) > 1 ? next : current,
+      );
+   }, [scrollElement, sentinelElement]);
+
+   useLayoutEffect(() => {
+      if (!sentinelElement || !scrollElement) return;
+      updateScrollMargin();
+      const frame = window.requestAnimationFrame(updateScrollMargin);
+      const resizeObserver = new ResizeObserver(updateScrollMargin);
+      resizeObserver.observe(sentinelElement);
+      if (scrollElement.firstElementChild) {
+         resizeObserver.observe(scrollElement.firstElementChild);
+      }
+      return () => {
+         window.cancelAnimationFrame(frame);
+         resizeObserver.disconnect();
+      };
+   }, [scrollElement, sentinelElement, updateScrollMargin]);
 
    const buildRowToImport = useCallback(
       (rowIdx: number, currentMapping: Record<string, string>) => {
@@ -250,8 +292,11 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
 
    return (
       <TableBody ref={handleImportBodyRef}>
-         <TableRow className="sticky top-10 z-30 bg-muted hover:bg-transparent">
-            <TableCell className="bg-muted px-4 py-2" colSpan={colCount}>
+         <TableRow className="sticky top-10 z-40 border-y border-border bg-secondary/90 hover:bg-secondary/90">
+            <TableCell
+               className="bg-secondary/90 px-4 py-2 text-foreground"
+               colSpan={colCount}
+            >
                <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                      <span className="text-sm font-medium">Importando</span>
@@ -266,6 +311,19 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                            {duplicateIndices.size} duplicado(s)
                         </Badge>
                      )}
+                     {typeCounts.income > 0 && (
+                        <Badge className="border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-300 text-xs font-normal">
+                           A receber → Receita · {typeCounts.income}
+                        </Badge>
+                     )}
+                     {typeCounts.expense > 0 && (
+                        <Badge className="border-rose-500/30 bg-rose-500/[0.08] text-rose-300 text-xs font-normal">
+                           A pagar → Despesa · {typeCounts.expense}
+                        </Badge>
+                     )}
+                     <span className="text-muted-foreground text-xs">
+                        De/para: campo Montte → coluna da planilha
+                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                      <Button
@@ -317,45 +375,9 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
             </TableCell>
          </TableRow>
 
-         <TableRow className="sticky top-20 z-20 bg-muted/20 hover:bg-muted/20">
-            {hasSelectColumn && <TableCell className="w-10 px-2" />}
-            {montteColumns.map((col) => {
-               const label = col.columnDef.meta?.label ?? col.id;
-               const required = col.columnDef.meta?.required;
-               return (
-                  <TableCell
-                     className="bg-muted/20 py-1 pr-2"
-                     key={`montte-label-${col.id}`}
-                  >
-                     <span className="text-xs font-medium">
-                        {label}
-                        {required && (
-                           <span
-                              aria-label="Campo obrigatório"
-                              className="ml-0.5 text-destructive"
-                           >
-                              *
-                           </span>
-                        )}
-                     </span>
-                  </TableCell>
-               );
-            })}
-            {hasActionsColumn && <TableCell key="montte-label-actions" />}
-            {extraHeaders.map((header, index) => (
-               <TableCell
-                  className="bg-muted/20 py-1 pr-2"
-                  key={`montte-label-extra-${header}-${index}`}
-               >
-                  <span className="text-xs text-muted-foreground/60">
-                     &nbsp;
-                  </span>
-               </TableCell>
-            ))}
-         </TableRow>
-         <TableRow className="sticky top-32 z-20 bg-muted/20 hover:bg-muted/20">
+         <TableRow className="sticky top-20 z-30 border-b border-border bg-secondary/40 shadow-[0_8px_12px_-12px_rgb(0_0_0/0.45)] hover:bg-secondary/40">
             {hasSelectColumn && (
-               <TableCell className="w-10 px-2">
+               <TableCell className="w-10 bg-secondary/40 px-2 align-bottom">
                   <Checkbox
                      aria-label="Selecionar todos"
                      checked={someSelected ? "indeterminate" : allSelected}
@@ -364,67 +386,124 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                </TableCell>
             )}
             {montteColumns.map((col) => {
+               const label = col.columnDef.meta?.label ?? col.id;
+               const required = col.columnDef.meta?.required;
                const accKey = getColumnAccessorKey(col);
                const currentHeader = mapping[accKey] ?? "";
                const isEditing = editingColKey === accKey;
                return (
-                  <TableCell className="py-1 pr-2" key={`montte-map-${col.id}`}>
-                     {isEditing ? (
-                        <Combobox
-                           defaultOpen
-                           emptyMessage="Nenhuma coluna encontrada."
-                           options={headerOptions}
-                           placeholder="Não mapeado"
-                           searchPlaceholder="Buscar coluna..."
-                           value={currentHeader || "__none__"}
-                           onValueChange={(v) => {
-                              api.updateMapping({
-                                 ...mapping,
-                                 [accKey]: v === "__none__" ? "" : v,
-                              });
-                              setEditingColKey(null);
-                           }}
-                        />
-                     ) : (
-                        <Button
-                           className="flex w-full items-center justify-start gap-2 px-2 py-2 text-left text-xs"
-                           data-testid={
-                              col.columnDef.meta?.required
-                                 ? "unmapped-required"
-                                 : undefined
-                           }
-                           onClick={() => setEditingColKey(accKey)}
-                           type="button"
-                           variant="ghost"
-                        >
-                           {currentHeader ? (
-                              <span className="flex-1 truncate font-medium text-foreground">
-                                 {currentHeader}
+                  <TableCell
+                     className="bg-secondary/40 py-2 pr-2 align-top"
+                     key={`montte-map-${col.id}`}
+                  >
+                     <div className="flex min-w-0 flex-col gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                           <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+                              Montte
+                           </span>
+                           <span className="truncate text-xs font-medium text-foreground">
+                              {label}
+                              {required && (
+                                 <span
+                                    aria-label="Campo obrigatório"
+                                    className="ml-0.5 text-destructive"
+                                 >
+                                    *
+                                 </span>
+                              )}
+                           </span>
+                        </div>
+                        {isEditing ? (
+                           <Combobox
+                              className="h-8 w-full border-dashed bg-card/70 text-xs"
+                              defaultOpen
+                              emptyMessage="Nenhuma coluna encontrada."
+                              options={headerOptions}
+                              placeholder="Não mapeado"
+                              searchPlaceholder="Buscar coluna..."
+                              value={currentHeader || "__none__"}
+                              onValueChange={(v) => {
+                                 api.updateMapping({
+                                    ...mapping,
+                                    [accKey]: v === "__none__" ? "" : v,
+                                 });
+                                 setEditingColKey(null);
+                              }}
+                           />
+                        ) : (
+                           <Button
+                              className={cn(
+                                 "h-8 w-full justify-start gap-2 rounded-md border border-dashed border-border/80 bg-card/70 px-2 text-left text-xs shadow-none hover:bg-card",
+                                 !currentHeader &&
+                                    required &&
+                                    "border-destructive/40 bg-destructive/[0.04]",
+                              )}
+                              data-testid={
+                                 required ? "unmapped-required" : undefined
+                              }
+                              onClick={() => setEditingColKey(accKey)}
+                              type="button"
+                              variant="ghost"
+                           >
+                              <span className="shrink-0 text-muted-foreground">
+                                 Planilha:
                               </span>
-                           ) : (
-                              <span className="flex-1 truncate italic text-muted-foreground/50">
-                                 Não mapeado
-                              </span>
-                           )}
-                        </Button>
-                     )}
+                              {currentHeader ? (
+                                 <span className="truncate font-medium text-foreground">
+                                    {currentHeader}
+                                 </span>
+                              ) : (
+                                 <span className="truncate italic text-muted-foreground">
+                                    Não mapeado
+                                 </span>
+                              )}
+                           </Button>
+                        )}
+                     </div>
                   </TableCell>
                );
             })}
-            {hasActionsColumn && <TableCell key="montte-mapping-actions" />}
+            {hasActionsColumn && (
+               <TableCell
+                  className="bg-secondary/40"
+                  key="montte-mapping-actions"
+               />
+            )}
             {extraHeaders.map((header, index) => (
                <TableCell
-                  className="py-1 pr-2"
+                  className="bg-secondary/40 py-2 pr-2 align-top"
                   key={`montte-extra-${header}-${index}`}
                >
-                  <span className="text-xs font-medium">{header}</span>
+                  <div className="flex min-w-0 flex-col gap-2">
+                     <span className="text-[11px] font-medium leading-none text-muted-foreground">
+                        Planilha
+                     </span>
+                     <span className="truncate rounded-md border border-dashed border-border px-2 py-2 text-xs text-muted-foreground">
+                        {header}
+                     </span>
+                  </div>
                </TableCell>
             ))}
          </TableRow>
 
+         <TableRow
+            ref={setSentinelElement}
+            aria-hidden="true"
+            className="border-0 hover:bg-transparent"
+         >
+            <TableCell className="border-0 p-0" colSpan={colCount} />
+         </TableRow>
+
          {topPadding > 0 && (
-            <TableRow aria-hidden="true">
-               <TableCell colSpan={colCount} style={{ height: topPadding }} />
+            <TableRow
+               aria-hidden="true"
+               className="border-0 hover:bg-transparent"
+            >
+               <TableCell
+                  className="border-0 p-0"
+                  colSpan={colCount}
+                  style={{ height: topPadding }}
+               />
             </TableRow>
          )}
 
@@ -435,9 +514,12 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
             const isSelected = selectedIndices.has(rowIdx);
             const isIgnored = ignoredIndices.has(rowIdx);
             const isDuplicate = duplicateIndices.has(rowIdx);
+            const importedRow = hasImportRows
+               ? (importRows[rowIdx] ?? null)
+               : null;
+            const rowType = importedRow?.type;
             return (
                <TableRow
-                  ref={virtualizer.measureElement}
                   data-index={virtualRow.index}
                   className={cn(
                      "border-l-2 transition-colors",
@@ -447,7 +529,11 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                           ? "border-l-destructive/50 bg-destructive/[0.03] hover:bg-destructive/[0.07]"
                           : isSelected
                             ? "border-l-primary/40 bg-primary/10 hover:bg-primary/10"
-                            : "border-l-primary/40 bg-primary/[0.03] hover:bg-primary/[0.07]",
+                            : rowType === "income"
+                              ? "border-l-primary/70 bg-transparent hover:bg-muted/40"
+                              : rowType === "expense"
+                                ? "border-l-destructive/70 bg-transparent hover:bg-muted/40"
+                                : "border-l-border bg-transparent hover:bg-muted/40",
                   )}
                   key={`__import_${rowIdx}`}
                >
@@ -465,9 +551,6 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                      const accKey = getColumnAccessorKey(col);
                      const fileHeader = mapping[accKey];
                      const rawVal = getRawValue(row, fileHeader ?? "");
-                     const importedRow = hasImportRows
-                        ? (importRows[rowIdx] ?? null)
-                        : null;
                      const val = importedRow ? importedRow[accKey] : rawVal;
                      const meta = col.columnDef.meta;
                      const ariaLabel = meta?.label ?? accKey;
@@ -629,8 +712,12 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
          })}
 
          {bottomPadding > 0 && (
-            <TableRow aria-hidden="true">
+            <TableRow
+               aria-hidden="true"
+               className="border-0 hover:bg-transparent"
+            >
                <TableCell
+                  className="border-0 p-0"
                   colSpan={colCount}
                   style={{ height: bottomPadding }}
                />

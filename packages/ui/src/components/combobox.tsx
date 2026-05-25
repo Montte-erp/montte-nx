@@ -34,6 +34,7 @@ interface ComboboxProps {
    className?: string;
    disabled?: boolean;
    defaultOpen?: boolean;
+   onOpenChange?: (open: boolean) => void;
    id?: string;
    onBlur?: React.FocusEventHandler<HTMLButtonElement>;
    onCreate?: (name: string) => void;
@@ -52,6 +53,7 @@ export function Combobox({
    className,
    disabled = false,
    defaultOpen = false,
+   onOpenChange,
    id,
    onBlur,
    onCreate,
@@ -105,8 +107,16 @@ export function Combobox({
          (o) => o.label.toLowerCase() === search.trim().toLowerCase(),
       );
 
+   const handleOpenChange = React.useCallback(
+      (nextOpen: boolean) => {
+         setOpen(nextOpen);
+         onOpenChange?.(nextOpen);
+      },
+      [onOpenChange],
+   );
+
    return (
-      <Popover onOpenChange={setOpen} open={open}>
+      <Popover onOpenChange={handleOpenChange} open={open}>
          <PopoverTrigger asChild>
             <Button
                aria-expanded={open}
