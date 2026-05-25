@@ -1,7 +1,7 @@
 import { Result } from "better-result";
 import { flue } from "@flue/runtime/app";
-import { validateFlueProviderEnv } from "./lib/agent-utils.ts";
-import { configureFlueProvidersFromEnv } from "./lib/providers.ts";
+import { requireEnv } from "./lib/agent-utils.ts";
+import { configureFlueProvider } from "./lib/providers.ts";
 
 type FlueFetch = ReturnType<typeof flue>["fetch"];
 type FlueExecutionContext = Parameters<FlueFetch>[2];
@@ -12,10 +12,10 @@ export default {
       env: Record<string, unknown>,
       ctx: FlueExecutionContext,
    ) {
-      const providerEnvResult = validateFlueProviderEnv(env);
-      if (Result.isError(providerEnvResult)) throw providerEnvResult.error;
+      const apiKeyResult = requireEnv(env, "OPENCODE_API_KEY");
+      if (Result.isError(apiKeyResult)) throw apiKeyResult.error;
 
-      configureFlueProvidersFromEnv(providerEnvResult.value);
+      configureFlueProvider(apiKeyResult.value);
       return flue().fetch(req, env, ctx);
    },
 };
