@@ -274,6 +274,7 @@
    "dependencies": {
       "@arcjet/node": "^1.4.0",
       "@flue/runtime": "^0.7.0",
+      "@octokit/core": "^7.0.6",
       "better-result": "catalog:validation",
       "zod": "catalog:validation"
    },

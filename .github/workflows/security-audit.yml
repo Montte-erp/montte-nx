@@ -167,6 +167,30 @@ jobs:
            if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            run: bun install --frozen-lockfile
 
+         - name: Collect security audit context
+           if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+              REPO: ${{ github.repository }}
+           run: |
+              set -euo pipefail
+              CONTEXT_DIR=".agent-artifacts/security-audit/input"
+              mkdir -p "$CONTEXT_DIR"
+
+              gh pr view "$PR_NUMBER" --repo "$REPO" --json number,title,author,state,isDraft,reviewDecision,additions,deletions,changedFiles,labels,url,body,baseRefName,headRefName,isCrossRepository > "$CONTEXT_DIR/pr-metadata.json"
+
+              gh pr view "$PR_NUMBER" --repo "$REPO" --json files --jq '.files[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"' > "$CONTEXT_DIR/changed-files.md" \
+                || printf '%s\n' 'Listagem de arquivos indisponível; consulte o diff completo.' > "$CONTEXT_DIR/changed-files.md"
+
+              gh pr diff "$PR_NUMBER" --repo "$REPO" > "$CONTEXT_DIR/pr.patch"
+
+              gh pr view "$PR_NUMBER" --repo "$REPO" --json commits --jq '.commits[].message' > "$CONTEXT_DIR/commits.md" \
+                || : > "$CONTEXT_DIR/commits.md"
+
+              gh pr checks "$PR_NUMBER" --repo "$REPO" --json name,state,bucket,workflow,link > "$CONTEXT_DIR/checks.json" \
+                || printf '[]\n' > "$CONTEXT_DIR/checks.json"
+
          - name: Run Security Audit Agent
            if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            env:
@@ -174,11 +198,12 @@ jobs:
               OPENCODE_GO_BASE_URL: ${{ vars.OPENCODE_GO_BASE_URL }}
               OPENCODE_GO_GATEWAY_KEY: ${{ secrets.OPENCODE_GO_GATEWAY_KEY }}
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               PR_NUMBER: ${{ steps.pr.outputs.number }}
               REPO: ${{ github.repository }}
               FAIL_ON: ${{ steps.pr.outputs.fail_on }}
            run: |
-              PAYLOAD=$(jq -c -n --argjson prNumber "$PR_NUMBER" --arg repo "$REPO" --arg failOn "$FAIL_ON" '{prNumber: $prNumber, repo: $repo, failOn: $failOn}')
+              PAYLOAD=$(jq -c -n --argjson prNumber "$PR_NUMBER" --arg repo "$REPO" --arg failOn "$FAIL_ON" --arg contextDir ".agent-artifacts/security-audit/input" '{prNumber: $prNumber, repo: $repo, failOn: $failOn, contextDir: $contextDir}')
               bunx flue run security-audit --target node --id "security-audit-${PR_NUMBER}" --payload "$PAYLOAD"
 
          - name: Upload security audit artifacts

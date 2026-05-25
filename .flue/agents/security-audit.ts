@@ -1,5 +1,5 @@
 import type { FlueContext } from "@flue/runtime";
-import { local } from "@flue/runtime/node";
+import { Octokit } from "@octokit/core";
 import { Result, TaggedError } from "better-result";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
@@ -18,6 +18,7 @@ const securityAuditPayloadSchema = z.object({
       .regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u)
       .optional(),
    outputDir: z.string().default(".security-audit"),
+   contextDir: z.string().default(".agent-artifacts/security-audit/input"),
    failOn: failOnSchema.default("high"),
 });
 
@@ -48,8 +49,6 @@ const securityAuditResultSchema = z.object({
    discarded: z.array(discardedSchema).max(30).default([]),
 });
 
-type FlueHarness = Awaited<ReturnType<FlueContext["init"]>>;
-type FlueSession = Awaited<ReturnType<FlueHarness["session"]>>;
 type SecurityAuditResult = z.infer<typeof securityAuditResultSchema>;
 type Finding = z.infer<typeof findingSchema>;
 type FailOn = z.infer<typeof failOnSchema>;
@@ -59,32 +58,60 @@ class SecurityAuditAgentError extends TaggedError("SecurityAuditAgentError")<{
    cause?: unknown;
 }>() {}
 
-async function runRequiredCommand(
-   session: FlueSession,
-   command: string,
-   failureMessage: string,
-) {
-   const commandResult = await Result.tryPromise({
-      try: () => Promise.resolve(session.shell(command)),
+async function readPreparedContext(filePath: string, failureMessage: string) {
+   return Result.tryPromise({
+      try: async () => ({
+         stdout: await readFile(filePath, "utf8"),
+         stderr: "",
+         exitCode: 0,
+      }),
       catch: (cause) =>
          new SecurityAuditAgentError({
             message: failureMessage,
             cause,
          }),
    });
-   if (Result.isError(commandResult)) return Result.err(commandResult.error);
+}
 
-   if (commandResult.value.exitCode !== 0) {
-      const stderr = commandResult.value.stderr?.trim();
+async function publishIssueComment({
+   repo,
+   prNumber,
+   body,
+   token,
+}: {
+   repo: string;
+   prNumber: number;
+   body: string;
+   token: string | undefined;
+}) {
+   if (!token) {
       return Result.err(
          new SecurityAuditAgentError({
-            message: stderr ? `${failureMessage}\n${stderr}` : failureMessage,
-            cause: commandResult.value.stderr,
+            message: "GH_TOKEN não configurado no ambiente.",
          }),
       );
    }
 
-   return Result.ok(commandResult.value);
+   const [owner, repoName] = repo.split("/");
+   const octokit = new Octokit({ auth: token });
+   return Result.tryPromise({
+      try: async () => {
+         await octokit.request(
+            "POST /repos/{owner}/{repo}/issues/{num}/comments",
+            {
+               owner,
+               repo: repoName,
+               num: prNumber,
+               body,
+            },
+         );
+      },
+      catch: (cause) =>
+         new SecurityAuditAgentError({
+            message: "Falha ao publicar comentário no GitHub.",
+            cause,
+         }),
+   });
 }
 
 function parseSecurityAuditResult(raw: string) {
@@ -184,10 +211,16 @@ export default async function ({ init, payload, env }: FlueContext) {
       prNumber: payloadPrNumber,
       repo: payloadRepo,
       outputDir,
+      contextDir,
       failOn,
    } = parsedPayload.data;
    const prNumber = payloadPrNumber ?? Number(env.PR_NUMBER);
    const repo = payloadRepo ?? env.GITHUB_REPOSITORY;
+   const githubToken =
+      env.GH_TOKEN ??
+      env.GITHUB_TOKEN ??
+      process.env.GH_TOKEN ??
+      process.env.GITHUB_TOKEN;
 
    if (!prNumber || Number.isNaN(prNumber)) {
       throw new SecurityAuditAgentError({
@@ -200,38 +233,6 @@ export default async function ({ init, payload, env }: FlueContext) {
          message: "repo inválido ou não informado.",
       });
    }
-
-   const harnessResult = await Result.tryPromise({
-      try: () =>
-         init({
-            name: "security-audit-context",
-            sandbox: local({
-               env: {
-                  GH_TOKEN: process.env.GH_TOKEN,
-               },
-            }),
-            model: false,
-         }),
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message:
-               "Falha ao inicializar Flue para contexto de security audit.",
-            cause,
-         }),
-   });
-   if (Result.isError(harnessResult)) throw harnessResult.error;
-
-   const sessionResult = await Result.tryPromise({
-      try: () => harnessResult.value.session(),
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message: "Falha ao abrir sessão Flue para security audit.",
-            cause,
-         }),
-   });
-   if (Result.isError(sessionResult)) throw sessionResult.error;
-
-   const session = sessionResult.value;
 
    const outputDirResult = await Result.tryPromise({
       try: () => mkdir(outputDir, { recursive: true }),
@@ -246,30 +247,25 @@ export default async function ({ init, payload, env }: FlueContext) {
    const contextResult = await Result.tryPromise({
       try: () =>
          Promise.all([
-            runRequiredCommand(
-               session,
-               `gh pr view ${prNumber} --repo ${repo} --json number,title,author,state,isDraft,reviewDecision,additions,deletions,changedFiles,labels,url,body,baseRefName,headRefName,isCrossRepository`,
-               "Falha ao coletar metadados da PR.",
+            readPreparedContext(
+               `${contextDir}/pr-metadata.json`,
+               "Falha ao ler metadados preparados da PR.",
             ),
-            runRequiredCommand(
-               session,
-               "printf '%s\\n' 'Listagem de arquivos omitida; consulte o diff completo abaixo.'",
-               "Falha ao preparar lista de arquivos alterados da PR.",
+            readPreparedContext(
+               `${contextDir}/changed-files.md`,
+               "Falha ao ler lista preparada de arquivos da PR.",
             ),
-            runRequiredCommand(
-               session,
-               `gh pr diff ${prNumber} --repo ${repo}`,
-               "Falha ao coletar diff da PR.",
+            readPreparedContext(
+               `${contextDir}/pr.patch`,
+               "Falha ao ler diff preparado da PR.",
             ),
-            runRequiredCommand(
-               session,
-               `gh pr view ${prNumber} --repo ${repo} --json commits --jq '.commits[].message'`,
-               "Falha ao coletar commits da PR.",
+            readPreparedContext(
+               `${contextDir}/commits.md`,
+               "Falha ao ler commits preparados da PR.",
             ),
-            runRequiredCommand(
-               session,
-               `gh pr checks ${prNumber} --repo ${repo} --json name,status,conclusion || true`,
-               "Falha ao coletar checks da PR.",
+            readPreparedContext(
+               `${contextDir}/checks.json`,
+               "Falha ao ler checks preparados da PR.",
             ),
             readFile("AGENTS.md", "utf8"),
             readFile(".agents/skills/implementation/SKILL.md", "utf8"),
@@ -449,11 +445,12 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
       writeFile(markdownOutputFile, markdown),
    ]);
 
-   const commentResult = await runRequiredCommand(
-      session,
-      `gh pr comment ${prNumber} --repo ${repo} --body-file ${markdownOutputFile}`,
-      "Falha ao comentar security audit na PR.",
-   );
+   const commentResult = await publishIssueComment({
+      repo,
+      prNumber,
+      body: markdown,
+      token: githubToken,
+   });
    if (Result.isError(commentResult)) throw commentResult.error;
 
    if (shouldFailAudit(auditResult.value.findings, failOn)) {
