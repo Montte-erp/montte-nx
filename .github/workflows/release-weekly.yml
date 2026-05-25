@@ -81,8 +81,6 @@ jobs:
            if: steps.version.outputs.skip != 'true'
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-              OPENCODE_GO_BASE_URL: ${{ vars.OPENCODE_GO_BASE_URL }}
-              OPENCODE_GO_GATEWAY_KEY: ${{ secrets.OPENCODE_GO_GATEWAY_KEY }}
               RELEASE_VERSION: ${{ steps.version.outputs.version }}
               RELEASE_TAG: ${{ steps.version.outputs.tag }}
            run: |
