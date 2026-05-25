@@ -54,6 +54,23 @@ Veja [CONTRIBUTING.md](CONTRIBUTING.md) para comandos, validacoes e padroes de c
 
 ---
 
+## Agentes e skills
+
+`AGENTS.md` e a fonte de verdade para agentes trabalhando no repositorio. Antes de alterar uma area, abra o skill correspondente em `.agents/skills/<nome>/SKILL.md`.
+
+| Area | Skill |
+| :-- | :-- |
+| Implementacao em `apps/`, `modules/`, `core/`, `packages/` ou `tooling/` | [`implementation`](.agents/skills/implementation/SKILL.md) |
+| Review comments, PRs, bugs, diffs e CI | [`code-review`](.agents/skills/code-review/SKILL.md) |
+| UI, UX, copy de produto, dashboards, forms e surfaces autenticadas | [`design`](.agents/skills/design/SKILL.md) |
+| Releases, tags, GitHub Releases, Linear Releases e recuperacao | [`release`](.agents/skills/release/SKILL.md) |
+| Documentacao tecnica e `docs/project` | [`docs`](.agents/skills/docs/SKILL.md) |
+| Blog, LinkedIn, X e marketing | [`marketing`](.agents/skills/marketing/SKILL.md) |
+
+Ferramentas operacionais: CI via `monitor-ci`; Linear (`MON-*`) via `linear-cli`.
+
+---
+
 ## O que existe hoje
 
 ### Web app (`apps/web`)
@@ -190,20 +207,33 @@ montte-nx/
 ```bash
 bun dev                  # dev-init + web + worker + landing
 bun run dev:desktop      # dev-init + desktop Tauri + worker + landing
-bun dev:all              # todos os apps/pacotes com target dev
-bun run build            # build via Nx
+bun dev:all              # todos os apps e pacotes com target dev
+bun run build            # build via Nx cache
 bun run typecheck        # typecheck via Nx
 bun run check            # oxlint
 bun run format           # oxfmt --write
 bun run test             # testes via Nx
 bun run db:push          # aplica schema local
-bun run doctor           # diagnostico do ambiente
+bun run db:studio:local  # Drizzle Studio local
+bun run db:studio:prod   # Drizzle Studio producao
 bun run check-boundaries # valida regras de importacao
+bun run clean            # limpeza segura
+bun run clean:cache      # limpa cache
+bun run auth:generate    # regenera schema do Better Auth
 bun run landing:build    # build da landing Astro
+bun run landing:start    # preview da landing
+bun run doctor           # diagnostico do ambiente
 bun run e2e              # Playwright
 ```
 
 Scripts operacionais ficam em `scripts/`, incluindo `setup.ts`, `dev-init.ts`, `doctor.ts`, `clean.ts`, `db-push.ts`, `ensure-database.ts`, `ensure-schemas.ts`, `check-env.ts`, `env-setup.ts`, `set-bucket-cors.ts` e `backfill-category-icons.ts`.
+
+Gotchas:
+
+- `bun dev` executa `scripts/dev-init.ts`; se containers locais falharem, o script avisa e continua. Confirme o ambiente com `bun run doctor`.
+- Erro `Module has no exported member` no typecheck costuma indicar `dist` stale. Rode build do pacote `core/<pkg>` citado.
+- Nunca edite `apps/web/src/routeTree.gen.ts`; o arquivo e gerado.
+- Nao aumente `NODE_OPTIONS` para contornar memoria; corrija a causa raiz.
 
 ---
 
@@ -224,6 +254,10 @@ Para chamadas programaticas, crie uma chave em Configuracoes do projeto -> API K
 Leia [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir PR. O projeto usa padroes fortes para oRPC, Drizzle, TanStack Query, DBOS, UI e boundaries.
 
 Roadmap e trabalho ativo vivem no Linear do Montte. Issues no GitHub sao bem-vindas para bugs e sugestoes publicas.
+
+## Releases
+
+O produto unico (`apps/web`) usa CalVer `YYYY.MM.DD` com tag `vYYYY.MM.DD`. O workflow `.github/workflows/release-weekly.yml` gera release notes em pt-BR, tag, GitHub Release e Linear Release. `.github/workflows/blog-post-from-release.yml` transforma releases publicadas em PR de post. `.github/workflows/project-documentation.yml` atualiza `docs/project`.
 
 ## Licenca
 
