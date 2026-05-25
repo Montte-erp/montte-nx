@@ -272,10 +272,14 @@
       "worker:start": "bun run --filter=worker start"
    },
    "dependencies": {
-      "@arcjet/node": "^1.4.0"
+      "@arcjet/node": "^1.4.0",
+      "@flue/runtime": "^0.7.0",
+      "better-result": "catalog:validation",
+      "zod": "catalog:validation"
    },
    "devDependencies": {
       "@aws-sdk/client-s3": "^3.1045.0",
+      "@flue/cli": "^0.7.0",
       "@nx/js": "22.6.5",
       "@nx/playwright": "22.6.5",
       "@rolldown/plugin-babel": "^0.2.3",

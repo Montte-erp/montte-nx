@@ -67,32 +67,37 @@ jobs:
               } > changes.md
               cat changes.md
 
-         - name: Generate release notes via opencode
+         - name: Setup Bun for Flue
            if: steps.version.outputs.skip != 'true'
-           continue-on-error: true
-           uses: anomalyco/opencode/github@latest
+           uses: oven-sh/setup-bun@v2
+           with:
+              bun-version: latest
+
+         - name: Install dependencies
+           if: steps.version.outputs.skip != 'true'
+           run: bun install --frozen-lockfile
+
+         - name: Generate release notes via Flue + OpenCode Go
+           if: steps.version.outputs.skip != 'true'
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-              SKILL_FILE: .agents/skills/release/SKILL.md
-              RELEASE_NOTES_REFERENCE: .agents/skills/release/references/release-notes.md
-              VALIDATION_REFERENCE: .agents/skills/release/references/release-validation.md
-              CHANGES_FILE: changes.md
-              OUTPUT_FILE: RELEASE_NOTES.md
               RELEASE_VERSION: ${{ steps.version.outputs.version }}
-           with:
-              model: opencode-go/deepseek-v4-flash
-              prompt: |
-                 Leia `$SKILL_FILE`, `$RELEASE_NOTES_REFERENCE` e `$VALIDATION_REFERENCE`.
+              RELEASE_TAG: ${{ steps.version.outputs.tag }}
+           run: |
+              PAYLOAD=$(jq -c -n \
+                --arg version "$RELEASE_VERSION" \
+                '{
+                  releaseVersion: $version,
+                  changesFile: "changes.md",
+                  skillFile: ".agents/skills/release/SKILL.md",
+                  releaseNotesReference: ".agents/skills/release/references/release-notes.md",
+                  validationReference: ".agents/skills/release/references/release-validation.md",
+                  outputFile: "RELEASE_NOTES.md"
+                }'
+              )
 
-                 Depois leia `$CHANGES_FILE` e gere as release notes semanais do Montte em `$OUTPUT_FILE` para a versão `$RELEASE_VERSION`.
-
-                 Regras absolutas:
-                 - siga a estrutura e a classificação de `$RELEASE_NOTES_REFERENCE`;
-                 - use PR como unidade canônica quando existir;
-                 - escreva em pt-BR com foco em valor para usuário;
-                 - não inclua H1 com o nome ou versão da release;
-                 - não invente links, imagens, documentação, números ou funcionalidades;
-                 - não escreva nada fora de `$OUTPUT_FILE`.
+              bunx flue run release-notes --target node --id "release-notes-${RELEASE_TAG}" \
+                --payload "$PAYLOAD"
 
          - name: Verify release notes
            if: steps.version.outputs.skip != 'true'
