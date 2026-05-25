@@ -34,6 +34,13 @@ Se o ambiente falhar antes de iniciar os apps, rode:
 bun run doctor
 ```
 
+Gotchas do workspace:
+
+- `bun dev` executa `scripts/dev-init.ts`; se containers locais falharem, ele avisa e continua.
+- Erro `Module has no exported member` no typecheck geralmente indica `dist` stale. Rode build do pacote `core/<pkg>` citado.
+- Nunca edite `apps/web/src/routeTree.gen.ts`; ele e gerado.
+- Nao aumente `NODE_OPTIONS` para contornar memoria; corrija a causa raiz.
+
 ## Comandos
 
 ```bash
@@ -59,7 +66,7 @@ bun run clean            # limpeza segura
 bun run clean:cache      # limpa cache
 bun run auth:generate    # regenera schema do Better Auth
 bun run landing:build    # build da landing Astro
-bun run landing:start    # preview da landing
+bun run landing:start    # preview da landing em host/port compativel com Railway
 ```
 
 Scripts de workspace ficam em `scripts/`: `setup.ts`, `dev-init.ts`, `doctor.ts`, `clean.ts`, `db-push.ts`, `ensure-database.ts`, `ensure-schemas.ts`, `check-env.ts`, `env-setup.ts`, `set-bucket-cors.ts`, `backfill-category-icons.ts` e scripts auxiliares similares.
@@ -129,38 +136,29 @@ As integracoes oficiais sao PostHog e Twenty. Nao adicione outra integracao ofic
 - Tags no produto sao sempre chamadas de **Centro de Custo**.
 - `apps/web/src/routeTree.gen.ts` e gerado; nao edite manualmente.
 
-## Skills
+## Skills e agentes
 
-Antes de mexer em um dominio, abra o skill correspondente. O conteudo do skill tem precedencia sobre instrucoes antigas.
+`AGENTS.md` e a fonte de verdade para agentes. Antes de mexer em uma area, abra o skill correspondente; o conteudo do skill tem precedencia sobre instrucoes antigas.
 
 Skills do repositorio ficam em `.agents/skills/<nome>/SKILL.md`.
 
-Mapa rapido:
+| Area | Abra este skill |
+| :-- | :-- |
+| Implementacao em `apps/`, `modules/`, `core/`, `packages/` ou `tooling/` | [`implementation`](.agents/skills/implementation/SKILL.md) |
+| Review comments, PR findings, bugs reportados, diffs e CI | [`code-review`](.agents/skills/code-review/SKILL.md) |
+| UI, UX, copy de produto, layout, dashboards, forms, sheets e surfaces autenticadas | [`design`](.agents/skills/design/SKILL.md) |
+| Release workflows, release notes, tags, GitHub Releases, Linear Releases e recuperacao | [`release`](.agents/skills/release/SKILL.md) |
+| Documentacao tecnica, `docs/project` e automacao de docs | [`docs`](.agents/skills/docs/SKILL.md) |
+| Blog, LinkedIn, X, release blog posts e marketing drafts | [`marketing`](.agents/skills/marketing/SKILL.md) |
 
-- Novo dominio, Payments/Vault ou erro de dominio: `better-result`
-- Codigo legado oRPC/erros ainda em `neverthrow`: `neverthrow`
-- oRPC client e TanStack Query: `tanstack-query`
-- Banco, schemas e queries: `postgres-drizzle`
-- Busca/BM25: `paradedb-skill`
-- Redis: `redis-best-practices`
-- DBOS e workflows: `dbos-typescript`
-- Better Auth: `better-auth-best-practices`
-- Formularios: `tanstack-form`
-- Rotas e loaders: `tanstack-router`, `tanstack-start`
-- Tabelas: `tanstack-table`, `tanstack-virtual`
-- shadcn e UI primitives: `shadcn`
-- UI/UX e acessibilidade: `ui-ux-expert`, `wcag-audit-patterns`
-- Nx workspace: `nx-workspace`
-- Geradores Nx: `nx-generate`
-- Tarefas Nx: `nx-run-tasks`
-- CI Nx Cloud: `monitor-ci`
-- Linear: `linear-cli`
+Quando uma tarefa cruzar areas, abra todos os skills relevantes. Exemplo: bug visual usa `code-review`, `implementation` e `design`; automacao de post de release usa `release`, `marketing` e `implementation`.
 
-Para skills TanStack Intent, siga o bloco de mapeamento em `AGENTS.md` e carregue com:
+Ferramentas operacionais:
 
-```bash
-npx @tanstack/intent@latest load <use>
-```
+- CI checks: `monitor-ci`
+- Linear (`MON-*`): `linear-cli`
+
+Skills especificos de framework ou biblioteca podem existir, mas siga primeiro o roteamento de `AGENTS.md`.
 
 ## Testes e verificacao
 
@@ -202,6 +200,12 @@ Commits devem ser curtos e descritivos, por exemplo:
 ```text
 docs: atualizar readme e contributing
 ```
+
+## Releases
+
+O produto unico (`apps/web`) usa CalVer `YYYY.MM.DD` com tag `vYYYY.MM.DD`. O workflow `.github/workflows/release-weekly.yml` coleta commits e PRs desde a ultima tag, gera release notes em pt-BR e cria GitHub Release + Linear Release. O workflow `.github/workflows/blog-post-from-release.yml` gera PR de post a partir de releases publicadas, e `.github/workflows/project-documentation.yml` atualiza `docs/project`.
+
+Alteracoes nesses fluxos devem seguir os skills `release`, `marketing`, `docs` e/ou `implementation`, conforme a area tocada.
 
 ## Problemas e sugestoes
 
