@@ -89,7 +89,30 @@ export async function buildWebContext(
    };
 }
 
-const errorDataSchema = z.object({ tag: z.string() }).optional();
+const errorDataSchema = z
+   .object({
+      tag: z.string().optional(),
+      issues: z.array(z.string()).optional(),
+   })
+   .optional();
+
+function getZodError(error: unknown): z.ZodError | null {
+   if (error instanceof z.ZodError) return error;
+   if (
+      typeof error === "object" &&
+      error !== null &&
+      "cause" in error &&
+      error.cause instanceof z.ZodError
+   ) {
+      return error.cause;
+   }
+   return null;
+}
+
+function formatZodIssue(issue: z.ZodIssue) {
+   const path = issue.path.join(".");
+   return path ? `${path}: ${issue.message}` : issue.message;
+}
 
 const base = os
    .errors({
@@ -297,6 +320,16 @@ const withORPCErrors = withOrganization.use(async ({ next, errors }) => {
    });
 
    if (Result.isOk(result)) return result.value;
+
+   const zodError = getZodError(result.error);
+   if (zodError) {
+      const issues = zodError.issues.map(formatZodIssue);
+      throw errors.BAD_REQUEST({
+         message: zodError.issues[0]?.message ?? "Dados inválidos.",
+         cause: result.error,
+         data: { tag: "ValidationError", issues },
+      });
+   }
 
    if (!isTaggedError(result.error)) {
       throw new Error(String(result.error), { cause: result.error });

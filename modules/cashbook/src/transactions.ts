@@ -167,6 +167,7 @@ export interface TransactionFilter {
    teamId: string;
    type?: "income" | "expense" | "transfer";
    bankAccountId?: string;
+   relationshipId?: string;
    categoryId?: string;
    tagId?: string;
    dateFrom?: string;
@@ -197,6 +198,7 @@ const t = transactions;
 const COND_COLUMNS = {
    categoryId: { column: t.categoryId, isText: false },
    bankAccountId: { column: t.bankAccountId, isText: false },
+   relationshipId: { column: t.relationshipId, isText: false },
    creditCardId: { column: t.creditCardId, isText: false },
    amount: { column: t.amount, isText: false },
    name: { column: t.name, isText: true },
@@ -317,6 +319,7 @@ export function buildTransactionWhere(f: TransactionFilter) {
       c.push(eq(t.ignored, false));
    if (f.type) c.push(eq(t.type, f.type));
    if (f.bankAccountId) c.push(eq(t.bankAccountId, f.bankAccountId));
+   if (f.relationshipId) c.push(eq(t.relationshipId, f.relationshipId));
    if (f.categoryId) c.push(eq(t.categoryId, f.categoryId));
    if (f.tagId) c.push(eq(t.tagId, f.tagId));
    if (f.creditCardId) c.push(eq(t.creditCardId, f.creditCardId));

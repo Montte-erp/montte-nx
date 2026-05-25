@@ -18,6 +18,7 @@ Leia so as referencias envolvidas na tarefa:
 - Operational background jobs, debounce, singleton, retry, DLQ: `references/pg-boss.md`.
 - AI agents, TanStack AI runtime, chat lifecycle, AG-UI/OpenUI, tools, AI telemetry: `references/tanstack-ai.md`.
 - Triagem de bugs da plataforma para GitHub Issues via GitHub Actions: `references/issue-triage-agent.md`.
+- Landing pública em Astro, blog, content collections, React islands, endpoints e OG/RSS/SEO: `references/astro.md`.
 
 Carregue tambem as skills de dominio quando a tarefa bater:
 
@@ -79,7 +80,7 @@ packages/     # ui (shadcn primitives + Montte components)
 tooling/      # boundary, css (Tailwind), oxc, typescript
 ```
 
-`apps/landing` e a landing publica em Astro. Ela importa `@tooling/css/globals.css`, pode server-renderizar componentes shadcn de `@packages/ui`, usa `public/favicon.svg`, e roda na porta `3001` em desenvolvimento.
+`apps/landing` e a landing publica em Astro. Antes de alterar landing, blog, endpoints, OG/RSS, content collections ou React islands, leia `references/astro.md`. Ela importa `@tooling/css/globals.css`, pode server-renderizar componentes shadcn de `@packages/ui`, usa `public/favicon.svg`, e roda na porta `3001` em desenvolvimento.
 
 Catalogs no `package.json` raiz: `analytics-client`, `assistant-ui`, `astro`, `auth`, `database`, `development`, `dnd`, `environment`, `files`, `fot`, `logging`, `mastra`, `notifications`, `orpc`, `payments`, `react`, `search-providers`, `server`, `tanstack`, `tanstack-ai`, `telemetry`, `testing`, `ui`, `validation`, `vite`, `workers`. Internal: `"@core/database": "workspace:*"`.
 

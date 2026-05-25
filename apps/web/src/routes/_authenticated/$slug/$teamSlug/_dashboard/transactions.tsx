@@ -30,6 +30,7 @@ const transactionsSearchSchema = z.object({
       .catch([])
       .default([]),
    bankId: z.string().catch("").default(""),
+   relationshipId: z.string().catch("").default(""),
    grouping: z.array(z.string()).catch([]).default([]),
 });
 
