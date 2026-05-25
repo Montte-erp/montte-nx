@@ -1,4 +1,5 @@
 import type { FlueContext } from "@flue/runtime";
+import { Octokit } from "@octokit/core";
 import { Result, TaggedError } from "better-result";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
@@ -91,45 +92,26 @@ async function publishIssueComment({
       );
    }
 
-   const responseResult = await Result.tryPromise({
-      try: () =>
-         fetch(
-            `https://api.github.com/repos/${repo}/issues/${prNumber}/comments`,
+   const [owner, repoName] = repo.split("/");
+   const octokit = new Octokit({ auth: token });
+   return Result.tryPromise({
+      try: async () => {
+         await octokit.request(
+            "POST /repos/{owner}/{repo}/issues/{num}/comments",
             {
-               method: "POST",
-               headers: {
-                  Accept: "application/vnd.github+json",
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                  "X-GitHub-Api-Version": "2022-11-28",
-               },
-               body: JSON.stringify({ body }),
+               owner,
+               repo: repoName,
+               num: prNumber,
+               body,
             },
-         ),
+         );
+      },
       catch: (cause) =>
          new SecurityAuditAgentError({
             message: "Falha ao publicar comentário no GitHub.",
             cause,
          }),
    });
-   if (Result.isError(responseResult)) return Result.err(responseResult.error);
-   if (responseResult.value.ok) return Result.ok(undefined);
-
-   const bodyResult = await Result.tryPromise({
-      try: () => responseResult.value.text(),
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message: "Falha ao ler erro da API do GitHub.",
-            cause,
-         }),
-   });
-
-   return Result.err(
-      new SecurityAuditAgentError({
-         message: `GitHub retornou ${responseResult.value.status} ao publicar comentário.`,
-         cause: Result.isOk(bodyResult) ? bodyResult.value : bodyResult.error,
-      }),
-   );
 }
 
 function parseSecurityAuditResult(raw: string) {
