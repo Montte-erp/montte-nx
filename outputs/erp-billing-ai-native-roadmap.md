@@ -240,6 +240,42 @@ Tauri deve ser bridge para capacidades físicas reais quando houver demanda:
 
 Não deve virar segundo produto. É extensão controlada do web app.
 
+
+## Pricing do Montte: Free + PAYG + addon único
+
+Decisão adicionada: Montte deve ter um modelo inspirado no PostHog, com **Free generoso**, **pay-as-you-go** e **um addon único de R$ 400/mês**. Não criar billing público real antes de integrar AbacatePay como primeiro provider, porque a meta é usar o próprio Montte para cobrar o Montte.
+
+Modelo:
+
+```text
+Free
+  sem cartão
+  suficiente para founder testar operação real
+  limites claros e generosos
+
+Pay-as-you-go
+  cobra uso acima do free allowance
+  mantém allowance gratuito mensal
+  exige spending limits/alerts
+
+Addon R$ 400/mês
+  opcional
+  capacidades avançadas
+  subscription item fixo
+```
+
+Gate obrigatório:
+
+```text
+AbacatePay integrado
+  -> provider ledger/idempotência
+  -> invoices/subscriptions/usage no billing interno
+  -> cobrança real do Montte via Montte
+  -> webhook pago/falhou alimenta finance/inbox/audit
+```
+
+Se Montte ainda não consegue cobrar o próprio Montte usando `modules/billing` + `modules/payments` + AbacatePay, o billing público ainda deve ficar em modo preview/sandbox.
+
 ## Arquitetura alvo: ERP + billing + AI-native em Postgres
 
 Constraint assumida: **somente Postgres como banco**. Sem vector DB, graph DB, search DB, billing DB ou integration DB separado.
@@ -770,7 +806,7 @@ integrations.retry_failed_webhook
 3. **Clientes/fornecedores polidos** — dados mestre confiáveis.
 4. **Contratos** — ponte de negócio.
 5. **Billing primitives + serviços/produtos leves** — cobrança recorrente real.
-6. **Payments v1 com AbacatePay** — PIX/boleto/checkout/webhooks.
+6. **Payments v1 com AbacatePay** — PIX/boleto/checkout/webhooks. Billing real do próprio Montte só depois deste gate.
 7. **Vault + fiscal/CNPJ/DFe** — compliance local.
 8. **Open Finance** — sync e conciliação.
 9. **Integrações Twenty/PostHog** — fluxo comercial/comunicação.
@@ -851,6 +887,8 @@ Critério de sucesso:
 - usuário consegue cadastrar cliente/fornecedor, validar CNPJ, criar contrato simples e ver vínculo com transações existentes.
 
 ### Fase 2 — Billing primitives + serviços/produtos leves + AbacatePay
+
+Inclui também o modelo comercial do próprio Montte: Free generoso, pay-as-you-go e addon único de R$ 400/mês. A implementação de cobrança real deve ser bloqueada até AbacatePay estar funcionando como provider.
 
 Base no esboço: “Gestão de serviços (billing primitive igual Autumn) -> gestão de produtos e estoque (billing primitive) -> vault -> abacate pay”.
 
