@@ -18,23 +18,23 @@ Transformar report bruto da plataforma em issue acionavel, deduplicada e segura:
 
 ```json
 {
-  "source": "platform",
-  "reportId": "bug_123",
-  "organizationId": "org_123",
-  "teamId": "team_123",
-  "userId": "user_123",
-  "url": "https://app.montte.com/...",
-  "title": "Erro ao importar transacoes",
-  "description": "Texto do usuario ou evento",
-  "steps": ["Acessar importacao", "Enviar XLSX", "Confirmar"],
-  "expected": "Transacoes importadas",
-  "actual": "Toast de erro generico",
-  "severityHint": "low|medium|high|critical|null",
-  "browser": "Chrome 126",
-  "appVersion": "2026.05.25",
-  "logs": ["trechos curtos sanitizados"],
-  "screenshotUrl": "url interna opcional",
-  "traceId": "trace opcional"
+   "source": "platform",
+   "reportId": "bug_123",
+   "organizationId": "org_123",
+   "teamId": "team_123",
+   "userId": "user_123",
+   "url": "https://app.montte.com/...",
+   "title": "Erro ao importar transacoes",
+   "description": "Texto do usuario ou evento",
+   "steps": ["Acessar importacao", "Enviar XLSX", "Confirmar"],
+   "expected": "Transacoes importadas",
+   "actual": "Toast de erro generico",
+   "severityHint": "low|medium|high|critical|null",
+   "browser": "Chrome 126",
+   "appVersion": "2026.05.25",
+   "logs": ["trechos curtos sanitizados"],
+   "screenshotUrl": "url interna opcional",
+   "traceId": "trace opcional"
 }
 ```
 
@@ -88,16 +88,16 @@ Se `confidence < 0.6`, criar como `triage` ou comentar em issue existente; nao m
 
 ```json
 {
-  "action": "create|comment|skip",
-  "existingIssueNumber": null,
-  "severity": "low|medium|high|critical",
-  "confidence": 0.82,
-  "type": "bug|incident|ux|data|support",
-  "area": "finance",
-  "title": "Importacao de XLSX falha ao confirmar transacoes",
-  "labels": ["bug", "triage", "area:finance", "source:platform"],
-  "body": "markdown em pt-BR",
-  "reason": "Por que criar/comentar/ignorar"
+   "action": "create|comment|skip",
+   "existingIssueNumber": null,
+   "severity": "low|medium|high|critical",
+   "confidence": 0.82,
+   "type": "bug|incident|ux|data|support",
+   "area": "finance",
+   "title": "Importacao de XLSX falha ao confirmar transacoes",
+   "labels": ["bug", "triage", "area:finance", "source:platform"],
+   "body": "markdown em pt-BR",
+   "reason": "Por que criar/comentar/ignorar"
 }
 ```
 

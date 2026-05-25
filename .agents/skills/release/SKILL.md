@@ -26,7 +26,7 @@ Leia somente as referencias envolvidas:
 
 - Workflow semanal, cron, inputs, coleta de commits/PRs, tag e Linear release: [weekly-workflow](references/weekly-workflow.md).
 - Prompt e regras para gerar `RELEASE_NOTES.md`: [release-notes](references/release-notes.md).
-- Agente/action automatico para gerar, validar e publicar release notes: [automated-release-notes](references/automated-release-notes.md).
+- Release notes geradas em CI/action, validacao e publicacao: [automated-release-notes](references/automated-release-notes.md).
 - Recuperacao quando notes existem mas tag/release falhou: [manual-recovery](references/manual-recovery.md).
 - Post de blog criado a partir da release publicada: use [marketing](../marketing/SKILL.md) com [release-post](../marketing/references/release-post.md).
 - Validacoes e checklist antes de fechar release: [release-validation](references/release-validation.md).

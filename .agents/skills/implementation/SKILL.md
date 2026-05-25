@@ -17,7 +17,7 @@ Leia so as referencias envolvidas na tarefa:
 - Durable workflows, replay, DBOS transactions/steps, self-rescheduling: `references/dbos.md`.
 - Operational background jobs, debounce, singleton, retry, DLQ: `references/pg-boss.md`.
 - AI agents, TanStack AI runtime, chat lifecycle, AG-UI/OpenUI, tools, AI telemetry: `references/tanstack-ai.md`.
-- Agentes operacionais em GitHub Actions, como triagem de bugs da plataforma para GitHub Issues: `references/issue-triage-agent.md`.
+- Triagem de bugs da plataforma para GitHub Issues via GitHub Actions: `references/issue-triage-agent.md`.
 
 Carregue tambem as skills de dominio quando a tarefa bater:
 

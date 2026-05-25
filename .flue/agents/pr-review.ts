@@ -1,7 +1,7 @@
 import type { FlueContext } from "@flue/runtime";
 import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
 import { runOpenCodeGo } from "../lib/opencode-go.ts";
 
@@ -10,7 +10,21 @@ export const triggers = {};
 const prPayloadSchema = z.object({
    prNumber: z.number().optional(),
    repo: z.string().optional(),
-   outputFile: z.string().default("PR_REVIEW.md"),
+   outputDir: z.string().default(".review"),
+});
+
+const reviewCommentSchema = z.object({
+   path: z.string().min(1),
+   line: z.number().int().positive(),
+   side: z.enum(["RIGHT", "LEFT"]).default("RIGHT"),
+   severity: z.enum(["critical", "major", "minor", "trivial", "info"]),
+   title: z.string().min(1),
+   body: z.string().min(1),
+});
+
+const reviewResultSchema = z.object({
+   summary: z.string().min(1),
+   comments: z.array(reviewCommentSchema).max(20).default([]),
 });
 
 type FlueHarness = Awaited<ReturnType<FlueContext["init"]>>;
@@ -48,6 +62,207 @@ async function runRequiredCommand(
    return Result.ok(commandResult.value);
 }
 
+function parseReviewResult(raw: string) {
+   const trimmed = raw.trim();
+   const withoutFence = trimmed
+      .replace(/^```(?:json)?\s*/u, "")
+      .replace(/\s*```$/u, "");
+
+   const jsonResult = Result.try({
+      try: () => JSON.parse(withoutFence),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Resposta do review agent não é JSON válido.",
+            cause,
+         }),
+   });
+   if (Result.isError(jsonResult)) return Result.err(jsonResult.error);
+
+   const parsed = reviewResultSchema.safeParse(jsonResult.value);
+   if (!parsed.success) {
+      return Result.err(
+         new PrReviewAgentError({
+            message: "Resposta do review agent não segue o schema esperado.",
+            cause: parsed.error,
+         }),
+      );
+   }
+
+   return Result.ok(parsed.data);
+}
+
+function formatInlineComment(comment: z.infer<typeof reviewCommentSchema>) {
+   return `**Severidade:** ${comment.severity}
+
+**${comment.title}**
+
+${comment.body}`;
+}
+
+function parseDiffReviewLines(patch: string) {
+   const allowed = new Map<string, { left: Set<number>; right: Set<number> }>();
+   let currentPath: string | undefined;
+   let oldLine = 0;
+   let newLine = 0;
+
+   for (const line of patch.split("\n")) {
+      if (line.startsWith("diff --git ")) {
+         currentPath = undefined;
+         continue;
+      }
+
+      if (line.startsWith("+++ b/")) {
+         currentPath = line.slice("+++ b/".length);
+         if (!allowed.has(currentPath)) {
+            allowed.set(currentPath, { left: new Set(), right: new Set() });
+         }
+         continue;
+      }
+
+      if (!currentPath) continue;
+
+      const hunk = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/u.exec(line);
+      if (hunk) {
+         oldLine = Number(hunk[1]);
+         newLine = Number(hunk[2]);
+         continue;
+      }
+
+      const fileLines = allowed.get(currentPath);
+      if (!fileLines) continue;
+
+      if (line.startsWith("+") && !line.startsWith("+++")) {
+         fileLines.right.add(newLine);
+         newLine += 1;
+         continue;
+      }
+
+      if (line.startsWith("-") && !line.startsWith("---")) {
+         fileLines.left.add(oldLine);
+         oldLine += 1;
+         continue;
+      }
+
+      if (line.startsWith(" ")) {
+         fileLines.left.add(oldLine);
+         fileLines.right.add(newLine);
+         oldLine += 1;
+         newLine += 1;
+      }
+   }
+
+   return allowed;
+}
+
+function splitValidInlineComments(
+   comments: Array<z.infer<typeof reviewCommentSchema>>,
+   patch: string,
+) {
+   const allowed = parseDiffReviewLines(patch);
+   const valid: Array<z.infer<typeof reviewCommentSchema>> = [];
+   const skipped: Array<
+      z.infer<typeof reviewCommentSchema> & { reason: string }
+   > = [];
+
+   for (const comment of comments) {
+      const fileLines = allowed.get(comment.path);
+      if (!fileLines) {
+         skipped.push({
+            ...comment,
+            reason: "Arquivo não aparece no diff atual.",
+         });
+         continue;
+      }
+
+      const lineSet =
+         comment.side === "LEFT" ? fileLines.left : fileLines.right;
+      if (!lineSet.has(comment.line)) {
+         skipped.push({
+            ...comment,
+            reason: "Linha não é comentável no diff atual.",
+         });
+         continue;
+      }
+
+      valid.push(comment);
+   }
+
+   return { valid, skipped };
+}
+
+async function publishReview({
+   repo,
+   prNumber,
+   body,
+   comments,
+}: {
+   repo: string;
+   prNumber: number;
+   body: string;
+   comments: Array<z.infer<typeof reviewCommentSchema>>;
+}) {
+   const token = process.env.GH_TOKEN;
+   if (!token) {
+      return Result.err(
+         new PrReviewAgentError({
+            message: "GH_TOKEN não configurado no ambiente.",
+         }),
+      );
+   }
+
+   const payload = {
+      body,
+      event: "COMMENT",
+      comments: comments.map((comment) => ({
+         path: comment.path,
+         line: comment.line,
+         side: comment.side,
+         body: formatInlineComment(comment),
+      })),
+   };
+
+   const responseResult = await Result.tryPromise({
+      try: () =>
+         fetch(
+            `https://api.github.com/repos/${repo}/pulls/${prNumber}/reviews`,
+            {
+               method: "POST",
+               headers: {
+                  Accept: "application/vnd.github+json",
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+               },
+               body: JSON.stringify(payload),
+            },
+         ),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Falha ao publicar review inline no GitHub.",
+            cause,
+         }),
+   });
+   if (Result.isError(responseResult)) return Result.err(responseResult.error);
+
+   if (responseResult.value.ok) return Result.ok(undefined);
+
+   const bodyResult = await Result.tryPromise({
+      try: () => responseResult.value.text(),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Falha ao ler erro da API do GitHub.",
+            cause,
+         }),
+   });
+
+   return Result.err(
+      new PrReviewAgentError({
+         message: `GitHub retornou ${responseResult.value.status} ao publicar review.`,
+         cause: Result.isOk(bodyResult) ? bodyResult.value : bodyResult.error,
+      }),
+   );
+}
+
 export default async function ({ init, payload, env }: FlueContext) {
    const parsedPayload = prPayloadSchema.safeParse(payload);
    if (!parsedPayload.success) {
@@ -60,7 +275,7 @@ export default async function ({ init, payload, env }: FlueContext) {
    const {
       prNumber: payloadPrNumber,
       repo: payloadRepo,
-      outputFile,
+      outputDir,
    } = parsedPayload.data;
    const prNumber = payloadPrNumber ?? Number(env.PR_NUMBER);
    const repo = payloadRepo ?? env.GITHUB_REPOSITORY;
@@ -106,6 +321,17 @@ export default async function ({ init, payload, env }: FlueContext) {
    if (Result.isError(sessionResult)) throw sessionResult.error;
 
    const session = sessionResult.value;
+
+   const outputDirResult = await Result.tryPromise({
+      try: () => mkdir(outputDir, { recursive: true }),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Falha ao criar diretório de artefatos da revisão.",
+            cause,
+         }),
+   });
+   if (Result.isError(outputDirResult)) throw outputDirResult.error;
+
    const contextResult = await Result.tryPromise({
       try: () =>
          Promise.all([
@@ -151,6 +377,18 @@ export default async function ({ init, payload, env }: FlueContext) {
             ),
             readFile("AGENTS.md", "utf8"),
             readFile(".agents/skills/code-review/SKILL.md", "utf8"),
+            readFile(
+               ".agents/skills/code-review/references/pr-review.md",
+               "utf8",
+            ),
+            readFile(
+               ".agents/skills/code-review/references/review-comments.md",
+               "utf8",
+            ),
+            readFile(
+               ".agents/skills/code-review/references/tests-validation.md",
+               "utf8",
+            ),
          ]),
       catch: (cause) =>
          new PrReviewAgentError({
@@ -171,6 +409,9 @@ export default async function ({ init, payload, env }: FlueContext) {
       generalPrComments,
       agentInstructions,
       skillInstruction,
+      automatedReviewReference,
+      reviewCommentsReference,
+      testsValidationReference,
    ] = contextResult.value;
 
    const commandResults = [
@@ -185,6 +426,23 @@ export default async function ({ init, payload, env }: FlueContext) {
    ];
    const failedCommand = commandResults.find(Result.isError);
    if (failedCommand) throw failedCommand.error;
+
+   await Promise.all([
+      writeFile(`${outputDir}/pr-metadata.json`, prMetadata.value.stdout),
+      writeFile(`${outputDir}/changed-files.md`, changedFiles.value.stdout),
+      writeFile(`${outputDir}/pr.patch`, fullDiff.value.stdout),
+      writeFile(`${outputDir}/commits.md`, commits.value.stdout),
+      writeFile(`${outputDir}/checks.json`, ciChecks.value.stdout),
+      writeFile(`${outputDir}/reviews.md`, generalReviews.value.stdout),
+      writeFile(
+         `${outputDir}/inline-review-comments.md`,
+         inlineReviewComments.value.stdout,
+      ),
+      writeFile(
+         `${outputDir}/general-pr-comments.md`,
+         generalPrComments.value.stdout,
+      ),
+   ]);
 
    const context = `
 # Revisão PR #${prNumber}
@@ -215,51 +473,122 @@ ${generalPrComments.value.stdout}
 `;
 
    const prompt = `
-Você está rodando dentro de um agente Flue no repositório Montte.
-Siga obrigatoriamente o AGENTS.md e a skill correta carregada abaixo.
+Você é o agente automático de code review do Montte.
+Siga obrigatoriamente o AGENTS.md, o SKILL.md e as references carregadas abaixo.
+O SKILL.md é apenas o organizador; as references guiam o padrão de execução.
 
 AGENTS.md:
 ${agentInstructions}
 
-Skill de code review:
+SKILL.md de code review:
 ${skillInstruction}
+
+Reference: pr-review
+${automatedReviewReference}
+
+Reference: review-comments
+${reviewCommentsReference}
+
+Reference: tests-validation
+${testsValidationReference}
 
 Contexto:
 ${context}
 
-Escreva em pt-BR:
-- bloqueadores claros
-- pontos de ajuste
-- pontos validados
-- riscos
-- validação recomendada (comandos reais do repositório)
+Tarefa:
+- revise a PR com foco em bugs reais, regressões, contratos quebrados, segurança, dados incorretos e CI/testes;
+- verifique stale/duplicado contra comentários anteriores;
+- não faça nits cobertos por formatter/linter;
+- não invente fatos fora do contexto;
+- se não houver achados acionáveis, diga isso claramente.
 
-Retorne somente o Markdown do comentário, sem fences e sem explicações externas.
-Seja direto, objetivo e não invente fatos fora do contexto.
+Restrição obrigatória:
+- cada comentário inline deve apontar para path e line exatos do diff;
+- use side "RIGHT" para linha adicionada ou contexto no arquivo novo;
+- use side "LEFT" apenas para linha removida no arquivo antigo;
+- não comente arquivo/linha fora do patch.
+
+Retorne JSON válido, sem markdown fences, neste formato:
+{
+  "summary": "Resumo curto do risco, CI/testes relevantes e validação recomendada.",
+  "comments": [
+    {
+      "path": "arquivo alterado",
+      "line": 123,
+      "side": "RIGHT",
+      "severity": "critical|major|minor|trivial|info",
+      "title": "Título curto do achado",
+      "body": "Explique por que isso está errado, impacto concreto e correção pequena em pt-BR."
+    }
+  ]
+}
+
+Regras para comments:
+- cada comentário precisa estar em arquivo/linha do diff;
+- cada comentário precisa explicar por que está errado;
+- incluir severidade correta;
+- publicar no máximo 12 comentários;
+- não inclua comentários trivial salvo violação objetiva de regra local;
+- se não houver achados acionáveis, retorne "comments": [].
 `.trim();
 
    const output = await runOpenCodeGo(prompt);
    if (Result.isError(output)) throw output.error;
 
+   const reviewResult = parseReviewResult(output.value);
+   if (Result.isError(reviewResult)) throw reviewResult.error;
+
+   const inlineComments = splitValidInlineComments(
+      reviewResult.value.comments,
+      fullDiff.value.stdout,
+   );
+
+   await writeFile(
+      `${outputDir}/inline-comments.json`,
+      JSON.stringify(inlineComments.valid, null, 2),
+   );
+   await writeFile(
+      `${outputDir}/inline-comments-skipped.json`,
+      JSON.stringify(inlineComments.skipped, null, 2),
+   );
+
+   const outputFile = `${outputDir}/summary.md`;
    const writeResult = await Result.tryPromise({
-      try: () => writeFile(outputFile, output.value),
+      try: () => writeFile(outputFile, reviewResult.value.summary),
       catch: (cause) =>
          new PrReviewAgentError({
-            message: "Falha ao escrever PR_REVIEW.md.",
+            message: "Falha ao escrever summary.md.",
             cause,
          }),
    });
    if (Result.isError(writeResult)) throw writeResult.error;
 
-   const commentResult = await runRequiredCommand(
-      session,
-      `gh pr comment ${prNumber} --repo ${repo} --body-file ${outputFile}`,
-      "Falha ao comentar revisão na PR.",
-   );
-   if (Result.isError(commentResult)) throw commentResult.error;
+   const publishResult = await publishReview({
+      repo,
+      prNumber,
+      body: reviewResult.value.summary,
+      comments: inlineComments.valid,
+   });
+
+   if (Result.isError(publishResult)) {
+      await writeFile(
+         `${outputDir}/publish-error.txt`,
+         String(publishResult.error.cause ?? publishResult.error.message),
+      );
+
+      const fallbackCommentResult = await runRequiredCommand(
+         session,
+         `gh pr comment ${prNumber} --repo ${repo} --body-file ${outputFile}`,
+         "Falha ao comentar revisão fallback na PR.",
+      );
+      if (Result.isError(fallbackCommentResult))
+         throw fallbackCommentResult.error;
+   }
 
    return {
       outputFile,
       prNumber,
+      inlineComments: inlineComments.valid.length,
+      skippedInlineComments: inlineComments.skipped.length,
    };
 }

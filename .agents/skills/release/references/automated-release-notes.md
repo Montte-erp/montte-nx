@@ -53,22 +53,22 @@ Quando a API de PR nao conseguir mapear por data com confianca, prefira merge co
 
 ```json
 {
-  "version": "v2026.05.25",
-  "lastTag": "v2026.05.18",
-  "dryRun": true,
-  "valid": true,
-  "errors": [],
-  "warnings": [
-    {
-      "code": "LOW_PUBLIC_SIGNAL",
-      "message": "Poucos itens visiveis ao usuario; conferir se a release deve ser tecnica."
-    }
-  ],
-  "counts": {
-    "pullRequests": 12,
-    "commits": 31,
-    "contributors": 4
-  }
+   "version": "v2026.05.25",
+   "lastTag": "v2026.05.18",
+   "dryRun": true,
+   "valid": true,
+   "errors": [],
+   "warnings": [
+      {
+         "code": "LOW_PUBLIC_SIGNAL",
+         "message": "Poucos itens visiveis ao usuario; conferir se a release deve ser tecnica."
+      }
+   ],
+   "counts": {
+      "pullRequests": 12,
+      "commits": 31,
+      "contributors": 4
+   }
 }
 ```
 

@@ -1,8 +1,8 @@
-# Automated AI Review
+# PR Review
 
-Use para desenhar, revisar ou operar agente automatico de code review em Pull Requests.
+Use para instruir o reviewer de Pull Requests acionado por `/review`.
 
-O runtime padrao e GitHub Actions. A skill descreve o comportamento esperado do reviewer; modelo, provedor e orquestracao sao detalhes de execucao. O runner do GitHub coleta diff, contexto, checks e comentarios anteriores, chama o agente e publica o review via GitHub API.
+O runtime padrao e GitHub Actions. Esta referencia descreve o comportamento esperado do reviewer; modelo, provedor e orquestracao sao detalhes de execucao. O runner do GitHub coleta diff, contexto, checks e comentarios anteriores, chama o agente e publica o review via GitHub API.
 
 ## Objetivo
 
@@ -24,8 +24,8 @@ Produzir review comparavel a reviewer senior, nao wrapper de diff:
 6. `analyze`: chamar o agente por chunk e retornar findings JSON.
 7. `validate`: segunda passagem compara findings contra codigo atual, regras, contexto cross-file e comments anteriores.
 8. `dedupe-rank`: agrupar mesma causa, remover stale/duplicado e ordenar por severidade + confianca.
-9. `synthesize`: gerar resumo Markdown e inline comments candidatos.
-10. `publish`: postar review unico com inline comments quando seguro; caso contrario, postar apenas comentario summary.
+9. `synthesize`: gerar summary curto e inline comments candidatos.
+10.   `publish`: postar GitHub Pull Request Review com comentarios inline por arquivo/linha. Summary e apenas corpo do review; nao substitui comentario inline quando ha achado acionavel.
 
 ## Coleta minima
 
@@ -56,22 +56,23 @@ gh run view "$RUN_ID" --log-failed > .review/ci-failed.log
 
 ## Contexto por finding
 
-Cada finding precisa ter evidencia concreta:
+Cada finding publicado precisa ter evidencia concreta:
 
-- diff hunk e linha elegivel para comentario;
+- diff hunk e linha exata elegivel para comentario;
 - 60-100 linhas ao redor do arquivo atual;
 - imports/exports relacionados quando a causa for cross-file;
 - testes proximos ou ausencia relevante de teste;
 - regra aplicavel de `AGENTS.md` ou skill;
 - comentario anterior do bot quando houver risco de duplicado.
 
-Se a evidencia nao existe, nao publicar inline. Coloque no summary apenas se for risco real e marcado como baixa confianca.
+Se a linha exata nao existe no patch atual, nao publicar comentario. Guarde como descartado/artefato para depuracao. Coloque no summary apenas se for risco real e marcado como baixa confianca.
 
 ## Gates anti-ruido
 
 - Nao comentar formatacao, naming ou estilo coberto por formatter/linter.
 - Nao comentar "poderia melhorar" sem bug, risco operacional ou contrato quebrado.
 - Nao criar comentario inline com `confidence < 0.7`.
+- Nao criar comentario inline sem `path`, `line`, `side`, severidade e explicacao do motivo do erro.
 - Nao publicar `trivial` inline; agrupar no summary ou descartar.
 - Limitar inline comments por review; priorizar `critical` e `major`.
 - Um comentario precisa dizer: problema, impacto concreto e correcao pequena.
@@ -89,20 +90,23 @@ Se a evidencia nao existe, nao publicar inline. Coloque no summary apenas se for
 
 ```json
 {
-  "id": "stable-hash",
-  "path": "modules/finance/src/router/example.ts",
-  "line": 42,
-  "diffPosition": 17,
-  "severity": "critical|major|minor|trivial|info",
-  "type": "bug|security|regression|architecture|test|ci|nit",
-  "confidence": 0.82,
-  "title": "Ownership check ausente antes da escrita",
-  "bodyPtBr": "Comentario curto, tecnico e acionavel.",
-  "evidence": ["modules/finance/src/router/example.ts:42", "AGENTS.md: regra aplicavel"],
-  "suggestion": "Patch opcional pequeno ou null",
-  "actionable": true,
-  "status": "valid|stale|duplicate|not_reproducible|out_of_scope",
-  "duplicateOf": null
+   "id": "stable-hash",
+   "path": "modules/finance/src/router/example.ts",
+   "line": 42,
+   "side": "RIGHT",
+   "severity": "critical|major|minor|trivial|info",
+   "type": "bug|security|regression|architecture|test|ci|nit",
+   "confidence": 0.82,
+   "title": "Ownership check ausente antes da escrita",
+   "bodyPtBr": "Explique por que esta errado, impacto concreto e correcao pequena.",
+   "evidence": [
+      "modules/finance/src/router/example.ts:42",
+      "AGENTS.md: regra aplicavel"
+   ],
+   "suggestion": "Patch opcional pequeno ou null",
+   "actionable": true,
+   "status": "valid|stale|duplicate|not_reproducible|out_of_scope",
+   "duplicateOf": null
 }
 ```
 
@@ -123,7 +127,7 @@ Entrada:
 - checks relevantes.
 
 Retorne JSON no schema Finding[]. Cada finding precisa ter impacto concreto,
-evidencia, path, line, severity e confidence.
+evidencia, path, line, side, severity e confidence. A linha precisa existir no diff.
 ```
 
 ## Prompt de stale/dedupe
@@ -156,6 +160,10 @@ riscos residuais objetivos.
 Formato preferido:
 
 ```md
+**Severidade:** <critical|major|minor>
+
+**<Titulo curto>**
+
 Isso parece quebrar [contrato/regra] porque [evidencia concreta].
 
 Impacto: [bug ou risco especifico].
@@ -163,7 +171,7 @@ Impacto: [bug ou risco especifico].
 Correcao: [mudanca pequena].
 ```
 
-Nao publicar comentario inline se ele nao couber nesse formato.
+Nao publicar comentario inline se ele nao couber nesse formato ou se a linha nao for exatamente comentavel no diff.
 
 ## Review de CI
 
@@ -177,6 +185,7 @@ Nao publicar comentario inline se ele nao couber nesse formato.
 - `.review/findings.raw.json`: achados por chunk.
 - `.review/findings.valid.json`: achados validos apos stale/dedupe.
 - `.review/summary.md`: comentario final.
-- `.review/inline-comments.json`: comentarios publicaveis com path/line/body.
+- `.review/inline-comments.json`: comentarios publicaveis com path/line/side/severity/body.
+- `.review/inline-comments-skipped.json`: comentarios descartados por linha fora do diff, duplicidade, stale ou baixa confianca.
 
 O agente deve sempre conseguir explicar por que cada comentario foi publicado e por que findings descartados nao foram publicados.
