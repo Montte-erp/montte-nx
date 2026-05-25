@@ -252,7 +252,7 @@ export default async function ({ init, payload, env }: FlueContext) {
             ),
             runRequiredCommand(
                session,
-               `gh pr files ${prNumber} --repo ${repo} --json path,additions,deletions --jq '.[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"'`,
+               `gh api repos/${repo}/pulls/${prNumber}/files --paginate --jq '.[] | "- " + .filename + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"'`,
                "Falha ao listar arquivos alterados da PR.",
             ),
             runRequiredCommand(
