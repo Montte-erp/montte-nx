@@ -1,166 +1,71 @@
 import type { FlueContext } from "@flue/runtime";
-import { Octokit } from "@octokit/core";
 import { Result, TaggedError } from "better-result";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { z } from "zod";
+import * as v from "valibot";
+import {
+   formatCause,
+   publishIssueComment,
+   readPreparedContext,
+   resolveGithubToken,
+   safePathSchema,
+   safeRepoSchema,
+   truncateForPrompt,
+} from "../lib/agent-utils.ts";
 import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
 
-const severitySchema = z.enum(["medium", "high", "critical"]);
-const riskLevelSchema = z.enum(["none", "medium", "high", "critical"]);
-const failOnSchema = z.enum(["none", "medium", "high", "critical"]);
+const failOnSchema = v.picklist(["none", "medium", "high", "critical"]);
 
-const securityAuditPayloadSchema = z.object({
-   prNumber: z.number().optional(),
-   repo: z
-      .string()
-      .regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u)
-      .optional(),
-   outputDir: z.string().default(".security-audit"),
-   contextDir: z.string().default(".agent-artifacts/security-audit/input"),
-   failOn: failOnSchema.default("high"),
+const securityAuditPayloadSchema = v.object({
+   prNumber: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+   repo: v.optional(safeRepoSchema),
+   outputDir: v.optional(safePathSchema, ".security-audit"),
+   contextDir: v.optional(
+      safePathSchema,
+      ".agent-artifacts/security-audit/input",
+   ),
+   failOn: v.optional(failOnSchema, "high"),
+   dryRun: v.optional(v.boolean(), false),
 });
 
-const findingSchema = z.object({
-   id: z.string().min(1),
-   severity: severitySchema,
-   title: z.string().min(1),
-   path: z.string().min(1),
-   line: z.number().int().positive(),
-   evidence: z.string().min(1),
-   attackerControl: z.string().min(1),
-   reachablePath: z.string().min(1),
-   trustBoundary: z.string().min(1),
-   impact: z.string().min(1),
-   fix: z.string().min(1),
-   confidence: z.enum(["medium", "high"]),
+const findingSchema = v.object({
+   id: v.pipe(v.string(), v.minLength(1)),
+   severity: v.picklist(["medium", "high", "critical"]),
+   title: v.pipe(v.string(), v.minLength(1)),
+   path: v.pipe(v.string(), v.minLength(1)),
+   line: v.pipe(v.number(), v.integer(), v.minValue(1)),
+   evidence: v.pipe(v.string(), v.minLength(1)),
+   attackerControl: v.pipe(v.string(), v.minLength(1)),
+   reachablePath: v.pipe(v.string(), v.minLength(1)),
+   trustBoundary: v.pipe(v.string(), v.minLength(1)),
+   impact: v.pipe(v.string(), v.minLength(1)),
+   fix: v.pipe(v.string(), v.minLength(1)),
+   confidence: v.picklist(["medium", "high"]),
 });
 
-const discardedSchema = z.object({
-   title: z.string().min(1),
-   reason: z.string().min(1),
+const discardedSchema = v.object({
+   title: v.pipe(v.string(), v.minLength(1)),
+   reason: v.pipe(v.string(), v.minLength(1)),
 });
 
-const securityAuditResultSchema = z.object({
-   summary: z.string().min(1),
-   riskLevel: riskLevelSchema,
-   findings: z.array(findingSchema).max(20).default([]),
-   discarded: z.array(discardedSchema).max(30).default([]),
+const securityAuditResultSchema = v.object({
+   summary: v.pipe(v.string(), v.minLength(1)),
+   riskLevel: v.picklist(["none", "medium", "high", "critical"]),
+   findings: v.optional(v.pipe(v.array(findingSchema), v.maxLength(20)), []),
+   discarded: v.optional(v.pipe(v.array(discardedSchema), v.maxLength(30)), []),
 });
 
-type SecurityAuditResult = z.infer<typeof securityAuditResultSchema>;
-type Finding = z.infer<typeof findingSchema>;
-type FailOn = z.infer<typeof failOnSchema>;
+type SecurityAuditResult = v.InferOutput<typeof securityAuditResultSchema>;
+type Finding = v.InferOutput<typeof findingSchema>;
+type FailOn = v.InferOutput<typeof failOnSchema>;
 
 class SecurityAuditAgentError extends TaggedError("SecurityAuditAgentError")<{
    message: string;
    cause?: unknown;
 }>() {}
 
-async function readPreparedContext(filePath: string, failureMessage: string) {
-   return Result.tryPromise({
-      try: async () => ({
-         stdout: await readFile(filePath, "utf8"),
-         stderr: "",
-         exitCode: 0,
-      }),
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message: failureMessage,
-            cause,
-         }),
-   });
-}
-
-function truncateForPrompt(value: string, maxChars: number, label: string) {
-   if (value.length <= maxChars) return value;
-
-   return `${value.slice(0, maxChars)}\n\n[${label} truncado: ${value.length} caracteres totais; exibindo primeiros ${maxChars}. Consulte o artefato completo para validação.]`;
-}
-
-function formatCause(cause: unknown) {
-   if (cause instanceof Error) return cause.stack ?? cause.message;
-   if (typeof cause === "string") return cause;
-
-   try {
-      return JSON.stringify(cause);
-   } catch {
-      return String(cause);
-   }
-}
-
-async function publishIssueComment({
-   repo,
-   prNumber,
-   body,
-   token,
-}: {
-   repo: string;
-   prNumber: number;
-   body: string;
-   token: string | undefined;
-}) {
-   if (!token) {
-      return Result.err(
-         new SecurityAuditAgentError({
-            message: "GH_TOKEN não configurado no ambiente.",
-         }),
-      );
-   }
-
-   const [owner, repoName] = repo.split("/");
-   const octokit = new Octokit({ auth: token });
-   return Result.tryPromise({
-      try: async () => {
-         await octokit.request(
-            "POST /repos/{owner}/{repo}/issues/{num}/comments",
-            {
-               owner,
-               repo: repoName,
-               num: prNumber,
-               body,
-            },
-         );
-      },
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message: "Falha ao publicar comentário no GitHub.",
-            cause,
-         }),
-   });
-}
-
-function parseSecurityAuditResult(raw: string) {
-   const trimmed = raw.trim();
-   const withoutFence = trimmed
-      .replace(/^```(?:json)?\s*/u, "")
-      .replace(/\s*```$/u, "");
-
-   const jsonResult = Result.try({
-      try: () => JSON.parse(withoutFence),
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message: "Resposta do security audit não é JSON válido.",
-            cause,
-         }),
-   });
-   if (Result.isError(jsonResult)) return Result.err(jsonResult.error);
-
-   const parsed = securityAuditResultSchema.safeParse(jsonResult.value);
-   if (!parsed.success) {
-      return Result.err(
-         new SecurityAuditAgentError({
-            message: "Resposta do security audit não segue o schema esperado.",
-            cause: parsed.error,
-         }),
-      );
-   }
-
-   return Result.ok(parsed.data);
-}
-
-function severityRank(severity: FailOn | z.infer<typeof severitySchema>) {
+function severityRank(severity: FailOn | Finding["severity"]) {
    return ["none", "medium", "high", "critical"].indexOf(severity);
 }
 
@@ -216,11 +121,11 @@ ${discarded}
 }
 
 export default async function ({ init, payload, env }: FlueContext) {
-   const parsedPayload = securityAuditPayloadSchema.safeParse(payload);
+   const parsedPayload = v.safeParse(securityAuditPayloadSchema, payload);
    if (!parsedPayload.success) {
       throw new SecurityAuditAgentError({
          message: "Payload inválido para agente de security audit.",
-         cause: parsedPayload.error,
+         cause: parsedPayload.issues,
       });
    }
 
@@ -230,14 +135,19 @@ export default async function ({ init, payload, env }: FlueContext) {
       outputDir,
       contextDir,
       failOn,
-   } = parsedPayload.data;
-   const prNumber = payloadPrNumber ?? Number(env.PR_NUMBER);
-   const repo = payloadRepo ?? env.GITHUB_REPOSITORY;
-   const githubToken =
-      env.GH_TOKEN ??
-      env.GITHUB_TOKEN ??
-      process.env.GH_TOKEN ??
-      process.env.GITHUB_TOKEN;
+      dryRun,
+   } = parsedPayload.output;
+   const envPrNumber = Number(env.PR_NUMBER);
+   const prNumber =
+      payloadPrNumber ??
+      (Number.isInteger(envPrNumber) && envPrNumber > 0
+         ? envPrNumber
+         : undefined);
+   const repoResult = v.safeParse(
+      safeRepoSchema,
+      payloadRepo ?? env.GITHUB_REPOSITORY,
+   );
+   const githubToken = resolveGithubToken(env);
 
    if (!prNumber || Number.isNaN(prNumber)) {
       throw new SecurityAuditAgentError({
@@ -245,11 +155,14 @@ export default async function ({ init, payload, env }: FlueContext) {
       });
    }
 
-   if (!repo || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repo)) {
+   if (!repoResult.success) {
       throw new SecurityAuditAgentError({
          message: "repo inválido ou não informado.",
+         cause: repoResult.issues,
       });
    }
+
+   const repo = repoResult.output;
 
    const outputDirResult = await Result.tryPromise({
       try: () => mkdir(outputDir, { recursive: true }),
@@ -267,22 +180,32 @@ export default async function ({ init, payload, env }: FlueContext) {
             readPreparedContext(
                `${contextDir}/pr-metadata.json`,
                "Falha ao ler metadados preparados da PR.",
+               (message, cause) =>
+                  new SecurityAuditAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/changed-files.md`,
                "Falha ao ler lista preparada de arquivos da PR.",
+               (message, cause) =>
+                  new SecurityAuditAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/pr.patch`,
                "Falha ao ler diff preparado da PR.",
+               (message, cause) =>
+                  new SecurityAuditAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/commits.md`,
                "Falha ao ler commits preparados da PR.",
+               (message, cause) =>
+                  new SecurityAuditAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/checks.json`,
                "Falha ao ler checks preparados da PR.",
+               (message, cause) =>
+                  new SecurityAuditAgentError({ message, cause }),
             ),
             readFile("AGENTS.md", "utf8"),
             readFile(".agents/skills/implementation/SKILL.md", "utf8"),
@@ -419,6 +342,7 @@ Contexto da PR:
 ${context}
 
 Tarefa:
+- não use ferramentas/read/bash; o repositório não está disponível no sandbox, use apenas o contexto fornecido neste prompt;
 - audite o diff e callers/contratos evidentes;
 - procure regressões de authz, isolamento org/team, billing/usage, uploads/files, workers/jobs, AI tools, secrets e GitHub Actions;
 - tente refutar cada hipótese antes de reportar;
@@ -458,7 +382,10 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            modelSessionResult.value.prompt(prompt, { thinkingLevel: "off" }),
+            modelSessionResult.value.prompt(prompt, {
+               thinkingLevel: "off",
+               result: securityAuditResultSchema,
+            }),
          ),
       catch: (cause) =>
          new SecurityAuditAgentError({
@@ -468,27 +395,30 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
    });
    if (Result.isError(outputResult)) throw outputResult.error;
 
-   const auditResult = parseSecurityAuditResult(outputResult.value.text);
-   if (Result.isError(auditResult)) throw auditResult.error;
+   const auditResult = outputResult.value.data;
 
    const jsonOutputFile = `${outputDir}/security-audit.json`;
    const markdownOutputFile = `${outputDir}/SECURITY_AUDIT.md`;
-   const markdown = formatMarkdownReport(auditResult.value, failOn);
+   const markdown = formatMarkdownReport(auditResult, failOn);
 
    await Promise.all([
-      writeFile(jsonOutputFile, JSON.stringify(auditResult.value, null, 2)),
+      writeFile(jsonOutputFile, JSON.stringify(auditResult, null, 2)),
       writeFile(markdownOutputFile, markdown),
    ]);
 
-   const commentResult = await publishIssueComment({
-      repo,
-      prNumber,
-      body: markdown,
-      token: githubToken,
-   });
-   if (Result.isError(commentResult)) throw commentResult.error;
+   if (!dryRun) {
+      const commentResult = await publishIssueComment({
+         repo,
+         prNumber,
+         body: markdown,
+         token: githubToken,
+         makeError: (message, cause) =>
+            new SecurityAuditAgentError({ message, cause }),
+      });
+      if (Result.isError(commentResult)) throw commentResult.error;
+   }
 
-   if (shouldFailAudit(auditResult.value.findings, failOn)) {
+   if (!dryRun && shouldFailAudit(auditResult.findings, failOn)) {
       throw new SecurityAuditAgentError({
          message: `Security audit encontrou findings >= ${failOn}.`,
       });
@@ -498,8 +428,9 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
       outputFile: markdownOutputFile,
       jsonOutputFile,
       prNumber,
-      findings: auditResult.value.findings.length,
-      riskLevel: auditResult.value.riskLevel,
+      findings: auditResult.findings.length,
+      riskLevel: auditResult.riskLevel,
       failOn,
+      dryRun,
    };
 }

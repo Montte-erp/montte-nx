@@ -1,32 +1,35 @@
 import type { FlueContext } from "@flue/runtime";
 import { Result, TaggedError } from "better-result";
 import { readFile, writeFile } from "node:fs/promises";
-import { z } from "zod";
+import * as v from "valibot";
 import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
 
-const releasePayloadSchema = z.object({
-   releaseVersion: z.string(),
-   changesFile: z.string().default("changes.md"),
-   skillFile: z.string().default(".agents/skills/release/SKILL.md"),
-   releaseNotesReference: z
-      .string()
-      .default(".agents/skills/release/references/release-notes.md"),
-   automatedReleaseNotesReference: z
-      .string()
-      .default(".agents/skills/release/references/automated-release-notes.md"),
-   validationReference: z
-      .string()
-      .default(".agents/skills/release/references/release-validation.md"),
-   outputFile: z.string().default("RELEASE_NOTES.md"),
-   validationFile: z.string().default("validation.json"),
+const releasePayloadSchema = v.object({
+   releaseVersion: v.pipe(v.string(), v.minLength(1)),
+   changesFile: v.optional(v.string(), "changes.md"),
+   skillFile: v.optional(v.string(), ".agents/skills/release/SKILL.md"),
+   releaseNotesReference: v.optional(
+      v.string(),
+      ".agents/skills/release/references/release-notes.md",
+   ),
+   automatedReleaseNotesReference: v.optional(
+      v.string(),
+      ".agents/skills/release/references/automated-release-notes.md",
+   ),
+   validationReference: v.optional(
+      v.string(),
+      ".agents/skills/release/references/release-validation.md",
+   ),
+   outputFile: v.optional(v.string(), "RELEASE_NOTES.md"),
+   validationFile: v.optional(v.string(), "validation.json"),
 });
 
-const releaseNotesValidationSchema = z.object({
-   valid: z.boolean(),
-   errors: z.array(z.string()),
-   warnings: z.array(z.string()),
+const releaseNotesValidationSchema = v.object({
+   valid: v.boolean(),
+   errors: v.array(v.string()),
+   warnings: v.array(v.string()),
 });
 
 class ReleaseNotesAgentError extends TaggedError("ReleaseNotesAgentError")<{
@@ -63,11 +66,11 @@ function validateReleaseNotes(markdown: string) {
 }
 
 export default async function ({ init, payload }: FlueContext) {
-   const parsedPayload = releasePayloadSchema.safeParse(payload);
+   const parsedPayload = v.safeParse(releasePayloadSchema, payload);
    if (!parsedPayload.success) {
       throw new ReleaseNotesAgentError({
          message: "Payload inválido para agente de release notes.",
-         cause: parsedPayload.error,
+         cause: parsedPayload.issues,
       });
    }
 
@@ -80,7 +83,7 @@ export default async function ({ init, payload }: FlueContext) {
       validationReference,
       outputFile,
       validationFile,
-   } = parsedPayload.data;
+   } = parsedPayload.output;
 
    const initResult = await Result.tryPromise({
       try: () =>
@@ -190,7 +193,8 @@ Retorne somente o Markdown do corpo da release, sem fences e sem explicações e
    });
    if (Result.isError(writeResult)) throw writeResult.error;
 
-   const validation = releaseNotesValidationSchema.parse(
+   const validation = v.parse(
+      releaseNotesValidationSchema,
       validateReleaseNotes(markdown),
    );
    const validationWriteResult = await Result.tryPromise({

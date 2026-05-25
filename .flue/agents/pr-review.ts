@@ -2,111 +2,57 @@ import type { FlueContext } from "@flue/runtime";
 import { Octokit } from "@octokit/core";
 import { Result, TaggedError } from "better-result";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { z } from "zod";
+import * as v from "valibot";
+import {
+   formatCause,
+   publishIssueComment,
+   readPreparedContext,
+   resolveGithubToken,
+   safePathSchema,
+   safeRepoSchema,
+   truncateForPrompt,
+} from "../lib/agent-utils.ts";
 import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
 
-const safeRepoSchema = z.string().regex(/^[\w.-]+\/[\w.-]+$/u);
-const safeOutputDirSchema = z
-   .string()
-   .regex(/^(?:\.\/[\w./-]+|\.[\w./-]*|[\w][\w./-]*)$/u)
-   .refine((value) => !value.split("/").includes(".."), {
-      message: "outputDir não pode conter segmentos '..'.",
-   });
-
-const prPayloadSchema = z.object({
-   prNumber: z.number().int().nonnegative().optional(),
-   repo: safeRepoSchema.optional(),
-   outputDir: safeOutputDirSchema.default(".agent-artifacts/pr-review"),
-   contextDir: safeOutputDirSchema.default(".agent-artifacts/pr-review/input"),
+const prPayloadSchema = v.object({
+   prNumber: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
+   repo: v.optional(safeRepoSchema),
+   outputDir: v.optional(safePathSchema, ".agent-artifacts/pr-review"),
+   contextDir: v.optional(safePathSchema, ".agent-artifacts/pr-review/input"),
+   dryRun: v.optional(v.boolean(), false),
 });
 
-const reviewCommentSchema = z.object({
-   path: z.string().min(1),
-   line: z.number().int().positive(),
-   side: z.enum(["RIGHT", "LEFT"]).default("RIGHT"),
-   severity: z.enum(["critical", "major", "minor", "trivial", "info"]),
-   confidence: z.number().min(0).max(1).default(0.7),
-   actionable: z.boolean().default(false),
-   suggestion: z.string().min(1).optional(),
-   reproSteps: z.string().min(1).optional(),
-   title: z.string().min(1),
-   body: z.string().min(1),
+const reviewCommentSchema = v.object({
+   path: v.pipe(v.string(), v.minLength(1)),
+   line: v.pipe(v.number(), v.integer(), v.minValue(1)),
+   side: v.optional(v.picklist(["RIGHT", "LEFT"]), "RIGHT"),
+   severity: v.picklist(["critical", "major", "minor", "trivial", "info"]),
+   confidence: v.optional(
+      v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+      0.7,
+   ),
+   actionable: v.optional(v.boolean(), false),
+   suggestion: v.optional(v.pipe(v.string(), v.minLength(1))),
+   reproSteps: v.optional(v.pipe(v.string(), v.minLength(1))),
+   title: v.pipe(v.string(), v.minLength(1)),
+   body: v.pipe(v.string(), v.minLength(1)),
 });
 
-const reviewResultSchema = z.object({
-   summary: z.string().min(1),
-   comments: z.array(reviewCommentSchema).default([]),
+const reviewResultSchema = v.object({
+   summary: v.pipe(v.string(), v.minLength(1)),
+   comments: v.optional(v.array(reviewCommentSchema), []),
 });
+
+type ReviewComment = v.InferOutput<typeof reviewCommentSchema>;
 
 class PrReviewAgentError extends TaggedError("PrReviewAgentError")<{
    message: string;
    cause?: unknown;
 }>() {}
 
-async function readPreparedContext(filePath: string, failureMessage: string) {
-   return Result.tryPromise({
-      try: async () => ({
-         stdout: await readFile(filePath, "utf8"),
-         stderr: "",
-         exitCode: 0,
-      }),
-      catch: (cause) =>
-         new PrReviewAgentError({
-            message: failureMessage,
-            cause,
-         }),
-   });
-}
-
-function truncateForPrompt(value: string, maxChars: number, label: string) {
-   if (value.length <= maxChars) return value;
-
-   return `${value.slice(0, maxChars)}\n\n[${label} truncado: ${value.length} caracteres totais; exibindo primeiros ${maxChars}. Consulte o artefato completo para validação.]`;
-}
-
-function formatCause(cause: unknown) {
-   if (cause instanceof Error) return cause.stack ?? cause.message;
-   if (typeof cause === "string") return cause;
-
-   try {
-      return JSON.stringify(cause);
-   } catch {
-      return String(cause);
-   }
-}
-
-function parseReviewResult(raw: string) {
-   const trimmed = raw.trim();
-   const withoutFence = trimmed
-      .replace(/^```(?:json)?\s*/u, "")
-      .replace(/\s*```$/u, "");
-
-   const jsonResult = Result.try({
-      try: () => JSON.parse(withoutFence),
-      catch: (cause) =>
-         new PrReviewAgentError({
-            message: "Resposta do review agent não é JSON válido.",
-            cause,
-         }),
-   });
-   if (Result.isError(jsonResult)) return Result.err(jsonResult.error);
-
-   const parsed = reviewResultSchema.safeParse(jsonResult.value);
-   if (!parsed.success) {
-      return Result.err(
-         new PrReviewAgentError({
-            message: "Resposta do review agent não segue o schema esperado.",
-            cause: parsed.error,
-         }),
-      );
-   }
-
-   return Result.ok(parsed.data);
-}
-
-function formatInlineComment(comment: z.infer<typeof reviewCommentSchema>) {
+function formatInlineComment(comment: ReviewComment) {
    return `**Severidade:** ${comment.severity}
 
 **${comment.title}**
@@ -169,7 +115,7 @@ function parseDiffReviewLines(patch: string) {
    return allowed;
 }
 
-function hasActionableContent(comment: z.infer<typeof reviewCommentSchema>) {
+function hasActionableContent(comment: ReviewComment) {
    if (comment.actionable || comment.suggestion || comment.reproSteps)
       return true;
 
@@ -179,14 +125,12 @@ function hasActionableContent(comment: z.infer<typeof reviewCommentSchema>) {
 }
 
 function splitValidInlineComments(
-   comments: Array<z.infer<typeof reviewCommentSchema>>,
+   comments: Array<ReviewComment>,
    patch: string,
 ) {
    const allowed = parseDiffReviewLines(patch);
-   const valid: Array<z.infer<typeof reviewCommentSchema>> = [];
-   const skipped: Array<
-      z.infer<typeof reviewCommentSchema> & { reason: string }
-   > = [];
+   const valid: Array<ReviewComment> = [];
+   const skipped: Array<ReviewComment & { reason: string }> = [];
 
    for (const comment of comments) {
       if (comment.severity === "trivial" || comment.severity === "info") {
@@ -240,47 +184,6 @@ function splitValidInlineComments(
    return { valid, skipped };
 }
 
-async function publishIssueComment({
-   repo,
-   prNumber,
-   body,
-   token,
-}: {
-   repo: string;
-   prNumber: number;
-   body: string;
-   token: string | undefined;
-}) {
-   if (!token) {
-      return Result.err(
-         new PrReviewAgentError({
-            message: "GH_TOKEN não configurado no ambiente.",
-         }),
-      );
-   }
-
-   const [owner, repoName] = repo.split("/");
-   const octokit = new Octokit({ auth: token });
-   return Result.tryPromise({
-      try: async () => {
-         await octokit.request(
-            "POST /repos/{owner}/{repo}/issues/{num}/comments",
-            {
-               owner,
-               repo: repoName,
-               num: prNumber,
-               body,
-            },
-         );
-      },
-      catch: (cause) =>
-         new PrReviewAgentError({
-            message: "Falha ao publicar comentário no GitHub.",
-            cause,
-         }),
-   });
-}
-
 async function publishReview({
    repo,
    prNumber,
@@ -291,7 +194,7 @@ async function publishReview({
    repo: string;
    prNumber: number;
    body: string;
-   comments: Array<z.infer<typeof reviewCommentSchema>>;
+   comments: Array<ReviewComment>;
    token: string | undefined;
 }) {
    if (!token) {
@@ -338,11 +241,11 @@ async function publishReview({
 }
 
 export default async function ({ init, payload, env }: FlueContext) {
-   const parsedPayload = prPayloadSchema.safeParse(payload);
+   const parsedPayload = v.safeParse(prPayloadSchema, payload);
    if (!parsedPayload.success) {
       throw new PrReviewAgentError({
          message: "Payload inválido para agente de revisão de PR.",
-         cause: parsedPayload.error,
+         cause: parsedPayload.issues,
       });
    }
 
@@ -351,15 +254,16 @@ export default async function ({ init, payload, env }: FlueContext) {
       repo: payloadRepo,
       outputDir,
       contextDir,
-   } = parsedPayload.data;
-   const envPrNumber = z.coerce
-      .number()
-      .int()
-      .positive()
-      .safeParse(env.PR_NUMBER);
+      dryRun,
+   } = parsedPayload.output;
+   const envPrNumber = Number(env.PR_NUMBER);
    const prNumber =
-      payloadPrNumber ?? (envPrNumber.success ? envPrNumber.data : undefined);
-   const repoResult = safeRepoSchema.safeParse(
+      payloadPrNumber ??
+      (Number.isInteger(envPrNumber) && envPrNumber > 0
+         ? envPrNumber
+         : undefined);
+   const repoResult = v.safeParse(
+      safeRepoSchema,
       payloadRepo ?? env.GITHUB_REPOSITORY,
    );
 
@@ -373,16 +277,12 @@ export default async function ({ init, payload, env }: FlueContext) {
    if (!repoResult.success) {
       throw new PrReviewAgentError({
          message: "repo inválido ou não informado. Use owner/repo.",
-         cause: repoResult.error,
+         cause: repoResult.issues,
       });
    }
 
-   const repo = repoResult.data;
-   const githubToken =
-      env.GH_TOKEN ??
-      env.GITHUB_TOKEN ??
-      process.env.GH_TOKEN ??
-      process.env.GITHUB_TOKEN;
+   const repo = repoResult.output;
+   const githubToken = resolveGithubToken(env);
 
    const outputDirResult = await Result.tryPromise({
       try: () => mkdir(outputDir, { recursive: true }),
@@ -400,34 +300,42 @@ export default async function ({ init, payload, env }: FlueContext) {
             readPreparedContext(
                `${contextDir}/pr-metadata.json`,
                "Falha ao ler metadados preparados da PR.",
+               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/changed-files.md`,
                "Falha ao ler lista preparada de arquivos da PR.",
+               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/pr.patch`,
                "Falha ao ler diff preparado da PR.",
+               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/commits.md`,
                "Falha ao ler commits preparados da PR.",
+               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/checks.json`,
                "Falha ao ler checks preparados da PR.",
+               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/reviews.md`,
                "Falha ao ler reviews preparados da PR.",
+               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/inline-review-comments.md`,
                "Falha ao ler comentários inline preparados da PR.",
+               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/general-pr-comments.md`,
                "Falha ao ler comentários gerais preparados da PR.",
+               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readFile("AGENTS.md", "utf8"),
             readFile(".agents/skills/code-review/SKILL.md", "utf8"),
@@ -589,6 +497,7 @@ Contexto:
 ${context}
 
 Tarefa:
+- não use ferramentas/read/bash; o repositório não está disponível no sandbox, use apenas o contexto fornecido neste prompt;
 - revise a PR com foco em bugs reais, regressões, contratos quebrados, segurança, dados incorretos e CI/testes;
 - verifique stale/duplicado contra comentários anteriores;
 - não faça nits cobertos por formatter/linter;
@@ -659,7 +568,10 @@ Regras para comments:
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            modelSessionResult.value.prompt(prompt, { thinkingLevel: "off" }),
+            modelSessionResult.value.prompt(prompt, {
+               thinkingLevel: "off",
+               result: reviewResultSchema,
+            }),
          ),
       catch: (cause) =>
          new PrReviewAgentError({
@@ -669,11 +581,10 @@ Regras para comments:
    });
    if (Result.isError(outputResult)) throw outputResult.error;
 
-   const reviewResult = parseReviewResult(outputResult.value.text);
-   if (Result.isError(reviewResult)) throw reviewResult.error;
+   const reviewResult = outputResult.value.data;
 
    const inlineComments = splitValidInlineComments(
-      reviewResult.value.comments,
+      reviewResult.comments,
       fullDiff.value.stdout,
    );
 
@@ -688,7 +599,7 @@ Regras para comments:
 
    const outputFile = `${outputDir}/summary.md`;
    const writeResult = await Result.tryPromise({
-      try: () => writeFile(outputFile, reviewResult.value.summary),
+      try: () => writeFile(outputFile, reviewResult.summary),
       catch: (cause) =>
          new PrReviewAgentError({
             message: "Falha ao escrever summary.md.",
@@ -697,10 +608,20 @@ Regras para comments:
    });
    if (Result.isError(writeResult)) throw writeResult.error;
 
+   if (dryRun) {
+      return {
+         outputFile,
+         prNumber,
+         inlineComments: inlineComments.valid.length,
+         skippedInlineComments: inlineComments.skipped.length,
+         dryRun,
+      };
+   }
+
    const publishResult = await publishReview({
       repo,
       prNumber,
-      body: reviewResult.value.summary,
+      body: reviewResult.summary,
       comments: inlineComments.valid,
       token: githubToken,
    });
@@ -714,8 +635,10 @@ Regras para comments:
       const fallbackCommentResult = await publishIssueComment({
          repo,
          prNumber,
-         body: reviewResult.value.summary,
+         body: reviewResult.summary,
          token: githubToken,
+         makeError: (message, cause) =>
+            new PrReviewAgentError({ message, cause }),
       });
       if (Result.isError(fallbackCommentResult))
          throw fallbackCommentResult.error;
@@ -726,5 +649,6 @@ Regras para comments:
       prNumber,
       inlineComments: inlineComments.valid.length,
       skippedInlineComments: inlineComments.skipped.length,
+      dryRun,
    };
 }

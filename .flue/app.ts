@@ -12,9 +12,11 @@ type FlueExecutionContext = Parameters<FlueFetch>[2];
 
 function toProcessEnv(env: FlueEnv) {
    return {
-      OPENCODE_API_KEY: env.OPENCODE_API_KEY,
-      OPENCODE_GO_BASE_URL: env.OPENCODE_GO_BASE_URL,
-      OPENCODE_GO_GATEWAY_KEY: env.OPENCODE_GO_GATEWAY_KEY,
+      OPENCODE_API_KEY: env.OPENCODE_API_KEY ?? process.env.OPENCODE_API_KEY,
+      OPENCODE_GO_BASE_URL:
+         env.OPENCODE_GO_BASE_URL ?? process.env.OPENCODE_GO_BASE_URL,
+      OPENCODE_GO_GATEWAY_KEY:
+         env.OPENCODE_GO_GATEWAY_KEY ?? process.env.OPENCODE_GO_GATEWAY_KEY,
    };
 }
 

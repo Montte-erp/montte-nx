@@ -9,6 +9,7 @@
         "@flue/runtime": "^0.7.0",
         "@octokit/core": "^7.0.6",
         "better-result": "catalog:validation",
+        "valibot": "^1.4.1",
         "zod": "catalog:validation",
       },
       "devDependencies": {
