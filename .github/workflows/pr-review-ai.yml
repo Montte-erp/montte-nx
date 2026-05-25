@@ -147,6 +147,39 @@ jobs:
            if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            run: bun install --frozen-lockfile
 
+         - name: Collect PR review context
+           if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+              REPO: ${{ github.repository }}
+           run: |
+              set -euo pipefail
+              CONTEXT_DIR=".agent-artifacts/pr-review/input"
+              mkdir -p "$CONTEXT_DIR"
+
+              gh pr view "$PR_NUMBER" --repo "$REPO" --json number,title,author,state,isDraft,reviewDecision,additions,deletions,changedFiles,labels,url,body > "$CONTEXT_DIR/pr-metadata.json"
+
+              gh pr view "$PR_NUMBER" --repo "$REPO" --json files --jq '.files[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"' > "$CONTEXT_DIR/changed-files.md" \
+                || printf '%s\n' 'Listagem de arquivos indisponível; consulte o diff completo.' > "$CONTEXT_DIR/changed-files.md"
+
+              gh pr diff "$PR_NUMBER" --repo "$REPO" > "$CONTEXT_DIR/pr.patch"
+
+              gh pr view "$PR_NUMBER" --repo "$REPO" --json commits --jq '.commits[].message' > "$CONTEXT_DIR/commits.md" \
+                || : > "$CONTEXT_DIR/commits.md"
+
+              gh pr checks "$PR_NUMBER" --repo "$REPO" --json name,state,bucket,workflow,link > "$CONTEXT_DIR/checks.json" \
+                || printf '[]\n' > "$CONTEXT_DIR/checks.json"
+
+              gh pr view "$PR_NUMBER" --repo "$REPO" --json reviews --jq '.reviews[] | "- " + .state + " - " + .author.login + " - " + .body' > "$CONTEXT_DIR/reviews.md" \
+                || : > "$CONTEXT_DIR/reviews.md"
+
+              gh api "repos/$REPO/pulls/$PR_NUMBER/comments" --paginate --jq '.[] | "- " + .path + ":" + ((.line // 0)|tostring) + " - " + .user.login + " - " + .body' > "$CONTEXT_DIR/inline-review-comments.md" \
+                || : > "$CONTEXT_DIR/inline-review-comments.md"
+
+              gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[] | "- " + .user.login + " - " + .body' > "$CONTEXT_DIR/general-pr-comments.md" \
+                || : > "$CONTEXT_DIR/general-pr-comments.md"
+
          - name: Run PR Review Agent
            if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            env:
@@ -157,7 +190,7 @@ jobs:
               PR_NUMBER: ${{ steps.pr.outputs.number }}
               REPO: ${{ github.repository }}
            run: |
-              PAYLOAD=$(jq -c -n --argjson prNumber "${PR_NUMBER}" --arg repo "${REPO}" '{prNumber: $prNumber, repo: $repo}')
+              PAYLOAD=$(jq -c -n --argjson prNumber "${PR_NUMBER}" --arg repo "${REPO}" --arg contextDir ".agent-artifacts/pr-review/input" '{prNumber: $prNumber, repo: $repo, contextDir: $contextDir}')
               bunx flue run pr-review --target node --id "pr-review-${PR_NUMBER}" --payload "$PAYLOAD"
 
          - name: Upload review artifacts

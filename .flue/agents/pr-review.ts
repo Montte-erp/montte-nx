@@ -1,5 +1,4 @@
 import type { FlueContext } from "@flue/runtime";
-import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
@@ -19,6 +18,7 @@ const prPayloadSchema = z.object({
    prNumber: z.number().int().nonnegative().optional(),
    repo: safeRepoSchema.optional(),
    outputDir: safeOutputDirSchema.default(".agent-artifacts/pr-review"),
+   contextDir: safeOutputDirSchema.default(".agent-artifacts/pr-review/input"),
 });
 
 const reviewCommentSchema = z.object({
@@ -39,48 +39,24 @@ const reviewResultSchema = z.object({
    comments: z.array(reviewCommentSchema).default([]),
 });
 
-type FlueHarness = Awaited<ReturnType<FlueContext["init"]>>;
-type FlueSession = Awaited<ReturnType<FlueHarness["session"]>>;
-
 class PrReviewAgentError extends TaggedError("PrReviewAgentError")<{
    message: string;
    cause?: unknown;
 }>() {}
 
-function shellQuote(value: string | number) {
-   return `'${String(value).replace(/'/gu, `'"'"'`)}'`;
-}
-
-function ghCommand(args: Array<string | number>) {
-   return ["gh", ...args.map(shellQuote)].join(" ");
-}
-
-async function runRequiredCommand(
-   session: FlueSession,
-   command: string,
-   failureMessage: string,
-) {
-   const commandResult = await Result.tryPromise({
-      try: () => Promise.resolve(session.shell(command)),
+async function readPreparedContext(filePath: string, failureMessage: string) {
+   return Result.tryPromise({
+      try: async () => ({
+         stdout: await readFile(filePath, "utf8"),
+         stderr: "",
+         exitCode: 0,
+      }),
       catch: (cause) =>
          new PrReviewAgentError({
             message: failureMessage,
             cause,
          }),
    });
-   if (Result.isError(commandResult)) return Result.err(commandResult.error);
-
-   if (commandResult.value.exitCode !== 0) {
-      const stderr = commandResult.value.stderr?.trim();
-      return Result.err(
-         new PrReviewAgentError({
-            message: stderr ? `${failureMessage}\n${stderr}` : failureMessage,
-            cause: commandResult.value.stderr,
-         }),
-      );
-   }
-
-   return Result.ok(commandResult.value);
 }
 
 function parseReviewResult(raw: string) {
@@ -246,6 +222,65 @@ function splitValidInlineComments(
    return { valid, skipped };
 }
 
+async function publishIssueComment({
+   repo,
+   prNumber,
+   body,
+}: {
+   repo: string;
+   prNumber: number;
+   body: string;
+}) {
+   const token = process.env.GH_TOKEN;
+   if (!token) {
+      return Result.err(
+         new PrReviewAgentError({
+            message: "GH_TOKEN não configurado no ambiente.",
+         }),
+      );
+   }
+
+   const responseResult = await Result.tryPromise({
+      try: () =>
+         fetch(
+            `https://api.github.com/repos/${repo}/issues/${prNumber}/comments`,
+            {
+               method: "POST",
+               headers: {
+                  Accept: "application/vnd.github+json",
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+               },
+               body: JSON.stringify({ body }),
+            },
+         ),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Falha ao publicar comentário no GitHub.",
+            cause,
+         }),
+   });
+   if (Result.isError(responseResult)) return Result.err(responseResult.error);
+   if (responseResult.value.ok) return Result.ok(undefined);
+
+   const bodyResult = await Result.tryPromise({
+      try: () => responseResult.value.text(),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Falha ao ler erro da API do GitHub.",
+            cause,
+         }),
+   });
+
+   return Result.err(
+      new PrReviewAgentError({
+         message: `GitHub retornou ${responseResult.value.status} ao publicar comentário.`,
+         cause: Result.isOk(bodyResult) ? bodyResult.value : bodyResult.error,
+      }),
+   );
+}
+
 async function publishReview({
    repo,
    prNumber,
@@ -332,6 +367,7 @@ export default async function ({ init, payload, env }: FlueContext) {
       prNumber: payloadPrNumber,
       repo: payloadRepo,
       outputDir,
+      contextDir,
    } = parsedPayload.data;
    const envPrNumber = z.coerce
       .number()
@@ -360,38 +396,6 @@ export default async function ({ init, payload, env }: FlueContext) {
 
    const repo = repoResult.data;
 
-   const harnessResult = await Result.tryPromise({
-      try: () =>
-         init({
-            name: "pr-review-context",
-            sandbox: local({
-               env: {
-                  GH_TOKEN: process.env.GH_TOKEN,
-               },
-            }),
-            model: false,
-         }),
-      catch: (cause) =>
-         new PrReviewAgentError({
-            message:
-               "Falha ao inicializar Flue para contexto de revisão de PR.",
-            cause,
-         }),
-   });
-   if (Result.isError(harnessResult)) throw harnessResult.error;
-
-   const sessionResult = await Result.tryPromise({
-      try: () => harnessResult.value.session(),
-      catch: (cause) =>
-         new PrReviewAgentError({
-            message: "Falha ao abrir sessão Flue para revisão de PR.",
-            cause,
-         }),
-   });
-   if (Result.isError(sessionResult)) throw sessionResult.error;
-
-   const session = sessionResult.value;
-
    const outputDirResult = await Result.tryPromise({
       try: () => mkdir(outputDir, { recursive: true }),
       catch: (cause) =>
@@ -405,93 +409,37 @@ export default async function ({ init, payload, env }: FlueContext) {
    const contextResult = await Result.tryPromise({
       try: () =>
          Promise.all([
-            runRequiredCommand(
-               session,
-               ghCommand([
-                  "pr",
-                  "view",
-                  prNumber,
-                  "--repo",
-                  repo,
-                  "--json",
-                  "number,title,author,state,isDraft,reviewDecision,additions,deletions,changedFiles,labels,url,body",
-               ]),
-               "Falha ao coletar metadados da PR.",
+            readPreparedContext(
+               `${contextDir}/pr-metadata.json`,
+               "Falha ao ler metadados preparados da PR.",
             ),
-            runRequiredCommand(
-               session,
-               "printf '%s\\n' 'Listagem de arquivos omitida; consulte o diff completo abaixo.'",
-               "Falha ao preparar lista de arquivos alterados da PR.",
+            readPreparedContext(
+               `${contextDir}/changed-files.md`,
+               "Falha ao ler lista preparada de arquivos da PR.",
             ),
-            runRequiredCommand(
-               session,
-               ghCommand(["pr", "diff", prNumber, "--repo", repo]),
-               "Falha ao coletar diff da PR.",
+            readPreparedContext(
+               `${contextDir}/pr.patch`,
+               "Falha ao ler diff preparado da PR.",
             ),
-            runRequiredCommand(
-               session,
-               ghCommand([
-                  "pr",
-                  "view",
-                  prNumber,
-                  "--repo",
-                  repo,
-                  "--json",
-                  "commits",
-                  "--jq",
-                  ".commits[].message",
-               ]),
-               "Falha ao coletar commits da PR.",
+            readPreparedContext(
+               `${contextDir}/commits.md`,
+               "Falha ao ler commits preparados da PR.",
             ),
-            runRequiredCommand(
-               session,
-               `${ghCommand([
-                  "pr",
-                  "checks",
-                  prNumber,
-                  "--repo",
-                  repo,
-                  "--json",
-                  "name,status,conclusion",
-               ])} || true`,
-               "Falha ao coletar checks da PR.",
+            readPreparedContext(
+               `${contextDir}/checks.json`,
+               "Falha ao ler checks preparados da PR.",
             ),
-            runRequiredCommand(
-               session,
-               ghCommand([
-                  "pr",
-                  "view",
-                  prNumber,
-                  "--repo",
-                  repo,
-                  "--json",
-                  "reviews",
-                  "--jq",
-                  '.reviews[] | "- " + .state + " - " + .author.login + " - " + .body',
-               ]),
-               "Falha ao coletar reviews da PR.",
+            readPreparedContext(
+               `${contextDir}/reviews.md`,
+               "Falha ao ler reviews preparados da PR.",
             ),
-            runRequiredCommand(
-               session,
-               ghCommand([
-                  "api",
-                  `repos/${repo}/pulls/${prNumber}/comments`,
-                  "--paginate",
-                  "--jq",
-                  '.[] | "- " + .path + ":" + ((.line // 0)|tostring) + " - " + .user.login + " - " + .body',
-               ]),
-               "Falha ao coletar comentários inline da PR.",
+            readPreparedContext(
+               `${contextDir}/inline-review-comments.md`,
+               "Falha ao ler comentários inline preparados da PR.",
             ),
-            runRequiredCommand(
-               session,
-               ghCommand([
-                  "api",
-                  `repos/${repo}/issues/${prNumber}/comments`,
-                  "--paginate",
-                  "--jq",
-                  '.[] | "- " + .user.login + " - " + .body',
-               ]),
-               "Falha ao coletar comentários gerais da PR.",
+            readPreparedContext(
+               `${contextDir}/general-pr-comments.md`,
+               "Falha ao ler comentários gerais preparados da PR.",
             ),
             readFile("AGENTS.md", "utf8"),
             readFile(".agents/skills/code-review/SKILL.md", "utf8"),
@@ -735,19 +683,11 @@ Regras para comments:
          String(publishResult.error.cause ?? publishResult.error.message),
       );
 
-      const fallbackCommentResult = await runRequiredCommand(
-         session,
-         ghCommand([
-            "pr",
-            "comment",
-            prNumber,
-            "--repo",
-            repo,
-            "--body-file",
-            outputFile,
-         ]),
-         "Falha ao comentar revisão fallback na PR.",
-      );
+      const fallbackCommentResult = await publishIssueComment({
+         repo,
+         prNumber,
+         body: reviewResult.value.summary,
+      });
       if (Result.isError(fallbackCommentResult))
          throw fallbackCommentResult.error;
    }
