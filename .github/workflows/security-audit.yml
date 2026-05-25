@@ -31,7 +31,7 @@ jobs:
       if: |
          github.event_name == 'workflow_dispatch' ||
          (
-           github.event.issue.pull_request &&
+           github.event.issue.pull_request != null &&
            (
              startsWith(github.event.comment.body, '/security-audit') ||
              contains(github.event.comment.body, '\n/security-audit')
@@ -92,15 +92,42 @@ jobs:
                 esac
               fi
 
+         - name: Acknowledge security audit request
+           if: github.event_name == 'issue_comment' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              COMMENT_ID: ${{ github.event.comment.id }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
+              RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+           run: |
+              gh api \
+                --method POST \
+                -H "Accept: application/vnd.github+json" \
+                "repos/$GH_REPO/issues/comments/$COMMENT_ID/reactions" \
+                -f content=eyes || true
+
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "👀 Security audit iniciado. Acompanhe: $RUN_URL"
+
          - name: Skip unauthorized request
            if: steps.pr.outputs.authorized != 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
            run: |
               echo "Usuário sem permissão para acionar /security-audit." >> "$GITHUB_STEP_SUMMARY"
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "⛔ Usuário sem permissão para acionar /security-audit."
 
          - name: Skip fork PR
            if: steps.pr.outputs.is_cross_repository == 'true'
+           env:
+              GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GH_REPO: ${{ github.repository }}
+              PR_NUMBER: ${{ steps.pr.outputs.number }}
            run: |
               echo "Security audit ignorado para PR de fork para não expor secrets." >> "$GITHUB_STEP_SUMMARY"
+              gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "⏭️ Security audit ignorado para PR de fork para não expor secrets."
 
          - name: Checkout trusted base
            if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
