@@ -253,7 +253,7 @@ export default async function ({ init, payload, env }: FlueContext) {
             ),
             runRequiredCommand(
                session,
-               `gh pr diff ${prNumber} --repo ${repo} --name-only`,
+               `gh pr view ${prNumber} --repo ${repo} --json files --jq '.files[] | "- " + .path + " (+" + (.additions|tostring) + " -" + (.deletions|tostring) + ")"'`,
                "Falha ao listar arquivos alterados da PR.",
             ),
             runRequiredCommand(
