@@ -60,6 +60,23 @@ async function readPreparedContext(filePath: string, failureMessage: string) {
    });
 }
 
+function truncateForPrompt(value: string, maxChars: number, label: string) {
+   if (value.length <= maxChars) return value;
+
+   return `${value.slice(0, maxChars)}\n\n[${label} truncado: ${value.length} caracteres totais; exibindo primeiros ${maxChars}. Consulte o artefato completo para validação.]`;
+}
+
+function formatCause(cause: unknown) {
+   if (cause instanceof Error) return cause.stack ?? cause.message;
+   if (typeof cause === "string") return cause;
+
+   try {
+      return JSON.stringify(cause);
+   } catch {
+      return String(cause);
+   }
+}
+
 function parseReviewResult(raw: string) {
    const trimmed = raw.trim();
    const withoutFence = trimmed
@@ -481,6 +498,45 @@ export default async function ({ init, payload, env }: FlueContext) {
       ),
    ]);
 
+   const promptFullDiff = truncateForPrompt(
+      fullDiff.value.stdout,
+      180_000,
+      "Full diff",
+   );
+   const promptGeneralReviews = truncateForPrompt(
+      generalReviews.value.stdout,
+      12_000,
+      "Reviews gerais",
+   );
+   const promptInlineReviewComments = truncateForPrompt(
+      inlineReviewComments.value.stdout,
+      18_000,
+      "Inline review comments",
+   );
+   const promptGeneralPrComments = truncateForPrompt(
+      generalPrComments.value.stdout,
+      18_000,
+      "General PR comments",
+   );
+
+   await writeFile(
+      `${outputDir}/prompt-context-size.json`,
+      JSON.stringify(
+         {
+            fullDiff: fullDiff.value.stdout.length,
+            promptFullDiff: promptFullDiff.length,
+            generalReviews: generalReviews.value.stdout.length,
+            promptGeneralReviews: promptGeneralReviews.length,
+            inlineReviewComments: inlineReviewComments.value.stdout.length,
+            promptInlineReviewComments: promptInlineReviewComments.length,
+            generalPrComments: generalPrComments.value.stdout.length,
+            promptGeneralPrComments: promptGeneralPrComments.length,
+         },
+         null,
+         2,
+      ),
+   );
+
    const context = `
 # Revisão PR #${prNumber}
 
@@ -491,7 +547,7 @@ ${prMetadata.value.stdout}
 ${changedFiles.value.stdout}
 
 ## Full diff
-${fullDiff.value.stdout}
+${promptFullDiff}
 
 ## Commits
 ${commits.value.stdout}
@@ -500,13 +556,13 @@ ${commits.value.stdout}
 ${ciChecks.value.stdout}
 
 ## Reviews gerais
-${generalReviews.value.stdout}
+${promptGeneralReviews}
 
 ## Inline review comments
-${inlineReviewComments.value.stdout}
+${promptInlineReviewComments}
 
 ## General PR comments
-${generalPrComments.value.stdout}
+${promptGeneralPrComments}
 `;
 
    const prompt = `
@@ -607,7 +663,7 @@ Regras para comments:
          ),
       catch: (cause) =>
          new PrReviewAgentError({
-            message: "Falha ao executar prompt de review via Flue.",
+            message: `Falha ao executar prompt de review via Flue: ${formatCause(cause)}`,
             cause,
          }),
    });

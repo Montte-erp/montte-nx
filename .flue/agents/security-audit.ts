@@ -73,6 +73,23 @@ async function readPreparedContext(filePath: string, failureMessage: string) {
    });
 }
 
+function truncateForPrompt(value: string, maxChars: number, label: string) {
+   if (value.length <= maxChars) return value;
+
+   return `${value.slice(0, maxChars)}\n\n[${label} truncado: ${value.length} caracteres totais; exibindo primeiros ${maxChars}. Consulte o artefato completo para validação.]`;
+}
+
+function formatCause(cause: unknown) {
+   if (cause instanceof Error) return cause.stack ?? cause.message;
+   if (typeof cause === "string") return cause;
+
+   try {
+      return JSON.stringify(cause);
+   } catch {
+      return String(cause);
+   }
+}
+
 async function publishIssueComment({
    repo,
    prNumber,
@@ -333,6 +350,24 @@ export default async function ({ init, payload, env }: FlueContext) {
       writeFile(`${outputDir}/checks.json`, ciChecks.value.stdout),
    ]);
 
+   const promptFullDiff = truncateForPrompt(
+      fullDiff.value.stdout,
+      180_000,
+      "Full diff",
+   );
+
+   await writeFile(
+      `${outputDir}/prompt-context-size.json`,
+      JSON.stringify(
+         {
+            fullDiff: fullDiff.value.stdout.length,
+            promptFullDiff: promptFullDiff.length,
+         },
+         null,
+         2,
+      ),
+   );
+
    const context = `# PR #${prNumber}
 
 ## Metadata
@@ -342,7 +377,7 @@ ${prMetadata.value.stdout}
 ${changedFiles.value.stdout}
 
 ## Full diff
-${fullDiff.value.stdout}
+${promptFullDiff}
 
 ## Commits
 ${commits.value.stdout}
@@ -427,7 +462,7 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
          ),
       catch: (cause) =>
          new SecurityAuditAgentError({
-            message: "Falha ao executar prompt de security audit via Flue.",
+            message: `Falha ao executar prompt de security audit via Flue: ${formatCause(cause)}`,
             cause,
          }),
    });
