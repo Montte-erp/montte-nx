@@ -1,149 +1,121 @@
 import type { FlueContext } from "@flue/runtime";
-import { Octokit } from "@octokit/core";
+import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { z } from "zod";
+import { defineErrorCatalog } from "evlog";
+import { mkdir, writeFile } from "node:fs/promises";
+import * as v from "valibot";
+import {
+   formatCause,
+   publishIssueComment,
+   readPreparedContext,
+   resolveGithubToken,
+   safePathSchema,
+   safeRepoSchema,
+   truncateForPrompt,
+} from "../lib/agent-utils.ts";
 import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
 
-const severitySchema = z.enum(["medium", "high", "critical"]);
-const riskLevelSchema = z.enum(["none", "medium", "high", "critical"]);
-const failOnSchema = z.enum(["none", "medium", "high", "critical"]);
+const failOnSchema = v.picklist(["none", "medium", "high", "critical"]);
 
-const securityAuditPayloadSchema = z.object({
-   prNumber: z.number().optional(),
-   repo: z
-      .string()
-      .regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u)
-      .optional(),
-   outputDir: z.string().default(".security-audit"),
-   contextDir: z.string().default(".agent-artifacts/security-audit/input"),
-   failOn: failOnSchema.default("high"),
+const securityAuditPayloadSchema = v.object({
+   prNumber: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+   repo: v.optional(safeRepoSchema),
+   outputDir: v.optional(safePathSchema, ".security-audit"),
+   contextDir: v.optional(
+      safePathSchema,
+      ".agent-artifacts/security-audit/input",
+   ),
+   failOn: v.optional(failOnSchema, "high"),
+   dryRun: v.optional(v.boolean(), false),
 });
 
-const findingSchema = z.object({
-   id: z.string().min(1),
-   severity: severitySchema,
-   title: z.string().min(1),
-   path: z.string().min(1),
-   line: z.number().int().positive(),
-   evidence: z.string().min(1),
-   attackerControl: z.string().min(1),
-   reachablePath: z.string().min(1),
-   trustBoundary: z.string().min(1),
-   impact: z.string().min(1),
-   fix: z.string().min(1),
-   confidence: z.enum(["medium", "high"]),
+const findingSchema = v.object({
+   id: v.pipe(v.string(), v.minLength(1)),
+   severity: v.picklist(["medium", "high", "critical"]),
+   title: v.pipe(v.string(), v.minLength(1)),
+   path: v.pipe(v.string(), v.minLength(1)),
+   line: v.pipe(v.number(), v.integer(), v.minValue(1)),
+   evidence: v.pipe(v.string(), v.minLength(1)),
+   attackerControl: v.pipe(v.string(), v.minLength(1)),
+   reachablePath: v.pipe(v.string(), v.minLength(1)),
+   trustBoundary: v.pipe(v.string(), v.minLength(1)),
+   impact: v.pipe(v.string(), v.minLength(1)),
+   fix: v.pipe(v.string(), v.minLength(1)),
+   confidence: v.picklist(["medium", "high"]),
 });
 
-const discardedSchema = z.object({
-   title: z.string().min(1),
-   reason: z.string().min(1),
+const discardedSchema = v.object({
+   title: v.pipe(v.string(), v.minLength(1)),
+   reason: v.pipe(v.string(), v.minLength(1)),
 });
 
-const securityAuditResultSchema = z.object({
-   summary: z.string().min(1),
-   riskLevel: riskLevelSchema,
-   findings: z.array(findingSchema).max(20).default([]),
-   discarded: z.array(discardedSchema).max(30).default([]),
+const securityAuditResultSchema = v.object({
+   summary: v.pipe(v.string(), v.minLength(1)),
+   riskLevel: v.picklist(["none", "medium", "high", "critical"]),
+   findings: v.optional(v.pipe(v.array(findingSchema), v.maxLength(20)), []),
+   discarded: v.optional(v.pipe(v.array(discardedSchema), v.maxLength(30)), []),
 });
 
-type SecurityAuditResult = z.infer<typeof securityAuditResultSchema>;
-type Finding = z.infer<typeof findingSchema>;
-type FailOn = z.infer<typeof failOnSchema>;
+type SecurityAuditResult = v.InferOutput<typeof securityAuditResultSchema>;
+type Finding = v.InferOutput<typeof findingSchema>;
+type FailOn = v.InferOutput<typeof failOnSchema>;
+
+const securityAuditAgentErrors = defineErrorCatalog(
+   "flue.security-audit.agent",
+   {
+      BAD_PAYLOAD: {
+         status: 400,
+         message: "Payload inválido para agente de security audit.",
+         tags: ["flue", "security-audit"],
+      },
+      MISSING_INPUT: {
+         status: 400,
+         message: "Entrada obrigatória ausente para security audit.",
+         tags: ["flue", "security-audit"],
+      },
+      IO_FAILED: {
+         status: 500,
+         message: "Falha de IO no agente de security audit.",
+         tags: ["flue", "security-audit"],
+      },
+      MODEL_FAILED: {
+         status: 500,
+         message: "Falha ao executar modelo de security audit.",
+         tags: ["flue", "security-audit"],
+      },
+      GATE_FAILED: {
+         status: 422,
+         message: "Security audit encontrou findings bloqueantes.",
+         tags: ["flue", "security-audit"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "flue.security-audit.agent": typeof securityAuditAgentErrors;
+   }
+}
+
+type SecurityAuditAgentCatalogError =
+   | ReturnType<typeof securityAuditAgentErrors.BAD_PAYLOAD>
+   | ReturnType<typeof securityAuditAgentErrors.MISSING_INPUT>
+   | ReturnType<typeof securityAuditAgentErrors.IO_FAILED>
+   | ReturnType<typeof securityAuditAgentErrors.MODEL_FAILED>
+   | ReturnType<typeof securityAuditAgentErrors.GATE_FAILED>;
 
 class SecurityAuditAgentError extends TaggedError("SecurityAuditAgentError")<{
+   error: SecurityAuditAgentCatalogError;
    message: string;
-   cause?: unknown;
+   repo?: string;
+   prNumber?: number;
+   outputFile?: string;
+   detail?: string;
 }>() {}
 
-async function readPreparedContext(filePath: string, failureMessage: string) {
-   return Result.tryPromise({
-      try: async () => ({
-         stdout: await readFile(filePath, "utf8"),
-         stderr: "",
-         exitCode: 0,
-      }),
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message: failureMessage,
-            cause,
-         }),
-   });
-}
-
-async function publishIssueComment({
-   repo,
-   prNumber,
-   body,
-   token,
-}: {
-   repo: string;
-   prNumber: number;
-   body: string;
-   token: string | undefined;
-}) {
-   if (!token) {
-      return Result.err(
-         new SecurityAuditAgentError({
-            message: "GH_TOKEN não configurado no ambiente.",
-         }),
-      );
-   }
-
-   const [owner, repoName] = repo.split("/");
-   const octokit = new Octokit({ auth: token });
-   return Result.tryPromise({
-      try: async () => {
-         await octokit.request(
-            "POST /repos/{owner}/{repo}/issues/{num}/comments",
-            {
-               owner,
-               repo: repoName,
-               num: prNumber,
-               body,
-            },
-         );
-      },
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message: "Falha ao publicar comentário no GitHub.",
-            cause,
-         }),
-   });
-}
-
-function parseSecurityAuditResult(raw: string) {
-   const trimmed = raw.trim();
-   const withoutFence = trimmed
-      .replace(/^```(?:json)?\s*/u, "")
-      .replace(/\s*```$/u, "");
-
-   const jsonResult = Result.try({
-      try: () => JSON.parse(withoutFence),
-      catch: (cause) =>
-         new SecurityAuditAgentError({
-            message: "Resposta do security audit não é JSON válido.",
-            cause,
-         }),
-   });
-   if (Result.isError(jsonResult)) return Result.err(jsonResult.error);
-
-   const parsed = securityAuditResultSchema.safeParse(jsonResult.value);
-   if (!parsed.success) {
-      return Result.err(
-         new SecurityAuditAgentError({
-            message: "Resposta do security audit não segue o schema esperado.",
-            cause: parsed.error,
-         }),
-      );
-   }
-
-   return Result.ok(parsed.data);
-}
-
-function severityRank(severity: FailOn | z.infer<typeof severitySchema>) {
+function severityRank(severity: FailOn | Finding["severity"]) {
    return ["none", "medium", "high", "critical"].indexOf(severity);
 }
 
@@ -199,11 +171,12 @@ ${discarded}
 }
 
 export default async function ({ init, payload, env }: FlueContext) {
-   const parsedPayload = securityAuditPayloadSchema.safeParse(payload);
+   const parsedPayload = v.safeParse(securityAuditPayloadSchema, payload);
    if (!parsedPayload.success) {
       throw new SecurityAuditAgentError({
+         error: securityAuditAgentErrors.BAD_PAYLOAD(),
          message: "Payload inválido para agente de security audit.",
-         cause: parsedPayload.error,
+         detail: formatCause(parsedPayload.issues),
       });
    }
 
@@ -213,33 +186,46 @@ export default async function ({ init, payload, env }: FlueContext) {
       outputDir,
       contextDir,
       failOn,
-   } = parsedPayload.data;
-   const prNumber = payloadPrNumber ?? Number(env.PR_NUMBER);
-   const repo = payloadRepo ?? env.GITHUB_REPOSITORY;
-   const githubToken =
-      env.GH_TOKEN ??
-      env.GITHUB_TOKEN ??
-      process.env.GH_TOKEN ??
-      process.env.GITHUB_TOKEN;
+      dryRun,
+   } = parsedPayload.output;
+   const envPrNumber = Number(env.PR_NUMBER);
+   const prNumber =
+      payloadPrNumber ??
+      (Number.isInteger(envPrNumber) && envPrNumber > 0
+         ? envPrNumber
+         : undefined);
+   const repoResult = v.safeParse(
+      safeRepoSchema,
+      payloadRepo ?? env.GITHUB_REPOSITORY,
+   );
+   const githubToken = resolveGithubToken(env);
 
    if (!prNumber || Number.isNaN(prNumber)) {
       throw new SecurityAuditAgentError({
+         error: securityAuditAgentErrors.MISSING_INPUT(),
          message: "Informe prNumber no payload ou PR_NUMBER no ambiente.",
       });
    }
 
-   if (!repo || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repo)) {
+   if (!repoResult.success) {
       throw new SecurityAuditAgentError({
+         error: securityAuditAgentErrors.BAD_PAYLOAD(),
          message: "repo inválido ou não informado.",
+         prNumber,
+         detail: formatCause(repoResult.issues),
       });
    }
+
+   const repo = repoResult.output;
 
    const outputDirResult = await Result.tryPromise({
       try: () => mkdir(outputDir, { recursive: true }),
       catch: (cause) =>
          new SecurityAuditAgentError({
+            error: securityAuditAgentErrors.IO_FAILED(),
             message: "Falha ao criar diretório de artefatos de security audit.",
-            cause,
+            outputFile: outputDir,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputDirResult)) throw outputDirResult.error;
@@ -267,53 +253,18 @@ export default async function ({ init, payload, env }: FlueContext) {
                `${contextDir}/checks.json`,
                "Falha ao ler checks preparados da PR.",
             ),
-            readFile("AGENTS.md", "utf8"),
-            readFile(".agents/skills/implementation/SKILL.md", "utf8"),
-            readFile(".agents/skills/security-audit/SKILL.md", "utf8"),
-            readFile(
-               ".agents/skills/security-audit/references/methodology.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/security-audit/references/finding-validation.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/security-audit/references/montte-attack-surface.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/security-audit/references/github-actions-security.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/security-audit/references/report-schema.md",
-               "utf8",
-            ),
          ]),
       catch: (cause) =>
          new SecurityAuditAgentError({
+            error: securityAuditAgentErrors.IO_FAILED(),
             message: "Falha ao coletar contexto da PR ou carregar skill.",
-            cause,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(contextResult)) throw contextResult.error;
 
-   const [
-      prMetadata,
-      changedFiles,
-      fullDiff,
-      commits,
-      ciChecks,
-      agentInstructions,
-      implementationSkill,
-      securityAuditSkill,
-      methodologyReference,
-      findingValidationReference,
-      montteAttackSurfaceReference,
-      githubActionsSecurityReference,
-      reportSchemaReference,
-   ] = contextResult.value;
+   const [prMetadata, changedFiles, fullDiff, commits, ciChecks] =
+      contextResult.value;
 
    const commandResults = [
       prMetadata,
@@ -333,79 +284,41 @@ export default async function ({ init, payload, env }: FlueContext) {
       writeFile(`${outputDir}/checks.json`, ciChecks.value.stdout),
    ]);
 
-   const context = `# PR #${prNumber}
+   const promptFullDiff = truncateForPrompt(
+      fullDiff.value.stdout,
+      180_000,
+      "Full diff",
+   );
 
-## Metadata
-${prMetadata.value.stdout}
+   const promptContextSize = {
+      fullDiff: fullDiff.value.stdout.length,
+      promptFullDiff: promptFullDiff.length,
+   };
 
-## Changed files
-${changedFiles.value.stdout}
+   await writeFile(
+      `${outputDir}/prompt-context-size.json`,
+      JSON.stringify(promptContextSize, null, 2),
+   );
 
-## Full diff
-${fullDiff.value.stdout}
-
-## Commits
-${commits.value.stdout}
-
-## CI checks
-${ciChecks.value.stdout}
-`;
-
-   const prompt = `Você é o agente de security audit do Montte.
-Siga obrigatoriamente AGENTS.md, implementation skill e security-audit skill/references abaixo.
-
-Objetivo: fazer uma auditoria de segurança CI-friendly da PR #${prNumber}, focada em achados reais Medium+.
-
-AGENTS.md:
-${agentInstructions}
-
-Implementation skill:
-${implementationSkill}
-
-Security audit skill:
-${securityAuditSkill}
-
-Reference: methodology
-${methodologyReference}
-
-Reference: finding-validation
-${findingValidationReference}
-
-Reference: montte-attack-surface
-${montteAttackSurfaceReference}
-
-Reference: github-actions-security
-${githubActionsSecurityReference}
-
-Reference: report-schema
-${reportSchemaReference}
-
-Contexto da PR:
-${context}
-
-Tarefa:
-- audite o diff e callers/contratos evidentes;
-- procure regressões de authz, isolamento org/team, billing/usage, uploads/files, workers/jobs, AI tools, secrets e GitHub Actions;
-- tente refutar cada hipótese antes de reportar;
-- descarte Low/Info/teórico;
-- não invente arquivos, linhas, APIs ou contexto ausente;
-- não recomende mudanças genéricas sem finding concreto;
-- retorne no máximo 10 findings.
-
-Retorne JSON válido, sem markdown fences, exatamente no schema da reference report-schema.
-`.trim();
+   const task = `Audite a PR #${prNumber} usando a skill de security audit do Montte. Use apenas o contexto pré-coletado em args. Não rode comandos nem colete dados pelo GitHub. Foque em achados reais Medium+ e tente refutar hipóteses antes de reportar.`;
 
    const modelHarnessResult = await Result.tryPromise({
       try: () =>
          init({
             name: "security-audit-model",
-            sandbox: false,
+            // local() lets Flue discover AGENTS.md and .agents/skills from cwd.
+            // GitHub writes stay on the host through Octokit; tokens are not
+            // exposed to the sandbox env and we do not collect context with gh.
+            sandbox: local({ env: {} }),
             model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
       catch: (cause) =>
          new SecurityAuditAgentError({
+            error: securityAuditAgentErrors.MODEL_FAILED(),
             message: "Falha ao inicializar Flue para modelo de security audit.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(modelHarnessResult)) throw modelHarnessResult.error;
@@ -414,8 +327,11 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
       try: () => modelHarnessResult.value.session(),
       catch: (cause) =>
          new SecurityAuditAgentError({
+            error: securityAuditAgentErrors.MODEL_FAILED(),
             message: "Falha ao abrir sessão de modelo para security audit.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(modelSessionResult)) throw modelSessionResult.error;
@@ -423,39 +339,61 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            modelSessionResult.value.prompt(prompt, { thinkingLevel: "off" }),
+            modelSessionResult.value.skill("security-audit", {
+               args: {
+                  task,
+                  repo,
+                  prNumber,
+                  failOn,
+                  prMetadata: prMetadata.value.stdout,
+                  changedFiles: changedFiles.value.stdout,
+                  patch: promptFullDiff,
+                  commits: commits.value.stdout,
+                  checks: ciChecks.value.stdout,
+                  promptContextSize,
+               },
+               thinkingLevel: "off",
+               result: securityAuditResultSchema,
+            }),
          ),
       catch: (cause) =>
          new SecurityAuditAgentError({
-            message: "Falha ao executar prompt de security audit via Flue.",
-            cause,
+            error: securityAuditAgentErrors.MODEL_FAILED(),
+            message: `Falha ao executar skill de security audit via Flue: ${formatCause(cause)}`,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputResult)) throw outputResult.error;
 
-   const auditResult = parseSecurityAuditResult(outputResult.value.text);
-   if (Result.isError(auditResult)) throw auditResult.error;
+   const auditResult = outputResult.value.data;
 
    const jsonOutputFile = `${outputDir}/security-audit.json`;
    const markdownOutputFile = `${outputDir}/SECURITY_AUDIT.md`;
-   const markdown = formatMarkdownReport(auditResult.value, failOn);
+   const markdown = formatMarkdownReport(auditResult, failOn);
 
    await Promise.all([
-      writeFile(jsonOutputFile, JSON.stringify(auditResult.value, null, 2)),
+      writeFile(jsonOutputFile, JSON.stringify(auditResult, null, 2)),
       writeFile(markdownOutputFile, markdown),
    ]);
 
-   const commentResult = await publishIssueComment({
-      repo,
-      prNumber,
-      body: markdown,
-      token: githubToken,
-   });
-   if (Result.isError(commentResult)) throw commentResult.error;
+   if (!dryRun) {
+      const commentResult = await publishIssueComment({
+         repo,
+         prNumber,
+         body: markdown,
+         token: githubToken,
+      });
+      if (Result.isError(commentResult)) throw commentResult.error;
+   }
 
-   if (shouldFailAudit(auditResult.value.findings, failOn)) {
+   if (!dryRun && shouldFailAudit(auditResult.findings, failOn)) {
       throw new SecurityAuditAgentError({
+         error: securityAuditAgentErrors.GATE_FAILED(),
          message: `Security audit encontrou findings >= ${failOn}.`,
+         repo,
+         prNumber,
       });
    }
 
@@ -463,8 +401,9 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
       outputFile: markdownOutputFile,
       jsonOutputFile,
       prNumber,
-      findings: auditResult.value.findings.length,
-      riskLevel: auditResult.value.riskLevel,
+      findings: auditResult.findings.length,
+      riskLevel: auditResult.riskLevel,
       failOn,
+      dryRun,
    };
 }

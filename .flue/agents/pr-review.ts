@@ -1,95 +1,105 @@
 import type { FlueContext } from "@flue/runtime";
+import { local } from "@flue/runtime/node";
 import { Octokit } from "@octokit/core";
 import { Result, TaggedError } from "better-result";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { z } from "zod";
+import { defineErrorCatalog } from "evlog";
+import { mkdir, writeFile } from "node:fs/promises";
+import * as v from "valibot";
+import {
+   formatCause,
+   publishIssueComment,
+   readPreparedContext,
+   resolveGithubToken,
+   safePathSchema,
+   safeRepoSchema,
+   truncateForPrompt,
+} from "../lib/agent-utils.ts";
 import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
 
-const safeRepoSchema = z.string().regex(/^[\w.-]+\/[\w.-]+$/u);
-const safeOutputDirSchema = z
-   .string()
-   .regex(/^(?:\.\/[\w./-]+|\.[\w./-]*|[\w][\w./-]*)$/u)
-   .refine((value) => !value.split("/").includes(".."), {
-      message: "outputDir não pode conter segmentos '..'.",
-   });
-
-const prPayloadSchema = z.object({
-   prNumber: z.number().int().nonnegative().optional(),
-   repo: safeRepoSchema.optional(),
-   outputDir: safeOutputDirSchema.default(".agent-artifacts/pr-review"),
-   contextDir: safeOutputDirSchema.default(".agent-artifacts/pr-review/input"),
+const prPayloadSchema = v.object({
+   prNumber: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
+   repo: v.optional(safeRepoSchema),
+   outputDir: v.optional(safePathSchema, ".agent-artifacts/pr-review"),
+   contextDir: v.optional(safePathSchema, ".agent-artifacts/pr-review/input"),
+   dryRun: v.optional(v.boolean(), false),
 });
 
-const reviewCommentSchema = z.object({
-   path: z.string().min(1),
-   line: z.number().int().positive(),
-   side: z.enum(["RIGHT", "LEFT"]).default("RIGHT"),
-   severity: z.enum(["critical", "major", "minor", "trivial", "info"]),
-   confidence: z.number().min(0).max(1).default(0.7),
-   actionable: z.boolean().default(false),
-   suggestion: z.string().min(1).optional(),
-   reproSteps: z.string().min(1).optional(),
-   title: z.string().min(1),
-   body: z.string().min(1),
+const reviewCommentSchema = v.object({
+   path: v.pipe(v.string(), v.minLength(1)),
+   line: v.pipe(v.number(), v.integer(), v.minValue(1)),
+   side: v.optional(v.picklist(["RIGHT", "LEFT"]), "RIGHT"),
+   severity: v.picklist(["critical", "major", "minor", "trivial", "info"]),
+   confidence: v.optional(
+      v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+      0.7,
+   ),
+   actionable: v.optional(v.boolean(), false),
+   suggestion: v.optional(v.pipe(v.string(), v.minLength(1))),
+   reproSteps: v.optional(v.pipe(v.string(), v.minLength(1))),
+   title: v.pipe(v.string(), v.minLength(1)),
+   body: v.pipe(v.string(), v.minLength(1)),
 });
 
-const reviewResultSchema = z.object({
-   summary: z.string().min(1),
-   comments: z.array(reviewCommentSchema).default([]),
+const reviewResultSchema = v.object({
+   summary: v.pipe(v.string(), v.minLength(1)),
+   comments: v.optional(v.array(reviewCommentSchema), []),
 });
+
+type ReviewComment = v.InferOutput<typeof reviewCommentSchema>;
+
+const prReviewAgentErrors = defineErrorCatalog("flue.pr-review.agent", {
+   BAD_PAYLOAD: {
+      status: 400,
+      message: "Payload inválido para agente de revisão de PR.",
+      tags: ["flue", "pr-review"],
+   },
+   MISSING_INPUT: {
+      status: 400,
+      message: "Entrada obrigatória ausente para revisão de PR.",
+      tags: ["flue", "pr-review"],
+   },
+   IO_FAILED: {
+      status: 500,
+      message: "Falha de IO no agente de revisão de PR.",
+      tags: ["flue", "pr-review"],
+   },
+   MODEL_FAILED: {
+      status: 500,
+      message: "Falha ao executar modelo de revisão de PR.",
+      tags: ["flue", "pr-review"],
+   },
+   GITHUB_FAILED: {
+      status: 500,
+      message: "Falha ao publicar revisão no GitHub.",
+      tags: ["flue", "pr-review", "github"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "flue.pr-review.agent": typeof prReviewAgentErrors;
+   }
+}
+
+type PrReviewAgentCatalogError =
+   | ReturnType<typeof prReviewAgentErrors.BAD_PAYLOAD>
+   | ReturnType<typeof prReviewAgentErrors.MISSING_INPUT>
+   | ReturnType<typeof prReviewAgentErrors.IO_FAILED>
+   | ReturnType<typeof prReviewAgentErrors.MODEL_FAILED>
+   | ReturnType<typeof prReviewAgentErrors.GITHUB_FAILED>;
 
 class PrReviewAgentError extends TaggedError("PrReviewAgentError")<{
+   error: PrReviewAgentCatalogError;
    message: string;
-   cause?: unknown;
+   repo?: string;
+   prNumber?: number;
+   outputFile?: string;
+   detail?: string;
 }>() {}
 
-async function readPreparedContext(filePath: string, failureMessage: string) {
-   return Result.tryPromise({
-      try: async () => ({
-         stdout: await readFile(filePath, "utf8"),
-         stderr: "",
-         exitCode: 0,
-      }),
-      catch: (cause) =>
-         new PrReviewAgentError({
-            message: failureMessage,
-            cause,
-         }),
-   });
-}
-
-function parseReviewResult(raw: string) {
-   const trimmed = raw.trim();
-   const withoutFence = trimmed
-      .replace(/^```(?:json)?\s*/u, "")
-      .replace(/\s*```$/u, "");
-
-   const jsonResult = Result.try({
-      try: () => JSON.parse(withoutFence),
-      catch: (cause) =>
-         new PrReviewAgentError({
-            message: "Resposta do review agent não é JSON válido.",
-            cause,
-         }),
-   });
-   if (Result.isError(jsonResult)) return Result.err(jsonResult.error);
-
-   const parsed = reviewResultSchema.safeParse(jsonResult.value);
-   if (!parsed.success) {
-      return Result.err(
-         new PrReviewAgentError({
-            message: "Resposta do review agent não segue o schema esperado.",
-            cause: parsed.error,
-         }),
-      );
-   }
-
-   return Result.ok(parsed.data);
-}
-
-function formatInlineComment(comment: z.infer<typeof reviewCommentSchema>) {
+function formatInlineComment(comment: ReviewComment) {
    return `**Severidade:** ${comment.severity}
 
 **${comment.title}**
@@ -152,7 +162,7 @@ function parseDiffReviewLines(patch: string) {
    return allowed;
 }
 
-function hasActionableContent(comment: z.infer<typeof reviewCommentSchema>) {
+function hasActionableContent(comment: ReviewComment) {
    if (comment.actionable || comment.suggestion || comment.reproSteps)
       return true;
 
@@ -162,14 +172,12 @@ function hasActionableContent(comment: z.infer<typeof reviewCommentSchema>) {
 }
 
 function splitValidInlineComments(
-   comments: Array<z.infer<typeof reviewCommentSchema>>,
+   comments: Array<ReviewComment>,
    patch: string,
 ) {
    const allowed = parseDiffReviewLines(patch);
-   const valid: Array<z.infer<typeof reviewCommentSchema>> = [];
-   const skipped: Array<
-      z.infer<typeof reviewCommentSchema> & { reason: string }
-   > = [];
+   const valid: Array<ReviewComment> = [];
+   const skipped: Array<ReviewComment & { reason: string }> = [];
 
    for (const comment of comments) {
       if (comment.severity === "trivial" || comment.severity === "info") {
@@ -223,47 +231,6 @@ function splitValidInlineComments(
    return { valid, skipped };
 }
 
-async function publishIssueComment({
-   repo,
-   prNumber,
-   body,
-   token,
-}: {
-   repo: string;
-   prNumber: number;
-   body: string;
-   token: string | undefined;
-}) {
-   if (!token) {
-      return Result.err(
-         new PrReviewAgentError({
-            message: "GH_TOKEN não configurado no ambiente.",
-         }),
-      );
-   }
-
-   const [owner, repoName] = repo.split("/");
-   const octokit = new Octokit({ auth: token });
-   return Result.tryPromise({
-      try: async () => {
-         await octokit.request(
-            "POST /repos/{owner}/{repo}/issues/{num}/comments",
-            {
-               owner,
-               repo: repoName,
-               num: prNumber,
-               body,
-            },
-         );
-      },
-      catch: (cause) =>
-         new PrReviewAgentError({
-            message: "Falha ao publicar comentário no GitHub.",
-            cause,
-         }),
-   });
-}
-
 async function publishReview({
    repo,
    prNumber,
@@ -274,13 +241,16 @@ async function publishReview({
    repo: string;
    prNumber: number;
    body: string;
-   comments: Array<z.infer<typeof reviewCommentSchema>>;
+   comments: Array<ReviewComment>;
    token: string | undefined;
 }) {
    if (!token) {
       return Result.err(
          new PrReviewAgentError({
+            error: prReviewAgentErrors.MISSING_INPUT(),
             message: "GH_TOKEN não configurado no ambiente.",
+            repo,
+            prNumber,
          }),
       );
    }
@@ -314,18 +284,22 @@ async function publishReview({
       },
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.GITHUB_FAILED(),
             message: "Falha ao publicar review inline no GitHub.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
 }
 
 export default async function ({ init, payload, env }: FlueContext) {
-   const parsedPayload = prPayloadSchema.safeParse(payload);
+   const parsedPayload = v.safeParse(prPayloadSchema, payload);
    if (!parsedPayload.success) {
       throw new PrReviewAgentError({
+         error: prReviewAgentErrors.BAD_PAYLOAD(),
          message: "Payload inválido para agente de revisão de PR.",
-         cause: parsedPayload.error,
+         detail: formatCause(parsedPayload.issues),
       });
    }
 
@@ -334,20 +308,22 @@ export default async function ({ init, payload, env }: FlueContext) {
       repo: payloadRepo,
       outputDir,
       contextDir,
-   } = parsedPayload.data;
-   const envPrNumber = z.coerce
-      .number()
-      .int()
-      .positive()
-      .safeParse(env.PR_NUMBER);
+      dryRun,
+   } = parsedPayload.output;
+   const envPrNumber = Number(env.PR_NUMBER);
    const prNumber =
-      payloadPrNumber ?? (envPrNumber.success ? envPrNumber.data : undefined);
-   const repoResult = safeRepoSchema.safeParse(
+      payloadPrNumber ??
+      (Number.isInteger(envPrNumber) && envPrNumber > 0
+         ? envPrNumber
+         : undefined);
+   const repoResult = v.safeParse(
+      safeRepoSchema,
       payloadRepo ?? env.GITHUB_REPOSITORY,
    );
 
    if (!prNumber || prNumber <= 0) {
       throw new PrReviewAgentError({
+         error: prReviewAgentErrors.MISSING_INPUT(),
          message:
             "Informe prNumber positivo no payload ou PR_NUMBER no ambiente.",
       });
@@ -355,24 +331,24 @@ export default async function ({ init, payload, env }: FlueContext) {
 
    if (!repoResult.success) {
       throw new PrReviewAgentError({
+         error: prReviewAgentErrors.BAD_PAYLOAD(),
          message: "repo inválido ou não informado. Use owner/repo.",
-         cause: repoResult.error,
+         prNumber,
+         detail: formatCause(repoResult.issues),
       });
    }
 
-   const repo = repoResult.data;
-   const githubToken =
-      env.GH_TOKEN ??
-      env.GITHUB_TOKEN ??
-      process.env.GH_TOKEN ??
-      process.env.GITHUB_TOKEN;
+   const repo = repoResult.output;
+   const githubToken = resolveGithubToken(env);
 
    const outputDirResult = await Result.tryPromise({
       try: () => mkdir(outputDir, { recursive: true }),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.IO_FAILED(),
             message: "Falha ao criar diretório de artefatos da revisão.",
-            cause,
+            outputFile: outputDir,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputDirResult)) throw outputDirResult.error;
@@ -412,25 +388,12 @@ export default async function ({ init, payload, env }: FlueContext) {
                `${contextDir}/general-pr-comments.md`,
                "Falha ao ler comentários gerais preparados da PR.",
             ),
-            readFile("AGENTS.md", "utf8"),
-            readFile(".agents/skills/code-review/SKILL.md", "utf8"),
-            readFile(
-               ".agents/skills/code-review/references/pr-review.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/code-review/references/review-comments.md",
-               "utf8",
-            ),
-            readFile(
-               ".agents/skills/code-review/references/tests-validation.md",
-               "utf8",
-            ),
          ]),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.IO_FAILED(),
             message: "Falha ao coletar contexto da PR ou carregar skill.",
-            cause,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(contextResult)) throw contextResult.error;
@@ -444,11 +407,6 @@ export default async function ({ init, payload, env }: FlueContext) {
       generalReviews,
       inlineReviewComments,
       generalPrComments,
-      agentInstructions,
-      skillInstruction,
-      automatedReviewReference,
-      reviewCommentsReference,
-      testsValidationReference,
    ] = contextResult.value;
 
    const commandResults = [
@@ -481,111 +439,62 @@ export default async function ({ init, payload, env }: FlueContext) {
       ),
    ]);
 
-   const context = `
-# Revisão PR #${prNumber}
+   const promptFullDiff = truncateForPrompt(
+      fullDiff.value.stdout,
+      180_000,
+      "Full diff",
+   );
+   const promptGeneralReviews = truncateForPrompt(
+      generalReviews.value.stdout,
+      12_000,
+      "Reviews gerais",
+   );
+   const promptInlineReviewComments = truncateForPrompt(
+      inlineReviewComments.value.stdout,
+      18_000,
+      "Inline review comments",
+   );
+   const promptGeneralPrComments = truncateForPrompt(
+      generalPrComments.value.stdout,
+      18_000,
+      "General PR comments",
+   );
 
-## PR metadata
-${prMetadata.value.stdout}
+   const promptContextSize = {
+      fullDiff: fullDiff.value.stdout.length,
+      promptFullDiff: promptFullDiff.length,
+      generalReviews: generalReviews.value.stdout.length,
+      promptGeneralReviews: promptGeneralReviews.length,
+      inlineReviewComments: inlineReviewComments.value.stdout.length,
+      promptInlineReviewComments: promptInlineReviewComments.length,
+      generalPrComments: generalPrComments.value.stdout.length,
+      promptGeneralPrComments: promptGeneralPrComments.length,
+   };
 
-## Changed files (metric)
-${changedFiles.value.stdout}
+   await writeFile(
+      `${outputDir}/prompt-context-size.json`,
+      JSON.stringify(promptContextSize, null, 2),
+   );
 
-## Full diff
-${fullDiff.value.stdout}
-
-## Commits
-${commits.value.stdout}
-
-## CI checks
-${ciChecks.value.stdout}
-
-## Reviews gerais
-${generalReviews.value.stdout}
-
-## Inline review comments
-${inlineReviewComments.value.stdout}
-
-## General PR comments
-${generalPrComments.value.stdout}
-`;
-
-   const prompt = `
-Você é o agente automático de code review do Montte.
-Siga obrigatoriamente o AGENTS.md, o SKILL.md e as references carregadas abaixo.
-O SKILL.md é apenas o organizador; as references guiam o padrão de execução.
-
-AGENTS.md:
-${agentInstructions}
-
-SKILL.md de code review:
-${skillInstruction}
-
-Reference: pr-review
-${automatedReviewReference}
-
-Reference: review-comments
-${reviewCommentsReference}
-
-Reference: tests-validation
-${testsValidationReference}
-
-Contexto:
-${context}
-
-Tarefa:
-- revise a PR com foco em bugs reais, regressões, contratos quebrados, segurança, dados incorretos e CI/testes;
-- verifique stale/duplicado contra comentários anteriores;
-- não faça nits cobertos por formatter/linter;
-- não invente fatos fora do contexto;
-- se não houver achados acionáveis, diga isso claramente.
-
-Restrição obrigatória:
-- cada comentário inline deve apontar para path e line exatos do diff;
-- use side "RIGHT" para linha adicionada ou contexto no arquivo novo;
-- use side "LEFT" apenas para linha removida no arquivo antigo;
-- não comente arquivo/linha fora do patch.
-
-Retorne JSON válido, sem markdown fences, neste formato:
-{
-  "summary": "Resumo curto do risco, CI/testes relevantes e validação recomendada.",
-  "comments": [
-    {
-      "path": "arquivo alterado",
-      "line": 123,
-      "side": "RIGHT",
-      "severity": "critical|major|minor|trivial|info",
-      "confidence": 0.82,
-      "actionable": true,
-      "suggestion": "Correção pequena opcional, ou omita o campo",
-      "reproSteps": "Passos de reprodução opcionais, ou omita o campo",
-      "title": "Título curto do achado",
-      "body": "Explique por que isso está errado, impacto concreto e correção pequena em pt-BR."
-    }
-  ]
-}
-
-Regras para comments:
-- cada comentário precisa estar em arquivo/linha do diff;
-- cada comentário precisa explicar por que está errado;
-- incluir severidade correta;
-- não limite artificialmente a quantidade de comentários; aplique apenas os gates de qualidade;
-- não inclua comentários trivial ou info;
-- cada comentário precisa ter confidence >= 0.7;
-- cada comentário precisa ter sugestão concreta, passos de reprodução ou actionable: true;
-- se não houver achados acionáveis, retorne "comments": [].
-`.trim();
+   const task = `Revise a PR #${prNumber} usando a skill de code review do Montte. Use apenas o contexto pré-coletado em args. Não rode comandos nem colete dados pelo GitHub. Retorne comentários inline somente para linhas existentes no patch, com severidade, confiança >= 0.7 e correção concreta.`;
 
    const modelHarnessResult = await Result.tryPromise({
       try: () =>
          init({
             name: "pr-review-model",
-            sandbox: false,
+            // local() lets Flue discover AGENTS.md and .agents/skills from cwd.
+            // GitHub writes stay on the host through Octokit; tokens are not
+            // exposed to the sandbox env and we do not collect context with gh.
+            sandbox: local({ env: {} }),
             model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.MODEL_FAILED(),
             message: "Falha ao inicializar Flue para modelo de review.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(modelHarnessResult)) throw modelHarnessResult.error;
@@ -594,8 +503,11 @@ Regras para comments:
       try: () => modelHarnessResult.value.session(),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.MODEL_FAILED(),
             message: "Falha ao abrir sessão de modelo para review.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(modelSessionResult)) throw modelSessionResult.error;
@@ -603,21 +515,40 @@ Regras para comments:
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            modelSessionResult.value.prompt(prompt, { thinkingLevel: "off" }),
+            modelSessionResult.value.skill("code-review", {
+               args: {
+                  task,
+                  repo,
+                  prNumber,
+                  prMetadata: prMetadata.value.stdout,
+                  changedFiles: changedFiles.value.stdout,
+                  patch: promptFullDiff,
+                  commits: commits.value.stdout,
+                  checks: ciChecks.value.stdout,
+                  reviews: promptGeneralReviews,
+                  inlineReviewComments: promptInlineReviewComments,
+                  generalPrComments: promptGeneralPrComments,
+                  promptContextSize,
+               },
+               thinkingLevel: "off",
+               result: reviewResultSchema,
+            }),
          ),
       catch: (cause) =>
          new PrReviewAgentError({
-            message: "Falha ao executar prompt de review via Flue.",
-            cause,
+            error: prReviewAgentErrors.MODEL_FAILED(),
+            message: `Falha ao executar skill de review via Flue: ${formatCause(cause)}`,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputResult)) throw outputResult.error;
 
-   const reviewResult = parseReviewResult(outputResult.value.text);
-   if (Result.isError(reviewResult)) throw reviewResult.error;
+   const reviewResult = outputResult.value.data;
 
    const inlineComments = splitValidInlineComments(
-      reviewResult.value.comments,
+      reviewResult.comments,
       fullDiff.value.stdout,
    );
 
@@ -632,19 +563,31 @@ Regras para comments:
 
    const outputFile = `${outputDir}/summary.md`;
    const writeResult = await Result.tryPromise({
-      try: () => writeFile(outputFile, reviewResult.value.summary),
+      try: () => writeFile(outputFile, reviewResult.summary),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.IO_FAILED(),
             message: "Falha ao escrever summary.md.",
-            cause,
+            outputFile,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(writeResult)) throw writeResult.error;
 
+   if (dryRun) {
+      return {
+         outputFile,
+         prNumber,
+         inlineComments: inlineComments.valid.length,
+         skippedInlineComments: inlineComments.skipped.length,
+         dryRun,
+      };
+   }
+
    const publishResult = await publishReview({
       repo,
       prNumber,
-      body: reviewResult.value.summary,
+      body: reviewResult.summary,
       comments: inlineComments.valid,
       token: githubToken,
    });
@@ -652,13 +595,13 @@ Regras para comments:
    if (Result.isError(publishResult)) {
       await writeFile(
          `${outputDir}/publish-error.txt`,
-         String(publishResult.error.cause ?? publishResult.error.message),
+         publishResult.error.detail ?? publishResult.error.message,
       );
 
       const fallbackCommentResult = await publishIssueComment({
          repo,
          prNumber,
-         body: reviewResult.value.summary,
+         body: reviewResult.summary,
          token: githubToken,
       });
       if (Result.isError(fallbackCommentResult))
@@ -670,5 +613,6 @@ Regras para comments:
       prNumber,
       inlineComments: inlineComments.valid.length,
       skippedInlineComments: inlineComments.skipped.length,
+      dryRun,
    };
 }
