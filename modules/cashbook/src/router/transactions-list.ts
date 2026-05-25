@@ -47,6 +47,7 @@ const filterSchema = z
    .object({
       type: z.enum(["income", "expense", "transfer"]).optional(),
       bankAccountId: z.string().uuid().optional(),
+      relationshipId: z.string().uuid().optional(),
       categoryId: z.string().uuid().optional(),
       tagId: z.string().uuid().optional(),
       dateFrom: isoDate.optional(),
@@ -99,6 +100,7 @@ export const getAll = protectedProcedure
                   data: {
                      categoryId: row.categoryId ?? null,
                      bankAccountId: row.bankAccountId,
+                     relationshipId: row.relationshipId ?? null,
                      creditCardId: row.creditCardId ?? null,
                      amount: Number(row.amount),
                      name: row.name ?? row.description ?? "",

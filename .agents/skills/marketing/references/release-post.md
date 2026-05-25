@@ -12,7 +12,7 @@ Use para transformar uma GitHub Release publicada em post canônico no blog do M
 
 Release notes sao a unica fonte factual. Nao invente numeros, PRs, prazos, features, nomes, cicatrizes ou metricas que nao estejam na release.
 
-Leia tambem [blog](blog.md) para voz, anti-AI-tells, frontmatter, SEO/AEO/GEO e humanizacao.
+Leia tambem [`writing.md`](writing.md) para voz, anti-AI-tells e humanizacao. Leia [`blog.md`](blog.md) para frontmatter, SEO/AEO/GEO e distribuicao.
 
 ## Contrato do workflow
 

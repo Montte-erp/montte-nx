@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import {
    and,
    count,
-   desc,
+   asc,
    eq,
    ilike,
    isNotNull,
@@ -90,7 +90,7 @@ const listInput = z.object({
    role: relationshipRoleSchema,
    q: z.string().trim().max(160).optional(),
    archived: z.boolean().default(false),
-   limit: z.number().int().min(1).max(250).default(50),
+   limit: z.number().int().min(1).max(1000).default(50),
    offset: z.number().int().min(0).default(0),
 });
 
@@ -233,8 +233,6 @@ export const list = protectedProcedure
                     or(
                        ilike(parties.name, `%${search}%`),
                        sql`${parties.documentNumber} ilike ${`%${search}%`}`,
-                       sql`${parties.email} ilike ${`%${search}%`}`,
-                       sql`${parties.phone} ilike ${`%${search}%`}`,
                     ),
                  )
                : whereBase;
@@ -244,7 +242,7 @@ export const list = protectedProcedure
                   .select()
                   .from(parties)
                   .where(where)
-                  .orderBy(desc(parties.name))
+                  .orderBy(asc(parties.name))
                   .limit(input.limit)
                   .offset(input.offset),
                context.db.select({ total: count() }).from(parties).where(where),

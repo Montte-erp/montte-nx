@@ -5,9 +5,9 @@ description: "Write marketing content for Montte across blog, LinkedIn, and X (T
 
 # Marketing
 
-Skill única de marketing Montte. Cobre **blog, LinkedIn e X**. Voz canônica, regras de humanização, anti-AI-tells e convenções pt-BR vivem em [`references/blog.md`](references/blog.md) - qualquer canal herda. Hook formulas e algoritmo de cada plataforma ficam nos refs específicos.
+Skill única de marketing Montte. Cobre **blog, LinkedIn e X**. Voz canônica, posicionamento, regras de humanização, anti-AI-tells e convenções pt-BR vivem em [`references/writing.md`](references/writing.md) - qualquer canal herda. Hook formulas, templates e algoritmo de cada plataforma ficam nos refs específicos. O pass final anti-slop vive em [`references/stop-slop.md`](references/stop-slop.md).
 
-Curadoria de hook formulas adaptada de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-skills), [ognjengt/founder-skills](https://github.com/ognjengt/founder-skills) e [alirezarezvani X/Twitter Growth Engine](https://alirezarezvani.github.io/claude-skills/skills/marketing-skill/x-twitter-growth/) (todas MIT).
+Curadoria de hook formulas adaptada de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-skills), [ognjengt/founder-skills](https://github.com/ognjengt/founder-skills) e [alirezarezvani X/Twitter Growth Engine](https://alirezarezvani.github.io/claude-skills/skills/marketing-skill/x-twitter-growth/) (todas MIT). Anti-slop adaptado de [hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop) (MIT).
 
 ---
 
@@ -27,21 +27,21 @@ Não usar pra: legenda Instagram, e-mail marketing, copy de landing - fora de es
 
 | Tarefa | Abrir antes |
 |--------|-------------|
-| Blog post novo (canônico) | `references/blog.md` (skill completa de escrita + distribuição) |
-| Blog post de release publicada | [`references/blog.md`](references/blog.md) + [`references/release-post.md`](references/release-post.md) |
-| Post LinkedIn | `references/blog.md` §Voz + §Humanização → `references/linkedin.md` |
-| Tweet ou thread X | `references/blog.md` §Voz + §Humanização → `references/x.md` |
-| Repurpose blog → LinkedIn + X | `references/blog.md` §Cadeia de distribuição → `references/linkedin.md` + `references/x.md` |
-| Hook novo (qualquer canal) | `references/hooks-cross-channel.md` |
-| Audit/humanizer de draft pronto | `references/blog.md` §Humanização + checklist abaixo |
+| Blog post novo (canônico) | `references/writing.md` + `references/blog.md` |
+| Blog post de release publicada | `references/writing.md` + [`references/blog.md`](references/blog.md) + [`references/release-post.md`](references/release-post.md) |
+| Post LinkedIn | `references/writing.md` → `references/linkedin.md` |
+| Tweet ou thread X | `references/writing.md` → `references/x.md` |
+| Repurpose blog → LinkedIn + X | `references/writing.md` + `references/blog.md` §Cadeia de distribuição → `references/linkedin.md` + `references/x.md` |
+| Hook novo (qualquer canal) | `references/writing.md` + `references/hooks-cross-channel.md` |
+| Audit/humanizer de draft pronto | `references/writing.md` + `references/stop-slop.md` + checklist abaixo |
 
 ## Quick workflow
 
 1. **Decide canal e tipo de post.** Blog = canônico, todo conteúdo de fôlego começa aqui. LinkedIn + X são derivados.
-2. **Abre `references/blog.md`** pra voz + regras pt-BR + anti-AI-tells. Vale pra qualquer canal.
+2. **Abre `references/writing.md`** pra voz + regras pt-BR + anti-AI-tells. Vale pra qualquer canal.
 3. **Abre ref do canal alvo** pra hook formula + algoritmo + char rules.
 4. **Rascunha.** Nome próprio + número específico + 1ª pessoa concreta a cada ~100 palavras.
-5. **Anti-slop pass.** Aplica checklist abaixo. Se sobrou tell, reescreve a frase.
+5. **Anti-slop pass.** Aplica checklist abaixo e `references/stop-slop.md`: frase muleta, contraste mecânico, voz passiva, agência falsa e ritmo metronômico. Se sobrou tell, reescreve a frase.
 6. **Algorítmo pass.** Aplica regras do canal no ref correspondente.
 7. **Aprovação.** Mostra: fórmula usada, draft completo, char count, janela de publicação sugerida, riscos.
 
@@ -60,6 +60,12 @@ Cortar antes de publicar:
 - [ ] Hashtag em LinkedIn só se for 1 nichada e no fim; no X, 0 hashtags
 - [ ] Link externo no corpo do post LinkedIn (vai pro 1º comentário)
 - [ ] Frase "como um humano cansado escreveria"? Se não, reescreve.
+- [ ] Abertura muleta: "aqui está", "a verdade é", "o ponto é", "isso importa porque". Cortar.
+- [ ] Contraste mecânico "não X, mas Y" fora do posicionamento canônico. Afirmar Y direto.
+- [ ] Passiva ou sujeito escondido: "foi feito", "foi criado", "foi adicionado". Nomear quem fez.
+- [ ] Inanimado agindo como humano: "os dados mostram", "a decisão surgiu", "a cultura muda". Reescrever com ator humano.
+- [ ] Advérbio ou amaciador sem fato: "realmente", "simplesmente", "basicamente", "muito", "extremamente".
+- [ ] Fechamento com frase de palestra: "ponto final", "isso muda tudo", "no fim, tudo se resume a".
 
 ## Pillars Montte
 
@@ -82,15 +88,17 @@ Antes de escrever qualquer post, fixar o frame:
 - **Pagamento:** Abacate Pay como primeiro adapter. Asaas, Stripe, Mercado Pago como gateway de referência.
 - **Não-concorrência:** "Não é Bling, Omie ou Conta Azul." Afirmação seca, sem "estamos tentando ser".
 
-Detalhes completos (frases canônicas, banidas, hierarquia de menção, vocabulário) em [`references/blog.md` §Posicionamento canônico](references/blog.md). Sempre abrir antes de rascunhar.
+Detalhes completos (frases canônicas, banidas, hierarquia de menção, vocabulário) em [`references/writing.md` §Posicionamento canônico](references/writing.md). Sempre abrir antes de rascunhar.
 
 ## Resources
 
-- `references/blog.md` - voz canônica Montte (vale pra todo canal) + humanização + templates de blog + frontmatter SEO/AEO/GEO + cadeia de distribuição blog→LinkedIn→X
+- `references/writing.md` - voz canônica Montte, posicionamento, pt-BR, humanização e checklist final para qualquer canal
+- `references/blog.md` - formato de blog, templates, frontmatter SEO/AEO/GEO + cadeia de distribuição blog→LinkedIn→X
 - `references/release-post.md` - regras para transformar release notes publicadas em post de blog canônico
 - `references/linkedin.md` - hook formulas, algoritmo 2026, char rules, anti-padrões LinkedIn
 - `references/x.md` - formatos de tweet, arquitetura de thread, algoritmo X, regras anti-padrão
 - `references/hooks-cross-channel.md` - biblioteca de hook patterns reusáveis (blog/LinkedIn/X)
+- `references/stop-slop.md` - pass final para remover AI-tells estruturais, passiva, contraste mecânico, agência falsa e frases de palestra
 
 ## Skills relacionadas
 
@@ -102,3 +110,4 @@ Detalhes completos (frases canônicas, banidas, hierarquia de menção, vocabul�
 - Hook formulas LinkedIn: adaptadas de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-skills) (MIT)
 - Hook formulas cross-channel: adaptadas de [ognjengt/founder-skills](https://github.com/ognjengt/founder-skills) (MIT)
 - X formats e algoritmo: adaptados de [ognjengt/founder-skills/x-writer](https://github.com/ognjengt/founder-skills) e [X/Twitter Growth Engine](https://alirezarezvani.github.io/claude-skills/skills/marketing-skill/x-twitter-growth/) (MIT)
+- Stop-slop pass: adaptado de [hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop) (MIT)

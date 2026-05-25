@@ -32,6 +32,7 @@ type TransactionsCollectionOptionsParams = {
    overdueOnly?: boolean;
    status?: Array<"pending" | "paid">;
    bankAccountId?: string;
+   relationshipId?: string;
 };
 
 type TransactionsPageInfoCollectionOptionsParams = {
@@ -42,6 +43,7 @@ type TransactionsPageInfoCollectionOptionsParams = {
    overdueOnly?: boolean;
    status?: Array<"pending" | "paid">;
    bankAccountId?: string;
+   relationshipId?: string;
 };
 
 type TransactionCreateActionInput = {
@@ -51,6 +53,7 @@ type TransactionCreateActionInput = {
 
 type TransactionsWhereInput = {
    bankAccountId?: string;
+   relationshipId?: string;
    overdueOnly?: boolean;
    search?: string;
    status?: Array<"pending" | "paid">;
@@ -131,6 +134,9 @@ function parseTransactionsWhere(options: LoadSubsetOptions | undefined) {
                if (key === "bankAccountId" && typeof value === "string") {
                   return { bankAccountId: value };
                }
+               if (key === "relationshipId" && typeof value === "string") {
+                  return { relationshipId: value };
+               }
                if (key === "view") return { view: parseTransactionView(value) };
                if (key === "overdueOnly" && value === true) {
                   return { overdueOnly: true };
@@ -206,6 +212,7 @@ function transactionsInputFromLoadSubsetOptions(
       status:
          where.status && where.status.length > 0 ? where.status : base.status,
       bankAccountId: where.bankAccountId ?? base.bankAccountId,
+      relationshipId: where.relationshipId ?? base.relationshipId,
       sorting,
    };
 
@@ -316,8 +323,16 @@ export function transactionsCollectionOptions({
    overdueOnly,
    status,
    bankAccountId,
+   relationshipId,
 }: TransactionsCollectionOptionsParams) {
-   const base = { search, view, overdueOnly, status, bankAccountId };
+   const base = {
+      search,
+      view,
+      overdueOnly,
+      status,
+      bankAccountId,
+      relationshipId,
+   };
    return queryCollectionOptions({
       id: [
          "transactions",
@@ -327,6 +342,7 @@ export function transactionsCollectionOptions({
          overdueOnly ? "overdue" : "all-dates",
          status?.join(",") ?? "all-status",
          bankAccountId ?? "all-accounts",
+         relationshipId ?? "all-relationships",
       ].join(":"),
       queryKey: (options) =>
          hasLoadSubsetOptions(options)
@@ -369,6 +385,7 @@ export function transactionsPageInfoCollectionOptions({
    overdueOnly,
    status,
    bankAccountId,
+   relationshipId,
 }: TransactionsPageInfoCollectionOptionsParams) {
    const id = [
       teamId,
@@ -377,6 +394,7 @@ export function transactionsPageInfoCollectionOptions({
       overdueOnly ? "overdue" : "all-dates",
       status?.join(",") ?? "all-status",
       bankAccountId ?? "all-accounts",
+      relationshipId ?? "all-relationships",
    ].join(":");
    return queryCollectionOptions({
       id: `transactions-page-info:${id}`,
@@ -389,6 +407,7 @@ export function transactionsPageInfoCollectionOptions({
          overdueOnly,
          status,
          bankAccountId,
+         relationshipId,
       ],
       queryFn: async () => {
          const result = await orpc.transactions.getAll.call({
@@ -399,6 +418,7 @@ export function transactionsPageInfoCollectionOptions({
             overdueOnly,
             status,
             bankAccountId,
+            relationshipId,
          });
          return [{ id, total: result.total }];
       },

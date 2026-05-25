@@ -1,6 +1,6 @@
 # LinkedIn - fórmulas, algoritmo, regras Montte
 
-Voz e regras pt-BR: ver [`blog.md`](blog.md). Esta ref cobre só o que é específico de LinkedIn.
+Voz, posicionamento e regras pt-BR: ver [`writing.md`](writing.md). Esta ref cobre só o que é específico de LinkedIn.
 
 Curado de [sergebulaev/linkedin-skills](https://github.com/sergebulaev/linkedin-skills) (MIT). Mantive as 6 formulas que batem com pillars Montte (`marketing/SKILL.md` §Pillars) e descartei as orientadas a lead-magnet / engagement-bait que conflitam com voz founder-led.
 
@@ -115,7 +115,7 @@ Em {ano passado}, eu {benchmark humilde}.
 
 Em {ano atual}, estou {meta transformacional}.
 
-Aqui está o que mudou de verdade.
+A mudança real veio depois.
 
 [Verdade vulnerável + número específico (12 → 1.000)]
 [Reframe de identidade: "a mudança não foi de ferramenta, foi de identidade"]
@@ -135,7 +135,7 @@ Quando usar: post de vulnerabilidade real, reset de voz, retargeting de ICP, "er
 ```
 {N} {dias|meses|anos} atrás, parei de {comportamento}.
 
-Aqui está o que aconteceu.
+O resultado apareceu na semana seguinte.
 
 [2-3 parágrafos de backstory de por que o comportamento antigo funcionava: números concretos]
 
@@ -165,7 +165,7 @@ Quando usar: founder build-log, breakdown de custo, números reais do produto/em
 
 [1 linha de contexto do que esse número cobre]
 
-Aqui está cada linha do extrato, sem arredondar:
+Cada linha do extrato, sem arredondar:
 
 - {ferramenta 1}: R$ X,YZ
 - {ferramenta 2}: R$ X,YZ
@@ -195,7 +195,7 @@ Quando usar: vaca-sagrada (refutar consenso), ciclos de hype tech, posicionament
 
 Todo trimestre por N anos. Todo ciclo: o mesmo obituário.
 
-Aqui está a contranarrativa.
+A contranarrativa aparece nos dados.
 
 [Stat dura com fonte: "R$ 391B → R$ 1,81T, 35,9% CAGR"]
 [Segunda stat]
@@ -247,6 +247,8 @@ Se você {comportamento vencedor}, você já ganhou.
 ---
 
 ## Anti-padrões (recusar antes de mostrar pro user)
+
+Antes de mostrar o draft, rode também [`stop-slop.md`](stop-slop.md).
 
 - All-caps na 1ª linha (`ISSO MUDOU TUDO.`)
 - Em dash (U+2014) ou en dash (U+2013) em qualquer lugar

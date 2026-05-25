@@ -369,6 +369,7 @@ export function TransactionsList() {
       status,
       search,
       bankId,
+      relationshipId,
       grouping,
    } = routeApi.useSearch();
 
@@ -421,6 +422,7 @@ export function TransactionsList() {
                overdueOnly,
                status: status.length > 0 ? status : undefined,
                bankAccountId: bankId || undefined,
+               relationshipId: relationshipId || undefined,
             }),
          ),
       [
@@ -428,6 +430,7 @@ export function TransactionsList() {
          collectionTeamId,
          overdueOnly,
          queryClient,
+         relationshipId,
          status,
          trimmedSearch,
          view,
@@ -445,6 +448,7 @@ export function TransactionsList() {
                overdueOnly,
                status: status.length > 0 ? status : undefined,
                bankAccountId: bankId || undefined,
+               relationshipId: relationshipId || undefined,
             }),
          ),
       [
@@ -452,6 +456,7 @@ export function TransactionsList() {
          collectionTeamId,
          overdueOnly,
          queryClient,
+         relationshipId,
          status,
          trimmedSearch,
          view,
@@ -592,6 +597,11 @@ export function TransactionsList() {
                eq(transaction.bankAccountId, bankId),
             );
          }
+         if (relationshipId) {
+            query = query.where(({ transaction }) =>
+               eq(transaction.relationshipId, relationshipId),
+            );
+         }
          if (trimmedSearch) {
             const pattern = `%${escapeIlikePattern(trimmedSearch)}%`;
             query = query.where(({ transaction }) =>
@@ -678,6 +688,7 @@ export function TransactionsList() {
          overdueOnly,
          page,
          pageSize,
+         relationshipId,
          sorting,
          status,
          transactionsCollection,
