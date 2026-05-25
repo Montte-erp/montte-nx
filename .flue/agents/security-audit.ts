@@ -1,5 +1,7 @@
 import type { FlueContext } from "@flue/runtime";
+import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import * as v from "valibot";
 import {
@@ -60,9 +62,57 @@ type SecurityAuditResult = v.InferOutput<typeof securityAuditResultSchema>;
 type Finding = v.InferOutput<typeof findingSchema>;
 type FailOn = v.InferOutput<typeof failOnSchema>;
 
+const securityAuditAgentErrors = defineErrorCatalog(
+   "flue.security-audit.agent",
+   {
+      BAD_PAYLOAD: {
+         status: 400,
+         message: "Payload inválido para agente de security audit.",
+         tags: ["flue", "security-audit"],
+      },
+      MISSING_INPUT: {
+         status: 400,
+         message: "Entrada obrigatória ausente para security audit.",
+         tags: ["flue", "security-audit"],
+      },
+      IO_FAILED: {
+         status: 500,
+         message: "Falha de IO no agente de security audit.",
+         tags: ["flue", "security-audit"],
+      },
+      MODEL_FAILED: {
+         status: 500,
+         message: "Falha ao executar modelo de security audit.",
+         tags: ["flue", "security-audit"],
+      },
+      GATE_FAILED: {
+         status: 422,
+         message: "Security audit encontrou findings bloqueantes.",
+         tags: ["flue", "security-audit"],
+      },
+   },
+);
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "flue.security-audit.agent": typeof securityAuditAgentErrors;
+   }
+}
+
+type SecurityAuditAgentCatalogError =
+   | ReturnType<typeof securityAuditAgentErrors.BAD_PAYLOAD>
+   | ReturnType<typeof securityAuditAgentErrors.MISSING_INPUT>
+   | ReturnType<typeof securityAuditAgentErrors.IO_FAILED>
+   | ReturnType<typeof securityAuditAgentErrors.MODEL_FAILED>
+   | ReturnType<typeof securityAuditAgentErrors.GATE_FAILED>;
+
 class SecurityAuditAgentError extends TaggedError("SecurityAuditAgentError")<{
+   error: SecurityAuditAgentCatalogError;
    message: string;
-   cause?: unknown;
+   repo?: string;
+   prNumber?: number;
+   outputFile?: string;
+   detail?: string;
 }>() {}
 
 function severityRank(severity: FailOn | Finding["severity"]) {
@@ -124,8 +174,9 @@ export default async function ({ init, payload, env }: FlueContext) {
    const parsedPayload = v.safeParse(securityAuditPayloadSchema, payload);
    if (!parsedPayload.success) {
       throw new SecurityAuditAgentError({
+         error: securityAuditAgentErrors.BAD_PAYLOAD(),
          message: "Payload inválido para agente de security audit.",
-         cause: parsedPayload.issues,
+         detail: formatCause(parsedPayload.issues),
       });
    }
 
@@ -151,14 +202,17 @@ export default async function ({ init, payload, env }: FlueContext) {
 
    if (!prNumber || Number.isNaN(prNumber)) {
       throw new SecurityAuditAgentError({
+         error: securityAuditAgentErrors.MISSING_INPUT(),
          message: "Informe prNumber no payload ou PR_NUMBER no ambiente.",
       });
    }
 
    if (!repoResult.success) {
       throw new SecurityAuditAgentError({
+         error: securityAuditAgentErrors.BAD_PAYLOAD(),
          message: "repo inválido ou não informado.",
-         cause: repoResult.issues,
+         prNumber,
+         detail: formatCause(repoResult.issues),
       });
    }
 
@@ -168,8 +222,10 @@ export default async function ({ init, payload, env }: FlueContext) {
       try: () => mkdir(outputDir, { recursive: true }),
       catch: (cause) =>
          new SecurityAuditAgentError({
+            error: securityAuditAgentErrors.IO_FAILED(),
             message: "Falha ao criar diretório de artefatos de security audit.",
-            cause,
+            outputFile: outputDir,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputDirResult)) throw outputDirResult.error;
@@ -180,32 +236,22 @@ export default async function ({ init, payload, env }: FlueContext) {
             readPreparedContext(
                `${contextDir}/pr-metadata.json`,
                "Falha ao ler metadados preparados da PR.",
-               (message, cause) =>
-                  new SecurityAuditAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/changed-files.md`,
                "Falha ao ler lista preparada de arquivos da PR.",
-               (message, cause) =>
-                  new SecurityAuditAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/pr.patch`,
                "Falha ao ler diff preparado da PR.",
-               (message, cause) =>
-                  new SecurityAuditAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/commits.md`,
                "Falha ao ler commits preparados da PR.",
-               (message, cause) =>
-                  new SecurityAuditAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/checks.json`,
                "Falha ao ler checks preparados da PR.",
-               (message, cause) =>
-                  new SecurityAuditAgentError({ message, cause }),
             ),
             readFile("AGENTS.md", "utf8"),
             readFile(".agents/skills/implementation/SKILL.md", "utf8"),
@@ -233,8 +279,9 @@ export default async function ({ init, payload, env }: FlueContext) {
          ]),
       catch: (cause) =>
          new SecurityAuditAgentError({
+            error: securityAuditAgentErrors.IO_FAILED(),
             message: "Falha ao coletar contexto da PR ou carregar skill.",
-            cause,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(contextResult)) throw contextResult.error;
@@ -358,13 +405,16 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
       try: () =>
          init({
             name: "security-audit-model",
-            sandbox: false,
+            sandbox: local({ env: {} }),
             model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
       catch: (cause) =>
          new SecurityAuditAgentError({
+            error: securityAuditAgentErrors.MODEL_FAILED(),
             message: "Falha ao inicializar Flue para modelo de security audit.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(modelHarnessResult)) throw modelHarnessResult.error;
@@ -373,8 +423,11 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
       try: () => modelHarnessResult.value.session(),
       catch: (cause) =>
          new SecurityAuditAgentError({
+            error: securityAuditAgentErrors.MODEL_FAILED(),
             message: "Falha ao abrir sessão de modelo para security audit.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(modelSessionResult)) throw modelSessionResult.error;
@@ -382,15 +435,24 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            modelSessionResult.value.prompt(prompt, {
+            modelSessionResult.value.skill("security-audit/SKILL.md", {
+               args: {
+                  task: prompt,
+                  repo,
+                  prNumber,
+                  failOn,
+               },
                thinkingLevel: "off",
                result: securityAuditResultSchema,
             }),
          ),
       catch: (cause) =>
          new SecurityAuditAgentError({
-            message: `Falha ao executar prompt de security audit via Flue: ${formatCause(cause)}`,
-            cause,
+            error: securityAuditAgentErrors.MODEL_FAILED(),
+            message: `Falha ao executar skill de security audit via Flue: ${formatCause(cause)}`,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputResult)) throw outputResult.error;
@@ -412,15 +474,16 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
          prNumber,
          body: markdown,
          token: githubToken,
-         makeError: (message, cause) =>
-            new SecurityAuditAgentError({ message, cause }),
       });
       if (Result.isError(commentResult)) throw commentResult.error;
    }
 
    if (!dryRun && shouldFailAudit(auditResult.findings, failOn)) {
       throw new SecurityAuditAgentError({
+         error: securityAuditAgentErrors.GATE_FAILED(),
          message: `Security audit encontrou findings >= ${failOn}.`,
+         repo,
+         prNumber,
       });
    }
 

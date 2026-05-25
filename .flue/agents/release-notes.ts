@@ -1,7 +1,10 @@
 import type { FlueContext } from "@flue/runtime";
+import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { readFile, writeFile } from "node:fs/promises";
 import * as v from "valibot";
+import { formatCause } from "../lib/agent-utils.ts";
 import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
@@ -32,9 +35,47 @@ const releaseNotesValidationSchema = v.object({
    warnings: v.array(v.string()),
 });
 
+const releaseNotesAgentErrors = defineErrorCatalog("flue.release-notes.agent", {
+   BAD_PAYLOAD: {
+      status: 400,
+      message: "Payload inválido para agente de release notes.",
+      tags: ["flue", "release-notes"],
+   },
+   IO_FAILED: {
+      status: 500,
+      message: "Falha de IO no agente de release notes.",
+      tags: ["flue", "release-notes"],
+   },
+   MODEL_FAILED: {
+      status: 500,
+      message: "Falha ao executar modelo de release notes.",
+      tags: ["flue", "release-notes"],
+   },
+   VALIDATION_FAILED: {
+      status: 422,
+      message: "Release notes falharam na validação estruturada.",
+      tags: ["flue", "release-notes"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "flue.release-notes.agent": typeof releaseNotesAgentErrors;
+   }
+}
+
+type ReleaseNotesAgentCatalogError =
+   | ReturnType<typeof releaseNotesAgentErrors.BAD_PAYLOAD>
+   | ReturnType<typeof releaseNotesAgentErrors.IO_FAILED>
+   | ReturnType<typeof releaseNotesAgentErrors.MODEL_FAILED>
+   | ReturnType<typeof releaseNotesAgentErrors.VALIDATION_FAILED>;
+
 class ReleaseNotesAgentError extends TaggedError("ReleaseNotesAgentError")<{
+   error: ReleaseNotesAgentCatalogError;
    message: string;
-   cause?: unknown;
+   releaseVersion?: string;
+   outputFile?: string;
+   detail?: string;
 }>() {}
 
 function validateReleaseNotes(markdown: string) {
@@ -69,8 +110,9 @@ export default async function ({ init, payload }: FlueContext) {
    const parsedPayload = v.safeParse(releasePayloadSchema, payload);
    if (!parsedPayload.success) {
       throw new ReleaseNotesAgentError({
+         error: releaseNotesAgentErrors.BAD_PAYLOAD(),
          message: "Payload inválido para agente de release notes.",
-         cause: parsedPayload.issues,
+         detail: formatCause(parsedPayload.issues),
       });
    }
 
@@ -88,13 +130,15 @@ export default async function ({ init, payload }: FlueContext) {
    const initResult = await Result.tryPromise({
       try: () =>
          init({
-            sandbox: false,
+            sandbox: local({ env: {} }),
             model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
       catch: (cause) =>
          new ReleaseNotesAgentError({
+            error: releaseNotesAgentErrors.MODEL_FAILED(),
             message: "Falha ao inicializar Flue para release notes.",
-            cause,
+            releaseVersion,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(initResult)) throw initResult.error;
@@ -111,9 +155,11 @@ export default async function ({ init, payload }: FlueContext) {
          ]),
       catch: (cause) =>
          new ReleaseNotesAgentError({
+            error: releaseNotesAgentErrors.IO_FAILED(),
             message:
                "Falha ao carregar AGENTS.md, skill ou referências de release.",
-            cause,
+            releaseVersion,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(filesResult)) throw filesResult.error;
@@ -162,8 +208,10 @@ Retorne somente o Markdown do corpo da release, sem fences e sem explicações e
       try: () => harness.session(),
       catch: (cause) =>
          new ReleaseNotesAgentError({
+            error: releaseNotesAgentErrors.MODEL_FAILED(),
             message: "Falha ao abrir sessão Flue para release notes.",
-            cause,
+            releaseVersion,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(sessionResult)) throw sessionResult.error;
@@ -175,8 +223,10 @@ Retorne somente o Markdown do corpo da release, sem fences e sem explicações e
          ),
       catch: (cause) =>
          new ReleaseNotesAgentError({
+            error: releaseNotesAgentErrors.MODEL_FAILED(),
             message: "Falha ao executar prompt de release notes via Flue.",
-            cause,
+            releaseVersion,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputResult)) throw outputResult.error;
@@ -187,8 +237,11 @@ Retorne somente o Markdown do corpo da release, sem fences e sem explicações e
       try: () => writeFile(outputFile, markdown),
       catch: (cause) =>
          new ReleaseNotesAgentError({
+            error: releaseNotesAgentErrors.IO_FAILED(),
             message: "Falha ao escrever RELEASE_NOTES.md.",
-            cause,
+            releaseVersion,
+            outputFile,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(writeResult)) throw writeResult.error;
@@ -201,16 +254,22 @@ Retorne somente o Markdown do corpo da release, sem fences e sem explicações e
       try: () => writeFile(validationFile, JSON.stringify(validation, null, 2)),
       catch: (cause) =>
          new ReleaseNotesAgentError({
+            error: releaseNotesAgentErrors.IO_FAILED(),
             message: "Falha ao escrever artefato de validação da release.",
-            cause,
+            releaseVersion,
+            outputFile: validationFile,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(validationWriteResult)) throw validationWriteResult.error;
 
    if (!validation.valid) {
       throw new ReleaseNotesAgentError({
+         error: releaseNotesAgentErrors.VALIDATION_FAILED(),
          message: "Release notes falharam na validação estruturada.",
-         cause: validation.errors,
+         releaseVersion,
+         outputFile,
+         detail: validation.errors.join("\n"),
       });
    }
 

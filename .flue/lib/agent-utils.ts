@@ -1,7 +1,46 @@
 import { Octokit } from "@octokit/core";
-import { Result } from "better-result";
+import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { readFile } from "node:fs/promises";
 import * as v from "valibot";
+
+export const agentUtilsErrors = defineErrorCatalog("flue.agent-utils", {
+   MISSING_GITHUB_TOKEN: {
+      status: 401,
+      message: "Token do GitHub não configurado.",
+      tags: ["flue", "agent-utils", "github"],
+   },
+   READ_CONTEXT_FAILED: {
+      status: 500,
+      message: "Falha ao ler contexto preparado do agente.",
+      tags: ["flue", "agent-utils", "context"],
+   },
+   PUBLISH_COMMENT_FAILED: {
+      status: 500,
+      message: "Falha ao publicar comentário no GitHub.",
+      tags: ["flue", "agent-utils", "github"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "flue.agent-utils": typeof agentUtilsErrors;
+   }
+}
+
+type AgentUtilsCatalogError =
+   | ReturnType<typeof agentUtilsErrors.MISSING_GITHUB_TOKEN>
+   | ReturnType<typeof agentUtilsErrors.READ_CONTEXT_FAILED>
+   | ReturnType<typeof agentUtilsErrors.PUBLISH_COMMENT_FAILED>;
+
+export class AgentUtilsError extends TaggedError("AgentUtilsError")<{
+   error: AgentUtilsCatalogError;
+   message: string;
+   repo?: string;
+   prNumber?: number;
+   filePath?: string;
+   detail?: string;
+}>() {}
 
 export const safeRepoSchema = v.pipe(
    v.string(),
@@ -17,10 +56,25 @@ export const safePathSchema = v.pipe(
    ),
 );
 
-export type AgentErrorFactory<TError> = (
-   message: string,
-   cause?: unknown,
-) => TError;
+const envStringSchema = v.pipe(v.string(), v.minLength(1));
+
+export const flueProviderEnvSchema = v.object({
+   OPENCODE_API_KEY: v.optional(envStringSchema),
+   OPENCODE_GO_BASE_URL: v.optional(v.pipe(envStringSchema, v.url())),
+   OPENCODE_GO_GATEWAY_KEY: v.optional(envStringSchema),
+});
+
+export type FlueProviderEnv = v.InferOutput<typeof flueProviderEnvSchema>;
+
+export function validateFlueProviderEnv(env: Record<string, unknown>) {
+   return v.parse(flueProviderEnvSchema, {
+      OPENCODE_API_KEY: env.OPENCODE_API_KEY ?? process.env.OPENCODE_API_KEY,
+      OPENCODE_GO_BASE_URL:
+         env.OPENCODE_GO_BASE_URL ?? process.env.OPENCODE_GO_BASE_URL,
+      OPENCODE_GO_GATEWAY_KEY:
+         env.OPENCODE_GO_GATEWAY_KEY ?? process.env.OPENCODE_GO_GATEWAY_KEY,
+   });
+}
 
 export function formatCause(cause: unknown) {
    if (cause instanceof Error) return cause.stack ?? cause.message;
@@ -46,10 +100,9 @@ export function truncateForPrompt(
    return `${value.slice(0, maxChars)}\n\n[${label} truncado: ${value.length} caracteres totais; exibindo primeiros ${maxChars}. Consulte o artefato completo para validação.]`;
 }
 
-export async function readPreparedContext<TError>(
+export async function readPreparedContext(
    filePath: string,
    failureMessage: string,
-   makeError: AgentErrorFactory<TError>,
 ) {
    return Result.tryPromise({
       try: async () => ({
@@ -57,7 +110,13 @@ export async function readPreparedContext<TError>(
          stderr: "",
          exitCode: 0,
       }),
-      catch: (cause) => makeError(failureMessage, cause),
+      catch: (cause) =>
+         new AgentUtilsError({
+            error: agentUtilsErrors.READ_CONTEXT_FAILED(),
+            message: failureMessage,
+            filePath,
+            detail: formatCause(cause),
+         }),
    });
 }
 
@@ -75,21 +134,26 @@ export function resolveGithubToken(env: Record<string, unknown>) {
    );
 }
 
-export async function publishIssueComment<TError>({
+export async function publishIssueComment({
    repo,
    prNumber,
    body,
    token,
-   makeError,
 }: {
    repo: string;
    prNumber: number;
    body: string;
    token: string | undefined;
-   makeError: AgentErrorFactory<TError>;
 }) {
    if (!token) {
-      return Result.err(makeError("GH_TOKEN não configurado no ambiente."));
+      return Result.err(
+         new AgentUtilsError({
+            error: agentUtilsErrors.MISSING_GITHUB_TOKEN(),
+            message: "GH_TOKEN não configurado no ambiente.",
+            repo,
+            prNumber,
+         }),
+      );
    }
 
    const [owner, repoName] = repo.split("/");
@@ -107,6 +171,12 @@ export async function publishIssueComment<TError>({
          );
       },
       catch: (cause) =>
-         makeError("Falha ao publicar comentário no GitHub.", cause),
+         new AgentUtilsError({
+            error: agentUtilsErrors.PUBLISH_COMMENT_FAILED(),
+            message: "Falha ao publicar comentário no GitHub.",
+            repo,
+            prNumber,
+            detail: formatCause(cause),
+         }),
    });
 }

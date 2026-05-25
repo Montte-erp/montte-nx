@@ -1,6 +1,8 @@
 import type { FlueContext } from "@flue/runtime";
+import { local } from "@flue/runtime/node";
 import { Octokit } from "@octokit/core";
 import { Result, TaggedError } from "better-result";
+import { defineErrorCatalog } from "evlog";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import * as v from "valibot";
 import {
@@ -47,9 +49,54 @@ const reviewResultSchema = v.object({
 
 type ReviewComment = v.InferOutput<typeof reviewCommentSchema>;
 
+const prReviewAgentErrors = defineErrorCatalog("flue.pr-review.agent", {
+   BAD_PAYLOAD: {
+      status: 400,
+      message: "Payload inválido para agente de revisão de PR.",
+      tags: ["flue", "pr-review"],
+   },
+   MISSING_INPUT: {
+      status: 400,
+      message: "Entrada obrigatória ausente para revisão de PR.",
+      tags: ["flue", "pr-review"],
+   },
+   IO_FAILED: {
+      status: 500,
+      message: "Falha de IO no agente de revisão de PR.",
+      tags: ["flue", "pr-review"],
+   },
+   MODEL_FAILED: {
+      status: 500,
+      message: "Falha ao executar modelo de revisão de PR.",
+      tags: ["flue", "pr-review"],
+   },
+   GITHUB_FAILED: {
+      status: 500,
+      message: "Falha ao publicar revisão no GitHub.",
+      tags: ["flue", "pr-review", "github"],
+   },
+});
+
+declare module "evlog" {
+   interface RegisteredErrorCatalogs {
+      "flue.pr-review.agent": typeof prReviewAgentErrors;
+   }
+}
+
+type PrReviewAgentCatalogError =
+   | ReturnType<typeof prReviewAgentErrors.BAD_PAYLOAD>
+   | ReturnType<typeof prReviewAgentErrors.MISSING_INPUT>
+   | ReturnType<typeof prReviewAgentErrors.IO_FAILED>
+   | ReturnType<typeof prReviewAgentErrors.MODEL_FAILED>
+   | ReturnType<typeof prReviewAgentErrors.GITHUB_FAILED>;
+
 class PrReviewAgentError extends TaggedError("PrReviewAgentError")<{
+   error: PrReviewAgentCatalogError;
    message: string;
-   cause?: unknown;
+   repo?: string;
+   prNumber?: number;
+   outputFile?: string;
+   detail?: string;
 }>() {}
 
 function formatInlineComment(comment: ReviewComment) {
@@ -200,7 +247,10 @@ async function publishReview({
    if (!token) {
       return Result.err(
          new PrReviewAgentError({
+            error: prReviewAgentErrors.MISSING_INPUT(),
             message: "GH_TOKEN não configurado no ambiente.",
+            repo,
+            prNumber,
          }),
       );
    }
@@ -234,8 +284,11 @@ async function publishReview({
       },
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.GITHUB_FAILED(),
             message: "Falha ao publicar review inline no GitHub.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
 }
@@ -244,8 +297,9 @@ export default async function ({ init, payload, env }: FlueContext) {
    const parsedPayload = v.safeParse(prPayloadSchema, payload);
    if (!parsedPayload.success) {
       throw new PrReviewAgentError({
+         error: prReviewAgentErrors.BAD_PAYLOAD(),
          message: "Payload inválido para agente de revisão de PR.",
-         cause: parsedPayload.issues,
+         detail: formatCause(parsedPayload.issues),
       });
    }
 
@@ -269,6 +323,7 @@ export default async function ({ init, payload, env }: FlueContext) {
 
    if (!prNumber || prNumber <= 0) {
       throw new PrReviewAgentError({
+         error: prReviewAgentErrors.MISSING_INPUT(),
          message:
             "Informe prNumber positivo no payload ou PR_NUMBER no ambiente.",
       });
@@ -276,8 +331,10 @@ export default async function ({ init, payload, env }: FlueContext) {
 
    if (!repoResult.success) {
       throw new PrReviewAgentError({
+         error: prReviewAgentErrors.BAD_PAYLOAD(),
          message: "repo inválido ou não informado. Use owner/repo.",
-         cause: repoResult.issues,
+         prNumber,
+         detail: formatCause(repoResult.issues),
       });
    }
 
@@ -288,8 +345,10 @@ export default async function ({ init, payload, env }: FlueContext) {
       try: () => mkdir(outputDir, { recursive: true }),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.IO_FAILED(),
             message: "Falha ao criar diretório de artefatos da revisão.",
-            cause,
+            outputFile: outputDir,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputDirResult)) throw outputDirResult.error;
@@ -300,42 +359,34 @@ export default async function ({ init, payload, env }: FlueContext) {
             readPreparedContext(
                `${contextDir}/pr-metadata.json`,
                "Falha ao ler metadados preparados da PR.",
-               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/changed-files.md`,
                "Falha ao ler lista preparada de arquivos da PR.",
-               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/pr.patch`,
                "Falha ao ler diff preparado da PR.",
-               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/commits.md`,
                "Falha ao ler commits preparados da PR.",
-               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/checks.json`,
                "Falha ao ler checks preparados da PR.",
-               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/reviews.md`,
                "Falha ao ler reviews preparados da PR.",
-               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/inline-review-comments.md`,
                "Falha ao ler comentários inline preparados da PR.",
-               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readPreparedContext(
                `${contextDir}/general-pr-comments.md`,
                "Falha ao ler comentários gerais preparados da PR.",
-               (message, cause) => new PrReviewAgentError({ message, cause }),
             ),
             readFile("AGENTS.md", "utf8"),
             readFile(".agents/skills/code-review/SKILL.md", "utf8"),
@@ -354,8 +405,9 @@ export default async function ({ init, payload, env }: FlueContext) {
          ]),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.IO_FAILED(),
             message: "Falha ao coletar contexto da PR ou carregar skill.",
-            cause,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(contextResult)) throw contextResult.error;
@@ -544,13 +596,16 @@ Regras para comments:
       try: () =>
          init({
             name: "pr-review-model",
-            sandbox: false,
+            sandbox: local({ env: {} }),
             model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.MODEL_FAILED(),
             message: "Falha ao inicializar Flue para modelo de review.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(modelHarnessResult)) throw modelHarnessResult.error;
@@ -559,8 +614,11 @@ Regras para comments:
       try: () => modelHarnessResult.value.session(),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.MODEL_FAILED(),
             message: "Falha ao abrir sessão de modelo para review.",
-            cause,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(modelSessionResult)) throw modelSessionResult.error;
@@ -568,15 +626,23 @@ Regras para comments:
    const outputResult = await Result.tryPromise({
       try: () =>
          Promise.resolve(
-            modelSessionResult.value.prompt(prompt, {
+            modelSessionResult.value.skill("code-review/SKILL.md", {
+               args: {
+                  task: prompt,
+                  repo,
+                  prNumber,
+               },
                thinkingLevel: "off",
                result: reviewResultSchema,
             }),
          ),
       catch: (cause) =>
          new PrReviewAgentError({
-            message: `Falha ao executar prompt de review via Flue: ${formatCause(cause)}`,
-            cause,
+            error: prReviewAgentErrors.MODEL_FAILED(),
+            message: `Falha ao executar skill de review via Flue: ${formatCause(cause)}`,
+            repo,
+            prNumber,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(outputResult)) throw outputResult.error;
@@ -602,8 +668,10 @@ Regras para comments:
       try: () => writeFile(outputFile, reviewResult.summary),
       catch: (cause) =>
          new PrReviewAgentError({
+            error: prReviewAgentErrors.IO_FAILED(),
             message: "Falha ao escrever summary.md.",
-            cause,
+            outputFile,
+            detail: formatCause(cause),
          }),
    });
    if (Result.isError(writeResult)) throw writeResult.error;
@@ -629,7 +697,7 @@ Regras para comments:
    if (Result.isError(publishResult)) {
       await writeFile(
          `${outputDir}/publish-error.txt`,
-         String(publishResult.error.cause ?? publishResult.error.message),
+         publishResult.error.detail ?? publishResult.error.message,
       );
 
       const fallbackCommentResult = await publishIssueComment({
@@ -637,8 +705,6 @@ Regras para comments:
          prNumber,
          body: reviewResult.summary,
          token: githubToken,
-         makeError: (message, cause) =>
-            new PrReviewAgentError({ message, cause }),
       });
       if (Result.isError(fallbackCommentResult))
          throw fallbackCommentResult.error;
