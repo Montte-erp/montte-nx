@@ -23,10 +23,8 @@ jobs:
          (
            github.event.issue.pull_request != null &&
            (
-             github.event.comment.body == '/review' ||
-             startsWith(github.event.comment.body, '/review\n') ||
-             endsWith(github.event.comment.body, '\n/review') ||
-             contains(github.event.comment.body, '\n/review\n')
+             startsWith(github.event.comment.body, '/review') ||
+             contains(github.event.comment.body, '\n/review')
            )
          )
       concurrency:
@@ -44,7 +42,27 @@ jobs:
               EVENT_PR_NUMBER: ${{ github.event.issue.number }}
               INPUT_PR_NUMBER: ${{ inputs.pr_number }}
               COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+              COMMENT_BODY: ${{ github.event.comment.body }}
            run: |
+              REQUESTED=false
+              if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+                REQUESTED=true
+              else
+                BODY="$(printf '%s' "$COMMENT_BODY" | tr -d '\r')"
+                while IFS= read -r LINE; do
+                  if [ "$LINE" = "/review" ]; then
+                    REQUESTED=true
+                    break
+                  fi
+                done <<< "$BODY"
+              fi
+
+              echo "requested=$REQUESTED" >> "$GITHUB_OUTPUT"
+
+              if [ "$REQUESTED" != "true" ]; then
+                exit 0
+              fi
+
               if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
                 PR_NUMBER="$INPUT_PR_NUMBER"
               else
@@ -75,7 +93,7 @@ jobs:
               fi
 
          - name: Acknowledge review request
-           if: github.event_name == 'issue_comment' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           if: steps.pr.outputs.requested == 'true' && github.event_name == 'issue_comment' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            env:
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               GH_REPO: ${{ github.repository }}
@@ -92,7 +110,7 @@ jobs:
               gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "👀 Review AI iniciado. Acompanhe: $RUN_URL"
 
          - name: Skip unauthorized request
-           if: steps.pr.outputs.authorized != 'true'
+           if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized != 'true'
            env:
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               GH_REPO: ${{ github.repository }}
@@ -102,7 +120,7 @@ jobs:
               gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "⛔ Usuário sem permissão para acionar /review."
 
          - name: Skip fork PR
-           if: steps.pr.outputs.is_cross_repository == 'true'
+           if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.is_cross_repository == 'true'
            env:
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               GH_REPO: ${{ github.repository }}
@@ -112,7 +130,7 @@ jobs:
               gh pr comment "$PR_NUMBER" --repo "$GH_REPO" --body "⏭️ Review AI ignorado para PR de fork para não expor secrets."
 
          - name: Checkout trusted base
-           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
            with:
               ref: ${{ steps.pr.outputs.base_sha }}
@@ -120,17 +138,17 @@ jobs:
               persist-credentials: false
 
          - name: Setup Bun
-           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
            with:
               bun-version: 1.3.9
 
          - name: Install dependencies
-           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            run: bun install --frozen-lockfile
 
          - name: Run PR Review Agent
-           if: steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           if: steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            env:
               OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               OPENCODE_GO_BASE_URL: ${{ vars.OPENCODE_GO_BASE_URL }}
@@ -143,7 +161,7 @@ jobs:
               bunx flue run pr-review --target node --id "pr-review-${PR_NUMBER}" --payload "$PAYLOAD"
 
          - name: Upload review artifacts
-           if: always() && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
+           if: always() && steps.pr.outputs.requested == 'true' && steps.pr.outputs.authorized == 'true' && steps.pr.outputs.is_cross_repository != 'true'
            uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
            with:
               name: pr-review-ai-${{ steps.pr.outputs.number }}
