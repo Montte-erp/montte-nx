@@ -258,6 +258,7 @@ export const importBulk = protectedProcedure
                destinationBankAccountId: data.destinationBankAccountId,
                categoryId: data.categoryId,
                tagId,
+               relationshipId: data.relationshipId,
                date: data.date,
             }),
          ),

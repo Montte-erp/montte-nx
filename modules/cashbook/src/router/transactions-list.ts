@@ -24,6 +24,7 @@ const sortIdSchema = z.enum([
    "date",
    "dueDate",
    "name",
+   "relationshipName",
    "status",
    "type",
 ]);

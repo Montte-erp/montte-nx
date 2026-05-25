@@ -30,6 +30,7 @@ import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { tags } from "@core/database/schemas/tags";
+import { parties } from "@core/database/schemas/relationships";
 import {
    transactions,
    type TransactionRecurrenceFrequency,
@@ -70,6 +71,7 @@ export type TransactionSortId =
    | "date"
    | "dueDate"
    | "name"
+   | "relationshipName"
    | "status"
    | "type";
 
@@ -114,6 +116,9 @@ function buildTransactionOrderBy(
          case "name":
             orderBy.push(direction(transactions.name));
             break;
+         case "relationshipName":
+            orderBy.push(direction(parties.name));
+            break;
          case "status":
             orderBy.push(direction(transactions.status));
             break;
@@ -142,6 +147,7 @@ export function selectTransactionsWithJoins(
          categoryName: categories.name,
          creditCardName: creditCards.name,
          bankAccountName: bankAccounts.name,
+         relationshipName: parties.name,
          suggestedCategoryName: suggestedCategories.name,
          tagName: tagAlias.name,
          suggestedTagName: suggestedTags.name,
@@ -154,6 +160,7 @@ export function selectTransactionsWithJoins(
       )
       .leftJoin(creditCards, eq(transactions.creditCardId, creditCards.id))
       .leftJoin(bankAccounts, eq(transactions.bankAccountId, bankAccounts.id))
+      .leftJoin(parties, eq(transactions.relationshipId, parties.id))
       .leftJoin(tagAlias, eq(transactions.tagId, tagAlias.id))
       .leftJoin(
          suggestedTags,

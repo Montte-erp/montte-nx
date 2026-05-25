@@ -69,6 +69,7 @@ type TransactionUpdateActionInput = {
             | "bankAccountName"
             | "categoryName"
             | "creditCardName"
+            | "relationshipName"
             | "suggestedCategoryName"
             | "suggestedTagName"
             | "tagName"
@@ -177,6 +178,7 @@ function parseTransactionSortId(value: string): TransactionSortId | undefined {
       case "date":
       case "dueDate":
       case "name":
+      case "relationshipName":
       case "status":
       case "type":
          return value;
@@ -265,6 +267,7 @@ export function buildOptimisticTransactionRow({
    bankAccountName,
    categoryName,
    creditCardName,
+   relationshipName,
    tagName,
 }: {
    id: string;
@@ -273,6 +276,7 @@ export function buildOptimisticTransactionRow({
    bankAccountName?: string | null;
    categoryName?: string | null;
    creditCardName?: string | null;
+   relationshipName?: string | null;
    tagName?: string | null;
 }): TransactionsCollectionRow {
    const now = dayjs().toDate();
@@ -303,12 +307,13 @@ export function buildOptimisticTransactionRow({
       statementPeriod: input.statementPeriod ?? null,
       tagId: input.tagId ?? null,
       suggestedTagId: null,
-      relationshipId: null,
+      relationshipId: input.relationshipId ?? null,
       createdAt: now,
       updatedAt: now,
       categoryName: categoryName ?? null,
       creditCardName: creditCardName ?? null,
       bankAccountName: bankAccountName ?? null,
+      relationshipName: relationshipName ?? null,
       suggestedCategoryName: null,
       tagName: tagName ?? null,
       suggestedTagName: null,
@@ -464,6 +469,10 @@ export function updateTransactionAction(collection: TransactionsCollection) {
             if (patch.dueDate !== undefined) draft.dueDate = patch.dueDate;
             if (patch.ignored !== undefined) draft.ignored = patch.ignored;
             if (patch.name !== undefined) draft.name = patch.name;
+            if (patch.relationshipId !== undefined)
+               draft.relationshipId = patch.relationshipId;
+            if (patch.relationshipName !== undefined)
+               draft.relationshipName = patch.relationshipName;
             if (patch.paidAt !== undefined) draft.paidAt = patch.paidAt;
             if (patch.paymentMethod !== undefined)
                draft.paymentMethod = patch.paymentMethod;

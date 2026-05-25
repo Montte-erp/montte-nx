@@ -241,6 +241,7 @@ const baseTransactionSchema = createInsertSchema(transactions).pick({
    categoryId: true,
    creditCardId: true,
    tagId: true,
+   relationshipId: true,
    paymentMethod: true,
    attachments: true,
    statementPeriod: true,
@@ -274,6 +275,7 @@ export const createTransactionSchema = baseTransactionSchema
       destinationBankAccountId: z.string().uuid().nullable().optional(),
       creditCardId: z.string().uuid().nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
+      relationshipId: z.string().uuid().nullable().optional(),
       attachments: z.array(attachmentSchema).nullable().optional(),
       status: z
          .enum(["pending", "paid", "cancelled"])
@@ -354,6 +356,7 @@ export const updateTransactionSchema = baseTransactionSchema
       destinationBankAccountId: z.string().uuid().nullable().optional(),
       creditCardId: z.string().uuid().nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
+      relationshipId: z.string().uuid().nullable().optional(),
       attachments: z.array(attachmentSchema).nullable().optional(),
       status: z.enum(["pending", "paid", "cancelled"]).optional(),
       ignored: z.boolean().optional(),

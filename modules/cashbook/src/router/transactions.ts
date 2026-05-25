@@ -216,6 +216,7 @@ export const create = protectedProcedure
             return transactionData.categoryId;
          })(),
          tagId,
+         relationshipId: transactionData.relationshipId,
          date: transactionData.date,
       });
 
@@ -592,6 +593,7 @@ export const update = protectedProcedure
             input.destinationBankAccountId ?? existing.destinationBankAccountId,
          categoryId: input.categoryId ?? existing.categoryId,
          tagId: input.tagId ?? existing.tagId,
+         relationshipId: input.relationshipId ?? existing.relationshipId,
          date: input.date ?? existing.date,
       });
       const { id, tagId, items, ...data } = input;
@@ -713,6 +715,10 @@ export const bulkUpdate = protectedProcedure
          categoryId:
             data.categoryId !== undefined ? data.categoryId : row.categoryId,
          tagId: tagId !== undefined ? tagId : row.tagId,
+         relationshipId:
+            data.relationshipId !== undefined
+               ? data.relationshipId
+               : row.relationshipId,
          date: data.date !== undefined ? data.date : row.date,
       }));
 

@@ -1,5 +1,6 @@
 import type { Column, Table } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
@@ -55,6 +56,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    const { openAlertDialog } = useAlertDialog();
    const [editingColKey, setEditingColKey] = useState<string | null>(null);
    const [isSubmitting, setSubmitting] = useState(false);
+   const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
 
    const { rawHeaders, rawRows, mapping, importRows } = state;
    const { selectedIndices, ignoredIndices } = api;
@@ -126,6 +128,27 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    const allSelected =
       rawRows.length > 0 && selectedIndices.size === rawRows.length;
    const someSelected = selectedIndices.size > 0 && !allSelected;
+   const virtualizer = useVirtualizer({
+      count: rawRows.length,
+      estimateSize: () => 44,
+      getScrollElement: () => scrollElement,
+      overscan: 12,
+   });
+   const virtualRows = virtualizer.getVirtualItems();
+   const topPadding = virtualRows[0]?.start ?? 0;
+   const bottomPadding =
+      virtualRows.length > 0
+         ? virtualizer.getTotalSize() -
+           (virtualRows[virtualRows.length - 1]?.end ?? 0)
+         : 0;
+   const handleImportBodyRef = useCallback(
+      (node: HTMLTableSectionElement | null) => {
+         if (!node) return;
+         const viewport = node.closest('[data-slot="scroll-area-viewport"]');
+         if (viewport instanceof HTMLElement) setScrollElement(viewport);
+      },
+      [],
+   );
 
    const buildRowToImport = useCallback(
       (rowIdx: number, currentMapping: Record<string, string>) => {
@@ -226,7 +249,7 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    }, [duplicateIndices, ignoredIndices, openAlertDialog, submit]);
 
    return (
-      <TableBody>
+      <TableBody ref={handleImportBodyRef}>
          <TableRow className="sticky top-10 z-30 bg-muted hover:bg-transparent">
             <TableCell className="bg-muted px-4 py-2" colSpan={colCount}>
                <div className="flex items-center justify-between gap-4">
@@ -399,12 +422,23 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
             ))}
          </TableRow>
 
-         {rawRows.map((row, rowIdx) => {
+         {topPadding > 0 && (
+            <TableRow aria-hidden="true">
+               <TableCell colSpan={colCount} style={{ height: topPadding }} />
+            </TableRow>
+         )}
+
+         {virtualRows.map((virtualRow) => {
+            const rowIdx = virtualRow.index;
+            const row = rawRows[rowIdx];
+            if (!row) return null;
             const isSelected = selectedIndices.has(rowIdx);
             const isIgnored = ignoredIndices.has(rowIdx);
             const isDuplicate = duplicateIndices.has(rowIdx);
             return (
                <TableRow
+                  ref={virtualizer.measureElement}
+                  data-index={virtualRow.index}
                   className={cn(
                      "border-l-2 transition-colors",
                      isIgnored
@@ -593,6 +627,15 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
                </TableRow>
             );
          })}
+
+         {bottomPadding > 0 && (
+            <TableRow aria-hidden="true">
+               <TableCell
+                  colSpan={colCount}
+                  style={{ height: bottomPadding }}
+               />
+            </TableRow>
+         )}
       </TableBody>
    );
 }

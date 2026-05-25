@@ -43,6 +43,7 @@ export type BankAccountOption = {
 };
 export type CategoryOption = { id: string; name: string };
 export type CreditCardOption = { id: string; name: string };
+export type RelationshipOption = { id: string; name: string };
 
 export function formatBRL(value: string | number): string {
    const raw = String(value).trim();
@@ -134,10 +135,14 @@ export function buildTransactionColumns(options?: {
    bankAccounts?: BankAccountOption[];
    categories?: CategoryOption[];
    creditCards?: CreditCardOption[];
+   customers?: RelationshipOption[];
+   suppliers?: RelationshipOption[];
    onUpdate?: (id: string, patch: Record<string, unknown>) => Promise<void>;
    onUpdateImport?: (index: number, patch: Record<string, unknown>) => void;
    onCreateBankAccount?: (name: string) => Promise<string>;
    onCreateCategory?: (name: string) => Promise<string>;
+   onCreateCustomer?: (name: string) => Promise<string>;
+   onCreateSupplier?: (name: string) => Promise<string>;
    onAcceptSuggestedCategory?: (id: string) => void | Promise<void>;
    onDismissSuggestedCategory?: (id: string) => void | Promise<void>;
    getRowStatus?: (id: string) => string | undefined;
@@ -179,6 +184,14 @@ export function buildTransactionColumns(options?: {
    const creditCardOptions = (options?.creditCards ?? []).map((c) => ({
       value: c.id,
       label: c.name,
+   }));
+   const customerOptions = (options?.customers ?? []).map((c) => ({
+      value: c.id,
+      label: c.name,
+   }));
+   const supplierOptions = (options?.suppliers ?? []).map((s) => ({
+      value: s.id,
+      label: s.name,
    }));
 
    return [
@@ -383,6 +396,88 @@ export function buildTransactionColumns(options?: {
                />
             );
          },
+      },
+      {
+         id: "customerName",
+         header: "Cliente",
+         meta: {
+            label: "Cliente",
+            cellComponent: "combobox",
+            isEditable: true,
+            editMode: "inline",
+            editOptions: customerOptions,
+            onCreateOption: options?.onCreateCustomer,
+         },
+         cell: ({ row }) => (
+            <InlineEditCombobox
+               ariaLabel="Cliente"
+               onCreate={options?.onCreateCustomer}
+               onSave={async (value) => {
+                  const label =
+                     customerOptions.find((o) => o.value === value)?.label ??
+                     "";
+                  const importIdx = isImportRow(row);
+                  if (importIdx !== null) {
+                     options?.onUpdateImport?.(importIdx, {
+                        customerName: label,
+                        relationshipId: value || null,
+                        relationshipName: label,
+                     });
+                     return;
+                  }
+                  await options?.onUpdate?.(row.original.id, {
+                     relationshipId: value || null,
+                  });
+               }}
+               options={customerOptions}
+               value={
+                  customerOptions.find(
+                     (option) => option.value === row.original.relationshipId,
+                  )?.value ?? ""
+               }
+            />
+         ),
+      },
+      {
+         id: "supplierName",
+         header: "Fornecedor",
+         meta: {
+            label: "Fornecedor",
+            cellComponent: "combobox",
+            isEditable: true,
+            editMode: "inline",
+            editOptions: supplierOptions,
+            onCreateOption: options?.onCreateSupplier,
+         },
+         cell: ({ row }) => (
+            <InlineEditCombobox
+               ariaLabel="Fornecedor"
+               onCreate={options?.onCreateSupplier}
+               onSave={async (value) => {
+                  const label =
+                     supplierOptions.find((o) => o.value === value)?.label ??
+                     "";
+                  const importIdx = isImportRow(row);
+                  if (importIdx !== null) {
+                     options?.onUpdateImport?.(importIdx, {
+                        supplierName: label,
+                        relationshipId: value || null,
+                        relationshipName: label,
+                     });
+                     return;
+                  }
+                  await options?.onUpdate?.(row.original.id, {
+                     relationshipId: value || null,
+                  });
+               }}
+               options={supplierOptions}
+               value={
+                  supplierOptions.find(
+                     (option) => option.value === row.original.relationshipId,
+                  )?.value ?? ""
+               }
+            />
+         ),
       },
       {
          accessorKey: "bankAccountName",
