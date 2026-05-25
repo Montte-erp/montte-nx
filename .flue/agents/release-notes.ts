@@ -1,9 +1,8 @@
 import type { FlueContext } from "@flue/runtime";
-import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
 import { readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
-import { runOpenCodeGo } from "../lib/opencode-go.ts";
+import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
 
@@ -46,11 +45,8 @@ export default async function ({ init, payload }: FlueContext) {
    const initResult = await Result.tryPromise({
       try: () =>
          init({
-            sandbox: local({
-               env: {
-                  OPENCODE_API_KEY: process.env.OPENCODE_API_KEY,
-               },
-            }),
+            sandbox: false,
+            model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
          }),
       catch: (cause) =>
          new ReleaseNotesAgentError({
@@ -113,11 +109,32 @@ Saida deve ser escrita em pt-BR e obedecer à estrutura esperada pelo arquivo de
 Retorne somente o Markdown do corpo da release, sem fences e sem explicações externas.
 `.trim();
 
-   const output = await runOpenCodeGo(prompt);
-   if (Result.isError(output)) throw output.error;
+   const harness = initResult.value;
+   const sessionResult = await Result.tryPromise({
+      try: () => harness.session(),
+      catch: (cause) =>
+         new ReleaseNotesAgentError({
+            message: "Falha ao abrir sessão Flue para release notes.",
+            cause,
+         }),
+   });
+   if (Result.isError(sessionResult)) throw sessionResult.error;
+
+   const outputResult = await Result.tryPromise({
+      try: () =>
+         Promise.resolve(
+            sessionResult.value.prompt(prompt, { thinkingLevel: "off" }),
+         ),
+      catch: (cause) =>
+         new ReleaseNotesAgentError({
+            message: "Falha ao executar prompt de release notes via Flue.",
+            cause,
+         }),
+   });
+   if (Result.isError(outputResult)) throw outputResult.error;
 
    const writeResult = await Result.tryPromise({
-      try: () => writeFile(outputFile, output.value),
+      try: () => writeFile(outputFile, outputResult.value.text),
       catch: (cause) =>
          new ReleaseNotesAgentError({
             message: "Falha ao escrever RELEASE_NOTES.md.",

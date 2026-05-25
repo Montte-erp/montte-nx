@@ -3,7 +3,7 @@ import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
-import { runOpenCodeGo } from "../lib/opencode-go.ts";
+import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
 
 export const triggers = {};
 
@@ -41,7 +41,7 @@ async function runRequiredCommand(
    failureMessage: string,
 ) {
    const commandResult = await Result.tryPromise({
-      try: () => session.shell(command),
+      try: () => Promise.resolve(session.shell(command)),
       catch: (cause) =>
          new PrReviewAgentError({
             message: failureMessage,
@@ -295,16 +295,18 @@ export default async function ({ init, payload, env }: FlueContext) {
    const harnessResult = await Result.tryPromise({
       try: () =>
          init({
+            name: "pr-review-context",
             sandbox: local({
                env: {
                   GH_TOKEN: process.env.GH_TOKEN,
-                  OPENCODE_API_KEY: process.env.OPENCODE_API_KEY,
                },
             }),
+            model: false,
          }),
       catch: (cause) =>
          new PrReviewAgentError({
-            message: "Falha ao inicializar Flue para revisão de PR.",
+            message:
+               "Falha ao inicializar Flue para contexto de revisão de PR.",
             cause,
          }),
    });
@@ -532,10 +534,45 @@ Regras para comments:
 - se não houver achados acionáveis, retorne "comments": [].
 `.trim();
 
-   const output = await runOpenCodeGo(prompt);
-   if (Result.isError(output)) throw output.error;
+   const modelHarnessResult = await Result.tryPromise({
+      try: () =>
+         init({
+            name: "pr-review-model",
+            sandbox: false,
+            model: process.env.FLUE_MODEL ?? DEFAULT_FLUE_MODEL,
+         }),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Falha ao inicializar Flue para modelo de review.",
+            cause,
+         }),
+   });
+   if (Result.isError(modelHarnessResult)) throw modelHarnessResult.error;
 
-   const reviewResult = parseReviewResult(output.value);
+   const modelSessionResult = await Result.tryPromise({
+      try: () => modelHarnessResult.value.session(),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Falha ao abrir sessão de modelo para review.",
+            cause,
+         }),
+   });
+   if (Result.isError(modelSessionResult)) throw modelSessionResult.error;
+
+   const outputResult = await Result.tryPromise({
+      try: () =>
+         Promise.resolve(
+            modelSessionResult.value.prompt(prompt, { thinkingLevel: "off" }),
+         ),
+      catch: (cause) =>
+         new PrReviewAgentError({
+            message: "Falha ao executar prompt de review via Flue.",
+            cause,
+         }),
+   });
+   if (Result.isError(outputResult)) throw outputResult.error;
+
+   const reviewResult = parseReviewResult(outputResult.value.text);
    if (Result.isError(reviewResult)) throw reviewResult.error;
 
    const inlineComments = splitValidInlineComments(
