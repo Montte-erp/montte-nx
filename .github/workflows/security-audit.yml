@@ -198,6 +198,7 @@ jobs:
               OPENCODE_GO_BASE_URL: ${{ vars.OPENCODE_GO_BASE_URL }}
               OPENCODE_GO_GATEWAY_KEY: ${{ secrets.OPENCODE_GO_GATEWAY_KEY }}
               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               PR_NUMBER: ${{ steps.pr.outputs.number }}
               REPO: ${{ github.repository }}
               FAIL_ON: ${{ steps.pr.outputs.fail_on }}

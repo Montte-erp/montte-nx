@@ -76,12 +76,13 @@ async function publishIssueComment({
    repo,
    prNumber,
    body,
+   token,
 }: {
    repo: string;
    prNumber: number;
    body: string;
+   token: string | undefined;
 }) {
-   const token = process.env.GH_TOKEN;
    if (!token) {
       return Result.err(
          new SecurityAuditAgentError({
@@ -233,6 +234,11 @@ export default async function ({ init, payload, env }: FlueContext) {
    } = parsedPayload.data;
    const prNumber = payloadPrNumber ?? Number(env.PR_NUMBER);
    const repo = payloadRepo ?? env.GITHUB_REPOSITORY;
+   const githubToken =
+      env.GH_TOKEN ??
+      env.GITHUB_TOKEN ??
+      process.env.GH_TOKEN ??
+      process.env.GITHUB_TOKEN;
 
    if (!prNumber || Number.isNaN(prNumber)) {
       throw new SecurityAuditAgentError({
@@ -461,6 +467,7 @@ Retorne JSON válido, sem markdown fences, exatamente no schema da reference rep
       repo,
       prNumber,
       body: markdown,
+      token: githubToken,
    });
    if (Result.isError(commentResult)) throw commentResult.error;
 

@@ -226,12 +226,13 @@ async function publishIssueComment({
    repo,
    prNumber,
    body,
+   token,
 }: {
    repo: string;
    prNumber: number;
    body: string;
+   token: string | undefined;
 }) {
-   const token = process.env.GH_TOKEN;
    if (!token) {
       return Result.err(
          new PrReviewAgentError({
@@ -286,13 +287,14 @@ async function publishReview({
    prNumber,
    body,
    comments,
+   token,
 }: {
    repo: string;
    prNumber: number;
    body: string;
    comments: Array<z.infer<typeof reviewCommentSchema>>;
+   token: string | undefined;
 }) {
-   const token = process.env.GH_TOKEN;
    if (!token) {
       return Result.err(
          new PrReviewAgentError({
@@ -395,6 +397,11 @@ export default async function ({ init, payload, env }: FlueContext) {
    }
 
    const repo = repoResult.data;
+   const githubToken =
+      env.GH_TOKEN ??
+      env.GITHUB_TOKEN ??
+      process.env.GH_TOKEN ??
+      process.env.GITHUB_TOKEN;
 
    const outputDirResult = await Result.tryPromise({
       try: () => mkdir(outputDir, { recursive: true }),
@@ -675,6 +682,7 @@ Regras para comments:
       prNumber,
       body: reviewResult.value.summary,
       comments: inlineComments.valid,
+      token: githubToken,
    });
 
    if (Result.isError(publishResult)) {
@@ -687,6 +695,7 @@ Regras para comments:
          repo,
          prNumber,
          body: reviewResult.value.summary,
+         token: githubToken,
       });
       if (Result.isError(fallbackCommentResult))
          throw fallbackCommentResult.error;
