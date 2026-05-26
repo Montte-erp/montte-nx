@@ -104,22 +104,32 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
    const duplicateIndices = useMemo(() => {
       if (!hasImportRows) return new Set<number>();
       const firstCol = montteColumns[0];
-      if (!firstCol) return new Set<number>();
-      const accKey = getColumnAccessorKey(firstCol);
+      const accKey =
+         config.duplicateColumnKey ??
+         (firstCol ? getColumnAccessorKey(firstCol) : "");
+      if (!accKey) return new Set<number>();
+      const normalizeValue =
+         config.normalizeDuplicateValue ??
+         ((value: unknown) => String(value ?? "").toLowerCase());
       const existing = new Set(
          table
             .getCoreRowModel()
-            .rows.map((r) => String(r.getValue(accKey) ?? "").toLowerCase()),
+            .rows.map((r) => normalizeValue(r.getValue(accKey))),
       );
       const result = new Set<number>();
       importRows.forEach((r, i) => {
-         const val = String(
-            (r as Record<string, unknown>)[accKey] ?? "",
-         ).toLowerCase();
+         const val = normalizeValue(r[accKey]);
          if (val && existing.has(val)) result.add(i);
       });
       return result;
-   }, [importRows, hasImportRows, table, montteColumns]);
+   }, [
+      importRows,
+      hasImportRows,
+      table,
+      montteColumns,
+      config.duplicateColumnKey,
+      config.normalizeDuplicateValue,
+   ]);
 
    const headerOptions = useMemo(
       () => [
@@ -223,8 +233,11 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
             () => "Erro ao importar linha.",
          );
          result.match(
-            () => {
-               toast.success("Linha importada com sucesso.");
+            (value) => {
+               toast.success(
+                  config.getSuccessMessage?.({ result: value, count: 1 }) ??
+                     "Linha importada com sucesso.",
+               );
                api.removeRows(new Set([rowIdx]));
             },
             (msg) => toast.error(msg),
@@ -263,9 +276,12 @@ function Inner<TData>({ table, api, config, state }: InnerProps<TData>) {
       );
       setSubmitting(false);
       result.match(
-         () => {
+         (value) => {
             toast.success(
-               `${toImport.length} linha(s) importada(s) com sucesso.`,
+               config.getSuccessMessage?.({
+                  result: value,
+                  count: toImport.length,
+               }) ?? `${toImport.length} linha(s) importada(s) com sucesso.`,
             );
             api.discard();
          },

@@ -16,6 +16,10 @@ import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
 import {
    createPartySchema,
+   isValidCnpj,
+   isValidCpf,
+   normalizeDocument,
+   normalizePhone,
    partyRoleValues,
    parties,
    updatePartySchema,
@@ -100,6 +104,21 @@ const idInput = z.object({
 
 const createInput = createPartySchema;
 const updateInput = idInput.merge(updatePartySchema);
+const importBulkInput = z.object({
+   role: relationshipRoleSchema,
+   rows: z
+      .array(
+         z.object({
+            kind: z.enum(["person", "company"]).optional(),
+            name: z.string(),
+            documentNumber: z.string().nullable().optional(),
+            email: z.string().nullable().optional(),
+            phone: z.string().nullable().optional(),
+         }),
+      )
+      .min(1, "Informe pelo menos uma linha para importar.")
+      .max(1000, "Importe no máximo 1000 linhas por vez."),
+});
 
 const cnpjLookupInput = z.object({
    cnpj: z
@@ -117,6 +136,33 @@ function roleFriendly(role: PartyRole) {
 
 function formatDuplicateMessage(role: PartyRole) {
    return `Já existe um ${roleFriendly(role)} com esse documento para este time.`;
+}
+
+function normalizeImportEmail(value: string | null | undefined) {
+   const trimmed = value?.trim().toLowerCase() ?? "";
+   return trimmed || null;
+}
+
+function inferKindFromDocument(documentNumber: string | null) {
+   if (!documentNumber) return "company";
+   const digits = documentNumber.replace(/\D/g, "");
+   if (digits.length === 11) return "person";
+   if (documentNumber.length === 14) return "company";
+   return "company";
+}
+
+function getFirstZodMessage(error: z.ZodError) {
+   return error.issues[0]?.message ?? "Linha inválida.";
+}
+
+function validateImportedDocument(
+   kind: "person" | "company",
+   document: string | null,
+) {
+   if (!document) return null;
+   if (kind === "person" && !isValidCpf(document)) return "CPF inválido.";
+   if (kind === "company" && !isValidCnpj(document)) return "CNPJ inválido.";
+   return null;
 }
 
 async function getOwnedRelationship(db: DbClient, teamId: string, id: string) {
@@ -306,6 +352,107 @@ export const create = protectedProcedure
       );
       if (Result.isError(result)) throw result.error;
       return result.value;
+   });
+
+export const importBulk = protectedProcedure
+   .input(importBulkInput)
+   .handler(async ({ context, input }) => {
+      const validationErrors: Array<{ index: number; message: string }> = [];
+      const validRows = input.rows
+         .map((row, index) => {
+            const documentNumber = normalizeDocument(row.documentNumber);
+            const kind = row.kind ?? inferKindFromDocument(documentNumber);
+            const documentError = validateImportedDocument(
+               kind,
+               documentNumber,
+            );
+            if (documentError) {
+               validationErrors.push({ index, message: documentError });
+               return null;
+            }
+
+            const candidate = {
+               role: input.role,
+               kind,
+               name: row.name,
+               documentNumber,
+               email: normalizeImportEmail(row.email),
+               phone: normalizePhone(row.phone),
+            };
+            const parsed = createPartySchema.safeParse(candidate);
+            if (!parsed.success) {
+               validationErrors.push({
+                  index,
+                  message: getFirstZodMessage(parsed.error),
+               });
+               return null;
+            }
+            return { index, data: parsed.data };
+         })
+         .filter((row): row is NonNullable<typeof row> => row !== null);
+
+      if (validationErrors.length > 0) {
+         return { created: 0, skipped: 0, errors: validationErrors };
+      }
+
+      const imported = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) => {
+               let created = 0;
+               let skipped = 0;
+               const errors = [...validationErrors];
+               const seenDocuments = new Set<string>();
+
+               for (const row of validRows) {
+                  if (row.data.documentNumber) {
+                     const documentKey = row.data.documentNumber;
+                     if (seenDocuments.has(documentKey)) {
+                        skipped += 1;
+                        continue;
+                     }
+                     seenDocuments.add(documentKey);
+
+                     const existing = await tx.query.parties.findFirst({
+                        where: (fields, { and, eq }) =>
+                           and(
+                              eq(fields.teamId, context.teamId),
+                              eq(fields.role, input.role),
+                              eq(fields.documentNumber, documentKey),
+                           ),
+                        columns: { id: true },
+                     });
+                     if (existing) {
+                        skipped += 1;
+                        continue;
+                     }
+                  }
+
+                  const [inserted] = await tx
+                     .insert(parties)
+                     .values({ ...row.data, teamId: context.teamId })
+                     .returning({ id: parties.id });
+
+                  if (!inserted) {
+                     errors.push({
+                        index: row.index,
+                        message: "Falha ao importar esta linha.",
+                     });
+                     continue;
+                  }
+
+                  created += 1;
+               }
+
+               return { created, skipped, errors };
+            }),
+         catch: () =>
+            new RelationshipsRouterError({
+               error: relationshipsRouterErrors.INTERNAL(),
+               message: "Falha ao importar relacionamentos.",
+            }),
+      });
+      if (Result.isError(imported)) throw imported.error;
+      return imported.value;
    });
 
 export const update = protectedProcedure

@@ -42,7 +42,10 @@ export interface DataImportConfig {
       row: Record<string, string>,
       index: number,
    ) => Record<string, unknown>;
-   onImport: (rows: Record<string, unknown>[]) => Promise<void>;
+   onImport: (rows: Record<string, unknown>[]) => Promise<unknown>;
+   getSuccessMessage?: (ctx: { result: unknown; count: number }) => string;
+   duplicateColumnKey?: string;
+   normalizeDuplicateValue?: (value: unknown) => string;
    template?: ImportTemplate;
    extraBulkActions?: (ctx: {
       selectedIndices: Set<number>;
@@ -251,9 +254,13 @@ export function useDataImport<TData>({
                (e) => (e as Error)?.message || "Erro ao importar dados.",
             );
             result.match(
-               () => {
+               (value) => {
                   toast.success(
-                     `${toImport.length} linha(s) importada(s) com sucesso.`,
+                     config.getSuccessMessage?.({
+                        result: value,
+                        count: toImport.length,
+                     }) ??
+                        `${toImport.length} linha(s) importada(s) com sucesso.`,
                   );
                   setState((s) => {
                      if (!s) return s;
