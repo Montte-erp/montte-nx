@@ -3,11 +3,15 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
 
-**Montte** é a camada de billing que falta no SaaS brasileiro: cobranca recorrente, uso medido, faturamento e estado do cliente de um jeito que o founder nao precisa montar um ERP por fora.
+**Montte** é a camada de billing e operacao financeira que falta no SaaS brasileiro: recorrencia, cobranca, financeiro, fiscal, estado do cliente e automacao AI-native em uma mesma plataforma.
 
-Mentalmente o produto e uma mistura de **Autumn + Rillet**: o lado Autumn cuida do billing dev-facing (Customer como primitiva, `customers.state` agregando assinatura/uso/fatura/status numa chamada); o lado Rillet cuida do financeiro/contabil/ops AI-native (auto-categorizacao, conciliacao, dashboards). Junto fecha o ciclo sem empurrar o founder pra Omie, Bling ou Conta Azul.
+Mentalmente o produto segue a tese **Autumn + Rillet para o Brasil**:
 
-O app ainda esta em pre-lancamento. A base de recorrencia/cobrancas ja aparece no modelo de dados e na direcao de produto, mas a superficie principal disponivel hoje e o dashboard web com financeiro, classificacao, inbox, relatorios, configuracoes, API keys e chat do Montte AI.
+- o lado **Autumn** inspira as primitivas dev-facing de billing: cliente, contrato, servico/produto, preco, assinatura, uso, entitlement, invoice e customer state;
+- o lado **Rillet** inspira o financeiro/ops AI-native: conciliacao continua, inbox operacional, evidencias, auditoria e fechamento assistido;
+- o diferencial brasileiro é integrar isso com PIX/boleto, fiscal, CNPJ, Open Finance e workflows locais sem empurrar o founder para um ERP por fora.
+
+O app ainda esta em beta privado. Hoje a superficie ativa e o dashboard web com caixa/financeiro, cartoes, relacionamentos, inbox, relatorios, configuracoes, API keys, workflows e Montte AI. Billing, contratos, pagamentos, fiscal e Open Finance sao direcao de produto/roadmap, nao modulos ativos completos no workspace atual.
 
 > **Status:** beta privado, sem garantia de estabilidade. Espere mudancas de schema, rotas e fluxos.
 
@@ -56,7 +60,7 @@ Veja [CONTRIBUTING.md](CONTRIBUTING.md) para comandos, validacoes e padroes de c
 
 ## Agentes e skills
 
-`AGENTS.md` e a fonte de verdade para agentes trabalhando no repositorio. Antes de alterar uma area, abra o skill correspondente em `.agents/skills/<nome>/SKILL.md`.
+`AGENTS.md` é a fonte de verdade para agentes trabalhando no repositorio. Antes de alterar uma area, abra o skill correspondente em `.agents/skills/<nome>/SKILL.md`.
 
 | Area | Skill |
 | :-- | :-- |
@@ -76,27 +80,41 @@ Ferramentas operacionais: CI via `monitor-ci`; Linear (`MON-*`) via `linear-cli`
 ### Web app (`apps/web`)
 
 - Dashboard autenticado com TanStack Start, TanStack Router e oRPC.
-- Rotas principais para inbox, transacoes, contas bancarias, cartoes, categorias, centros de custo, relatorios, chat e configuracoes.
+- Rotas principais para inbox, lancamentos, contas bancarias, cartoes, categorias, centros de custo, relatorios, relacionamentos, chat e configuracoes.
 - Agregador oRPC em `apps/web/src/integrations/orpc/router/index.ts`.
 - OpenAPI/Scalar em `/api/openapi/docs` quando o app esta rodando.
+- Shell desktop local via Tauri em `apps/web/src-tauri`.
 
 ### Landing (`apps/landing`)
 
 - Landing publica em Astro.
-- Blog, SEO, sitemap, waitlist e PostHog client-side.
+- Blog, docs publicas, SEO, sitemap, waitlist e PostHog client-side.
 - Build separado via `bun run landing:build`.
 
 ### Worker (`apps/worker`)
 
 - Runtime DBOS separado do processo web.
-- Inicializa observabilidade, Redis, PostHog e workflows dos modulos `classification` e `agents`.
+- Inicializa observabilidade, Redis, PostHog e workflows dos modulos.
 
-### Financeiro (`@modules/finance`)
+### Caixa e financeiro (`@modules/cashbook`)
 
 - Contas bancarias.
-- Transacoes com criacao, listagem, filtros, status, bulk actions e importacao CSV/XLSX/OFX.
-- Cartoes de credito, faturas e totais.
-- Recorrencias e parcelas em servicos internos.
+- Lancamentos/transacoes com criacao, listagem, filtros, status, bulk actions e importacao CSV/XLSX/OFX.
+- Vinculo opcional com relacionamento (`relationshipId`).
+- Pagamentos com metodos como PIX, boleto, cartoes e transferencia no modelo de transacao.
+
+### Cartoes (`@modules/cards`)
+
+- Cartoes de credito.
+- Faturas e totais de fatura.
+- Guardas de exclusao quando ha uso vinculado.
+
+### Relacionamentos (`@modules/relationships`)
+
+- Cadastro operacional de clientes e fornecedores.
+- `relationships.parties` modela `customer | supplier`, `person | company`, nome, documento, e-mail, telefone, arquivamento e vinculo com transacoes.
+- Lookup de CNPJ e regras para nao excluir contraparte com transacao vinculada.
+- Nao e CRM: funil, atividades comerciais, lead scoring e campanhas ficam fora deste modulo.
 
 ### Classificacao (`@modules/classification`)
 
@@ -115,6 +133,12 @@ Ferramentas operacionais: CI via `monitor-ci`; Linear (`MON-*`) via `linear-cli`
 - Relatorios persistidos e telas de detalhe.
 - Base para analises financeiras e paineis internos.
 
+### Workflows (`@modules/workflows`)
+
+- Base de automacoes e agendamentos.
+- Runtime conectado ao worker DBOS.
+- Ainda nao e a espinha dorsal completa de eventos/aprovacoes/receipts prevista no roadmap.
+
 ### Conta, times e autenticacao (`@modules/account`, `@core/authentication`)
 
 - Better Auth com Magic Link, Email OTP, 2FA, organizacoes, times e API keys.
@@ -124,18 +148,70 @@ Ferramentas operacionais: CI via `monitor-ci`; Linear (`MON-*`) via `linear-cli`
 ### Montte AI (`@modules/agents`)
 
 - Chat e threads dentro do dashboard.
-- Ferramentas do agente chamam os mesmos procedimentos oRPC usados pela UI.
-- TanStack AI + OpenRouter.
-- Workflows para titulo de conversa e sugestoes.
+- Runtime com TanStack AI, OpenRouter, assistant-ui/AG-UI e PostHog prompts/traces.
+- Tools financeiras de leitura e fluxo inicial skill-first.
+- Direcao: um Montte AI principal com skills por dominio, lazy tool discovery, approvals, evals e receipts.
 
-### Recorrencia e cobrancas
+### Recorrencia, cobrancas e fiscal
 
-Ainda nao existe um pacote `@modules/billing` no workspace atual. A base vive hoje em schemas do `@core/database`, como `services`, `meters`, `prices`, `subscriptions`, `subscription-items`, `coupons`, `benefits`, `invoices` e `usage-events`, alem de UI/copy da landing voltada para cobrancas recorrentes. A camada de produto e API dedicada ainda esta em construcao.
+Ainda nao existem modulos fonte ativos para `billing`, `contracts`, `payments`, `vault`, `fiscal`, `open_finance`, `integrations` ou `extensions` no workspace atual. Esses dominios estao no roadmap e devem nascer como modulos proprios, com Postgres/oRPC como fonte de verdade e providers externos apenas como adapters.
 
 ### Integracoes oficiais
 
 - PostHog para analytics, surveys, feature flags, prompts e observabilidade.
-- Twenty e o CRM externo planejado para a frente de waitlist/relacionamento.
+- Twenty e CRM externo estao planejados para a frente de relacionamento/comercial, via integracao e eventos.
+
+---
+
+## Direcao de produto
+
+A direcao consolidada nos outputs de pesquisa e arquitetura é uma plataforma **deep-integrated e AI-native**, nao um conjunto de modulos isolados com chat em cada tela.
+
+```text
+Cliente/fornecedor
+  -> contrato/documento/termos
+  -> servico/produto/preco
+  -> assinatura/uso/entitlement
+  -> invoice/cobranca
+  -> pagamento
+  -> documento fiscal
+  -> lancamento financeiro/conciliacao
+  -> relatorio/inbox/workflow
+  -> auditoria/receipt
+  -> contexto para Montte AI
+```
+
+Princípios:
+
+- **Postgres e oRPC sao o sistema de verdade.** IA nao escreve direto no banco nem substitui procedures tipadas.
+- **Billing é dominio do Montte.** AbacatePay, Stripe, Polar, Autumn ou qualquer provider futuro devem ser adapters, nao fonte de verdade de assinatura, invoice, entitlement ou estado do cliente.
+- **Um Montte AI principal.** Novas capacidades entram como skills por dominio; subagents, se existirem, sao detalhe interno de uma skill.
+- **Eventos conectam os dominios.** Business events, provider ledgers, audit entries, approvals e receipts devem ser o idioma comum entre contratos, billing, pagamentos, fiscal, financeiro, inbox e automacao.
+- **Fiscal brasileiro e dominio proprio.** Relacionamentos continuam simples; dados fiscais entram como satelites/versionamento e documentos fiscais sao snapshots imutaveis com eventos append-only.
+- **Postgres-only por padrao.** Retrieval, entity graph, eventos, audit, billing e integracoes devem ficar em Postgres antes de considerar bancos separados.
+
+---
+
+## Roadmap tecnico
+
+Sem datas prometidas; a ordem pode mudar conforme bugs, integridade de dados e demanda real.
+
+1. **Fundacao AI-native e governanca**: events, audit, approval gate, receipts, workflow/action pattern, tool policy e skills/references por dominio.
+2. **Relacionamentos -> contratos**: polir clientes/fornecedores, adicionar dados fiscais satelite, criar `modules/contracts` e Contract Writer com IA.
+3. **Billing primitives + AbacatePay**: `modules/billing` com servicos/produtos, precos, assinaturas, invoices, entitlements/customer state; `modules/payments` com provider abstraction, PIX/boleto/checkout/webhooks e reconciliacao.
+4. **Produto/estoque minimo**: catalogo leve de produto/SKU/unidade/preco/custo apenas ate onde billing e fiscal exigirem.
+5. **Vault + fiscal**: certificados, CNPJ, DFe inbound, documentos fiscais, eventos, XML/PDF/protocolos e emissao em homologacao antes de producao.
+6. **Open Finance**: consentimento/conexao, external accounts, external transactions, staging import, dedupe e conciliacao assistida.
+7. **Integracoes Twenty/PostHog**: kernel de integracoes, sync por eventos, webhooks, DLQ e comunicacoes com audit quando necessario.
+8. **Desktop e dispositivos fisicos**: Tauri como bridge para certificado A3, impressora, scanner ou dispositivos reais somente sob demanda.
+9. **Extensions + SDK**: manifest, permissions, migrations controladas, workflow templates, UI slots, skill packs e SDK TypeScript para verticalizacoes reais.
+
+Outputs de referencia:
+
+- [`outputs/erp-billing-ai-native-roadmap.md`](outputs/erp-billing-ai-native-roadmap.md)
+- [`outputs/montte-deep-integrated-ai-native-platform.md`](outputs/montte-deep-integrated-ai-native-platform.md)
+- [`outputs/montte-ai-architecture-consolidated.md`](outputs/montte-ai-architecture-consolidated.md)
+- [`outputs/plano-fiscal-nfe-nfce-nfse-montte.md`](outputs/plano-fiscal-nfe-nfce-nfse-montte.md)
 
 ---
 
@@ -145,15 +221,16 @@ Ainda nao existe um pacote `@modules/billing` no workspace atual. A base vive ho
 | :-- | :-- |
 | Monorepo | Nx, Bun, TypeScript |
 | Web | React 19, TanStack Start, TanStack Router, TanStack Query, TanStack DB, shadcn/ui, Tailwind CSS |
-| Landing | Astro, React islands, sitemap, RSS/MDX quando aplicavel |
+| Desktop local | Tauri |
+| Landing | Astro, React islands, Starlight/docs, sitemap, RSS/MDX quando aplicavel |
 | API | oRPC, OpenAPI, Scalar |
 | Banco | Drizzle ORM, PostgreSQL usando imagem local ParadeDB |
 | Auth | Better Auth |
-| Workflows | DBOS em `apps/worker` |
-| IA | TanStack AI, OpenRouter, PostHog prompts |
+| Workflows | DBOS em `apps/worker`, pg-boss catalogado para jobs operacionais |
+| IA | TanStack AI, OpenRouter, assistant-ui/AG-UI, PostHog prompts/traces |
 | Realtime | Redis + `@core/sse` |
 | Arquivos | MinIO via `@core/files` |
-| Email | Resend + React Email |
+| Email | Resend + React Email / Better Notify |
 | Observabilidade | PostHog, OpenTelemetry, Pino |
 | Qualidade | oxlint, oxfmt, Vitest, Playwright |
 
@@ -165,7 +242,7 @@ Ainda nao existe um pacote `@modules/billing` no workspace atual. A base vive ho
 montte-nx/
 ├── apps/
 │   ├── landing/         # landing publica Astro
-│   ├── web/             # app TanStack Start + agregador oRPC
+│   ├── web/             # app TanStack Start + agregador oRPC + Tauri
 │   ├── web-e2e/         # Playwright E2E
 │   └── worker/          # runtime DBOS
 ├── core/                # infraestrutura compartilhada
@@ -185,10 +262,13 @@ montte-nx/
 ├── modules/             # dominios de produto
 │   ├── account/
 │   ├── agents/
+│   ├── cards/
+│   ├── cashbook/
 │   ├── classification/
-│   ├── finance/
 │   ├── inbox/
-│   └── insights/
+│   ├── insights/
+│   ├── relationships/
+│   └── workflows/
 ├── packages/
 │   └── ui/
 └── tooling/
@@ -214,6 +294,7 @@ bun run check            # oxlint
 bun run format           # oxfmt --write
 bun run test             # testes via Nx
 bun run db:push          # aplica schema local
+bun run db:push:prod     # aplica schema producao
 bun run db:studio:local  # Drizzle Studio local
 bun run db:studio:prod   # Drizzle Studio producao
 bun run check-boundaries # valida regras de importacao
