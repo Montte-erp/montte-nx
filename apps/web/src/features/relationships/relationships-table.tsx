@@ -46,6 +46,12 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { z } from "zod";
+import { DataImportButton } from "@/blocks/data-table/data-import/data-import-button";
+import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
+import {
+   useDataImport,
+   type DataImportConfig,
+} from "@/blocks/data-table/data-import/use-data-import";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
@@ -62,14 +68,18 @@ import { PageFilter } from "@/components/page-filters/page-filter";
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useCsvFile } from "@/hooks/use-csv-file";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { useSheet } from "@/hooks/use-sheet";
+import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import {
    archiveRelationshipAction,
    deleteRelationshipAction,
+   importRelationshipsAction,
    relationshipsCollectionOptions,
    restoreRelationshipAction,
    updateRelationshipAction,
+   type RelationshipImportBulkOutput,
    type RelationshipKind,
    type RelationshipRole,
    type RelationshipsCollectionRow,
@@ -84,64 +94,60 @@ const relationshipSortIdSchema = z.enum([
    "email",
    "phone",
 ]);
-const editSchema = z
-   .object({
-      kind: z.enum(KIND_VALUES),
-      name: z
-         .string()
-         .trim()
-         .min(2, "Nome deve ter no mínimo 2 caracteres.")
-         .max(160, "Nome deve ter no máximo 160 caracteres."),
-      documentNumber: z.string().trim(),
-      email: z.union([
-         z.literal(""),
-         z.string().email("Informe um e-mail válido."),
-      ]),
-      phone: z.string().trim(),
-   })
-   .superRefine((value, ctx) => {
-      const documentDigits = value.documentNumber.replace(/\D/g, "");
-      if (
-         documentDigits &&
-         value.kind === "person" &&
-         !isValidCpf(value.documentNumber)
-      ) {
-         ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["documentNumber"],
-            message:
-               documentDigits.length === 11
-                  ? "CPF inválido."
-                  : "CPF deve conter 11 dígitos.",
-         });
-      }
-      if (
-         documentDigits &&
-         value.kind === "company" &&
-         !isValidCnpj(value.documentNumber)
-      ) {
-         ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["documentNumber"],
-            message:
-               documentDigits.length === 14
-                  ? "CNPJ inválido."
-                  : "CNPJ deve conter 14 dígitos.",
-         });
-      }
-      const phoneDigits = value.phone.replace(/\D/g, "");
-      if (
-         phoneDigits &&
-         phoneDigits.length !== 10 &&
-         phoneDigits.length !== 11
-      ) {
-         ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["phone"],
-            message: "Telefone deve ter 10 ou 11 dígitos.",
-         });
-      }
-   });
+const relationshipImportRowSchema = z.object({
+   kind: z.enum(KIND_VALUES),
+   name: z
+      .string()
+      .trim()
+      .min(2, "Nome deve ter no mínimo 2 caracteres.")
+      .max(160, "Nome deve ter no máximo 160 caracteres."),
+   documentNumber: z.string().trim(),
+   email: z.union([
+      z.literal(""),
+      z.string().email("Informe um e-mail válido."),
+   ]),
+   phone: z.string().trim(),
+});
+
+const editSchema = relationshipImportRowSchema.superRefine((value, ctx) => {
+   const documentDigits = value.documentNumber.replace(/\D/g, "");
+   if (
+      documentDigits &&
+      value.kind === "person" &&
+      !isValidCpf(value.documentNumber)
+   ) {
+      ctx.addIssue({
+         code: z.ZodIssueCode.custom,
+         path: ["documentNumber"],
+         message:
+            documentDigits.length === 11
+               ? "CPF inválido."
+               : "CPF deve conter 11 dígitos.",
+      });
+   }
+   if (
+      documentDigits &&
+      value.kind === "company" &&
+      !isValidCnpj(value.documentNumber)
+   ) {
+      ctx.addIssue({
+         code: z.ZodIssueCode.custom,
+         path: ["documentNumber"],
+         message:
+            documentDigits.length === 14
+               ? "CNPJ inválido."
+               : "CNPJ deve conter 14 dígitos.",
+      });
+   }
+   const phoneDigits = value.phone.replace(/\D/g, "");
+   if (phoneDigits && phoneDigits.length !== 10 && phoneDigits.length !== 11) {
+      ctx.addIssue({
+         code: z.ZodIssueCode.custom,
+         path: ["phone"],
+         message: "Telefone deve ter 10 ou 11 dígitos.",
+      });
+   }
+});
 
 type RelationshipEditValues = z.input<typeof editSchema>;
 type RelationshipSortId = z.infer<typeof relationshipSortIdSchema>;
@@ -198,6 +204,10 @@ function normalizeNullable(value: string) {
 
 function normalizeDigits(value: string) {
    return value.replace(/\D/g, "") || null;
+}
+
+function normalizeImportDocument(value: string) {
+   return value.toUpperCase().replace(/[^A-Z0-9]/g, "") || null;
 }
 
 function formatDocumentNumber(
@@ -304,6 +314,77 @@ function getEditErrorMessage(error: z.ZodError<RelationshipEditValues>) {
    return error.issues[0]?.message ?? "Revise os campos destacados.";
 }
 
+function normalizeHeaderValue(value: string) {
+   return value
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "");
+}
+
+function resolveImportKind(value: unknown, documentNumber: string) {
+   const normalized = normalizeHeaderValue(String(value ?? ""));
+   if (normalized === "empresa" || normalized === "company") return "company";
+   if (
+      normalized === "pessoa fisica" ||
+      normalized === "pessoa física" ||
+      normalized === "person"
+   ) {
+      return "person";
+   }
+   const normalizedDocument = documentNumber
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+   const documentDigits = documentNumber.replace(/\D/g, "");
+   if (documentDigits.length === 11) return "person";
+   if (normalizedDocument.length === 14) return "company";
+   return "company";
+}
+
+function isRelationshipImportResult(
+   value: unknown,
+): value is RelationshipImportBulkOutput {
+   return (
+      typeof value === "object" &&
+      value !== null &&
+      "created" in value &&
+      "skipped" in value &&
+      "errors" in value
+   );
+}
+
+function getImportSuccessMessage(value: unknown, count: number) {
+   if (!isRelationshipImportResult(value)) {
+      const label =
+         count === 1
+            ? "relacionamento importado"
+            : "relacionamentos importados";
+      return `${count} ${label}.`;
+   }
+   const importedLabel =
+      value.created === 1
+         ? "relacionamento importado"
+         : "relacionamentos importados";
+   const skippedLabel =
+      value.skipped === 1 ? "duplicado ignorado" : "duplicados ignorados";
+   return `${value.created} ${importedLabel}. ${value.skipped} ${skippedLabel}.`;
+}
+
+function normalizeImportDuplicateValue(value: unknown) {
+   return normalizeImportDocument(String(value ?? "")) ?? "";
+}
+
+function buildImportErrorMessage(
+   errors: RelationshipImportBulkOutput["errors"],
+) {
+   const details = errors
+      .slice(0, 3)
+      .map((error) => `linha ${error.index + 2}: ${error.message}`)
+      .join("; ");
+   const extra = errors.length > 3 ? `; mais ${errors.length - 3} erro(s)` : "";
+   return `Importação retornou ${errors.length} erro(s): ${details}${extra}.`;
+}
+
 function normalizeSorting(sorting: SortingState) {
    const normalized: Array<{ id: RelationshipSortId; desc: boolean }> = [];
    for (const rule of sorting) {
@@ -364,6 +445,8 @@ export function RelationshipsTable({
    const { slug, teamSlug } = useDashboardSlugs();
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
+   const { parse: parseCsv, generate: generateCsv } = useCsvFile();
+   const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout(storageKey);
    const [editingId, setEditingId] = useState<string | null>(null);
    const [editValues, setEditValues] = useState<RelationshipEditValues | null>(
@@ -388,6 +471,173 @@ export function RelationshipsTable({
             }),
          ),
       [activeTeamId, queryClient, role, searchState.search, searchState.view],
+   );
+
+   const importConfig: DataImportConfig = useMemo(
+      () => ({
+         parseFile: async (file: File) => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
+            return parseCsv(file);
+         },
+         mapRow: (row) => {
+            const documentNumber = String(row.documentNumber ?? "");
+            return {
+               kind: resolveImportKind(row.kind, documentNumber),
+               name: String(row.name ?? "").trim(),
+               documentNumber,
+               email: String(row.email ?? "").trim(),
+               phone: String(row.phone ?? ""),
+            };
+         },
+         duplicateColumnKey: "documentNumber",
+         normalizeDuplicateValue: normalizeImportDuplicateValue,
+         getSuccessMessage: ({ result, count }) =>
+            getImportSuccessMessage(result, count),
+         template: {
+            label: "Baixar modelo",
+            description: "Modelo com Tipo, Nome, CPF/CNPJ, E-mail e Telefone.",
+            formats: [
+               {
+                  filename: "modelo-relacionamentos.csv",
+                  label: "CSV",
+                  createBlob: () =>
+                     generateCsv(
+                        [
+                           {
+                              Tipo: "Empresa",
+                              Nome: "Acme Ltda",
+                              "CPF/CNPJ": "12.345.678/0001-95",
+                              "E-mail": "financeiro@acme.com.br",
+                              Telefone: "(11) 99999-9999",
+                           },
+                           {
+                              Tipo: "Pessoa física",
+                              Nome: "Maria Silva",
+                              "CPF/CNPJ": "123.456.789-09",
+                              "E-mail": "maria@email.com",
+                              Telefone: "(11) 98888-8888",
+                           },
+                        ],
+                        ["Tipo", "Nome", "CPF/CNPJ", "E-mail", "Telefone"],
+                     ),
+               },
+               {
+                  filename: "modelo-relacionamentos.xlsx",
+                  label: "XLSX",
+                  createBlob: () =>
+                     generateXlsx(
+                        [
+                           {
+                              Tipo: "Empresa",
+                              Nome: "Acme Ltda",
+                              "CPF/CNPJ": "12.345.678/0001-95",
+                              "E-mail": "financeiro@acme.com.br",
+                              Telefone: "(11) 99999-9999",
+                           },
+                           {
+                              Tipo: "Pessoa física",
+                              Nome: "Maria Silva",
+                              "CPF/CNPJ": "123.456.789-09",
+                              "E-mail": "maria@email.com",
+                              Telefone: "(11) 98888-8888",
+                           },
+                        ],
+                        ["Tipo", "Nome", "CPF/CNPJ", "E-mail", "Telefone"],
+                     ),
+               },
+            ],
+         },
+         onImport: async (rows) => {
+            if (!activeTeamId) throw new Error("Time ativo não encontrado.");
+            const parsedRows = rows.map((row, index) => {
+               const values = {
+                  kind: row.kind,
+                  name: String(row.name ?? ""),
+                  documentNumber: String(row.documentNumber ?? ""),
+                  email: String(row.email ?? ""),
+                  phone: String(row.phone ?? ""),
+               };
+               const parsed = relationshipImportRowSchema.safeParse(values);
+               return { index, parsed };
+            });
+            const invalidRows = parsedRows.filter(
+               (entry) => !entry.parsed.success,
+            );
+            if (invalidRows.length > 0) {
+               const details = invalidRows
+                  .slice(0, 3)
+                  .map((entry) => {
+                     const message = entry.parsed.success
+                        ? "Linha inválida."
+                        : getEditErrorMessage(entry.parsed.error);
+                     return `linha ${entry.index + 2}: ${message}`;
+                  })
+                  .join("; ");
+               const extra =
+                  invalidRows.length > 3
+                     ? `; mais ${invalidRows.length - 3} erro(s)`
+                     : "";
+               throw new Error(
+                  `Corrija ${invalidRows.length} linha(s) antes de importar: ${details}${extra}.`,
+               );
+            }
+
+            const importRelationships = importRelationshipsAction(collection);
+            const importResult: { value: RelationshipImportBulkOutput | null } =
+               {
+                  value: null,
+               };
+            const rowsToImport = parsedRows.flatMap((entry) => {
+               if (!entry.parsed.success) return [];
+               return [
+                  {
+                     kind: entry.parsed.data.kind,
+                     name: entry.parsed.data.name.trim(),
+                     documentNumber: normalizeImportDocument(
+                        entry.parsed.data.documentNumber,
+                     ),
+                     email: normalizeNullable(entry.parsed.data.email),
+                     phone: normalizeDigits(entry.parsed.data.phone),
+                  },
+               ];
+            });
+            const transaction = importRelationships({
+               role,
+               rows: rowsToImport,
+               onResult: (value) => {
+                  importResult.value = value;
+               },
+            });
+            const result = await Result.tryPromise({
+               try: () => transaction.isPersisted.promise,
+               catch: (error) => error,
+            });
+            if (Result.isError(result)) {
+               throw new Error(
+                  getErrorMessage(
+                     result.error,
+                     "Erro ao importar relacionamentos.",
+                  ),
+               );
+            }
+            if (importResult.value?.errors.length) {
+               throw new Error(
+                  buildImportErrorMessage(importResult.value.errors),
+               );
+            }
+            return importResult.value;
+         },
+      }),
+      [
+         activeTeamId,
+         collection,
+         generateCsv,
+         generateXlsx,
+         parseCsv,
+         parseXlsx,
+         role,
+      ],
    );
 
    const { data: liveRelationships, isLoading } = useLiveQuery(
@@ -590,7 +840,17 @@ export function RelationshipsTable({
          {
             accessorKey: "kind",
             header: "Tipo",
-            meta: { label: "Tipo", filterVariant: "select", exportable: true },
+            meta: {
+               label: "Tipo",
+               filterVariant: "select",
+               exportable: true,
+               isEditable: true,
+               cellComponent: "select",
+               editOptions: [
+                  { value: "company", label: "Empresa" },
+                  { value: "person", label: "Pessoa física" },
+               ],
+            },
             cell: ({ row }) => {
                const editing = editingId === row.original.id && editValues;
                if (editing) {
@@ -624,7 +884,14 @@ export function RelationshipsTable({
          {
             accessorKey: "name",
             header: "Nome",
-            meta: { label: "Nome", filterVariant: "text", exportable: true },
+            meta: {
+               label: "Nome",
+               filterVariant: "text",
+               exportable: true,
+               isEditable: true,
+               cellComponent: "text",
+               required: true,
+            },
             cell: ({ row }) => {
                const editing = editingId === row.original.id && editValues;
                if (editing) {
@@ -648,6 +915,8 @@ export function RelationshipsTable({
                label: "CPF/CNPJ",
                filterVariant: "text",
                exportable: true,
+               isEditable: true,
+               cellComponent: "text",
             },
             cell: ({ row }) => {
                const editing = editingId === row.original.id && editValues;
@@ -683,7 +952,13 @@ export function RelationshipsTable({
          {
             accessorKey: "email",
             header: "E-mail",
-            meta: { label: "E-mail", filterVariant: "text", exportable: true },
+            meta: {
+               label: "E-mail",
+               filterVariant: "text",
+               exportable: true,
+               isEditable: true,
+               cellComponent: "text",
+            },
             cell: ({ row }) => {
                const editing = editingId === row.original.id && editValues;
                if (editing) {
@@ -708,6 +983,8 @@ export function RelationshipsTable({
                label: "Telefone",
                filterVariant: "text",
                exportable: true,
+               isEditable: true,
+               cellComponent: "text",
             },
             cell: ({ row }) => {
                const editing = editingId === row.original.id && editValues;
@@ -1032,6 +1309,8 @@ export function RelationshipsTable({
       getCoreRowModel: getCoreRowModel(),
    });
 
+   const importApi = useDataImport({ table, config: importConfig });
+
    const selectedRows = table.getSelectedRowModel().rows;
    const selectedIds = selectedRows.map((row) => row.original.id);
    const resetSelection = () => table.resetRowSelection();
@@ -1101,6 +1380,7 @@ export function RelationshipsTable({
                   />
                </PageFilters>
                <DataTableColumnVisibility table={table} />
+               <DataImportButton api={importApi} config={importConfig} />
                <Button
                   onClick={handleOpenCreate}
                   size="icon-sm"
@@ -1121,6 +1401,11 @@ export function RelationshipsTable({
             <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
+                  <DataImportSection
+                     api={importApi}
+                     config={importConfig}
+                     table={table}
+                  />
                   <DataTableBody<RelationshipsCollectionRow> table={table} />
                </Table>
                {!isLoading && table.getRowCount() === 0 ? (

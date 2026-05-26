@@ -16,6 +16,7 @@ import {
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { categories } from "@core/database/schemas/categories";
+import { parties } from "@core/database/schemas/relationships";
 import { tags } from "@core/database/schemas/tags";
 import {
    transactionRecurrences,
@@ -220,6 +221,33 @@ export async function deleteBankAccountById(teamId: string, id: string) {
    await db()
       .delete(bankAccounts)
       .where(and(eq(bankAccounts.teamId, teamId), eq(bankAccounts.id, id)));
+}
+
+export async function findPartyByName(teamId: string, name: string) {
+   return db().query.parties.findFirst({
+      where: (f, { and, eq }) => and(eq(f.teamId, teamId), eq(f.name, name)),
+   });
+}
+
+export async function findPartiesByDocument(
+   teamId: string,
+   role: "customer" | "supplier",
+   documentNumber: string,
+) {
+   return db().query.parties.findMany({
+      where: (f, { and, eq }) =>
+         and(
+            eq(f.teamId, teamId),
+            eq(f.role, role),
+            eq(f.documentNumber, documentNumber),
+         ),
+   });
+}
+
+export async function deletePartyById(teamId: string, id: string) {
+   await db()
+      .delete(parties)
+      .where(and(eq(parties.teamId, teamId), eq(parties.id, id)));
 }
 
 export async function findCreditCardByName(teamId: string, name: string) {

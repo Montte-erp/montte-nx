@@ -12,6 +12,9 @@ export type RelationshipRole = RelationshipsCollectionRow["role"];
 export type RelationshipKind = RelationshipsCollectionRow["kind"];
 export type RelationshipCreateInput = Inputs["relationships"]["create"];
 export type RelationshipUpdateInput = Inputs["relationships"]["update"];
+export type RelationshipImportBulkInput = Inputs["relationships"]["importBulk"];
+export type RelationshipImportBulkOutput =
+   Outputs["relationships"]["importBulk"];
 
 type RelationshipsCollectionOptionsParams = {
    queryClient: QueryClient;
@@ -33,6 +36,10 @@ type RelationshipUpdateActionInput = {
 
 type RelationshipIdActionInput = {
    id: string;
+};
+
+type RelationshipImportActionInput = RelationshipImportBulkInput & {
+   onResult?: (result: RelationshipImportBulkOutput) => void;
 };
 
 type RelationshipsCollection = Collection<RelationshipsCollectionRow, string>;
@@ -134,6 +141,18 @@ export function createRelationshipAction(collection: RelationshipsCollection) {
          const created = await orpc.relationships.create.call(input);
          await safeRefetchRelationships(collection);
          return created;
+      },
+   });
+}
+
+export function importRelationshipsAction(collection: RelationshipsCollection) {
+   return createOptimisticAction<RelationshipImportActionInput>({
+      onMutate: () => {},
+      mutationFn: async ({ onResult, ...input }) => {
+         const result = await orpc.relationships.importBulk.call(input);
+         onResult?.(result);
+         await safeRefetchRelationships(collection);
+         return result;
       },
    });
 }

@@ -5,6 +5,7 @@ import {
    asc,
    eq,
    ilike,
+   inArray,
    isNotNull,
    isNull,
    ne,
@@ -14,8 +15,14 @@ import {
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
+import { team, teamMember } from "@core/database/schemas/auth";
 import {
    createPartySchema,
+   isValidCnpj,
+   isValidCpf,
+   normalizeDocument,
+   normalizePhone,
+   type NewParty,
    partyRoleValues,
    parties,
    updatePartySchema,
@@ -100,6 +107,21 @@ const idInput = z.object({
 
 const createInput = createPartySchema;
 const updateInput = idInput.merge(updatePartySchema);
+const importBulkInput = z.object({
+   role: relationshipRoleSchema,
+   rows: z
+      .array(
+         z.object({
+            kind: z.enum(["person", "company"]).optional(),
+            name: z.string(),
+            documentNumber: z.string().nullable().optional(),
+            email: z.string().nullable().optional(),
+            phone: z.string().nullable().optional(),
+         }),
+      )
+      .min(1, "Informe pelo menos uma linha para importar.")
+      .max(1000, "Importe no máximo 1000 linhas por vez."),
+});
 
 const cnpjLookupInput = z.object({
    cnpj: z
@@ -117,6 +139,33 @@ function roleFriendly(role: PartyRole) {
 
 function formatDuplicateMessage(role: PartyRole) {
    return `Já existe um ${roleFriendly(role)} com esse documento para este time.`;
+}
+
+function normalizeImportEmail(value: string | null | undefined) {
+   const trimmed = value?.trim().toLowerCase() ?? "";
+   return trimmed || null;
+}
+
+function inferKindFromDocument(documentNumber: string | null) {
+   if (!documentNumber) return "company";
+   const digits = documentNumber.replace(/\D/g, "");
+   if (digits.length === 11) return "person";
+   if (documentNumber.length === 14) return "company";
+   return "company";
+}
+
+function getFirstZodMessage(error: z.ZodError) {
+   return error.issues[0]?.message ?? "Linha inválida.";
+}
+
+function validateImportedDocument(
+   kind: "person" | "company",
+   document: string | null,
+) {
+   if (!document) return null;
+   if (kind === "person" && !isValidCpf(document)) return "CPF inválido.";
+   if (kind === "company" && !isValidCnpj(document)) return "CNPJ inválido.";
+   return null;
 }
 
 async function getOwnedRelationship(db: DbClient, teamId: string, id: string) {
@@ -306,6 +355,169 @@ export const create = protectedProcedure
       );
       if (Result.isError(result)) throw result.error;
       return result.value;
+   });
+
+export const importBulk = protectedProcedure
+   .input(importBulkInput)
+   .handler(async ({ context, input }) => {
+      const accessResult = await Result.tryPromise({
+         try: async () => {
+            const [ownedTeams, memberships] = await Promise.all([
+               context.db
+                  .select({ id: team.id })
+                  .from(team)
+                  .where(
+                     and(
+                        eq(team.id, context.teamId),
+                        eq(team.organizationId, context.organizationId),
+                     ),
+                  )
+                  .limit(1),
+               context.db
+                  .select({ id: teamMember.id })
+                  .from(teamMember)
+                  .where(
+                     and(
+                        eq(teamMember.teamId, context.teamId),
+                        eq(teamMember.userId, context.userId),
+                     ),
+                  )
+                  .limit(1),
+            ]);
+            const ownedTeam = ownedTeams[0];
+            const membership = memberships[0];
+            return { ownedTeam, membership };
+         },
+         catch: () =>
+            new RelationshipsRouterError({
+               error: relationshipsRouterErrors.INTERNAL(),
+               message: "Falha ao verificar permissão do time.",
+            }),
+      });
+      if (Result.isError(accessResult)) throw accessResult.error;
+      if (!accessResult.value.ownedTeam || !accessResult.value.membership) {
+         throw new RelationshipsRouterError({
+            error: relationshipsRouterErrors.FORBIDDEN(),
+            message: "Ação não permitida para este time.",
+         });
+      }
+
+      const validationErrors: Array<{ index: number; message: string }> = [];
+      const validRows = input.rows
+         .map((row, index) => {
+            const documentNumber = normalizeDocument(row.documentNumber);
+            const kind = row.kind ?? inferKindFromDocument(documentNumber);
+            const documentError = validateImportedDocument(
+               kind,
+               documentNumber,
+            );
+            if (documentError) {
+               validationErrors.push({ index, message: documentError });
+               return null;
+            }
+
+            const candidate = {
+               role: input.role,
+               kind,
+               name: row.name,
+               documentNumber,
+               email: normalizeImportEmail(row.email),
+               phone: normalizePhone(row.phone),
+            };
+            const parsed = createPartySchema.safeParse(candidate);
+            if (!parsed.success) {
+               validationErrors.push({
+                  index,
+                  message: getFirstZodMessage(parsed.error),
+               });
+               return null;
+            }
+            return { index, data: parsed.data };
+         })
+         .filter((row): row is NonNullable<typeof row> => row !== null);
+
+      if (validationErrors.length > 0) {
+         return { created: 0, skipped: 0, errors: validationErrors };
+      }
+
+      const documentKeys = Array.from(
+         new Set(
+            validRows
+               .map((row) => row.data.documentNumber)
+               .filter((document): document is string => document !== null),
+         ),
+      );
+
+      const existingDocumentsResult = await Result.tryPromise({
+         try: () => {
+            if (documentKeys.length === 0) return Promise.resolve([]);
+            return context.db
+               .select({ documentNumber: parties.documentNumber })
+               .from(parties)
+               .where(
+                  and(
+                     eq(parties.teamId, context.teamId),
+                     eq(parties.role, input.role),
+                     inArray(parties.documentNumber, documentKeys),
+                  ),
+               );
+         },
+         catch: () =>
+            new RelationshipsRouterError({
+               error: relationshipsRouterErrors.INTERNAL(),
+               message: "Falha ao verificar documentos duplicados.",
+            }),
+      });
+      if (Result.isError(existingDocumentsResult)) {
+         throw existingDocumentsResult.error;
+      }
+
+      let skipped = 0;
+      const seenDocuments = new Set(
+         existingDocumentsResult.value
+            .map((row) => row.documentNumber)
+            .filter((document): document is string => document !== null),
+      );
+      const rowsToInsert: NewParty[] = [];
+      for (const row of validRows) {
+         const documentKey = row.data.documentNumber;
+         if (documentKey) {
+            if (seenDocuments.has(documentKey)) {
+               skipped += 1;
+               continue;
+            }
+            seenDocuments.add(documentKey);
+         }
+         rowsToInsert.push({ ...row.data, teamId: context.teamId });
+      }
+
+      if (rowsToInsert.length === 0) {
+         return { created: 0, skipped, errors: [] };
+      }
+
+      const imported = await Result.tryPromise({
+         try: async () =>
+            context.db.transaction(async (tx) => {
+               const inserted = await tx
+                  .insert(parties)
+                  .values(rowsToInsert)
+                  .onConflictDoNothing()
+                  .returning({ id: parties.id });
+
+               return {
+                  created: inserted.length,
+                  skipped: skipped + rowsToInsert.length - inserted.length,
+                  errors: [],
+               };
+            }),
+         catch: () =>
+            new RelationshipsRouterError({
+               error: relationshipsRouterErrors.INTERNAL(),
+               message: "Falha ao importar relacionamentos.",
+            }),
+      });
+      if (Result.isError(imported)) throw imported.error;
+      return imported.value;
    });
 
 export const update = protectedProcedure
