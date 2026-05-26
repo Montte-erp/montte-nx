@@ -47,7 +47,7 @@ const reviewResultSchema = v.object({
    comments: v.optional(v.array(reviewCommentSchema), []),
 });
 
-type ReviewComment = v.InferOutput<typeof reviewCommentSchema>;
+export type ReviewComment = v.InferOutput<typeof reviewCommentSchema>;
 
 const prReviewAgentErrors = defineErrorCatalog("flue.pr-review.agent", {
    BAD_PAYLOAD: {
@@ -107,7 +107,7 @@ function formatInlineComment(comment: ReviewComment) {
 ${comment.body}`;
 }
 
-function parseDiffReviewLines(patch: string) {
+export function parseDiffReviewLines(patch: string) {
    const allowed = new Map<string, { left: Set<number>; right: Set<number> }>();
    let currentPath: string | undefined;
    let oldLine = 0;
@@ -171,7 +171,102 @@ function hasActionableContent(comment: ReviewComment) {
    );
 }
 
-function splitValidInlineComments(
+const MAX_FALLBACK_LINE_DISTANCE = 30;
+
+function findNearestReviewLine(lines: Set<number>, targetLine: number) {
+   let nearestLine: number | undefined;
+
+   for (const line of lines) {
+      if (nearestLine === undefined) {
+         nearestLine = line;
+         continue;
+      }
+
+      const currentDistance = Math.abs(line - targetLine);
+      const nearestDistance = Math.abs(nearestLine - targetLine);
+      if (
+         currentDistance < nearestDistance ||
+         (currentDistance === nearestDistance && line < nearestLine)
+      ) {
+         nearestLine = line;
+      }
+   }
+
+   if (nearestLine === undefined) return undefined;
+
+   const distance = Math.abs(nearestLine - targetLine);
+   if (distance > MAX_FALLBACK_LINE_DISTANCE) return undefined;
+
+   return nearestLine;
+}
+
+function withFallbackAnchor(comment: ReviewComment, fallbackLine: number) {
+   return {
+      ...comment,
+      line: fallbackLine,
+      body: `${comment.body}\n\nObservação: o achado apontava para a linha ${comment.line}, que não está comentável no diff atual; ancorei na linha alterada mais próxima do mesmo arquivo para não perder o comentário inline.`,
+   };
+}
+
+function severityRank(severity: ReviewComment["severity"]) {
+   if (severity === "critical") return 5;
+   if (severity === "major") return 4;
+   if (severity === "minor") return 3;
+   if (severity === "trivial") return 2;
+   return 1;
+}
+
+function highestSeverity(comments: Array<ReviewComment>) {
+   let selected: ReviewComment["severity"] = "info";
+
+   for (const comment of comments) {
+      if (severityRank(comment.severity) > severityRank(selected)) {
+         selected = comment.severity;
+      }
+   }
+
+   return selected;
+}
+
+function combineAnchoredComments(comments: Array<ReviewComment>) {
+   const grouped = new Map<string, Array<ReviewComment>>();
+
+   for (const comment of comments) {
+      const key = `${comment.path}\u0000${comment.side}\u0000${comment.line}`;
+      const group = grouped.get(key) ?? [];
+      group.push(comment);
+      grouped.set(key, group);
+   }
+
+   const combined: Array<ReviewComment> = [];
+   for (const group of grouped.values()) {
+      const first = group[0];
+      if (!first) continue;
+
+      if (group.length === 1) {
+         combined.push(first);
+         continue;
+      }
+
+      combined.push({
+         ...first,
+         severity: highestSeverity(group),
+         confidence: Math.max(...group.map((comment) => comment.confidence)),
+         actionable: group.some((comment) => comment.actionable),
+         title: `${group.length} achados nesta linha`,
+         body: group
+            .map(
+               (comment, index) =>
+                  `**${index + 1}. ${comment.title}**\n\n${comment.body}`,
+            )
+            .join("\n\n---\n\n"),
+      });
+   }
+
+   return combined;
+}
+
+export function splitValidInlineComments(
    comments: Array<ReviewComment>,
    patch: string,
 ) {
@@ -217,18 +312,25 @@ function splitValidInlineComments(
 
       const lineSet =
          comment.side === "LEFT" ? fileLines.left : fileLines.right;
-      if (!lineSet.has(comment.line)) {
-         skipped.push({
-            ...comment,
-            reason: "Linha não é comentável no diff atual.",
-         });
+      if (lineSet.has(comment.line)) {
+         valid.push(comment);
          continue;
       }
 
-      valid.push(comment);
+      const fallbackLine = findNearestReviewLine(lineSet, comment.line);
+      if (fallbackLine !== undefined) {
+         valid.push(withFallbackAnchor(comment, fallbackLine));
+         continue;
+      }
+
+      skipped.push({
+         ...comment,
+         reason:
+            "Arquivo aparece no diff, mas não possui linha comentável próxima o suficiente.",
+      });
    }
 
-   return { valid, skipped };
+   return { valid: combineAnchoredComments(valid), skipped };
 }
 
 async function publishReview({
@@ -263,6 +365,17 @@ async function publishReview({
    }));
 
    const [owner, repoName] = repo.split("/");
+   if (!owner || !repoName) {
+      return Result.err(
+         new PrReviewAgentError({
+            error: prReviewAgentErrors.BAD_PAYLOAD(),
+            message: "repo inválido. Use owner/repo.",
+            repo,
+            prNumber,
+         }),
+      );
+   }
+
    const octokit = new Octokit({ auth: token });
    return Result.tryPromise({
       try: async () => {
@@ -468,7 +581,7 @@ export default async function ({ init, payload, env }: FlueContext) {
       JSON.stringify(promptContextSize, null, 2),
    );
 
-   const task = `Revise a PR #${prNumber} usando a skill de code review do Montte. Use apenas o contexto pré-coletado em args. Não rode comandos nem colete dados pelo GitHub. Retorne comentários inline somente para linhas existentes no patch, com severidade, confiança >= 0.7 e correção concreta.`;
+   const task = `Revise a PR #${prNumber} usando a skill de code review do Montte. Use apenas o contexto pré-coletado em args. Não rode comandos nem colete dados pelo GitHub. Todo achado acionável citado no summary também deve aparecer em comments[]; summary não substitui comentário inline. Retorne comentários inline com severidade, confiança >= 0.7 e correção concreta. Se a linha exata não estiver disponível, use a linha numérica comentável mais próxima no mesmo arquivo.`;
 
    const modelHarnessResult = await Result.tryPromise({
       try: () =>

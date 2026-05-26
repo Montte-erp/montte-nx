@@ -58,14 +58,14 @@ gh run view "$RUN_ID" --log-failed > .agent-artifacts/pr-review/ci-failed.log
 
 Cada finding publicado precisa ter evidencia concreta:
 
-- diff hunk e linha exata elegivel para comentario;
+- diff hunk e linha elegivel para comentario, preferindo a linha exata do achado;
 - 60-100 linhas ao redor do arquivo atual;
 - imports/exports relacionados quando a causa for cross-file;
 - testes proximos ou ausencia relevante de teste;
 - regra aplicavel de `AGENTS.md` ou skill;
 - comentario anterior do bot quando houver risco de duplicado.
 
-Se a linha exata nao existe no patch atual, nao publicar comentario. Guarde como descartado/artefato para depuracao. Coloque no summary apenas se for risco real e marcado como baixa confianca.
+Se a linha exata nao existe no patch atual, tente ancorar o comentario na linha comentavel mais proxima do mesmo arquivo quando ela estiver perto do achado, e deixe claro no corpo qual linha o achado apontava originalmente. Se varios achados cairem na mesma ancora, combine em um comentario. Se o arquivo nao aparece no diff ou nao ha linha comentavel proxima, guarde como descartado/artefato para depuracao e coloque no summary apenas se for risco real.
 
 ## Gates anti-ruido
 
@@ -127,7 +127,7 @@ Entrada:
 - checks relevantes.
 
 Retorne JSON no schema Finding[]. Cada finding precisa ter impacto concreto,
-evidencia, path, line, side, severity e confidence. A linha precisa existir no diff.
+evidencia, path, line, side, severity e confidence. Prefira a linha exata do achado; se ela nao estiver comentavel, use a linha comentavel mais proxima no mesmo arquivo e mencione a linha original no corpo.
 ```
 
 ## Prompt de stale/dedupe
@@ -171,7 +171,7 @@ Impacto: [bug ou risco especifico].
 Correcao: [mudanca pequena].
 ```
 
-Nao publicar comentario inline se ele nao couber nesse formato ou se a linha nao for exatamente comentavel no diff.
+Nao publicar comentario inline se ele nao couber nesse formato ou se nao houver linha comentavel no mesmo arquivo do diff.
 
 ## Review de CI
 
