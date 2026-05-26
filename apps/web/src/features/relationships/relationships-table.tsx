@@ -64,6 +64,7 @@ import {
    SelectionActionButton,
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
+import { ExportButton } from "@/components/export-button/export-button";
 import { PageFilter } from "@/components/page-filters/page-filter";
 import { PageFilters } from "@/components/page-filters/page-filters";
 import { useActiveTeam } from "@/hooks/use-active-team";
@@ -314,6 +315,12 @@ function getEditErrorMessage(error: z.ZodError<RelationshipEditValues>) {
    return error.issues[0]?.message ?? "Revise os campos destacados.";
 }
 
+function cleanImportCell(value: unknown) {
+   const text = String(value ?? "").trim();
+   if (text === "-" || text === "—") return "";
+   return text;
+}
+
 function normalizeHeaderValue(value: string) {
    return value
       .trim()
@@ -480,14 +487,18 @@ export function RelationshipsTable({
             if (ext === "xlsx" || ext === "xls") return parseXlsx(file);
             return parseCsv(file);
          },
+         importColumns: [
+            { key: "name", label: "Cliente" },
+            { key: "email", label: "Email" },
+         ],
          mapRow: (row) => {
-            const documentNumber = String(row.documentNumber ?? "");
+            const documentNumber = cleanImportCell(row.documentNumber);
             return {
                kind: resolveImportKind(row.kind, documentNumber),
-               name: String(row.name ?? "").trim(),
+               name: cleanImportCell(row.name),
                documentNumber,
-               email: String(row.email ?? "").trim(),
-               phone: String(row.phone ?? ""),
+               email: cleanImportCell(row.email),
+               phone: cleanImportCell(row.phone),
             };
          },
          duplicateColumnKey: "documentNumber",
@@ -1380,6 +1391,10 @@ export function RelationshipsTable({
                   />
                </PageFilters>
                <DataTableColumnVisibility table={table} />
+               <ExportButton
+                  fileBase={role === "customer" ? "clientes" : "fornecedores"}
+                  table={table}
+               />
                <DataImportButton api={importApi} config={importConfig} />
                <Button
                   onClick={handleOpenCreate}
