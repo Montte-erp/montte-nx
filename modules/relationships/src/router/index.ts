@@ -5,6 +5,7 @@ import {
    asc,
    eq,
    ilike,
+   inArray,
    isNotNull,
    isNull,
    ne,
@@ -14,12 +15,14 @@ import {
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
 import { z } from "zod";
+import { team, teamMember } from "@core/database/schemas/auth";
 import {
    createPartySchema,
    isValidCnpj,
    isValidCpf,
    normalizeDocument,
    normalizePhone,
+   type NewParty,
    partyRoleValues,
    parties,
    updatePartySchema,
@@ -357,6 +360,48 @@ export const create = protectedProcedure
 export const importBulk = protectedProcedure
    .input(importBulkInput)
    .handler(async ({ context, input }) => {
+      const accessResult = await Result.tryPromise({
+         try: async () => {
+            const [ownedTeams, memberships] = await Promise.all([
+               context.db
+                  .select({ id: team.id })
+                  .from(team)
+                  .where(
+                     and(
+                        eq(team.id, context.teamId),
+                        eq(team.organizationId, context.organizationId),
+                     ),
+                  )
+                  .limit(1),
+               context.db
+                  .select({ id: teamMember.id })
+                  .from(teamMember)
+                  .where(
+                     and(
+                        eq(teamMember.teamId, context.teamId),
+                        eq(teamMember.userId, context.userId),
+                     ),
+                  )
+                  .limit(1),
+            ]);
+            const ownedTeam = ownedTeams[0];
+            const membership = memberships[0];
+            return { ownedTeam, membership };
+         },
+         catch: () =>
+            new RelationshipsRouterError({
+               error: relationshipsRouterErrors.INTERNAL(),
+               message: "Falha ao verificar permissão do time.",
+            }),
+      });
+      if (Result.isError(accessResult)) throw accessResult.error;
+      if (!accessResult.value.ownedTeam || !accessResult.value.membership) {
+         throw new RelationshipsRouterError({
+            error: relationshipsRouterErrors.FORBIDDEN(),
+            message: "Ação não permitida para este time.",
+         });
+      }
+
       const validationErrors: Array<{ index: number; message: string }> = [];
       const validRows = input.rows
          .map((row, index) => {
@@ -395,55 +440,75 @@ export const importBulk = protectedProcedure
          return { created: 0, skipped: 0, errors: validationErrors };
       }
 
+      const documentKeys = Array.from(
+         new Set(
+            validRows
+               .map((row) => row.data.documentNumber)
+               .filter((document): document is string => document !== null),
+         ),
+      );
+
+      const existingDocumentsResult = await Result.tryPromise({
+         try: () => {
+            if (documentKeys.length === 0) return Promise.resolve([]);
+            return context.db
+               .select({ documentNumber: parties.documentNumber })
+               .from(parties)
+               .where(
+                  and(
+                     eq(parties.teamId, context.teamId),
+                     eq(parties.role, input.role),
+                     inArray(parties.documentNumber, documentKeys),
+                  ),
+               );
+         },
+         catch: () =>
+            new RelationshipsRouterError({
+               error: relationshipsRouterErrors.INTERNAL(),
+               message: "Falha ao verificar documentos duplicados.",
+            }),
+      });
+      if (Result.isError(existingDocumentsResult)) {
+         throw existingDocumentsResult.error;
+      }
+
+      let skipped = 0;
+      const seenDocuments = new Set(
+         existingDocumentsResult.value
+            .map((row) => row.documentNumber)
+            .filter((document): document is string => document !== null),
+      );
+      const rowsToInsert: NewParty[] = [];
+      for (const row of validRows) {
+         const documentKey = row.data.documentNumber;
+         if (documentKey) {
+            if (seenDocuments.has(documentKey)) {
+               skipped += 1;
+               continue;
+            }
+            seenDocuments.add(documentKey);
+         }
+         rowsToInsert.push({ ...row.data, teamId: context.teamId });
+      }
+
+      if (rowsToInsert.length === 0) {
+         return { created: 0, skipped, errors: [] };
+      }
+
       const imported = await Result.tryPromise({
-         try: () =>
+         try: async () =>
             context.db.transaction(async (tx) => {
-               let created = 0;
-               let skipped = 0;
-               const errors = [...validationErrors];
-               const seenDocuments = new Set<string>();
+               const inserted = await tx
+                  .insert(parties)
+                  .values(rowsToInsert)
+                  .onConflictDoNothing()
+                  .returning({ id: parties.id });
 
-               for (const row of validRows) {
-                  if (row.data.documentNumber) {
-                     const documentKey = row.data.documentNumber;
-                     if (seenDocuments.has(documentKey)) {
-                        skipped += 1;
-                        continue;
-                     }
-                     seenDocuments.add(documentKey);
-
-                     const existing = await tx.query.parties.findFirst({
-                        where: (fields, { and, eq }) =>
-                           and(
-                              eq(fields.teamId, context.teamId),
-                              eq(fields.role, input.role),
-                              eq(fields.documentNumber, documentKey),
-                           ),
-                        columns: { id: true },
-                     });
-                     if (existing) {
-                        skipped += 1;
-                        continue;
-                     }
-                  }
-
-                  const [inserted] = await tx
-                     .insert(parties)
-                     .values({ ...row.data, teamId: context.teamId })
-                     .returning({ id: parties.id });
-
-                  if (!inserted) {
-                     errors.push({
-                        index: row.index,
-                        message: "Falha ao importar esta linha.",
-                     });
-                     continue;
-                  }
-
-                  created += 1;
-               }
-
-               return { created, skipped, errors };
+               return {
+                  created: inserted.length,
+                  skipped: skipped + rowsToInsert.length - inserted.length,
+                  errors: [],
+               };
             }),
          catch: () =>
             new RelationshipsRouterError({

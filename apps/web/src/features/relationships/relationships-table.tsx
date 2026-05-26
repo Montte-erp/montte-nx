@@ -355,9 +355,19 @@ function isRelationshipImportResult(
 
 function getImportSuccessMessage(value: unknown, count: number) {
    if (!isRelationshipImportResult(value)) {
-      return `${count} relacionamento(s) importado(s).`;
+      const label =
+         count === 1
+            ? "relacionamento importado"
+            : "relacionamentos importados";
+      return `${count} ${label}.`;
    }
-   return `${value.created} relacionamento(s) importado(s). ${value.skipped} duplicado(s) ignorado(s).`;
+   const importedLabel =
+      value.created === 1
+         ? "relacionamento importado"
+         : "relacionamentos importados";
+   const skippedLabel =
+      value.skipped === 1 ? "duplicado ignorado" : "duplicados ignorados";
+   return `${value.created} ${importedLabel}. ${value.skipped} ${skippedLabel}.`;
 }
 
 function normalizeImportDuplicateValue(value: unknown) {
