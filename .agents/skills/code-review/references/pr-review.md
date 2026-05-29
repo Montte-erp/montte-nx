@@ -22,10 +22,11 @@ Produzir review comparavel a reviewer senior, nao wrapper de diff:
 4. `slice-diff`: quebrar diff por arquivo/hunk, ignorando gerados, lockfiles grandes e snapshots quando nao forem o alvo.
 5. `retrieve-context`: para cada hunk, coletar linhas ao redor, imports/exports, usos via `rg`, testes proximos e owners de modulo.
 6. `analyze`: chamar o agente por chunk e retornar findings JSON.
-7. `validate`: segunda passagem compara findings contra codigo atual, regras, contexto cross-file e comments anteriores.
-8. `dedupe-rank`: agrupar mesma causa, remover stale/duplicado e ordenar por severidade + confianca.
-9. `synthesize`: gerar summary curto e inline comments candidatos.
-10.   `publish`: postar GitHub Pull Request Review com comentarios inline por arquivo/linha. Summary e apenas corpo do review; nao substitui comentario inline quando ha achado acionavel.
+7. `adversarial-pass`: declarar intencao do patch e rodar lentes `quebra producao`, `contrato Montte`, `seguranca e dados` e `minimalista`.
+8. `refute-or-promote`: tentar refutar cada candidato contra codigo atual, regras, contexto cross-file, CI e comments anteriores.
+9. `dedupe-rank`: agrupar mesma causa, remover stale/duplicado/refutado e ordenar por severidade + confianca.
+10.   `synthesize`: gerar summary curto e inline comments candidatos.
+11.   `publish`: postar GitHub Pull Request Review com comentarios inline por arquivo/linha. Summary e apenas corpo do review; nao substitui comentario inline quando ha achado acionavel.
 
 ## Coleta minima
 
@@ -64,6 +65,7 @@ Cada finding publicado precisa ter evidencia concreta:
 - testes proximos ou ausencia relevante de teste;
 - regra aplicavel de `AGENTS.md` ou skill;
 - comentario anterior do bot quando houver risco de duplicado.
+- lente adversarial que encontrou o problema e tentativa de refutacao que ele sobreviveu.
 
 Se a linha exata nao existe no patch atual, tente ancorar o comentario na linha comentavel mais proxima do mesmo arquivo quando ela estiver perto do achado, e deixe claro no corpo qual linha o achado apontava originalmente. Se varios achados cairem na mesma ancora, combine em um comentario. Se o arquivo nao aparece no diff ou nao ha linha comentavel proxima, guarde como descartado/artefato para depuracao e coloque no summary apenas se for risco real.
 
@@ -76,6 +78,7 @@ Se a linha exata nao existe no patch atual, tente ancorar o comentario na linha 
 - Nao publicar `trivial` inline; agrupar no summary ou descartar.
 - Limitar inline comments por review; priorizar `critical` e `major`.
 - Um comentario precisa dizer: problema, impacto concreto e correcao pequena.
+- Um comentario precisa ter `status: valid`; `stale`, `duplicate`, `not_reproducible`, `out_of_scope` e `disputed` nao viram inline.
 - Se o patch sugerido exige decisao de produto ou refactor amplo, nao sugerir como inline.
 
 ## Severidade
@@ -97,6 +100,7 @@ Se a linha exata nao existe no patch atual, tente ancorar o comentario na linha 
    "severity": "critical|major|minor|trivial|info",
    "type": "bug|security|regression|architecture|test|ci|nit",
    "confidence": 0.82,
+   "lens": "quebra-producao|contrato-montte|seguranca-dados|minimalista|ci",
    "title": "Ownership check ausente antes da escrita",
    "bodyPtBr": "Explique por que esta errado, impacto concreto e correcao pequena.",
    "evidence": [
@@ -105,7 +109,7 @@ Se a linha exata nao existe no patch atual, tente ancorar o comentario na linha 
    ],
    "suggestion": "Patch opcional pequeno ou null",
    "actionable": true,
-   "status": "valid|stale|duplicate|not_reproducible|out_of_scope",
+   "status": "valid|stale|duplicate|not_reproducible|out_of_scope|disputed",
    "duplicateOf": null
 }
 ```
@@ -128,6 +132,15 @@ Entrada:
 
 Retorne JSON no schema Finding[]. Cada finding precisa ter impacto concreto,
 evidencia, path, line, side, severity e confidence. Prefira a linha exata do achado; se ela nao estiver comentavel, use a linha comentavel mais proxima no mesmo arquivo e mencione a linha original no corpo.
+
+Antes de retornar, rode mentalmente as quatro lentes adversariais:
+
+- quebra producao;
+- contrato Montte;
+- seguranca e dados;
+- minimalista.
+
+Para cada candidato, tente refutar com evidencia do codigo atual. Retorne inline comments apenas para `status: valid`. Use summary para premissas frageis, riscos disputados e checks.
 ```
 
 ## Prompt de stale/dedupe
@@ -136,8 +149,8 @@ evidencia, path, line, side, severity e confidence. Prefira a linha exata do ach
 Compare os findings candidatos contra o codigo atual, o diff atual e comentarios
 anteriores do bot. Marque duplicate quando a mesma causa ja foi comentada.
 Marque stale quando a linha mudou, o problema foi corrigido, o arquivo saiu do
-diff ou a regra citada nao se aplica mais. Retorne apenas findings validos e
-acionaveis para publicacao.
+diff ou a regra citada nao se aplica mais. Marque disputed quando a evidencia
+nao prova o impacto. Retorne apenas findings validos e acionaveis para publicacao.
 ```
 
 ## Prompt de sintese
@@ -173,6 +186,8 @@ Correcao: [mudanca pequena].
 
 Nao publicar comentario inline se ele nao couber nesse formato ou se nao houver linha comentavel no mesmo arquivo do diff.
 
+Quando houver evidencia curta, inclua `Evidencia: arquivo:linha`. Nao cole blocos longos de codigo.
+
 ## Review de CI
 
 - Relacione stack trace ou erro com arquivos alterados antes de culpar o PR.
@@ -187,5 +202,6 @@ Nao publicar comentario inline se ele nao couber nesse formato ou se nao houver 
 - `.agent-artifacts/pr-review/summary.md`: comentario final.
 - `.agent-artifacts/pr-review/inline-comments.json`: comentarios publicaveis com path/line/side/severity/body.
 - `.agent-artifacts/pr-review/inline-comments-skipped.json`: comentarios descartados por linha fora do diff, duplicidade, stale ou baixa confianca.
+- `.agent-artifacts/pr-review/adversarial-policy.md`: politica adversarial efetivamente passada ao modelo.
 
 O agente deve sempre conseguir explicar por que cada comentario foi publicado e por que findings descartados nao foram publicados.

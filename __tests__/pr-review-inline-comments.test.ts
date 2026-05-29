@@ -5,8 +5,22 @@ type ReviewComment = {
    line: number;
    side: "RIGHT" | "LEFT";
    severity: "critical" | "major" | "minor" | "trivial" | "info";
+   status:
+      | "valid"
+      | "stale"
+      | "duplicate"
+      | "not_reproducible"
+      | "out_of_scope"
+      | "disputed";
+   lens?:
+      | "quebra-producao"
+      | "contrato-montte"
+      | "seguranca-dados"
+      | "minimalista"
+      | "ci";
    confidence: number;
    actionable: boolean;
+   evidence: Array<string>;
    title: string;
    body: string;
 };
@@ -60,8 +74,10 @@ function comment(input: Partial<ReviewComment>): ReviewComment {
       line: 455,
       side: "RIGHT",
       severity: "major",
+      status: "valid",
       confidence: 0.9,
       actionable: true,
+      evidence: ["modules/relationships/src/router/index.ts:455"],
       title: "Comentário publicável",
       body: "Correção: ajuste o handler para preservar o contrato.",
       ...input,
@@ -153,6 +169,25 @@ describe("PR review inline comments", () => {
          expect.objectContaining({
             reason:
                "Arquivo aparece no diff, mas não possui linha comentável próxima o suficiente.",
+         }),
+      ]);
+   });
+
+   it("descarta comentário refutado antes de tentar ancorar no diff", () => {
+      const result = splitValidInlineComments(
+         [
+            comment({
+               status: "disputed",
+               line: 455,
+            }),
+         ],
+         patch,
+      );
+
+      expect(result.valid).toHaveLength(0);
+      expect(result.skipped).toEqual([
+         expect.objectContaining({
+            reason: "Status disputed não é publicável como comentário inline.",
          }),
       ]);
    });

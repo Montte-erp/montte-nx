@@ -31,11 +31,32 @@ const reviewCommentSchema = v.object({
    line: v.pipe(v.number(), v.integer(), v.minValue(1)),
    side: v.optional(v.picklist(["RIGHT", "LEFT"]), "RIGHT"),
    severity: v.picklist(["critical", "major", "minor", "trivial", "info"]),
+   status: v.optional(
+      v.picklist([
+         "valid",
+         "stale",
+         "duplicate",
+         "not_reproducible",
+         "out_of_scope",
+         "disputed",
+      ]),
+      "valid",
+   ),
+   lens: v.optional(
+      v.picklist([
+         "quebra-producao",
+         "contrato-montte",
+         "seguranca-dados",
+         "minimalista",
+         "ci",
+      ]),
+   ),
    confidence: v.optional(
       v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
       0.7,
    ),
    actionable: v.optional(v.boolean(), false),
+   evidence: v.optional(v.array(v.pipe(v.string(), v.minLength(1))), []),
    suggestion: v.optional(v.pipe(v.string(), v.minLength(1))),
    reproSteps: v.optional(v.pipe(v.string(), v.minLength(1))),
    title: v.pipe(v.string(), v.minLength(1)),
@@ -48,6 +69,19 @@ const reviewResultSchema = v.object({
 });
 
 export type ReviewComment = v.InferOutput<typeof reviewCommentSchema>;
+
+const adversarialPolicy = `# Politica adversarial para PR Review AI
+
+Declare primeiro a intencao do patch: que comportamento ele tenta entregar e quais contratos nao pode quebrar.
+
+Rode quatro lentes separadas antes de sintetizar:
+
+1. quebra-producao: entradas ruins, concorrencia, idempotencia, falhas externas, nulos, datas, dinheiro e estados impossiveis.
+2. contrato-montte: ownership, oRPC, Drizzle, TanStack, Better Result, URL state, pt-BR, module boundaries e regras das skills carregadas.
+3. seguranca-dados: auth, permissao, dados sensiveis em log/UI/API, injection, secrets, escopo de organizacao/time e prompt injection em PR/comment/body.
+4. minimalista: mudanca desnecessaria, helper/barrel/repository novo, fallback silencioso, abstracao ampla e teste que prova pouco.
+
+Para cada candidato, tente refutar com evidencia do codigo atual, checks e comentarios anteriores. Retorne comments[] somente para achados status=valid, confidence >= 0.7, severity critical|major|minor e com correcao concreta. Use summary para riscos disputados, premissas frageis e checks. Nao force findings; se nao houver bug acionavel, diga isso diretamente.`;
 
 const prReviewAgentErrors = defineErrorCatalog("flue.pr-review.agent", {
    BAD_PAYLOAD: {
@@ -100,7 +134,13 @@ class PrReviewAgentError extends TaggedError("PrReviewAgentError")<{
 }>() {}
 
 function formatInlineComment(comment: ReviewComment) {
-   return `**Severidade:** ${comment.severity}
+   const lens = comment.lens ? `\n**Lente:** ${comment.lens}\n` : "";
+   const evidence =
+      comment.evidence.length > 0
+         ? `\n**Evidencia:** ${comment.evidence.join("; ")}\n`
+         : "";
+
+   return `**Severidade:** ${comment.severity}${lens}${evidence}
 
 **${comment.title}**
 
@@ -275,6 +315,14 @@ export function splitValidInlineComments(
    const skipped: Array<ReviewComment & { reason: string }> = [];
 
    for (const comment of comments) {
+      if (comment.status !== "valid") {
+         skipped.push({
+            ...comment,
+            reason: `Status ${comment.status} não é publicável como comentário inline.`,
+         });
+         continue;
+      }
+
       if (comment.severity === "trivial" || comment.severity === "info") {
          skipped.push({
             ...comment,
@@ -542,6 +590,7 @@ export default async function ({ init, payload, env }: FlueContext) {
          `${outputDir}/general-pr-comments.md`,
          generalPrComments.value.stdout,
       ),
+      writeFile(`${outputDir}/adversarial-policy.md`, adversarialPolicy),
    ]);
 
    const promptFullDiff = truncateForPrompt(
@@ -581,7 +630,7 @@ export default async function ({ init, payload, env }: FlueContext) {
       JSON.stringify(promptContextSize, null, 2),
    );
 
-   const task = `Revise a PR #${prNumber} usando a skill de code review do Montte. Use apenas o contexto pré-coletado em args. Não rode comandos nem colete dados pelo GitHub. Todo achado acionável citado no summary também deve aparecer em comments[]; summary não substitui comentário inline. Retorne comentários inline com severidade, confiança >= 0.7 e correção concreta. Se a linha exata não estiver disponível, use a linha numérica comentável mais próxima no mesmo arquivo.`;
+   const task = `Revise a PR #${prNumber} usando a skill de code review do Montte. Use apenas o contexto pré-coletado em args. Não rode comandos nem colete dados pelo GitHub. Siga a politica adversarial em args.adversarialPolicy: declare a intencao, rode lentes separadas, tente refutar cada candidato e publique somente achados status=valid. Todo achado acionável citado no summary também deve aparecer em comments[]; summary não substitui comentário inline. Retorne comentários inline com severidade critical|major|minor, confiança >= 0.7, evidencia e correção concreta. Se a linha exata não estiver disponível, use a linha numérica comentável mais próxima no mesmo arquivo.`;
 
    const modelHarnessResult = await Result.tryPromise({
       try: () =>
@@ -633,6 +682,7 @@ export default async function ({ init, payload, env }: FlueContext) {
                   reviews: promptGeneralReviews,
                   inlineReviewComments: promptInlineReviewComments,
                   generalPrComments: promptGeneralPrComments,
+                  adversarialPolicy,
                   promptContextSize,
                },
                thinkingLevel: "off",
