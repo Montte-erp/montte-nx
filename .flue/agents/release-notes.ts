@@ -2,7 +2,7 @@ import type { FlueContext } from "@flue/runtime";
 import { local } from "@flue/runtime/node";
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import * as v from "valibot";
 import { formatCause } from "../lib/agent-utils.ts";
 import { DEFAULT_FLUE_MODEL } from "../lib/model.ts";
@@ -151,7 +151,16 @@ export default async function ({ init, payload }: FlueContext) {
 
    const changes = filesResult.value;
 
-   const task = `Gere as release notes da versão ${releaseVersion} em Markdown, em pt-BR, sem inventar links, números ou funcionalidades. Use a skill de release e suas referências como fonte de verdade. Retorne somente o Markdown do corpo da release, sem fences e sem explicações externas.`;
+   await Result.tryPromise({
+      try: () => rm(outputFile, { force: true }),
+      catch: () => undefined,
+   });
+   await Result.tryPromise({
+      try: () => rm(validationFile, { force: true }),
+      catch: () => undefined,
+   });
+
+   const task = `Gere as release notes da versão ${releaseVersion} em Markdown, em pt-BR, sem inventar links, números ou funcionalidades. Use a skill de release e suas referências como fonte de verdade. Escreva o Markdown final em RELEASE_NOTES.md. A resposta final deve ser curta e não deve repetir checklist, validações ou mencionar TODO.`;
 
    const harness = initResult.value;
    const sessionResult = await Result.tryPromise({
@@ -184,7 +193,16 @@ export default async function ({ init, payload }: FlueContext) {
    });
    if (Result.isError(outputResult)) throw outputResult.error;
 
-   const markdown = outputResult.value.text.trim();
+   const returnedMarkdown = outputResult.value.text.trim();
+   const generatedFileResult = await Result.tryPromise({
+      try: () => readFile(outputFile, "utf8"),
+      catch: () => "",
+   });
+   const generatedMarkdown = Result.isError(generatedFileResult)
+      ? ""
+      : generatedFileResult.value.trim();
+   const markdown =
+      generatedMarkdown.length > 0 ? generatedMarkdown : returnedMarkdown;
 
    const writeResult = await Result.tryPromise({
       try: () => writeFile(outputFile, markdown),
