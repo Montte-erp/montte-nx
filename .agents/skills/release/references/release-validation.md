@@ -9,10 +9,12 @@ Checks minimos:
 ```bash
 test -s RELEASE_NOTES.md
 grep -Eiq '(^|[^[:alnum:]_])TODO([^[:alnum:]_]|$)|!\[Demo\]|\(TODO|link se existir|senão TODO' RELEASE_NOTES.md && exit 1
+grep -Eiq 'Now I have|Let me|Classification:|PRs merged|canonical units|generate the release notes|trace PR authors' RELEASE_NOTES.md && exit 1
 head -n 1 RELEASE_NOTES.md | grep -Eq '^# +Montte ' && exit 1
 ```
 
 O regex de `TODO` precisa tratar `TODO` como token. Nao use `TODO` solto, porque falha em palavras como `todos`.
+O regex de rascunho precisa bloquear vazamento de raciocinio do agente antes da publicacao.
 
 ## Workflow edits
 

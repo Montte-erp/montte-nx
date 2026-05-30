@@ -112,6 +112,10 @@ jobs:
                 echo "RELEASE_NOTES.md contains unfinished placeholder text" >&2
                 exit 1
               fi
+              if grep -Eiq 'Now I have|Let me|Classification:|PRs merged|canonical units|generate the release notes|trace PR authors' RELEASE_NOTES.md; then
+                echo "RELEASE_NOTES.md contains agent reasoning or draft analysis" >&2
+                exit 1
+              fi
               if head -n 1 RELEASE_NOTES.md | grep -Eq '^# +Montte '; then
                 echo "RELEASE_NOTES.md repeats the GitHub release title in the body" >&2
                 exit 1

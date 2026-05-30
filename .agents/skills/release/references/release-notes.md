@@ -13,7 +13,7 @@ Use PR como unidade canonica quando existir. Consolide commits do mesmo PR. Comm
 
 ## Saida
 
-Escreva em `$OUTPUT_FILE`. Nao inclua H1 com nome/versao da release.
+Escreva em `$OUTPUT_FILE` somente o Markdown final publicavel. Nao inclua H1 com nome/versao da release, raciocinio, classificacao intermediaria, plano, lista bruta de PRs ou frases de processo como "Let me" / "Now I have".
 
 Estrutura:
 
@@ -99,3 +99,4 @@ Omita secoes vazias inteiras.
 - Notas tecnicas e manutencao estao dentro de `<details>`.
 - Nao ha item duplicado entre secoes.
 - Secoes vazias foram removidas.
+- Nao ha rascunho, analise intermediaria ou comentario do agente antes/depois das notas finais.
