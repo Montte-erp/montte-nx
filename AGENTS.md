@@ -45,7 +45,7 @@ Before working in any Montte area, open the skill for that area first. The skill
 | Implementation in `apps/`, `modules/`, `core/`, `packages/`, or `tooling/` | [implementation](.agents/skills/implementation/SKILL.md) |
 | Review comments, PR findings, reported bugs, diffs, CI findings | [code-review](.agents/skills/code-review/SKILL.md) |
 | UI, UX, product copy, layout, dashboards, forms, sheets, authenticated surfaces | [design](.agents/skills/design/SKILL.md) |
-| Release workflows, release notes, tags, GitHub Releases, Linear Releases, recovery | [release](.agents/skills/release/SKILL.md) |
+| Release workflows, release notes, tags, GitHub Releases, recovery | [release](.agents/skills/release/SKILL.md) |
 | Project documentation, `docs/project`, documentation automation | [docs](.agents/skills/docs/SKILL.md) |
 | Blog, LinkedIn, X, release blog posts, marketing drafts | [marketing](.agents/skills/marketing/SKILL.md) |
 
@@ -78,6 +78,6 @@ The product language is pt-BR. User-visible messages should stay in Brazilian Po
 
 ## Releases
 
-Produto unico (`apps/web`) usa CalVer `YYYY.MM.DD` com tag `vYYYY.MM.DD`. Workflow [.github/workflows/release-weekly.yml](.github/workflows/release-weekly.yml) coleta commits + PRs mergeados desde a ultima tag, gera release notes em pt-BR via [release](.agents/skills/release/SKILL.md), cria tag + GitHub Release + Linear Release. Manual via `workflow_dispatch` com `dry_run` opcional. Sem libraries publicadas; todo codigo vive no monorepo.
+Produto unico (`apps/web`) usa CalVer `YYYY.MM.DD` com tag `vYYYY.MM.DD`. Workflow [.github/workflows/release-weekly.yml](.github/workflows/release-weekly.yml) coleta commits + PRs mergeados desde a ultima tag, gera release notes em pt-BR via [release](.agents/skills/release/SKILL.md), cria tag + GitHub Release. Manual via `workflow_dispatch` com `dry_run` opcional. Sem libraries publicadas; todo codigo vive no monorepo.
 
 Workflow [.github/workflows/blog-post-from-release.yml](.github/workflows/blog-post-from-release.yml) transforma releases publicadas em PR de post usando [marketing](.agents/skills/marketing/SKILL.md). Workflow [.github/workflows/project-documentation.yml](.github/workflows/project-documentation.yml) atualiza `docs/project` usando [docs](.agents/skills/docs/SKILL.md).

@@ -13,7 +13,7 @@ Gerar release notes publicaveis em pt-BR sem transformar detalhes internos em ma
 - separar corpo publico de notas tecnicas;
 - preservar `dry_run`;
 - criar artefatos verificaveis para recuperacao manual;
-- publicar tag, GitHub Release e Linear Release somente depois da validacao.
+- publicar tag e GitHub Release somente depois da validacao.
 
 ## Pipeline
 
@@ -23,7 +23,7 @@ Gerar release notes publicaveis em pt-BR sem transformar detalhes internos em ma
 4. `generate`: produzir `RELEASE_NOTES.md` seguindo `release-notes.md`.
 5. `validate`: checar estrutura, links, secoes vazias, placeholders e linguagem publica.
 6. `dry-run`: se habilitado, publicar apenas summary/artifact sem tag/release.
-7. `publish`: criar tag, GitHub Release e Linear Release.
+7. `publish`: criar tag e GitHub Release.
 8. `recover`: se falhar depois da geracao, seguir `manual-recovery.md`.
 
 ## Coleta minima
@@ -88,7 +88,7 @@ Gerar warning, nao falha, quando:
 - a release e quase toda tecnica;
 - ha commits sem PR;
 - autores nao puderam ser normalizados;
-- Linear Release nao puder ser criada por falta de credencial.
+- a URL da GitHub Release nao puder ser verificada por falha externa.
 
 ## Prompt de geracao
 
@@ -112,7 +112,7 @@ nesta etapa; apenas valide e sugira correcoes pontuais.
 ## Publicacao
 
 - `dry_run=true`: nao criar tag/release; anexar artefatos e summary do workflow.
-- `dry_run=false`: criar tag anotada ou lightweight conforme workflow atual, criar GitHub Release e Linear Release.
+- `dry_run=false`: criar tag anotada ou lightweight conforme workflow atual e criar GitHub Release.
 - Depois de publicar, verificar URL da release e tag remota.
 - Se falhar depois de criar tag, nao recriar nada sem verificar estado remoto.
 
@@ -124,5 +124,5 @@ Relatar:
 - versao gerada;
 - se foi `dry_run`;
 - artefatos criados;
-- links de release/Linear quando publicados;
+- link da release quando publicada;
 - warnings ou etapas puladas por credencial.

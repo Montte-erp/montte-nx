@@ -1,6 +1,6 @@
 ---
 name: release
-description: Workflow de release do Montte para release weekly, release notes, GitHub tag/release, Linear release, recuperacao manual e post de blog pos-release. Use ao alterar .github/workflows/release-weekly.yml, blog-post-from-release.yml, notes, tags vYYYY.MM.DD ou automacoes de release.
+description: Workflow de release do Montte para release weekly, release notes, GitHub tag/release, recuperacao manual e post de blog pos-release. Use ao alterar .github/workflows/release-weekly.yml, blog-post-from-release.yml, notes, tags vYYYY.MM.DD ou automacoes de release.
 ---
 
 # Release
@@ -18,13 +18,13 @@ Para cada tarefa:
 3. Preserve `dry_run` quando a tarefa for de geracao.
 4. Mantenha release notes em pt-BR, orientadas a valor de usuario.
 5. Separe corpo publico de notas tecnicas em `<details>`.
-6. Valide notes, tags, GitHub release, Linear release e PR de blog conforme o caminho usado.
+6. Valide notes, tags, GitHub release e PR de blog conforme o caminho usado.
 
 ## Roteamento
 
 Leia somente as referencias envolvidas:
 
-- Workflow semanal, cron, inputs, coleta de commits/PRs, tag e Linear release: [weekly-workflow](references/weekly-workflow.md).
+- Workflow semanal, cron, inputs, coleta de commits/PRs e tag: [weekly-workflow](references/weekly-workflow.md).
 - Prompt e regras para gerar `RELEASE_NOTES.md`: [release-notes](references/release-notes.md).
 - Release notes geradas em CI/action, validacao e publicacao: [automated-release-notes](references/automated-release-notes.md).
 - Recuperacao quando notes existem mas tag/release falhou: [manual-recovery](references/manual-recovery.md).

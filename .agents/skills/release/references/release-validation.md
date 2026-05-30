@@ -32,7 +32,7 @@ Para release publicada:
 gh release view vYYYY.MM.DD --json tagName,name,url,publishedAt
 ```
 
-Para Linear release, confira que a mutation retornou `.data.releaseCreate.success == true` ou que o workflow registrou falha clara.
+O workflow semanal publica somente tag e GitHub Release. Nao adicione validacao de mutation externa nesse caminho.
 
 ## Blog
 

@@ -128,22 +128,6 @@ jobs:
                 --title "Montte ${{ steps.version.outputs.version }}" \
                 --notes-file RELEASE_NOTES.md
 
-         - name: Create Linear release
-           if: steps.version.outputs.skip != 'true' && inputs.dry_run != true
-           env:
-              LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
-              VERSION: ${{ steps.version.outputs.version }}
-           run: |
-              NOTES=$(jq -Rs . < RELEASE_NOTES.md)
-              curl -sS -X POST https://api.linear.app/graphql \
-                -H "Authorization: $LINEAR_API_KEY" \
-                -H "Content-Type: application/json" \
-                -d "$(jq -n --arg version "$VERSION" --argjson notes "$NOTES" '{
-                  query: "mutation($input: ReleaseCreateInput!) { releaseCreate(input: $input) { success release { id url } } }",
-                  variables: { input: { name: ("Montte " + $version), description: $notes } }
-                }')" | tee linear-response.json
-              jq -e '.data.releaseCreate.success' linear-response.json
-
          - name: Upload notes artifact
            if: steps.version.outputs.skip != 'true'
            uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

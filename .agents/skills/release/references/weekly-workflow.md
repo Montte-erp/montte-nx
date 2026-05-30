@@ -19,8 +19,7 @@ Use para `.github/workflows/release-weekly.yml`.
 4. Gera `RELEASE_NOTES.md` lendo [release-notes](release-notes.md).
 5. Verifica notes com [release-validation](release-validation.md).
 6. Cria GitHub release com `gh release create "$TAG" --target "$GITHUB_SHA" --title "Montte $VERSION" --notes-file RELEASE_NOTES.md`.
-7. Cria Linear Release via GraphQL quando `LINEAR_API_KEY` esta presente.
-8. Sobe artefatos (`changes.md`, `RELEASE_NOTES.md`).
+7. Sobe artefatos (`changes.md`, `RELEASE_NOTES.md`).
 
 ## Como implementar prompt no workflow
 
