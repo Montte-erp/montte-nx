@@ -170,8 +170,13 @@ export default async function ({ init, payload }: FlueContext) {
    });
    if (Result.isError(filesResult)) throw filesResult.error;
 
-   const { changes, skill, releaseNotes, automatedReleaseNotes, validation } =
-      filesResult.value;
+   const {
+      changes,
+      skill,
+      releaseNotes,
+      automatedReleaseNotes,
+      validation: validationReferenceContent,
+   } = filesResult.value;
 
    await Result.tryPromise({
       try: () => rm(outputFile, { force: true }),
@@ -200,7 +205,7 @@ ${automatedReleaseNotes}
 
 Referência release-validation.md:
 
-${validation}
+${validationReferenceContent}
 
 Mudanças normalizadas:
 
