@@ -160,6 +160,9 @@ export const contracts = contractsSchema.table(
          { onDelete: "set null" },
       ),
       title: text("title").notNull(),
+      // Corpo do contrato em markdown (fonte de verdade; editado no PlateJS,
+      // gerado pela IA na ingestão). Timbre/layout vivem no template de export.
+      content: text("content"),
       type: text("type").notNull().$type<ContractType>().default("unknown"),
       status: text("status").notNull().$type<ContractStatus>().default("draft"),
       counterpartyName: text("counterparty_name").notNull(),
