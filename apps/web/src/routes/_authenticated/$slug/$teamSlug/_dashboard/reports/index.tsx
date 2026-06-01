@@ -11,13 +11,14 @@ import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { SearchInput } from "@packages/ui/components/search-input";
 import { Table, TableCell, TableRow } from "@packages/ui/components/table";
 import { cn } from "@packages/ui/lib/utils";
-import { createCollection, ilike, useLiveQuery } from "@tanstack/react-db";
+import { createCollection, eq, ilike, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
    flexRender,
    getCoreRowModel,
    useReactTable,
    type ColumnDef,
+   type ColumnFiltersState,
 } from "@tanstack/react-table";
 import { Plus, ReceiptText, Trash2 } from "lucide-react";
 import { fromPromise } from "neverthrow";
@@ -26,6 +27,7 @@ import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
@@ -122,6 +124,7 @@ type ReportQuery<T> = {
 function applyFiltersAndSorting<TQuery extends ReportQuery<TQuery>>(
    query: TQuery,
    baseSearch: string,
+   columnFilters: ColumnFiltersState,
    sorting: Array<{ id: string; desc: boolean }>,
 ) {
    let filteredQuery: TQuery = query;
@@ -129,6 +132,24 @@ function applyFiltersAndSorting<TQuery extends ReportQuery<TQuery>>(
    if (baseSearch) {
       filteredQuery = filteredQuery.where(({ report }) =>
          ilike(report.name, `%${baseSearch}%`),
+      );
+   }
+
+   const nameFilterValue = columnFilters.find(
+      (filter) => filter.id === "name",
+   )?.value;
+   if (typeof nameFilterValue === "string" && nameFilterValue.trim()) {
+      filteredQuery = filteredQuery.where(({ report }) =>
+         ilike(report.name, `%${nameFilterValue.trim()}%`),
+      );
+   }
+
+   const typeFilterValue = columnFilters.find(
+      (filter) => filter.id === "type",
+   )?.value;
+   if (typeof typeFilterValue === "string" && typeFilterValue.trim()) {
+      filteredQuery = filteredQuery.where(({ report }) =>
+         eq(report.type, typeFilterValue.trim()),
       );
    }
 
@@ -208,11 +229,12 @@ function ReportsListWithTeam({ teamId }: { teamId: string }) {
          const baseQuery = applyFiltersAndSorting(
             q.from({ report: reportsCollection }),
             baseSearch,
+            columnFilters,
             sorting,
          );
          return baseQuery.select(({ report }) => report);
       },
-      [baseSearch, reportsCollection, sorting],
+      [baseSearch, columnFilters, reportsCollection, sorting],
    );
 
    const { data: reports } = useLiveQuery(
@@ -220,6 +242,7 @@ function ReportsListWithTeam({ teamId }: { teamId: string }) {
          const baseQuery = applyFiltersAndSorting(
             q.from({ report: reportsCollection }),
             baseSearch,
+            columnFilters,
             sorting,
          );
          return baseQuery
@@ -227,7 +250,7 @@ function ReportsListWithTeam({ teamId }: { teamId: string }) {
             .offset((page - 1) * pageSize)
             .select(({ report }) => report);
       },
-      [baseSearch, page, pageSize, reportsCollection, sorting],
+      [baseSearch, columnFilters, page, pageSize, reportsCollection, sorting],
    );
    const removeReport = useMemo(
       () => removeReportAction(reportsCollection),
@@ -420,6 +443,7 @@ function ReportsListWithTeam({ teamId }: { teamId: string }) {
                </Button>
             </div>
          </div>
+         <DataTableFilterChips table={table} />
          <ScrollArea className="bg-card flex-1 min-h-0 rounded-md border">
             <Table>
                <DataTableHeader table={table} />

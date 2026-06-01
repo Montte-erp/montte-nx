@@ -20,6 +20,7 @@ import {
    getCoreRowModel,
    useReactTable,
    type ColumnDef,
+   type ColumnFiltersState,
    type SortingState,
 } from "@tanstack/react-table";
 import { Result } from "better-result";
@@ -30,6 +31,7 @@ import { z } from "zod";
 
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { ExportButton } from "@/components/export-button/export-button";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
@@ -41,8 +43,6 @@ import { DataImportButton } from "@/blocks/data-table/data-import/data-import-bu
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
-import { PageFilters } from "@/components/page-filters/page-filters";
-import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -246,6 +246,33 @@ function sortBankAccounts(rows: BankAccountRow[], sorting: SortingState) {
    });
 }
 
+function matchesBankAccountFilter(
+   account: BankAccountRow,
+   filter: ColumnFiltersState[number],
+) {
+   if (typeof filter.value !== "string") return true;
+   const value = filter.value.trim().toLowerCase();
+   if (!value) return true;
+   if (filter.id === "type") return account.type === value;
+   if (filter.id === "bank") {
+      return String(account.bankName ?? "")
+         .toLowerCase()
+         .includes(value);
+   }
+   if (filter.id === "name") return account.name.toLowerCase().includes(value);
+   return true;
+}
+
+function filterBankAccounts(
+   rows: BankAccountRow[],
+   filters: ColumnFiltersState,
+) {
+   if (filters.length === 0) return rows;
+   return rows.filter((account) =>
+      filters.every((filter) => matchesBankAccountFilter(account, filter)),
+   );
+}
+
 type BankAccountUpdatePatch = Omit<BankAccountUpdateInput, "id">;
 
 function getBankAccountRowPatch(
@@ -380,13 +407,14 @@ function BankAccountsList() {
       const normalized = removeConfirmedOptimisticDuplicates(
          liveBankAccounts as LiveBankAccountRow[],
       );
-      const sorted = sortBankAccounts(normalized, sorting);
+      const filtered = filterBankAccounts(normalized, columnFilters);
+      const sorted = sortBankAccounts(filtered, sorting);
       const start = (page - 1) * pageSize;
       return {
          all: sorted,
          rows: sorted.slice(start, start + pageSize),
       };
-   }, [liveBankAccounts, page, pageSize, sorting]);
+   }, [columnFilters, liveBankAccounts, page, pageSize, sorting]);
 
    const importConfig: DataImportConfig = useMemo(
       () => ({
@@ -936,27 +964,6 @@ function BankAccountsList() {
                   value={searchInput.value}
                />
                <div className="flex flex-wrap items-center gap-2">
-                  <PageFilters>
-                     {TYPES.map((key) => (
-                        <PageFilter
-                           active={type === key}
-                           group="Tipo"
-                           id={`type:${key}`}
-                           key={key}
-                           label={TYPE_LABELS[key]}
-                           onToggle={(active) =>
-                              navigate({
-                                 search: (prev) => ({
-                                    ...prev,
-                                    type: active ? key : undefined,
-                                    page: 1,
-                                 }),
-                                 replace: true,
-                              })
-                           }
-                        />
-                     ))}
-                  </PageFilters>
                   <DataTableColumnVisibility table={table} />
                   <ExportButton table={table} fileBase="contas-bancarias" />
                   <DataImportButton api={importApi} config={importConfig} />
@@ -971,6 +978,7 @@ function BankAccountsList() {
                   </Button>
                </div>
             </div>
+            <DataTableFilterChips table={table} />
             <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />

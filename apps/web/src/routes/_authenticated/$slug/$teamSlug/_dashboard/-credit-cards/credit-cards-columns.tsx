@@ -76,6 +76,7 @@ export function buildCreditCardColumns(options?: {
          header: "Nome",
          meta: {
             label: "Nome",
+            filterVariant: "text",
             cellComponent: "text",
             isEditable: true,
             editMode: "inline",

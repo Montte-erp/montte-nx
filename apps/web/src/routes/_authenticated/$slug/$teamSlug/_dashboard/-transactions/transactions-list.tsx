@@ -33,7 +33,6 @@ import {
    createCollection,
    eq,
    ilike,
-   lt,
    or,
    useLiveQuery,
 } from "@tanstack/react-db";
@@ -44,10 +43,10 @@ import {
    getGroupedRowModel,
    useReactTable,
    type ColumnDef,
+   type ColumnFiltersState,
 } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
-   AlertTriangle,
    ArrowLeftRight,
    Ban,
    CalendarDays,
@@ -65,6 +64,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
@@ -76,9 +76,6 @@ import { ExportButton } from "@/components/export-button/export-button";
 import { cn } from "@packages/ui/lib/utils";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
-import { PageFilters } from "@/components/page-filters/page-filters";
-import { PageFilter } from "@/components/page-filters/page-filter";
-import { PageFilterSelect } from "@/components/page-filters/page-filter-select";
 import { useSheet } from "@/hooks/use-sheet";
 import { TransactionFormSheet } from "./transaction-form-sheet";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -139,22 +136,16 @@ const routeApi = getRouteApi(
 );
 
 type ImportLookupItem = { id: string; name: string };
-type TransactionGroupBy = "none" | "date" | "category";
-
-function getGroupingSelectValue(
-   grouping: readonly string[],
-): TransactionGroupBy {
-   const first = grouping[0];
-   if (first === "date") return "date";
-   if (first === "categoryName") return "category";
-   return "none";
+function isTransactionStatus(value: unknown): value is "pending" | "paid" {
+   return value === "pending" || value === "paid";
 }
 
-function getGroupingForSelectValue(value: string): string[] | null {
-   if (value === "none") return [];
-   if (value === "date") return ["date"];
-   if (value === "category") return ["categoryName"];
-   return null;
+function getStringColumnFilterValue(
+   filters: ColumnFiltersState,
+   id: string,
+): string | undefined {
+   const value = filters.find((filter) => filter.id === id)?.value;
+   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 function normalizeImportLookup(value: unknown): string {
@@ -431,13 +422,10 @@ export function TransactionsList() {
       columnFilters,
       page,
       pageSize,
-      view,
-      overdueOnly,
       status,
       search,
       bankId,
       relationshipId,
-      grouping,
    } = routeApi.useSearch();
 
    const { openAlertDialog } = useAlertDialog();
@@ -457,26 +445,23 @@ export function TransactionsList() {
          }),
    });
 
-   const handleViewChange = useCallback(
-      (nextView: string) => {
-         navigate({
-            search: (prev) => ({
-               ...prev,
-               view: nextView as
-                  | "all"
-                  | "payable"
-                  | "receivable"
-                  | "settled"
-                  | "ignored",
-               page: 1,
-            }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
    const trimmedSearch = search.trim();
+   const columnStatusFilter = columnFilters.find(
+      (filter) => filter.id === "status",
+   )?.value;
+   const statusFromColumn = isTransactionStatus(columnStatusFilter)
+      ? columnStatusFilter
+      : undefined;
+   const effectiveStatus = useMemo<Array<"pending" | "paid">>(() => {
+      if (statusFromColumn) return [statusFromColumn];
+      return status.filter(isTransactionStatus);
+   }, [status, statusFromColumn]);
+   const effectiveBankId =
+      getStringColumnFilterValue(columnFilters, "bankAccountName") ?? bankId;
+   const effectiveRelationshipId =
+      getStringColumnFilterValue(columnFilters, "customerName") ??
+      getStringColumnFilterValue(columnFilters, "supplierName") ??
+      relationshipId;
    const collectionTeamId = activeTeamId ?? "no-team";
    const transactionsCollection = useMemo(
       () =>
@@ -485,22 +470,20 @@ export function TransactionsList() {
                queryClient,
                teamId: collectionTeamId,
                search: trimmedSearch || undefined,
-               view,
-               overdueOnly,
-               status: status.length > 0 ? status : undefined,
-               bankAccountId: bankId || undefined,
-               relationshipId: relationshipId || undefined,
+               view: "all",
+               overdueOnly: false,
+               status: effectiveStatus.length > 0 ? effectiveStatus : undefined,
+               bankAccountId: effectiveBankId || undefined,
+               relationshipId: effectiveRelationshipId || undefined,
             }),
          ),
       [
-         bankId,
          collectionTeamId,
-         overdueOnly,
+         effectiveBankId,
+         effectiveRelationshipId,
+         effectiveStatus,
          queryClient,
-         relationshipId,
-         status,
          trimmedSearch,
-         view,
       ],
    );
 
@@ -511,22 +494,20 @@ export function TransactionsList() {
                queryClient,
                teamId: collectionTeamId,
                search: trimmedSearch || undefined,
-               view,
-               overdueOnly,
-               status: status.length > 0 ? status : undefined,
-               bankAccountId: bankId || undefined,
-               relationshipId: relationshipId || undefined,
+               view: "all",
+               overdueOnly: false,
+               status: effectiveStatus.length > 0 ? effectiveStatus : undefined,
+               bankAccountId: effectiveBankId || undefined,
+               relationshipId: effectiveRelationshipId || undefined,
             }),
          ),
       [
-         bankId,
          collectionTeamId,
-         overdueOnly,
+         effectiveBankId,
+         effectiveRelationshipId,
+         effectiveStatus,
          queryClient,
-         relationshipId,
-         status,
          trimmedSearch,
-         view,
       ],
    );
 
@@ -589,73 +570,11 @@ export function TransactionsList() {
       [collectionTeamId, queryClient],
    );
 
-   const handleOverdueToggle = useCallback(
-      (checked: boolean) => {
-         navigate({
-            search: (prev) => ({ ...prev, overdueOnly: checked, page: 1 }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
-   const handleGroupByChange = useCallback(
-      (next: string) => {
-         const nextGrouping = getGroupingForSelectValue(next);
-         if (!nextGrouping) return;
-         navigate({
-            search: (prev) => ({ ...prev, grouping: nextGrouping, page: 1 }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
-   const handleBankFilterToggle = useCallback(
-      (active: boolean) => {
-         if (active) return;
-         navigate({
-            search: (prev) => ({ ...prev, bankId: "", page: 1 }),
-            replace: true,
-         });
-      },
-      [navigate],
-   );
-
    const { data: liveTransactions } = useLiveQuery(
       (q) => {
          let query = q.from({ transaction: transactionsCollection });
 
-         if (view === "payable") {
-            query = query
-               .where(({ transaction }) => eq(transaction.type, "expense"))
-               .where(({ transaction }) => eq(transaction.status, "pending"))
-               .where(({ transaction }) => eq(transaction.ignored, false));
-         }
-         if (view === "receivable") {
-            query = query
-               .where(({ transaction }) => eq(transaction.type, "income"))
-               .where(({ transaction }) => eq(transaction.status, "pending"))
-               .where(({ transaction }) => eq(transaction.ignored, false));
-         }
-         if (view === "settled") {
-            query = query
-               .where(({ transaction }) => eq(transaction.status, "paid"))
-               .where(({ transaction }) => eq(transaction.ignored, false));
-         }
-         if (view === "ignored") {
-            query = query.where(({ transaction }) =>
-               eq(transaction.ignored, true),
-            );
-         }
-         if (overdueOnly) {
-            query = query
-               .where(({ transaction }) => eq(transaction.status, "pending"))
-               .where(({ transaction }) =>
-                  lt(transaction.dueDate, dayjs().format("YYYY-MM-DD")),
-               );
-         }
-         const selectedStatuses = status.filter(
+         const selectedStatuses = effectiveStatus.filter(
             (selectedStatus) => selectedStatus !== undefined,
          );
          if (selectedStatuses.length === 1) {
@@ -685,14 +604,14 @@ export function TransactionsList() {
                });
             }
          }
-         if (bankId) {
+         if (effectiveBankId) {
             query = query.where(({ transaction }) =>
-               eq(transaction.bankAccountId, bankId),
+               eq(transaction.bankAccountId, effectiveBankId),
             );
          }
-         if (relationshipId) {
+         if (effectiveRelationshipId) {
             query = query.where(({ transaction }) =>
-               eq(transaction.relationshipId, relationshipId),
+               eq(transaction.relationshipId, effectiveRelationshipId),
             );
          }
          if (trimmedSearch) {
@@ -702,6 +621,31 @@ export function TransactionsList() {
                   ilike(transaction.name, pattern),
                   ilike(transaction.description, pattern),
                ),
+            );
+         }
+
+         const nameFilterValue = columnFilters.find(
+            (filter) => filter.id === "name",
+         )?.value;
+         if (typeof nameFilterValue === "string" && nameFilterValue.trim()) {
+            query = query.where(({ transaction }) =>
+               ilike(
+                  transaction.name,
+                  `%${escapeIlikePattern(nameFilterValue.trim())}%`,
+               ),
+            );
+         }
+
+         const typeFilterValue = columnFilters.find(
+            (filter) => filter.id === "type",
+         )?.value;
+         if (
+            typeFilterValue === "income" ||
+            typeFilterValue === "expense" ||
+            typeFilterValue === "transfer"
+         ) {
+            query = query.where(({ transaction }) =>
+               eq(transaction.type, typeFilterValue),
             );
          }
 
@@ -783,16 +727,15 @@ export function TransactionsList() {
             .select(({ transaction }) => transaction);
       },
       [
-         bankId,
-         overdueOnly,
+         effectiveBankId,
+         effectiveRelationshipId,
          page,
          pageSize,
-         relationshipId,
+         columnFilters,
          sorting,
-         status,
+         effectiveStatus,
          transactionsCollection,
          trimmedSearch,
-         view,
       ],
    );
 
@@ -866,11 +809,6 @@ export function TransactionsList() {
    const safeSuppliers = useMemo(
       () => suppliersResult ?? [],
       [suppliersResult],
-   );
-
-   const selectedBankAccount = useMemo(
-      () => safeBankAccounts.find((account) => account.id === bankId),
-      [safeBankAccounts, bankId],
    );
 
    const transactionData = safeTransactions;
@@ -1751,11 +1689,61 @@ export function TransactionsList() {
       handleDelete,
    ]);
 
+   const effectiveColumnFilters = useMemo<ColumnFiltersState>(() => {
+      const next = columnFilters.filter(
+         (filter) =>
+            filter.id !== "bankAccountName" &&
+            filter.id !== "customerName" &&
+            filter.id !== "supplierName",
+      );
+      if (effectiveBankId) {
+         next.push({ id: "bankAccountName", value: effectiveBankId });
+      }
+      if (effectiveRelationshipId) {
+         const relationshipFilterId = safeSuppliers.some(
+            (supplier) => supplier.id === effectiveRelationshipId,
+         )
+            ? "supplierName"
+            : "customerName";
+         next.push({
+            id: relationshipFilterId,
+            value: effectiveRelationshipId,
+         });
+      }
+      return next;
+   }, [columnFilters, effectiveBankId, effectiveRelationshipId, safeSuppliers]);
+
    const urlState = useTableUrlState({
-      search: { sorting, columnFilters, page, pageSize, grouping },
+      search: {
+         sorting,
+         columnFilters: effectiveColumnFilters,
+         page,
+         pageSize,
+         grouping: [],
+      },
       onUpdate: (next) =>
          navigate({
-            search: (prev) => ({ ...prev, ...next }),
+            search: (prev) => {
+               const merged = { ...prev, ...next };
+               if (next.columnFilters) {
+                  const hasBankFilter = next.columnFilters.some(
+                     (filter) => filter.id === "bankAccountName",
+                  );
+                  const hasRelationshipFilter = next.columnFilters.some(
+                     (filter) =>
+                        filter.id === "customerName" ||
+                        filter.id === "supplierName",
+                  );
+                  return {
+                     ...merged,
+                     bankId: hasBankFilter ? merged.bankId : "",
+                     relationshipId: hasRelationshipFilter
+                        ? merged.relationshipId
+                        : "",
+                  };
+               }
+               return merged;
+            },
             replace: true,
          }),
       totalRows: total,
@@ -1894,54 +1882,6 @@ export function TransactionsList() {
                   value={searchInput.value}
                />
                <div className="flex flex-wrap items-center gap-2">
-                  <PageFilters>
-                     <PageFilterSelect
-                        group="Visualização"
-                        id="view"
-                        label="Visualização"
-                        onChange={handleViewChange}
-                        options={[
-                           { value: "all", label: "Todos" },
-                           { value: "payable", label: "A Pagar" },
-                           { value: "receivable", label: "A Receber" },
-                           { value: "settled", label: "Efetivados" },
-                           { value: "ignored", label: "Ignorados" },
-                        ]}
-                        value={view}
-                     />
-                     <PageFilterSelect
-                        group="Agrupamento"
-                        id="groupBy"
-                        label="Agrupar por"
-                        onChange={handleGroupByChange}
-                        options={[
-                           { value: "none", label: "Sem agrupamento" },
-                           { value: "date", label: "Data" },
-                           { value: "category", label: "Categoria" },
-                        ]}
-                        value={getGroupingSelectValue(grouping)}
-                     />
-                     <PageFilter
-                        active={overdueOnly}
-                        group="Filtros"
-                        icon={<AlertTriangle className="size-4" />}
-                        id="overdueOnly"
-                        label="Somente vencidos"
-                        onToggle={handleOverdueToggle}
-                     />
-                     {bankId ? (
-                        <PageFilter
-                           active
-                           group="Conta"
-                           icon={<Landmark className="size-4" />}
-                           id="bankId"
-                           label={
-                              selectedBankAccount?.name ?? "Conta selecionada"
-                           }
-                           onToggle={handleBankFilterToggle}
-                        />
-                     ) : null}
-                  </PageFilters>
                   <DataTableColumnVisibility table={table} />
                   <ExportButton table={table} fileBase="lancamentos" />
                   <DataImportButton api={importApi} config={importConfig} />
@@ -1957,6 +1897,7 @@ export function TransactionsList() {
                </div>
             </div>
             <TooltipProvider>
+               <DataTableFilterChips table={table} />
                <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                   <Table
                      className="min-w-max"
@@ -1990,7 +1931,7 @@ export function TransactionsList() {
                            </EmptyMedia>
                            <EmptyTitle>Nenhum lançamento</EmptyTitle>
                            <EmptyDescription>
-                              {search || bankId
+                              {search || effectiveColumnFilters.length > 0
                                  ? "Nenhum lançamento encontrado para os filtros aplicados."
                                  : "Registre um novo lançamento para começar a controlar suas finanças."}
                            </EmptyDescription>

@@ -33,6 +33,7 @@ import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
    getCoreRowModel,
+   getFilteredRowModel,
    getSortedRowModel,
    useReactTable,
    type ColumnDef,
@@ -47,6 +48,7 @@ import { authClient } from "@/integrations/better-auth/auth-client";
 import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DefaultHeader } from "../../../-layout/default-header";
 
@@ -87,7 +89,7 @@ function TeamsContent() {
          {
             accessorKey: "name",
             header: "Nome",
-            meta: { label: "Nome" },
+            meta: { label: "Nome", filterVariant: "text" },
             cell: ({ row }) => (
                <span className="font-medium">{row.original.name}</span>
             ),
@@ -95,7 +97,7 @@ function TeamsContent() {
          {
             accessorKey: "slug",
             header: "Slug",
-            meta: { label: "Slug" },
+            meta: { label: "Slug", filterVariant: "text" },
             cell: ({ row }) => (
                <span className="text-muted-foreground text-sm">
                   {row.original.slug}
@@ -140,6 +142,7 @@ function TeamsContent() {
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 200, maxSize: 600 },
       getCoreRowModel: getCoreRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
       getSortedRowModel: getSortedRowModel(),
    });
 
@@ -150,6 +153,7 @@ function TeamsContent() {
             title="Espaços"
          />
 
+         <DataTableFilterChips table={table} />
          <ScrollArea className="rounded-md border bg-card">
             <Table>
                <DataTableHeader table={table} />

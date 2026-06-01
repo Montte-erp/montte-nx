@@ -17,7 +17,7 @@ export function buildReportsColumns(
          id: "name",
          accessorKey: "name",
          header: "Nome",
-         meta: { label: "Nome", exportable: true },
+         meta: { label: "Nome", filterVariant: "text", exportable: true },
          cell: ({ row }) => (
             <span className="font-medium">{row.original.name}</span>
          ),
@@ -26,7 +26,15 @@ export function buildReportsColumns(
          id: "type",
          accessorKey: "type",
          header: "Tipo",
-         meta: { label: "Tipo", exportable: true },
+         meta: {
+            label: "Tipo",
+            filterVariant: "select",
+            editOptions: Object.entries(REPORT_LABELS).map(([value, item]) => ({
+               value,
+               label: item.label,
+            })),
+            exportable: true,
+         },
          cell: ({ row }) => {
             const Icon = REPORT_LABELS[row.original.type].icon;
             return (

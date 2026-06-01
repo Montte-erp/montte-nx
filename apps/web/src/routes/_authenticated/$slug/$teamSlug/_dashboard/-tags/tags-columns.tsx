@@ -41,6 +41,7 @@ export function buildTagColumns(options?: {
          header: "Nome",
          meta: {
             label: "Nome",
+            filterVariant: "text",
             exportable: true,
             isEditable: true,
             editMode: "inline",
@@ -129,6 +130,7 @@ export function buildTagColumns(options?: {
          header: "Descrição",
          meta: {
             label: "Descrição",
+            filterVariant: "text",
             exportable: true,
             isEditable: true,
             editMode: "inline",

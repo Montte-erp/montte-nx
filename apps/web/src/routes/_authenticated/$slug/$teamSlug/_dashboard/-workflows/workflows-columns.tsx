@@ -106,7 +106,14 @@ export function buildWorkflowsColumns({
          id: "status",
          accessorKey: "status",
          header: "Status",
-         meta: { label: "Status", filterVariant: "select" },
+         meta: {
+            label: "Status",
+            filterVariant: "select",
+            editOptions: [
+               { value: "active", label: "Ativas" },
+               { value: "paused", label: "Pausadas" },
+            ],
+         },
          cell: ({ row }) => (
             <WorkflowStatusBadge status={row.original.status} />
          ),

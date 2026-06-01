@@ -23,6 +23,7 @@ import {
    type ColumnDef,
    type ColumnFiltersState,
    type ColumnOrderState,
+   type ExpandedState,
    type ColumnPinningState,
    type OnChangeFn,
    type SortingState,
@@ -35,12 +36,13 @@ import {
    Trash2,
 } from "lucide-react";
 import { Result } from "better-result";
-import { startTransition, useCallback, useMemo } from "react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { ExportButton } from "@/components/export-button/export-button";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
@@ -98,6 +100,8 @@ const creditCardsSearchSchema = z.object({
 
 const skeletonColumns = buildCreditCardColumns();
 
+const creditCardStatusSchema = z.enum(["active", "blocked", "cancelled"]);
+
 const creditCardSortIdSchema = z.enum([
    "bankAccountId",
    "brand",
@@ -107,6 +111,14 @@ const creditCardSortIdSchema = z.enum([
    "name",
    "status",
 ]);
+
+function getCreditCardStatusColumnFilter(
+   filters: Array<{ id: string; value: unknown }>,
+) {
+   const filter = filters.find((item) => item.id === "status");
+   const result = creditCardStatusSchema.safeParse(filter?.value);
+   return result.success ? result.data : undefined;
+}
 
 function normalizeCreditCardSorting(sorting: SortingState) {
    const normalized: Array<{
@@ -320,6 +332,7 @@ function CreditCardsList() {
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const layout = useDataTableLayout("credit-cards");
+   const [expanded, setExpanded] = useState<ExpandedState>({});
    const columnPinning = useMemo(
       () => normalizeCreditCardColumnPinning(layout.state.columnPinning),
       [layout.state.columnPinning],
@@ -357,6 +370,8 @@ function CreditCardsList() {
    );
 
    const trimmedSearch = search.trim();
+   const effectiveStatus =
+      status ?? getCreditCardStatusColumnFilter(columnFilters);
    const creditCardsPageInfoCollection = useMemo(
       () =>
          createCollection(
@@ -364,19 +379,19 @@ function CreditCardsList() {
                queryClient,
                teamId: activeTeamId ?? "no-team",
                search: trimmedSearch || undefined,
-               status,
+               status: effectiveStatus,
             }),
          ),
-      [activeTeamId, queryClient, status, trimmedSearch],
+      [activeTeamId, effectiveStatus, queryClient, trimmedSearch],
    );
 
    const { data: liveCreditCards } = useLiveQuery(
       (q) => {
          let query = q.from({ creditCard: creditCardsCollection });
 
-         if (status) {
+         if (effectiveStatus) {
             query = query.where(({ creditCard }) =>
-               eq(creditCard.status, status),
+               eq(creditCard.status, effectiveStatus),
             );
          }
 
@@ -384,6 +399,18 @@ function CreditCardsList() {
             const pattern = `%${escapeIlikePattern(trimmedSearch)}%`;
             query = query.where(({ creditCard }) =>
                ilike(creditCard.name, pattern),
+            );
+         }
+
+         const nameFilterValue = columnFilters.find(
+            (filter) => filter.id === "name",
+         )?.value;
+         if (typeof nameFilterValue === "string" && nameFilterValue.trim()) {
+            query = query.where(({ creditCard }) =>
+               ilike(
+                  creditCard.name,
+                  `%${escapeIlikePattern(nameFilterValue.trim())}%`,
+               ),
             );
          }
 
@@ -444,7 +471,15 @@ function CreditCardsList() {
             .offset((page - 1) * pageSize)
             .select(({ creditCard }) => creditCard);
       },
-      [creditCardsCollection, page, pageSize, sorting, status, trimmedSearch],
+      [
+         columnFilters,
+         creditCardsCollection,
+         effectiveStatus,
+         page,
+         pageSize,
+         sorting,
+         trimmedSearch,
+      ],
    );
 
    const { data: bankAccounts } = useLiveQuery(
@@ -463,8 +498,11 @@ function CreditCardsList() {
       [creditCardsPageInfoCollection],
    );
 
-   const safeLiveCreditCards = liveCreditCards ?? [];
-   const safeBankAccounts = bankAccounts ?? [];
+   const safeLiveCreditCards = useMemo(
+      () => liveCreditCards ?? [],
+      [liveCreditCards],
+   );
+   const safeBankAccounts = useMemo(() => bankAccounts ?? [], [bankAccounts]);
    const totalCreditCards = pageInfoRows?.[0]?.totalCount ?? 0;
 
    const creditCards = useMemo(
@@ -772,7 +810,10 @@ function CreditCardsList() {
          cell: ({ row }) => (
             <Button
                aria-label={row.getIsExpanded() ? "Recolher" : "Expandir"}
-               onClick={() => row.toggleExpanded()}
+               onClick={(event) => {
+                  event.stopPropagation();
+                  row.toggleExpanded();
+               }}
                size="icon-sm"
                tooltip={row.getIsExpanded() ? "Recolher fatura" : "Ver fatura"}
                variant="ghost"
@@ -864,7 +905,7 @@ function CreditCardsList() {
             ),
          );
       },
-      [layout.onColumnOrderChange, columnIds],
+      [layout, columnIds],
    );
 
    const handleColumnPinningChange = useCallback<
@@ -877,7 +918,7 @@ function CreditCardsList() {
             ),
          );
       },
-      [layout.onColumnPinningChange],
+      [layout],
    );
 
    const table = useReactTable({
@@ -891,7 +932,13 @@ function CreditCardsList() {
       manualFiltering: true,
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
-      state: { ...urlState.state, ...layout.state, columnOrder, columnPinning },
+      state: {
+         ...urlState.state,
+         ...layout.state,
+         columnOrder,
+         columnPinning,
+         expanded,
+      },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: handleColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
@@ -900,6 +947,7 @@ function CreditCardsList() {
       onColumnOrderChange: handleColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: handleColumnPinningChange,
+      onExpandedChange: setExpanded,
       getCoreRowModel: getCoreRowModel(),
       getExpandedRowModel: getExpandedRowModel(),
       getRowCanExpand: () => true,
@@ -982,6 +1030,7 @@ function CreditCardsList() {
                   </Button>
                </div>
             </div>
+            <DataTableFilterChips table={table} />
             <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
