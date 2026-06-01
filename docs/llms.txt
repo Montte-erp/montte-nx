@@ -1,0 +1,67 @@
+# Montte docs
+
+> Documentação pública canônica do Montte para usuários e grounding do Montte AI.
+> Plataforma operacional brasileira com IA nativa para gestão financeira, clientes, fornecedores, cobranças e automações de relatórios.
+
+Site: https://montte.co
+Repositório: https://github.com/Montte-erp/montte-nx
+
+## Comece aqui
+- [Documentação do Montte](/docs) — Visão geral, modelo mental e navegação completa.
+  - Pergunta comum: O que é o Montte?
+  - Pergunta comum: Como eu começo a usar a documentação?
+  - Pergunta comum: Como o Montte AI usa estas páginas?
+- [Primeiros passos](/docs/primeiros-passos) — Guia inicial: conceitos, caminho recomendado e exemplo prático.
+  - Pergunta comum: Por onde eu começo no Montte?
+  - Pergunta comum: Quais áreas o Montte organiza?
+  - Pergunta comum: O que preciso configurar primeiro?
+
+## Financeiro
+- [Financeiro](/docs/financeiro) — Contas bancárias, cartões de crédito, lançamentos, categorias e tags.
+  - Pergunta comum: Como criar uma conta bancária no Montte?
+  - Pergunta comum: Quais tipos de lançamento existem?
+  - Pergunta comum: Como categorizar receitas e despesas?
+  - Pergunta comum: O que é DRE e como configurar?
+  - Pergunta comum: Como importar extratos e lançamentos?
+- [Clientes e fornecedores](/docs/clientes-e-fornecedores) — Cadastro de pessoas e empresas, validação de CPF/CNPJ, importação CSV/XLSX.
+  - Pergunta comum: Como cadastrar um cliente no Montte?
+  - Pergunta comum: Qual a diferença entre cliente e fornecedor?
+  - Pergunta comum: O Montte valida CPF e CNPJ?
+  - Pergunta comum: Como importar clientes de uma planilha?
+- [Cobranças recorrentes](/docs/cobrancas) — Lançamentos recorrentes, frequências, parcelamento e status.
+  - Pergunta comum: Como criar uma cobrança recorrente?
+  - Pergunta comum: Quais frequências de recorrência existem?
+  - Pergunta comum: Como funciona o parcelamento?
+  - Pergunta comum: Como pausar uma recorrência?
+
+## Automações
+- [Relatórios automatizados](/docs/relatorios-automatizados) — Automações de DRE, fluxo de caixa, vencimentos e categorias.
+  - Pergunta comum: Como criar uma automação de relatório?
+  - Pergunta comum: Quais tipos de relatório podem ser automatizados?
+  - Pergunta comum: Como funciona a agenda semanal e mensal?
+  - Pergunta comum: O que fazer quando uma execução falha?
+- [Montte AI](/docs/montte-ai) — Chat com IA, fontes de dados, modelo, configuração e boas práticas.
+  - Pergunta comum: O que o Montte AI pode fazer?
+  - Pergunta comum: Como configurar o Montte AI?
+  - Pergunta comum: Quais fontes de dados o Montte AI consulta?
+  - Pergunta comum: Qual modelo de IA o Montte usa?
+
+## Configurações
+- [Configurações](/docs/configuracoes) — Organização, times, perfil, preferências financeiras, chaves de API.
+  - Pergunta comum: Como gerenciar minha organização e time?
+  - Pergunta comum: Onde configuro as preferências financeiras?
+  - Pergunta comum: Como criar uma chave de API?
+  - Pergunta comum: Como configurar o Montte AI?
+
+## Blog
+- [Automações de relatórios chegaram](/blog/automacoes-de-relatorios) — 2026-05-22 — O Montte agora agenda relatórios financeiros sem tarefa manual.
+  - O que as automações do Montte fazem nesta primeira versão?
+  - Quais relatórios podem ser automatizados?
+- [Removemos o CRM. Empurramos pro Twenty.](/blog/removemos-o-crm) — 2026-05-18 — Módulo de contatos removido, relacionamento migra para Twenty.
+  - Por que o Montte não tem mais módulo de Contatos?
+- [Montte 2026.05.22](/blog/montte-2026-05-22) — 2026-05-22 — Release notes da versão 2026.05.22.
+- [Montte 2026.05.15](/blog/montte-2026-05-15) — 2026-05-15 — Release notes da versão 2026.05.15.
+
+## Links principais
+- Documentação: https://montte.co/docs
+- Waitlist: https://montte.co/#waitlist

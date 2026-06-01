@@ -1,0 +1,92 @@
+---
+title: "Cobranças recorrentes"
+description: "Configure lançamentos recorrentes, controle parcelas e acompanhe cobranças no Montte para manter a previsibilidade financeira da operação."
+category: "Financeiro"
+order: 30
+updatedAt: "2026-06-01"
+aiSummary: "Documentação sobre cobranças recorrentes no Montte: recorrência de lançamentos, frequências, parcelamento, status de cobrança e boas práticas."
+commonQuestions:
+   - "Como criar uma cobrança recorrente?"
+   - "Quais frequências de recorrência existem?"
+   - "Como funciona o parcelamento?"
+   - "Como pausar uma recorrência?"
+---
+
+Cobranças recorrentes no Montte são representadas por lançamentos financeiros configurados para se repetir automaticamente.
+
+## Recorrência de lançamentos
+
+Um lançamento pode ser configurado como recorrente. A recorrência é vinculada ao lançamento original (`sourceTransactionId`) e controla a geração automática de novas ocorrências.
+
+### Frequências disponíveis
+
+| Frequência | Descrição                         |
+| ---------- | --------------------------------- |
+| daily      | Todos os dias.                    |
+| weekly     | Toda semana no mesmo dia.         |
+| biweekly   | A cada duas semanas.              |
+| monthly    | Todo mês no mesmo dia.            |
+
+### Status da recorrência
+
+- **active** — a recorrência está ativa e gera novas ocorrências.
+- **stopped** — a recorrência foi pausada e não gera mais ocorrências.
+
+### Campos da recorrência
+
+| Campo                | Descrição                                             |
+| -------------------- | ----------------------------------------------------- |
+| sourceTransactionId  | Lançamento original que serviu de modelo.             |
+| frequency            | daily, weekly, biweekly ou monthly.                   |
+| status               | active ou stopped.                                    |
+| startedAt            | Data de início da recorrência.                        |
+| nextOccurrenceDate   | Próxima data em que uma ocorrência será gerada.       |
+| stoppedAt            | Data em que a recorrência foi pausada (se aplicável). |
+
+### Como funciona
+
+1. Um lançamento é criado com os dados da cobrança (valor, categoria, conta, cliente etc.).
+2. A recorrência é configurada com a frequência desejada.
+3. O sistema calcula a próxima data de ocorrência.
+4. Novos lançamentos são gerados automaticamente na data calculada.
+5. Cada ocorrência mantém o `recurrenceOccurrenceNumber` para controle de sequência.
+
+## Parcelamento
+
+Além da recorrência, lançamentos podem ser parcelados.
+
+| Campo               | Descrição                                                |
+| ------------------- | -------------------------------------------------------- |
+| installmentGroupId  | Identificador único do grupo de parcelas.                 |
+| installmentNumber   | Número da parcela atual (ex: 1, 2, 3...).               |
+| installmentCount    | Total de parcelas do grupo.                              |
+
+Todas as parcelas de um mesmo grupo compartilham o mesmo `installmentGroupId`.
+
+## Acompanhamento de pendências
+
+Lançamentos recorrentes podem ser acompanhados pelo status:
+
+- **paid** — cobrança paga.
+- **pending** — cobrança pendente, ainda não realizada.
+- **cancelled** — cobrança cancelada.
+
+O Montte também oferece uma caixa de entrada (inbox) que consolida notificações sobre itens importantes, incluindo pendências financeiras.
+
+## Boas práticas
+
+- Configure a recorrência apenas depois de validar o lançamento original.
+- Mantenha a conta bancária correta vinculada para evitar inconsistências.
+- Acompanhe o status das recorrências ativas para não perder uma cobrança.
+- Use o parcelamento para dividir valores grandes sem criar múltiplos lançamentos manuais.
+
+## Erros comuns
+
+- Configurar recorrência sem antes revisar a categoria e conta vinculadas.
+- Parar a recorrência sem cancelar lançamentos futuros já gerados.
+- Misturar recorrência com parcelamento no mesmo lançamento sem planejamento.
+
+## Próximos passos
+
+- [Financeiro](/docs/financeiro)
+- [Relatórios automatizados](/docs/relatorios-automatizados)

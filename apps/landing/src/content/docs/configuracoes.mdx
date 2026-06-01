@@ -1,0 +1,92 @@
+---
+title: "Configurações"
+description: "Gerencie organização, times, permissões, preferências financeiras, chaves de API e configurações do Montte AI no Montte."
+category: "Configurações"
+order: 10
+updatedAt: "2026-06-01"
+aiSummary: "Documentação das configurações do Montte: organização, times, perfil, preferências financeiras, chaves de API e configurações do agente de IA."
+commonQuestions:
+   - "Como gerenciar minha organização e time?"
+   - "Onde configuro as preferências financeiras?"
+   - "Como criar uma chave de API?"
+   - "Como configurar o Montte AI?"
+---
+
+A área de configurações do Montte reúne organização, time, perfil, preferências financeiras, chaves de API e configurações do Montte AI.
+
+## Organização e time
+
+A organização (organization) é a entidade raiz da sua conta. Times (team) são subdivisões dentro da organização.
+
+### Organização
+
+- Gerencia dados cadastrais da empresa.
+- Controla membros e permissões.
+
+### Time
+
+- Subdivisão operacional dentro da organização.
+- Cada time tem seus próprios dados (contas, lançamentos, clientes).
+- Permite separar operações por unidade de negócio ou filial.
+
+## Perfil
+
+O perfil do usuário (profile) contém informações pessoais e preferências da conta.
+
+## Preferências financeiras
+
+### Centro de custo obrigatório
+
+A configuração `costCenterRequired` define se o centro de custo é obrigatório ao criar lançamentos financeiros. Quando ativado:
+
+- todo lançamento precisa ter uma categoria vinculada;
+- a validação é aplicada no momento da criação.
+
+### Configuração por time
+
+As preferências financeiras são definidas por time, permitindo configurações diferentes para cada unidade.
+
+## Chaves de API
+
+O Montte oferece chaves de API para integração programática.
+
+### Gerenciamento
+
+- Criar novas chaves.
+- Revogar chaves existentes.
+- Associar permissões a cada chave.
+
+## Configurações do Montte AI
+
+As configurações do agente de IA incluem:
+
+| Configuração      | Descrição                                          | Padrão                                    |
+| ----------------- | -------------------------------------------------- | ----------------------------------------- |
+| modelId           | Modelo de IA usado para respostas.                  | openrouter/moonshotai/kimi-k2.5           |
+| reasoningEffort   | Esforço de raciocínio: high ou xhigh.               | high                                      |
+| language          | Idioma das respostas.                               | pt-BR                                     |
+| tone              | Tom das respostas.                                  | formal                                    |
+| dataSource*       | Fontes de dados que o AI pode consultar.            | todas ativas                              |
+
+### Sessões
+
+O Montte usa autenticação (auth) via Better Auth para gerenciar sessões de usuário. Cada sessão é vinculada a um usuário e time específico.
+
+## Onboarding
+
+O Montte inclui um fluxo de onboarding que guia o usuário na configuração inicial:
+
+- criação ou entrada em organização;
+- configuração de time;
+- ajuste de preferências iniciais.
+
+## Erros comuns
+
+- Tentar acessar dados de um time sem permissão adequada.
+- Desativar todas as fontes de dados do Montte AI e esperar que ele responda sobre a operação.
+- Criar chaves de API sem definir o escopo de permissões.
+
+## Próximos passos
+
+- [Primeiros passos](/docs/primeiros-passos)
+- [Montte AI](/docs/montte-ai)

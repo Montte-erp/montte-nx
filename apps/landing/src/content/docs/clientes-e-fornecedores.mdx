@@ -1,0 +1,106 @@
+---
+title: "Clientes e fornecedores"
+description: "Cadastre e gerencie pessoas e empresas (partes) no Montte com validação de CPF e CNPJ, vinculação a lançamentos e importação por CSV e XLSX."
+category: "Financeiro"
+order: 20
+updatedAt: "2026-06-01"
+aiSummary: "Documentação do módulo de relacionamentos do Montte: cadastro de clientes e fornecedores, validação de CPF/CNPJ, tipos de parte (pessoa física e jurídica) e importação."
+commonQuestions:
+   - "Como cadastrar um cliente no Montte?"
+   - "Qual a diferença entre cliente e fornecedor?"
+   - "O Montte valida CPF e CNPJ?"
+   - "Como importar clientes de uma planilha?"
+---
+
+Clientes e fornecedores no Montte são chamados de **partes** (parties). Eles representam as pessoas físicas ou jurídicas com quem sua operação se relaciona.
+
+## Funções (role)
+
+Cada parte pode ter uma de duas funções:
+
+| Função    | Descrição                                     |
+| --------- | --------------------------------------------- |
+| customer  | Cliente: compra ou contrata seus serviços.    |
+| supplier  | Fornecedor: vende ou presta serviços para você. |
+
+## Tipos (kind)
+
+| Tipo    | Descrição                | Documento esperado |
+| ------- | ------------------------ | ------------------ |
+| person  | Pessoa física.           | CPF (11 dígitos).  |
+| company | Pessoa jurídica.         | CNPJ (14 caracteres alfanuméricos). |
+
+## Validação de documentos
+
+O Montte valida CPF e CNPJ no momento do cadastro.
+
+### CPF
+
+- Deve ter exatamente 11 dígitos numéricos.
+- É validado com os dígitos verificadores oficiais.
+- Sequências de dígitos repetidos (ex: 111.111.111-11) são rejeitadas.
+
+### CNPJ
+
+- Deve ter 14 caracteres alfanuméricos: 12 caracteres alfanuméricos seguidos de 2 dígitos verificadores numéricos.
+- É validado com os dígitos verificadores oficiais.
+- Sequências repetidas são rejeitadas.
+
+> A validação de CPF e CNPJ usa os algoritmos oficiais da Receita Federal, incluindo cálculo dos dígitos verificadores.
+
+### Normalização
+
+O documento é normalizado automaticamente: caracteres não alfanuméricos são removidos e letras são convertidas para maiúsculas. CNPJs com letras (novo formato alfanumérico) são suportados.
+
+## Campos da parte
+
+| Campo           | Descrição                                                       |
+| --------------- | --------------------------------------------------------------- |
+| Nome            | Obrigatório, mínimo 2 e máximo 160 caracteres.                  |
+| Função          | customer ou supplier.                                           |
+| Tipo            | person ou company.                                              |
+| CPF/CNPJ        | Opcional, validado conforme o tipo. Único por time + função.    |
+| E-mail          | Opcional, validado como e-mail.                                 |
+| Telefone        | Opcional, 10 ou 11 dígitos.                                     |
+| Arquivado em    | Data de arquivamento. Partes arquivadas não aparecem nas listas. |
+
+### Unicidade
+
+A combinação `teamId + role + documentNumber` é única quando o documento é informado. Um mesmo CPF pode aparecer como cliente e como fornecedor no mesmo time, mas não duas vezes como cliente.
+
+## Vinculação com lançamentos
+
+Partes podem ser vinculadas a lançamentos financeiros através do campo `relationshipId` no schema de transações. Isso permite:
+
+- ver todos os lançamentos de um cliente ou fornecedor;
+- filtrar relatórios por parte;
+- contexto completo entre financeiro e relacionamento.
+
+## Importação
+
+O Montte suporta importação de clientes e fornecentes via arquivos CSV e XLSX.
+
+### Funcionalidades da importação
+
+- Parse automático de arquivos CSV e XLSX.
+- Validação inline dos dados importados.
+- Correspondência (matching) com registros existentes.
+- Edição inline antes da confirmação.
+- Suporte a grandes volumes com virtualização.
+
+### Arquivos de exemplo
+
+Prepare uma planilha com colunas como: Nome, Função (customer/supplier), Tipo (person/company), Documento, E-mail, Telefone. O sistema faz o parsing e validação automáticos.
+
+## Erros comuns
+
+- Cadastrar CPF inválido ou com dígitos verificadores incorretos.
+- Cadastrar CNPJ inválido ou com formato incompatível.
+- Tentar cadastrar o mesmo documento na mesma função duas vezes.
+- Informar telefone com menos de 10 dígitos.
+- Informar e-mail em formato inválido.
+
+## Próximos passos
+
+- [Financeiro](/docs/financeiro)
+- [Cobranças recorrentes](/docs/cobrancas)

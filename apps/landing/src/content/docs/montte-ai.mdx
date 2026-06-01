@@ -1,0 +1,85 @@
+---
+title: "Montte AI"
+description: "Use o Montte AI para tirar dúvidas sobre sua operação, entender pendências financeiras e receber orientações baseadas no produto e na documentação."
+category: "Automações"
+order: 20
+updatedAt: "2026-06-01"
+aiSummary: "Documentação sobre o Montte AI: chat com IA, fontes de dados configuráveis, modelo, tom, configuração e boas práticas para usar o assistente."
+commonQuestions:
+   - "O que o Montte AI pode fazer?"
+   - "Como configurar o Montte AI?"
+   - "Quais fontes de dados o Montte AI consulta?"
+   - "Qual modelo de IA o Montte usa?"
+---
+
+O Montte AI é um assistente integrado ao produto que responde dúvidas sobre a operação com base no contexto do seu time e na documentação.
+
+## O que o Montte AI pode fazer
+
+O Montte AI responde perguntas como:
+
+- "Por que esta cobrança aparece como pendente?"
+- "O que falta para organizar este cliente?"
+- "Como este lançamento afeta meu financeiro?"
+- "Qual é o próximo passo para configurar cobranças recorrentes?"
+
+Ele consulta duas fontes: os dados do seu time (com sua autorização) e a documentação pública do Montte.
+
+## Fontes de dados configuráveis
+
+Você pode ativar ou desativar quais fontes de dados o Montte AI pode consultar:
+
+| Fonte                     | Descrição                                   | Padrão |
+| ------------------------- | ------------------------------------------- | ------ |
+| dataSourceTransactions    | Lançamentos financeiros do time.            | ativo  |
+| dataSourceContacts        | Clientes e fornecedores cadastrados.        | ativo  |
+| dataSourceServices        | Serviços e contratos (se disponível).       | ativo  |
+
+Cada fonte pode ser ativada ou desativada nas configurações do agente. Quando uma fonte está desativada, o Montte AI não consulta aqueles dados para responder.
+
+## Configuração do agente
+
+### Modelo
+
+O modelo padrão é `openrouter/moonshotai/kimi-k2.5`. A escolha do modelo pode ser alterada nas configurações.
+
+### Esforço de raciocínio
+
+| Opção | Descrição                                     |
+| ----- | --------------------------------------------- |
+| high  | Raciocínio padrão para respostas equilibradas. |
+| xhigh | Raciocínio extendido para análises mais profundas. |
+
+### Idioma e tom
+
+- **Idioma**: configurado como `pt-BR` (padrão).
+- **Tom**: `formal` (padrão).
+
+## Como o Montte AI usa a documentação
+
+O Montte AI consulta esta documentação pública como fonte de conhecimento sobre o produto. Por isso, as páginas são escritas para serem úteis tanto para humanos quanto para recuperação por IA:
+
+- headings estáveis e específicos.
+- Seções focadas e pequenas.
+- Pré-requisitos, limites e exceções explícitos.
+- Erros comuns e boas práticas incluídos.
+
+Quando uma informação não está confirmada na documentação, o Montte AI deve deixar a limitação clara em vez de inventar uma resposta.
+
+## Boas práticas
+
+- Ative as fontes de dados relevantes antes de fazer perguntas sobre a operação.
+- Seja específico nas perguntas para obter respostas mais precisas.
+- Verifique as respostas do Montte AI contra a tela atual do produto.
+- Use o Montte AI como ponto de partida, não como única fonte de decisão.
+
+## Limitações
+
+- O Montte AI não executa ações no produto — ele responde dúvidas e orienta.
+- Respostas dependem da qualidade e completeza dos dados no seu time.
+- Fontes de dados desativadas não são consultadas, mesmo que a pergunta seja relevante.
+
+## Próximos passos
+
+- [Primeiros passos](/docs/primeiros-passos)
+- [Relatórios automatizados](/docs/relatorios-automatizados)

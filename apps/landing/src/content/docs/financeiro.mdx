@@ -1,0 +1,185 @@
+---
+title: "Financeiro"
+description: "Organize contas bancárias, cartões de crédito, lançamentos, categorias e tags no Montte para ter visibilidade completa do fluxo financeiro da operação."
+category: "Financeiro"
+order: 10
+updatedAt: "2026-06-01"
+aiSummary: "Documentação da área financeira do Montte: contas bancárias, cartões de crédito, lançamentos, categorias, tags e organização financeira."
+commonQuestions:
+   - "Como criar uma conta bancária no Montte?"
+   - "Quais tipos de lançamento existem?"
+   - "Como categorizar receitas e despesas?"
+   - "O que é DRE e como configurar?"
+   - "Como importar extratos e lançamentos?"
+---
+
+A área financeira do Montte centraliza contas bancárias, cartões de crédito, lançamentos, categorias e tags. O objetivo é dar visibilidade completa do fluxo financeiro da operação, conectando cada entrada e saída ao contexto do negócio.
+
+## Contas bancárias
+
+As contas registradas no Montte representam onde o dinheiro entra, sai ou fica guardado.
+
+### Tipos de conta
+
+| Tipo      | Uso                                                     |
+| --------- | ------------------------------------------------------- |
+| checking  | Conta corrente para movimentação do dia a dia.          |
+| savings   | Conta poupança.                                          |
+| investment | Investimentos e aplicações financeiras.                 |
+| payment   | Conta de pagamentos (ex: conta digital de pagamentos).   |
+| cash      | Caixa físico. Não exige código de banco, agência ou conta. |
+
+### Status
+
+- **active** — conta em uso, aparece nas listas e permite lançamentos.
+- **archived** — conta arquivada, não aparece nas listas padrão, mas os dados históricos são mantidos.
+
+### Como criar
+
+Ao criar uma conta bancária, informe:
+
+- **Nome** — identificador da conta (mínimo 2, máximo 80 caracteres).
+- **Tipo** — conforme a tabela acima.
+- **Cor** — identificação visual no formato hex `#RRGGBB`.
+- **Saldo inicial** — valor em string, padrão `"0"`.
+- **Data do saldo inicial** — data de referência no formato `YYYY-MM-DD`.
+- **Detalhes bancários** — código do banco (até 3 dígitos), nome do banco, agência e número da conta. Campos obrigatórios para contas bancárias, exceto caixa físico.
+
+> Contas do tipo `cash` não devem ter código do banco, agência ou número da conta. Para contas bancárias (checking, savings, investment, payment), o código do banco é obrigatório.
+
+## Cartões de crédito
+
+Os cartões de crédito no Montte são vinculados a uma conta bancária e controlam limite, bandeira, datas de fechamento e vencimento.
+
+### Campos do cartão
+
+| Campo           | Descrição                                                     |
+| --------------- | ------------------------------------------------------------- |
+| Nome            | Identificador do cartão.                                      |
+| Cor             | Identificação visual no formato hex `#RRGGBB`.                |
+| Limite          | Valor do limite de crédito, não negativo.                     |
+| Final           | Últimos 4 dígitos do cartão (opcional).                       |
+| Dia de fechamento | Dia do mês em que a fatura fecha (1 a 31).                   |
+| Dia de vencimento | Dia do mês em que a fatura vence (1 a 31).                   |
+| Conta vinculada | Conta bancária para débito da fatura.                         |
+| Bandeira        | visa, mastercard, elo, amex, hipercard ou other.              |
+| Status          | active, blocked ou cancelled.                                 |
+
+### Status do cartão
+
+- **active** — cartão em uso, permite lançamentos.
+- **blocked** — cartão bloqueado temporariamente.
+- **cancelled** — cartão cancelado, mantém histórico.
+
+## Lançamentos (transações)
+
+Lançamentos financeiros representam cada movimentação: receita, despesa ou transferência.
+
+### Tipos de lançamento
+
+| Tipo     | Descrição                                                   |
+| -------- | ----------------------------------------------------------- |
+| income   | Receita: entrada de dinheiro. Exige conta bancária.          |
+| expense  | Despesa: saída de dinheiro. Exige conta bancária ou cartão. |
+| transfer | Transferência entre contas. Exige conta de origem e destino. |
+
+### Status do lançamento
+
+- **paid** — lançamento pago, valor já movimentado.
+- **pending** — lançamento agendado ou a confirmar.
+- **cancelled** — lançamento cancelado.
+
+### Métodos de pagamento
+
+pix, credit_card, debit_card, boleto, cash, transfer, other, cheque, automatic_debit.
+
+### Estrutura do lançamento
+
+Cada lançamento pode incluir:
+
+- Nome e descrição.
+- Valor (maior que zero).
+- Data e data de vencimento.
+- Conta bancária ou cartão de crédito vinculado.
+- Categoria e tag associadas.
+- Relacionamento (cliente ou fornecedor).
+- Anexos (arquivos com URL, nome, tamanho e tipo MIME).
+- Parcelamento: grupo de parcelas com número e total.
+- Recorrência: vincula a uma configuração de repetição.
+
+### Parcelamento
+
+Lançamentos podem ser parcelados usando os campos `installmentGroupId`, `installmentNumber` e `installmentCount`. Um grupo de parcelas compartilha o mesmo identificador.
+
+### Importação de lançamentos
+
+O Montte suporta importação de dados financeiros. A interface de importação inclui:
+
+- parse de arquivos com validação inline;
+- correspondência (matching) de registros;
+- edição inline antes da confirmação;
+- virtualização para grandes volumes.
+
+## Categorias
+
+Categorias organizam receitas e despesas para análise e relatórios.
+
+### Tipos de categoria
+
+| Tipo     | Uso                           |
+| -------- | ----------------------------- |
+| income   | Categorias de receita.        |
+| expense  | Categorias de despesa.        |
+| transfer | Categorias de transferência.  |
+
+### Hierarquia
+
+Categorias podem ter subcategorias (`parentId`). O campo `level` indica a profundidade: 1 para categorias raiz, 2 ou mais para subcategorias.
+
+### DRE (Demonstração do Resultado do Exercício)
+
+Categorias podem participar do DRE. Para isso, marque `participatesDre = true` e informe o `dreGroupId`, que agrupa a categoria dentro da estrutura do DRE.
+
+As categorias de DRE têm dois grandes grupos: receita e despesa, definidos pelo campo `dreType` nas tags.
+
+### Campos da categoria
+
+- **Nome** — mínimo 2, máximo 120 caracteres.
+- **Tipo** — income, expense ou transfer.
+- **Categoria pai** — para hierarquia (opcional).
+- **Cor e ícone** — identificação visual.
+- **Descrição e notas** — texto livre (descrição até 255 caracteres, notas até 500).
+- **Participa do DRE** — booleano. Se verdadeiro, `dreGroupId` é obrigatório.
+- **isArchived** — oculta a categoria das listas padrão.
+
+## Tags
+
+Tags complementam as categorias com uma camada adicional de classificação.
+
+### Campos da tag
+
+| Campo       | Descrição                                        |
+| ----------- | ------------------------------------------------ |
+| Nome        | Identificador único por time.                     |
+| Cor         | Formato hex `#RRGGBB`.                           |
+| Descrição   | Texto livre até 255 caracteres.                   |
+| isDefault   | Tag padrão aplicada automaticamente.              |
+| isArchived  | Oculta a tag das listas padrão.                   |
+| dreType     | "receita" ou "despesa" — associação ao DRE.      |
+| dreOrder    | Ordem de exibição no DRE.                        |
+
+O nome da tag é único por time. Tags podem ser vinculadas a lançamentos financeiros e também têm sugestão automática via `suggestedTagId` no schema de transações.
+
+## Erros comuns
+
+- Criar uma conta do tipo `cash` com código de banco, agência ou número de conta.
+- Esquecer de vincular uma categoria ao DRE quando `participatesDre = true`.
+- Lançar uma transferência sem conta de origem e destino.
+- Lançar uma receita sem conta bancária.
+- Lançar uma despesa sem conta bancária nem cartão de crédito.
+
+## Próximos passos
+
+- [Clientes e fornecedores](/docs/clientes-e-fornecedores)
+- [Cobranças recorrentes](/docs/cobrancas)
+- [Relatórios automatizados](/docs/relatorios-automatizados)

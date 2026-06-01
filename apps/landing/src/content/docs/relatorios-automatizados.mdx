@@ -1,0 +1,112 @@
+---
+title: "Relatórios automatizados"
+description: "Crie automações de relatórios financeiros no Montte para gerar DRE, fluxo de caixa, vencimentos e mais sem trabalho manual recorrente."
+category: "Automações"
+order: 10
+updatedAt: "2026-06-01"
+aiSummary: "Documentação sobre automações de relatórios no Montte: como criar, agendar e acompanhar execuções de DRE, fluxo de caixa, centros de custo e outros relatórios financeiros."
+commonQuestions:
+   - "Como criar uma automação de relatório?"
+   - "Quais tipos de relatório podem ser automatizados?"
+   - "Como funciona a agenda semanal e mensal?"
+   - "O que fazer quando uma execução falha?"
+---
+
+Relatórios automatizados no Montte geram análises financeiras sem que alguém precise lembrar de rodar todo mês ou toda semana.
+
+## Como funciona
+
+Cada automação conecta dois blocos:
+
+1. **Quando executar** — agenda com repetição semanal ou mensal, dia e horário.
+2. **O que gerar** — tipo de relatório, período de cálculo e nome.
+
+Automações novas em branco nascem pausadas para evitar execuções antes da configuração estar completa.
+
+## Tipos de relatório
+
+| Tipo         | Descrição                                                    |
+| ------------ | ------------------------------------------------------------ |
+| dre          | Demonstração do Resultado do Exercício.                       |
+| cash-flow    | Fluxo de caixa em um período.                                 |
+| cost-centers | Despesas por centro de custo.                                 |
+| aging        | A receber e pagar por vencimento (aging report).              |
+| categories   | Despesas agrupadas por categoria.                             |
+
+### Configuração do relatório
+
+Cada relatório tem uma configuração específica:
+
+| Campo          | Descrição                                                       |
+| -------------- | --------------------------------------------------------------- |
+| dateFrom       | Data inicial do período (formato YYYY-MM-DD).                   |
+| dateTo         | Data final do período. Deve ser maior ou igual a dateFrom.       |
+| status         | paid, pending ou all.                                           |
+| bankAccountId  | Filtrar por conta bancária (opcional).                          |
+| categoryId     | Filtrar por categoria (opcional).                               |
+| tagId          | Filtrar por tag (opcional).                                     |
+| dreOnly        | Apenas categorias que participam do DRE (padrão: true).         |
+| agingType      | income, expense ou all (apenas aging).                          |
+| agingStatus    | open, overdue ou settled (apenas aging).                        |
+| categoryDepth  | group ou subcategory (apenas categories).                       |
+| minAmount      | Valor mínimo para inclusão (padrão: 0).                         |
+
+### Períodos de agenda
+
+O bloco de agenda usa um período de referência para o cálculo:
+
+| Período        | Descrição                                       |
+| -------------- | ----------------------------------------------- |
+| previous-month | Mês anterior completo.                           |
+| previous-week  | Semana anterior completa.                        |
+| current-month  | Mês atual em andamento.                          |
+| current-week   | Semana atual em andamento.                       |
+
+### Cronograma
+
+A agenda aceita expressões cron semanais ou mensais no fuso `America/Sao_Paulo`:
+
+- **Semanal**: dia da semana (0-7, onde 0=domingo) + horário (minuto e hora).
+- **Mensal**: dia do mês (1-31) + horário.
+
+## Execuções
+
+Cada automação gera execuções (workflow runs) com os seguintes status:
+
+| Status    | Descrição                                      |
+| --------- | ---------------------------------------------- |
+| pending   | Execução agendada, ainda não iniciada.          |
+| running   | Execução em andamento.                          |
+| succeeded | Execução concluída com sucesso.                 |
+| failed    | Execução concluída com erro.                    |
+
+### Gatilhos
+
+- **schedule** — execução automática conforme a agenda configurada.
+- **manual** — execução iniciada manualmente pelo usuário.
+
+### Acompanhamento
+
+Cada automação exibe:
+
+- Status atual (active/paused).
+- Próxima execução agendada (`nextRunAt`).
+- Histórico de execuções recentes com status e erro (se houver).
+
+## Boas práticas
+
+- Configure a automação em modo pausado e ative apenas depois de validar os parâmetros.
+- Use o período "previous-month" para relatórios mensais no início do mês seguinte.
+- Monitore o histórico de execuções para identificar falhas recorrentes.
+
+## Erros comuns
+
+- Ativar a automação antes de configurar o tipo de relatório e o período.
+- Usar período "current-month" para relatórios que precisam de mês fechado.
+- Ignorar falhas de execução — o erro aparece no contexto da automação.
+
+## Próximos passos
+
+- [Financeiro](/docs/financeiro)
+- [Montte AI](/docs/montte-ai)
+- [Cobranças recorrentes](/docs/cobrancas)
