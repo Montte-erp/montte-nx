@@ -9,6 +9,7 @@ export function buildApiKeysColumns(): ColumnDef<ApiKeyRow>[] {
       {
          accessorKey: "name",
          header: "Nome",
+         meta: { label: "Nome", filterVariant: "text" },
          cell: ({ row }) => (
             <span className="font-medium">
                {row.original.name ?? "Sem nome"}
@@ -18,6 +19,7 @@ export function buildApiKeysColumns(): ColumnDef<ApiKeyRow>[] {
       {
          accessorKey: "start",
          header: "Chave",
+         meta: { label: "Chave", filterVariant: "text" },
          cell: ({ row }) =>
             row.original.start ? (
                <code className="font-mono text-xs text-muted-foreground">
@@ -28,6 +30,7 @@ export function buildApiKeysColumns(): ColumnDef<ApiKeyRow>[] {
       {
          accessorKey: "createdAt",
          header: "Criada em",
+         meta: { label: "Criada em" },
          cell: ({ row }) => (
             <span className="text-sm text-muted-foreground">
                {dayjs(row.original.createdAt).format("DD/MM/YYYY")}

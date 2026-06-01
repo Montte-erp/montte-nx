@@ -27,6 +27,7 @@ import {
    getCoreRowModel,
    useReactTable,
    type ColumnDef,
+   type ColumnFiltersState,
    type SortingState,
 } from "@tanstack/react-table";
 import { Result } from "better-result";
@@ -54,6 +55,7 @@ import {
 } from "@/blocks/data-table/data-import/use-data-import";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
@@ -65,8 +67,6 @@ import {
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
 import { ExportButton } from "@/components/export-button/export-button";
-import { PageFilter } from "@/components/page-filters/page-filter";
-import { PageFilters } from "@/components/page-filters/page-filters";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -426,6 +426,51 @@ function sortRelationships(
    });
 }
 
+function getRelationshipFilterText(
+   relationship: RelationshipsCollectionRow,
+   filterId: RelationshipSortId,
+) {
+   if (filterId === "kind") return relationship.kind;
+   if (filterId === "documentNumber") {
+      return formatDocumentNumber(
+         relationship.documentNumber,
+         relationship.kind,
+      );
+   }
+   if (filterId === "phone") return formatPhone(relationship.phone);
+   return String(relationship[filterId] ?? "");
+}
+
+function matchesRelationshipFilter(
+   relationship: RelationshipsCollectionRow,
+   filter: ColumnFiltersState[number],
+) {
+   const result = relationshipSortIdSchema.safeParse(filter.id);
+   if (!result.success) return true;
+   if (typeof filter.value !== "string") return true;
+
+   const value = filter.value.trim().toLowerCase();
+   if (!value) return true;
+
+   if (result.data === "kind") return relationship.kind === value;
+
+   return getRelationshipFilterText(relationship, result.data)
+      .toLowerCase()
+      .includes(value);
+}
+
+function filterRelationships(
+   rows: RelationshipsCollectionRow[],
+   filters: ColumnFiltersState,
+) {
+   if (filters.length === 0) return rows;
+   return rows.filter((relationship) =>
+      filters.every((filter) =>
+         matchesRelationshipFilter(relationship, filter),
+      ),
+   );
+}
+
 function relationshipToEditValues(
    relationship: RelationshipsCollectionRow,
 ): RelationshipEditValues {
@@ -660,7 +705,11 @@ export function RelationshipsTable({
    );
 
    const relationships = useMemo(() => {
-      const sorted = sortRelationships(liveRelationships, searchState.sorting);
+      const filtered = filterRelationships(
+         liveRelationships,
+         searchState.columnFilters,
+      );
+      const sorted = sortRelationships(filtered, searchState.sorting);
       const start = (searchState.page - 1) * searchState.pageSize;
       return {
          all: sorted,
@@ -668,6 +717,7 @@ export function RelationshipsTable({
       };
    }, [
       liveRelationships,
+      searchState.columnFilters,
       searchState.page,
       searchState.pageSize,
       searchState.sorting,
@@ -1370,26 +1420,6 @@ export function RelationshipsTable({
                value={searchInput.value}
             />
             <div className="flex flex-wrap items-center gap-2">
-               <PageFilters>
-                  <PageFilter
-                     active={searchState.view === "active"}
-                     group="Status"
-                     id="status:active"
-                     label="Ativos"
-                     onToggle={() =>
-                        onSearchChange({ view: "active", page: 1 })
-                     }
-                  />
-                  <PageFilter
-                     active={searchState.view === "archived"}
-                     group="Status"
-                     id="status:archived"
-                     label="Arquivados"
-                     onToggle={() =>
-                        onSearchChange({ view: "archived", page: 1 })
-                     }
-                  />
-               </PageFilters>
                <DataTableColumnVisibility table={table} />
                <ExportButton
                   fileBase={role === "customer" ? "clientes" : "fornecedores"}
@@ -1407,6 +1437,7 @@ export function RelationshipsTable({
                </Button>
             </div>
          </div>
+         <DataTableFilterChips table={table} />
          {editError ? (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">
                {editError}

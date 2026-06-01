@@ -43,6 +43,7 @@ import { z } from "zod";
 
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { ExportButton } from "@/components/export-button/export-button";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
@@ -54,8 +55,6 @@ import { DataImportButton } from "@/blocks/data-table/data-import/data-import-bu
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
-import { PageFilters } from "@/components/page-filters/page-filters";
-import { PageFilter } from "@/components/page-filters/page-filter";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -176,8 +175,7 @@ function TagsList() {
    const { activeTeamId } = useActiveTeam();
    const { queryClient } = Route.useRouteContext();
    const navigate = Route.useNavigate();
-   const { sorting, columnFilters, search, includeArchived, page, pageSize } =
-      Route.useSearch();
+   const { sorting, columnFilters, search, page, pageSize } = Route.useSearch();
    const { generate: generateCsv, parse: parseCsv } = useCsvFile();
    const { parse: parseXlsx } = useXlsxFile();
    const layout = useDataTableLayout("tags-v2");
@@ -206,13 +204,32 @@ function TagsList() {
          const normalizedSorting = normalizeTagSorting(sorting);
          let query = q.from({ tag: tagsCollection });
 
-         if (!includeArchived) {
-            query = query.where(({ tag }) => eq(tag.isArchived, false));
-         }
+         query = query.where(({ tag }) => eq(tag.isArchived, false));
 
          if (search.trim()) {
             query = query.where(({ tag }) =>
                or(ilike(tag.name, pattern), ilike(tag.description, pattern)),
+            );
+         }
+
+         const nameFilterValue = columnFilters.find(
+            (filter) => filter.id === "name",
+         )?.value;
+         if (typeof nameFilterValue === "string" && nameFilterValue.trim()) {
+            query = query.where(({ tag }) =>
+               ilike(tag.name, `%${nameFilterValue.trim()}%`),
+            );
+         }
+
+         const descriptionFilterValue = columnFilters.find(
+            (filter) => filter.id === "description",
+         )?.value;
+         if (
+            typeof descriptionFilterValue === "string" &&
+            descriptionFilterValue.trim()
+         ) {
+            query = query.where(({ tag }) =>
+               ilike(tag.description, `%${descriptionFilterValue.trim()}%`),
             );
          }
 
@@ -251,7 +268,7 @@ function TagsList() {
             .offset((page - 1) * pageSize)
             .select(({ tag }) => tag);
       },
-      [includeArchived, page, pageSize, search, sorting, tagsCollection],
+      [columnFilters, page, pageSize, search, sorting, tagsCollection],
    );
    const tags = removeConfirmedOptimisticDuplicates(liveTags);
 
@@ -662,25 +679,6 @@ function TagsList() {
                   value={searchInput.value}
                />
                <div className="flex flex-wrap items-center gap-2">
-                  <PageFilters>
-                     <PageFilter
-                        active={includeArchived}
-                        group="Filtros"
-                        icon={<Archive className="size-4" />}
-                        id="includeArchived"
-                        label="Mostrar arquivados"
-                        onToggle={(checked) =>
-                           navigate({
-                              search: (prev) => ({
-                                 ...prev,
-                                 includeArchived: checked,
-                                 page: 1,
-                              }),
-                              replace: true,
-                           })
-                        }
-                     />
-                  </PageFilters>
                   <DataTableColumnVisibility table={table} />
                   <ExportButton table={table} fileBase="centros-custo" />
                   <DataImportButton api={importApi} config={importConfig} />
@@ -695,6 +693,7 @@ function TagsList() {
                   </Button>
                </div>
             </div>
+            <DataTableFilterChips table={table} />
             <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />

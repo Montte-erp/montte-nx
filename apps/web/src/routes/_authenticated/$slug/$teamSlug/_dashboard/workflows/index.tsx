@@ -28,13 +28,12 @@ import { z } from "zod";
 import { Result } from "better-result";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
-import { PageFilterSelect } from "@/components/page-filters/page-filter-select";
-import { PageFilters } from "@/components/page-filters/page-filters";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -89,16 +88,6 @@ function getStringFilterValue(
 ) {
    const value = filters.find((filter) => filter.id === id)?.value;
    return typeof value === "string" ? value : fallback;
-}
-
-function updateStringFilterValue(
-   filters: WorkflowColumnFilter[],
-   id: string,
-   value: string,
-   emptyValue = "all",
-) {
-   const next = filters.filter((filter) => filter.id !== id);
-   return value === emptyValue ? next : [...next, { id, value }];
 }
 
 function isInteractiveEventTarget(target: EventTarget | null) {
@@ -213,16 +202,8 @@ function WorkflowsIndexContent() {
    }, [templates]);
 
    const statusFilter = getStringFilterValue(columnFilters, "status", "all");
-   const templateFilter = getStringFilterValue(
-      columnFilters,
-      "templateId",
-      "all",
-   );
    const tableColumnFilters = useMemo(
-      () =>
-         columnFilters.filter(
-            (filter) => filter.id !== "status" && filter.id !== "templateId",
-         ),
+      () => columnFilters.filter((filter) => filter.id !== "templateId"),
       [columnFilters],
    );
 
@@ -232,19 +213,13 @@ function WorkflowsIndexContent() {
          if (statusFilter !== "all" && workflow.status !== statusFilter) {
             return false;
          }
-         if (
-            templateFilter !== "all" &&
-            workflow.templateId !== templateFilter
-         ) {
-            return false;
-         }
          const templateName = templateLabels.get(workflow.templateId) ?? "";
          if (!query) return true;
          return [workflow.name, templateName].some((value) =>
             value.toLowerCase().includes(query),
          );
       });
-   }, [search, statusFilter, templateFilter, templateLabels, workflows]);
+   }, [search, statusFilter, templateLabels, workflows]);
 
    const openWorkflow = useCallback(
       (workflow: WorkflowRow) =>
@@ -506,48 +481,6 @@ function WorkflowsIndexContent() {
       getFilteredRowModel: getFilteredRowModel(),
    });
 
-   const handleStatusFilterChange = useCallback(
-      (value: string) =>
-         routeNavigate({
-            search: (prev) => ({
-               ...prev,
-               columnFilters: updateStringFilterValue(
-                  prev.columnFilters,
-                  "status",
-                  value,
-               ),
-               page: 1,
-            }),
-            replace: true,
-         }),
-      [routeNavigate],
-   );
-   const handleTemplateFilterChange = useCallback(
-      (value: string) =>
-         routeNavigate({
-            search: (prev) => ({
-               ...prev,
-               columnFilters: updateStringFilterValue(
-                  prev.columnFilters,
-                  "templateId",
-                  value,
-               ),
-               page: 1,
-            }),
-            replace: true,
-         }),
-      [routeNavigate],
-   );
-   const templateFilterOptions = useMemo(
-      () => [
-         { value: "all", label: "Todos os modelos" },
-         ...templates.map((template) => ({
-            value: template.id,
-            label: template.name,
-         })),
-      ],
-      [templates],
-   );
    const selectedRows = table.getSelectedRowModel().rows;
    const selectedIds = selectedRows.map((row) => row.original.id);
    const selectedActiveIds = selectedRows
@@ -625,28 +558,6 @@ function WorkflowsIndexContent() {
                value={searchInput.value}
             />
             <div className="flex flex-wrap items-center gap-2">
-               <PageFilters>
-                  <PageFilterSelect
-                     group="Status"
-                     id="status"
-                     label="Status"
-                     onChange={handleStatusFilterChange}
-                     options={[
-                        { value: "all", label: "Todos" },
-                        { value: "active", label: "Ativos" },
-                        { value: "paused", label: "Pausados" },
-                     ]}
-                     value={statusFilter}
-                  />
-                  <PageFilterSelect
-                     group="Modelo"
-                     id="templateId"
-                     label="Modelo"
-                     onChange={handleTemplateFilterChange}
-                     options={templateFilterOptions}
-                     value={templateFilter}
-                  />
-               </PageFilters>
                <DataTableColumnVisibility table={table} />
                <Button
                   onClick={openCreateWorkflow}
@@ -659,6 +570,7 @@ function WorkflowsIndexContent() {
                </Button>
             </div>
          </div>
+         <DataTableFilterChips table={table} />
          <ScrollArea className="bg-card flex-1 min-h-0 rounded-md border">
             <Table>
                <DataTableHeader table={table} />

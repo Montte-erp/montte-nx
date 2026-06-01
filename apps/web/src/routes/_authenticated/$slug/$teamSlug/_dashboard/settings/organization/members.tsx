@@ -38,6 +38,7 @@ import type { Outputs } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
 import { DefaultHeader } from "../../../-layout/default-header";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
@@ -137,7 +138,7 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
       {
          accessorKey: "name",
          header: "Nome",
-         meta: { label: "Nome" },
+         meta: { label: "Nome", filterVariant: "text" },
          filterFn: (row, _id, value) => {
             const query = String(value ?? "").toLowerCase();
             if (!query) return true;
@@ -181,7 +182,7 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
       {
          accessorKey: "email",
          header: "E-mail",
-         meta: { label: "E-mail" },
+         meta: { label: "E-mail", filterVariant: "text" },
          cell: ({ row }) => (
             <span className="text-muted-foreground">{row.original.email}</span>
          ),
@@ -189,7 +190,15 @@ function buildColumns(currentUserId: string | undefined): ColumnDef<Row>[] {
       {
          accessorKey: "role",
          header: "Função",
-         meta: { label: "Função" },
+         meta: {
+            label: "Função",
+            filterVariant: "select",
+            editOptions: [
+               { value: "owner", label: "Proprietário" },
+               { value: "admin", label: "Administrador" },
+               { value: "member", label: "Membro" },
+            ],
+         },
          cell: ({ row }) => (
             <Badge variant={getRoleBadgeVariant(row.original.role)}>
                {ROLE_LABELS[row.original.role] ?? row.original.role}
@@ -510,6 +519,7 @@ function MembersContent() {
                   </Button>
                </div>
             </div>
+            <DataTableFilterChips table={table} />
             <ScrollArea className="rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />

@@ -275,6 +275,7 @@ export function buildCategoryColumns(options?: {
          header: "Nome",
          meta: {
             label: "Nome",
+            filterVariant: "text",
             cellComponent: "text" as const,
             isEditable: true,
             required: true,
@@ -393,6 +394,7 @@ export function buildCategoryColumns(options?: {
             bulkEditIcon: ArrowUpDown,
             bulkEditAction: "Alterar tipo",
             editOptions: TYPE_OPTIONS,
+            filterVariant: "select",
             editSchema: z.enum(["income", "expense", "transfer"]),
             isEditableForRow: (row: CategoryRow) =>
                !row.isArchived && row.parentId === null,

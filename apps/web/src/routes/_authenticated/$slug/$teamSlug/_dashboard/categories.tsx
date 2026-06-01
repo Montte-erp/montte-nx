@@ -28,14 +28,11 @@ import {
 import {
    Archive,
    ArchiveRestore,
-   ArrowLeftRight,
    ChevronDown,
    ChevronRight,
    FolderOpen,
    Plus,
    Trash2,
-   TrendingDown,
-   TrendingUp,
 } from "lucide-react";
 import { fromPromise } from "neverthrow";
 import { useCallback, useMemo, useState } from "react";
@@ -44,6 +41,7 @@ import { z } from "zod";
 import { DefaultHeader } from "../-layout/default-header";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { ExportButton } from "@/components/export-button/export-button";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
@@ -55,8 +53,6 @@ import { DataImportButton } from "@/blocks/data-table/data-import/data-import-bu
 import { DataImportSection } from "@/blocks/data-table/data-import/data-import-section";
 import { useDataImport } from "@/blocks/data-table/data-import/use-data-import";
 import type { DataImportConfig } from "@/blocks/data-table/data-import/use-data-import";
-import { PageFilters } from "@/components/page-filters/page-filters";
-import { PageFilter } from "@/components/page-filters/page-filter";
 import { QueryBoundary } from "@/components/query-boundary";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCsvFile } from "@/hooks/use-csv-file";
@@ -208,15 +204,7 @@ function CategoriesList() {
    const { openAlertDialog } = useAlertDialog();
    const { openSheet } = useSheet();
    const navigate = Route.useNavigate();
-   const {
-      sorting,
-      columnFilters,
-      search,
-      type,
-      includeArchived,
-      page,
-      pageSize,
-   } = Route.useSearch();
+   const { sorting, columnFilters, search, page, pageSize } = Route.useSearch();
    const { parse: parseCsv, generate: generateCsv } = useCsvFile();
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const { activeTeamId } = useActiveTeam();
@@ -248,15 +236,7 @@ function CategoriesList() {
       (q) => {
          let query = q.from({ category: categoriesCollection });
 
-         if (!includeArchived) {
-            query = query.where(({ category }) =>
-               eq(category.isArchived, false),
-            );
-         }
-
-         if (type) {
-            query = query.where(({ category }) => eq(category.type, type));
-         }
+         query = query.where(({ category }) => eq(category.isArchived, false));
 
          if (hasSearch) {
             query = query.where(({ category }) =>
@@ -264,9 +244,27 @@ function CategoriesList() {
             );
          }
 
+         const nameFilterValue = columnFilters.find(
+            (filter) => filter.id === "name",
+         )?.value;
+         if (typeof nameFilterValue === "string" && nameFilterValue.trim()) {
+            query = query.where(({ category }) =>
+               ilike(category.name, `%${nameFilterValue.trim()}%`),
+            );
+         }
+
+         const typeFilterValue = columnFilters.find(
+            (filter) => filter.id === "type",
+         )?.value;
+         if (typeof typeFilterValue === "string" && typeFilterValue.trim()) {
+            query = query.where(({ category }) =>
+               eq(category.type, typeFilterValue.trim()),
+            );
+         }
+
          return query.select(({ category }) => category);
       },
-      [categoriesCollection, hasSearch, includeArchived, search, type],
+      [categoriesCollection, columnFilters, hasSearch, search],
    );
 
    const { data: liveParentableCategories } = useLiveQuery(
@@ -654,7 +652,6 @@ function CategoriesList() {
       };
       return [selectColumn, expandColumn, ...base, actionsColumn];
    }, [
-      categoriesCollection,
       categories,
       handleUpdateCategory,
       handleArchive,
@@ -803,76 +800,6 @@ function CategoriesList() {
                   value={searchInput.value}
                />
                <div className="flex flex-wrap items-center gap-2">
-                  <PageFilters>
-                     <PageFilter
-                        active={includeArchived}
-                        group="Filtros"
-                        icon={<Archive className="size-4" />}
-                        id="includeArchived"
-                        label="Mostrar arquivadas"
-                        onToggle={(checked) =>
-                           navigate({
-                              search: (prev) => ({
-                                 ...prev,
-                                 includeArchived: checked,
-                                 page: 1,
-                              }),
-                              replace: true,
-                           })
-                        }
-                     />
-                     <PageFilter
-                        active={type === "income"}
-                        group="Tipo"
-                        icon={<TrendingUp className="size-4" />}
-                        id="type-income"
-                        label="Somente receitas"
-                        onToggle={(checked) =>
-                           navigate({
-                              search: (prev) => ({
-                                 ...prev,
-                                 type: checked ? "income" : undefined,
-                                 page: 1,
-                              }),
-                              replace: true,
-                           })
-                        }
-                     />
-                     <PageFilter
-                        active={type === "expense"}
-                        group="Tipo"
-                        icon={<TrendingDown className="size-4" />}
-                        id="type-expense"
-                        label="Somente despesas"
-                        onToggle={(checked) =>
-                           navigate({
-                              search: (prev) => ({
-                                 ...prev,
-                                 type: checked ? "expense" : undefined,
-                                 page: 1,
-                              }),
-                              replace: true,
-                           })
-                        }
-                     />
-                     <PageFilter
-                        active={type === "transfer"}
-                        group="Tipo"
-                        icon={<ArrowLeftRight className="size-4" />}
-                        id="type-transfer"
-                        label="Somente transferências"
-                        onToggle={(checked) =>
-                           navigate({
-                              search: (prev) => ({
-                                 ...prev,
-                                 type: checked ? "transfer" : undefined,
-                                 page: 1,
-                              }),
-                              replace: true,
-                           })
-                        }
-                     />
-                  </PageFilters>
                   <DataTableColumnVisibility table={table} />
                   <ExportButton table={table} fileBase="categorias" />
                   <DataImportButton api={importApi} config={importConfig} />
@@ -887,6 +814,7 @@ function CategoriesList() {
                   </Button>
                </div>
             </div>
+            <DataTableFilterChips table={table} />
             <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
@@ -905,7 +833,7 @@ function CategoriesList() {
                         </EmptyMedia>
                         <EmptyTitle>Nenhuma categoria</EmptyTitle>
                         <EmptyDescription>
-                           {type || search
+                           {columnFilters.length > 0 || search
                               ? "Nenhuma categoria encontrada com os filtros atuais."
                               : "Adicione uma categoria para organizar suas transações."}
                         </EmptyDescription>

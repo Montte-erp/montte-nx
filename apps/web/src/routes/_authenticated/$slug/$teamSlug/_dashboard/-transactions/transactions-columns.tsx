@@ -208,6 +208,7 @@ export function buildTransactionColumns(options?: {
             bulkEditIcon: CircleDot,
             bulkEditAction: "Alterar status",
             editOptions: statusOptions,
+            filterVariant: "select",
          },
          cell: ({ row }) => {
             const status =
@@ -302,6 +303,7 @@ export function buildTransactionColumns(options?: {
          header: "Nome",
          meta: {
             label: "Nome",
+            filterVariant: "text",
             cellComponent: "text",
             isEditable: true,
             editMode: "inline",
@@ -328,6 +330,7 @@ export function buildTransactionColumns(options?: {
             bulkEditIcon: ArrowUpDown,
             bulkEditAction: "Alterar tipo",
             editOptions: typeOptions,
+            filterVariant: "select",
             required: true,
          },
          cell: ({ row }) => (
@@ -350,6 +353,7 @@ export function buildTransactionColumns(options?: {
             bulkEditIcon: Tag,
             bulkEditAction: "Categorizar",
             editOptions: categoryOptionsList,
+            filterVariant: "select",
             onCreateOption: options?.onCreateCategory,
             groupable: true,
             required: true,
@@ -415,6 +419,7 @@ export function buildTransactionColumns(options?: {
                relationshipName: option.label,
             }),
             editOptions: customerOptions,
+            filterVariant: "select",
             onCreateOption: options?.onCreateCustomer,
          },
          cell: ({ row }) => (
@@ -463,6 +468,7 @@ export function buildTransactionColumns(options?: {
                relationshipName: option.label,
             }),
             editOptions: supplierOptions,
+            filterVariant: "select",
             onCreateOption: options?.onCreateSupplier,
          },
          cell: ({ row }) => (
@@ -507,6 +513,7 @@ export function buildTransactionColumns(options?: {
             bulkEditIcon: Landmark,
             bulkEditAction: "Definir conta",
             editOptions: bankOptions,
+            filterVariant: "select",
             onCreateOption: options?.onCreateBankAccount,
             required: true,
          },

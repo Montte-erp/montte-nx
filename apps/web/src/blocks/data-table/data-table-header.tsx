@@ -5,6 +5,7 @@ import {
 } from "@packages/ui/components/table";
 import { Button } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
+import { DataTableColumnFilter } from "./data-table-column-filter";
 import {
    flexRender,
    type Column,
@@ -236,6 +237,7 @@ function SortableTableHead<TData>({ header }: SortableTableHeadProps<TData>) {
                      <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                   )}
                </div>
+               <DataTableColumnFilter column={col} />
                {meta?.pinnable && col.getCanPin() && (
                   <Button
                      className="size-4"

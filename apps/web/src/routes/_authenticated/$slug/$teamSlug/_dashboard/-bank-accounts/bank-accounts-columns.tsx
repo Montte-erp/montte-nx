@@ -109,6 +109,7 @@ export function buildBankAccountColumns(
          header: "Banco",
          meta: {
             label: "Banco",
+            filterVariant: "text",
             exportValue: (row) => row.bankName ?? "",
          },
          cell: ({ row }) => {
@@ -136,6 +137,7 @@ export function buildBankAccountColumns(
          header: "Nome",
          meta: {
             label: "Nome",
+            filterVariant: "text",
             cellComponent: "text" as const,
             isEditable: canRenameAccount,
             editMode: "inline" as const,
@@ -248,6 +250,7 @@ export function buildBankAccountColumns(
             bulkEditIcon: Shapes,
             bulkEditAction: "Alterar tipo",
             editOptions: TYPE_OPTIONS,
+            filterVariant: "select",
             required: true,
          },
          cell: ({ row }) => {

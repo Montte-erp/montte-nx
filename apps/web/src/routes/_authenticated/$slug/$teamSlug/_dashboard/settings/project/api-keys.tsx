@@ -32,6 +32,7 @@ import type { Outputs } from "@/integrations/orpc/client";
 import { QueryBoundary } from "@/components/query-boundary";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useCredenza } from "@/hooks/use-credenza";
@@ -271,6 +272,7 @@ function ApiKeysContent() {
                <div className="flex justify-end">
                   <DataTableColumnVisibility table={table} />
                </div>
+               <DataTableFilterChips table={table} />
                <ScrollArea className="rounded-md border bg-card">
                   <Table>
                      <DataTableHeader table={table} />
