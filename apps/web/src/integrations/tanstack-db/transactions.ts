@@ -53,6 +53,7 @@ type TransactionCreateActionInput = {
 
 type TransactionsWhereInput = {
    bankAccountId?: string;
+   paymentMethod?: string;
    relationshipId?: string;
    overdueOnly?: boolean;
    search?: string;
@@ -135,6 +136,9 @@ function parseTransactionsWhere(options: LoadSubsetOptions | undefined) {
                if (key === "bankAccountId" && typeof value === "string") {
                   return { bankAccountId: value };
                }
+               if (key === "paymentMethod" && typeof value === "string") {
+                  return { paymentMethod: value };
+               }
                if (key === "relationshipId" && typeof value === "string") {
                   return { relationshipId: value };
                }
@@ -178,6 +182,7 @@ function parseTransactionSortId(value: string): TransactionSortId | undefined {
       case "date":
       case "dueDate":
       case "name":
+      case "paymentMethod":
       case "relationshipName":
       case "status":
       case "type":
@@ -214,6 +219,7 @@ function transactionsInputFromLoadSubsetOptions(
       status:
          where.status && where.status.length > 0 ? where.status : base.status,
       bankAccountId: where.bankAccountId ?? base.bankAccountId,
+      paymentMethod: where.paymentMethod,
       relationshipId: where.relationshipId ?? base.relationshipId,
       sorting,
    };
