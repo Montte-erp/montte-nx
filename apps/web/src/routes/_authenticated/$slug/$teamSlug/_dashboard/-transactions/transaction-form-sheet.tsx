@@ -103,7 +103,22 @@ const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
 
 type TransactionStatus = "paid" | "pending";
 type StatusOption = { value: TransactionStatus; label: string };
+type PaymentMethod = NonNullable<TransactionCreateInput["paymentMethod"]>;
 type RecurrenceFrequency = "daily" | "weekly" | "biweekly" | "monthly";
+
+const PAYMENT_METHOD_NONE_VALUE = "__none";
+
+const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
+   { value: "pix", label: "Pix" },
+   { value: "credit_card", label: "Cartão de crédito" },
+   { value: "debit_card", label: "Cartão de débito" },
+   { value: "boleto", label: "Boleto" },
+   { value: "cash", label: "Dinheiro" },
+   { value: "transfer", label: "Transferência" },
+   { value: "cheque", label: "Cheque" },
+   { value: "automatic_debit", label: "Débito automático" },
+   { value: "other", label: "Outro" },
+];
 
 const STATUS_OPTIONS: StatusOption[] = [
    { value: "paid", label: "Efetivado" },
@@ -124,6 +139,12 @@ const ATTACHMENT_MAX_FILES = 5;
 
 function parseStatus(value: string): TransactionStatus | undefined {
    return STATUS_OPTIONS.find((s) => s.value === value)?.value;
+}
+
+function parsePaymentMethod(value: string): PaymentMethod | "" | undefined {
+   if (value === PAYMENT_METHOD_NONE_VALUE) return "";
+   return PAYMENT_METHOD_OPTIONS.find((option) => option.value === value)
+      ?.value;
 }
 
 function parseRecurrenceFrequency(
@@ -153,6 +174,19 @@ const formSchema = z
          .positive("Valor deve ser maior que zero."),
       date: z.string().min(1, "Data é obrigatória."),
       status: z.enum(["pending", "paid"]),
+      paymentMethod: z
+         .enum([
+            "pix",
+            "credit_card",
+            "debit_card",
+            "boleto",
+            "cash",
+            "transfer",
+            "other",
+            "cheque",
+            "automatic_debit",
+         ])
+         .or(z.literal("")),
       ignored: z.boolean(),
       isInstallment: z.boolean(),
       installmentCount: z
@@ -318,6 +352,7 @@ const DEFAULT_VALUES: FormValues = {
    amount: 0,
    date: dayjs().format("YYYY-MM-DD"),
    status: "paid",
+   paymentMethod: "",
    ignored: false,
    isInstallment: false,
    installmentCount: 2,
@@ -717,7 +752,7 @@ export function TransactionFormSheet({
                value.type === "transfer" ? null : value.categoryId || null,
             attachments,
             description: value.description.trim() || null,
-            paymentMethod: null,
+            paymentMethod: value.paymentMethod || null,
          });
       },
    });
@@ -1284,6 +1319,43 @@ export function TransactionFormSheet({
                                  {STATUS_OPTIONS.map((o) => (
                                     <SelectItem key={o.value} value={o.value}>
                                        {o.label}
+                                    </SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
+                        </Field>
+                     )}
+                  </form.Field>
+
+                  <form.Field name="paymentMethod">
+                     {(field) => (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>
+                              Forma de pagamento
+                           </FieldLabel>
+                           <Select
+                              value={
+                                 field.state.value || PAYMENT_METHOD_NONE_VALUE
+                              }
+                              onValueChange={(value) => {
+                                 const parsed = parsePaymentMethod(value);
+                                 if (parsed === undefined) return;
+                                 field.handleChange(parsed);
+                              }}
+                           >
+                              <SelectTrigger id={field.name} name={field.name}>
+                                 <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value={PAYMENT_METHOD_NONE_VALUE}>
+                                    Não informado
+                                 </SelectItem>
+                                 {PAYMENT_METHOD_OPTIONS.map((option) => (
+                                    <SelectItem
+                                       key={option.value}
+                                       value={option.value}
+                                    >
+                                       {option.label}
                                     </SelectItem>
                                  ))}
                               </SelectContent>
