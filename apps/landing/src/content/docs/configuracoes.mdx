@@ -1,0 +1,109 @@
+---
+title: "Configurações"
+description: "Gerencie sua organização, times, membros, preferências financeiras, API keys e configurações de IA no Montte."
+category: "Operação"
+order: 40
+updatedAt: "2026-06-08"
+aiSummary: "Guia de configurações do Montte: organização e times, convite de membros, autenticação, API keys, preferências financeiras e configurações do Montte AI."
+commonQuestions:
+   - "Como adicionar pessoas ao meu time?"
+   - "Como criar uma chave de API?"
+   - "O que é organização e time no Montte?"
+   - "Como configurar autenticação de dois fatores?"
+   - "Como alterar as configurações financeiras?"
+---
+
+A área de configurações do Montte permite gerenciar sua organização, times, membros, preferências e integrações.
+
+## Organização e times
+
+O Montte organiza o acesso em dois níveis:
+
+**Organização** — a empresa ou entidade principal. Contém os dados cadastrais, CNPJ e membros.
+
+**Time** — um grupo de trabalho dentro da organização. Cada time pode ter suas próprias configurações financeiras e dados operacionais.
+
+Uma organização pode ter vários times, e cada membro pode participar de um ou mais times.
+
+### Dados da organização
+
+- Nome e slug (identificador único)
+- Logo
+- CNPJ — com consulta automática de dados públicos (razão social, CNAE, sócios, regime tributário)
+- Status de onboarding — controle de conclusão das etapas iniciais
+
+## Membros e convites
+
+Para adicionar pessoas à sua organização:
+
+1. Acesse a tela de membros em Configurações.
+2. Envie um convite pelo e-mail da pessoa.
+3. O convite pode definir o papel (membro, admin, etc.).
+4. A pessoa recebe um e-mail com instruções para aceitar.
+
+Cada membro pode ter acesso a um ou mais times.
+
+## Autenticação
+
+O Montte usa **Better Auth** para autenticação, com as seguintes opções:
+
+- **Magic Link** — login por e-mail sem senha
+- **Email OTP** — código de uso único enviado por e-mail
+- **Two-Factor Authentication (2FA)** — camada extra de segurança com aplicativo autenticador
+
+### Sessões
+
+Você pode visualizar e gerenciar suas sessões ativas em Configurações, incluindo desconectar sessões de dispositivos que não usa mais.
+
+## API Keys
+
+Para integrações programáticas, você pode criar chaves de API em Configurações.
+
+**Características das API Keys:**
+- Prefixo visível para identificação
+- Nome personalizado
+- Controle de taxa de requisição (rate limit)
+- Data de expiração opcional
+- Contagem de requisições
+- Status habilitado/desabilitado
+
+A referência OpenAPI completa fica disponível em `/api/openapi/docs` quando o app está rodando.
+
+## Preferências financeiras
+
+Nas configurações financeiras, você pode definir:
+
+**Centro de custo obrigatório** — quando ativado, toda transação exige um centro de custo (tag) no momento do lançamento.
+
+## Configurações do Montte AI
+
+As configurações do agente permitem:
+
+- Escolher o modelo de IA (via OpenRouter)
+- Ajustar esforço de raciocínio (alto ou muito alto)
+- Definir idioma e tom das respostas
+- Ativar ou desativar fontes de dados (transações, contatos, serviços)
+
+Consulte a página [Montte AI](/docs/montte-ai) para detalhes completos.
+
+## Onboarding
+
+Ao criar uma organização, o Montte guia você pelas etapas iniciais de configuração:
+
+- Dados da organização
+- Definição de times
+- Configuração financeira básica
+- Preferências do Montte AI
+
+## Erros comuns
+
+- Convidar um membro sem definir o time de acesso.
+- Desativar uma API key usada por integrações ativas.
+- Marcar centro de custo como obrigatório sem criar as tags primeiro.
+- Tentar alterar dados da organização sem permissão de administrador.
+
+## Próximos passos
+
+- [Primeiros passos](/docs/primeiros-passos) — revisão do fluxo inicial
+- [Financeiro](/docs/financeiro) — configure contas e categorias
+- [Montte AI](/docs/montte-ai) — ajuste o agente da sua organização

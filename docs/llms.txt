@@ -1,0 +1,23 @@
+# Montte docs
+
+> Documentação pública canônica do Montte para usuários e grounding do Montte AI.
+
+## Comece aqui
+
+- [Documentação do Montte](/docs) — Visão geral, navegação e modelo mental.
+- [Primeiros passos](/docs/primeiros-passos) — Conceitos básicos e caminho recomendado.
+
+## Operação
+
+- [Financeiro](/docs/financeiro) — Contas bancárias, cartões, transações, categorias e centro de custo.
+- [Clientes e fornecedores](/docs/clientes-e-servicos) — Cadastro de clientes e fornecedores com validação de CPF/CNPJ.
+- [Montte AI](/docs/montte-ai) — Chat, agentes, fontes de dados e configurações.
+- [Relatórios e automações](/docs/relatorios-e-automacoes) — DRE, fluxo de caixa, aging e workflows automáticos.
+- [Configurações](/docs/configuracoes) — Organização, times, API keys e preferências.
+
+## Links principais
+
+- Site: https://montte.co
+- Documentação: https://montte.co/docs
+- Repositório: https://github.com/Montte-erp/montte-nx
+- Waitlist: https://montte.co/#waitlist

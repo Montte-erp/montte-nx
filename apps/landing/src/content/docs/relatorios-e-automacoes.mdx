@@ -1,0 +1,104 @@
+---
+title: "Relatórios e automações"
+description: "Crie relatórios financeiros como DRE e fluxo de caixa, configure automações recorrentes e workflows no Montte para reduzir trabalho manual."
+category: "Operação"
+order: 35
+updatedAt: "2026-06-08"
+aiSummary: "Guia de relatórios financeiros e automações do Montte: tipos de relatório (DRE, fluxo de caixa, aging), criação, configuração de workflows automáticos e agendamentos."
+commonQuestions:
+   - "Como criar um relatório DRE no Montte?"
+   - "Quais tipos de relatório existem?"
+   - "O que são workflows automáticos?"
+   - "Como agendar um relatório para ser gerado periodicamente?"
+   - "O que é aging report?"
+---
+
+O Montte oferece relatórios financeiros e automações para reduzir o trabalho manual de acompanhamento da operação.
+
+## Relatórios
+
+Os relatórios são gerados com base nos dados de transações e categorias da sua organização. Eles ficam salvos para consulta futura.
+
+### Tipos de relatório
+
+| Tipo | Descrição |
+|------|-----------|
+| **DRE** | Demonstrativo de Resultados. Mostra receitas e despesas agrupadas por categoria, considerando apenas as categorias marcadas para participar do DRE. |
+| **Fluxo de caixa** | Movimentação financeira por período, com entradas e saídas. |
+| **Centros de custo** | Análise segmentada por tag/centro de custo. |
+| **Aging** | Relatório de aging de contas a receber e a pagar, com filtro por tipo (receita, despesa ou todos) e status (aberto, vencido, liquidado). |
+| **Categorias** | Detalhamento por categoria em diferentes níveis de profundidade. |
+
+### Parâmetros comuns
+
+Ao criar um relatório, você pode configurar:
+
+- Período (data inicial e data final)
+- Status das transações (pago, pendente ou todos)
+- Conta bancária específica
+- Categoria ou tag específica
+- Apenas categorias que participam do DRE
+- Tipo de aging (receita, despesa, ambos)
+- Status de aging (aberto, vencido, liquidado)
+- Profundidade de categoria (grupo ou subcategoria)
+- Valor mínimo
+
+### Origem
+
+Relatórios podem ser criados de duas formas:
+
+- **Manual** — criação direta pelo usuário na tela de relatórios
+- **Workflow** — geração automática por workflow agendado
+
+## Automações (workflows)
+
+Workflows são automações que executam tarefas repetitivas sem intervenção manual.
+
+### Como funciona
+
+Um workflow tem dois componentes:
+
+1. **Gatilho (trigger)** — define quando o workflow deve executar (agendamento cron)
+2. **Ação (action)** — define o que será executado (ex: criar relatório)
+
+O cron de agendamento suporta periodicidade:
+- **Mensal** — executa em um dia específico do mês
+- **Semanal** — executa em um dia específico da semana
+
+O fuso horário padrão é America/Sao_Paulo.
+
+### Status
+
+| Status  | Significado                                     |
+|---------|-------------------------------------------------|
+| Ativo   | Workflow agendado e executando conforme cron    |
+| Pausado | Workflow interrompido, não executa até ser reativado |
+
+### Execuções
+
+Cada execução de workflow fica registrada com:
+
+- Status (pendente, executando, sucesso, falha)
+- Data/hora agendada e de início/fim
+- Relatório gerado (quando aplicável)
+- Erro (se houver)
+- Gatilho (agendado ou manual)
+
+Um mesmo workflow não executa duas vezes no mesmo período — o sistema usa chave de idempotência para evitar duplicatas.
+
+## Exemplo prático
+
+1. Acesse Relatórios e crie um relatório DRE manual com o período do mês anterior.
+2. Configure um workflow para gerar o mesmo relatório automaticamente todo dia 5 de cada mês.
+3. O workflow cria o relatório e você pode consultá-lo sem precisar lembrar de gerar manualmente.
+
+## Erros comuns
+
+- Criar um relatório DRE sem marcar categorias como participantes do DRE.
+- Configurar um workflow com cron inválido (apenas formatos mensal e semanal são suportados).
+- Esperar que relatórios incluam transações de categorias que não participam do DRE.
+
+## Próximos passos
+
+- [Financeiro](/docs/financeiro) — entenda categorias e centros de custo que alimentam os relatórios
+- [Montte AI](/docs/montte-ai) — pergunte sobre resultados dos relatórios

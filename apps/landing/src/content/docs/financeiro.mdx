@@ -1,0 +1,153 @@
+---
+title: "Financeiro"
+description: "Gerencie contas bancárias, cartões de crédito, transações, categorias e centros de custo no Montte para manter o controle financeiro da sua operação."
+category: "Operação"
+order: 10
+updatedAt: "2026-06-08"
+aiSummary: "Guia completo da área financeira do Montte: contas bancárias, cartões de crédito, transações, categorias, tags como centro de custo, importação e conciliação."
+commonQuestions:
+   - "Como criar uma conta bancária no Montte?"
+   - "Como registrar uma despesa ou receita?"
+   - "O que são categorias e centros de custo?"
+   - "Como importar extratos bancários?"
+   - "Como funciona o pagamento de fatura de cartão?"
+---
+
+A área financeira do Montte reúne tudo que envolve dinheiro na sua operação: contas bancárias, cartões de crédito, lançamentos, categorias e centros de custo.
+
+## Contas bancárias
+
+As contas bancárias representam onde o dinheiro da sua operação fica guardado. Você pode cadastrar contas corrente, poupança, investimento, conta de pagamento e caixa físico.
+
+**Campos principais:**
+- Nome (obrigatório) — identificação da conta
+- Tipo — corrente, poupança, investimento, pagamento ou caixa
+- Saldo inicial e data do saldo inicial
+- Código do banco, agência e número da conta (para contas bancárias)
+- Cor — usada nos gráficos e relatórios
+- Status — ativa ou arquivada
+
+**Regras:**
+- Contas do tipo "caixa" não aceitam dados bancários (código do banco, agência, conta).
+- O saldo inicial é usado como ponto de partida para o cálculo do saldo atual.
+- Contas arquivadas continuam existindo mas ficam ocultas na maioria das telas.
+- Uma conta com transações vinculadas não pode ser excluída.
+
+## Cartões de crédito
+
+Os cartões de crédito no Montte são vinculados a uma conta bancária (a conta que paga a fatura).
+
+**Campos principais:**
+- Nome (obrigatório)
+- Limite de crédito
+- Final do cartão (4 dígitos)
+- Dia de fechamento e dia de vencimento
+- Conta bancária vinculada (obrigatório)
+- Bandeira — Visa, Mastercard, Elo, Amex, Hipercard ou outro
+- Status — ativo, bloqueado ou cancelado
+
+**Faturas:**
+Cada cartão gera faturas por período (mês/ano). As faturas podem estar em três estados:
+
+| Status   | Significado                                     |
+|----------|-------------------------------------------------|
+| Aberta   | Período em andamento, compras sendo acumuladas  |
+| Fechada  | Período encerrado, aguardando pagamento         |
+| Paga     | Fatura quitada, vinculada a uma transação       |
+
+A fatura é paga por meio de uma transação do tipo despesa vinculada ao cartão.
+
+## Transações (lançamentos)
+
+As transações são o registro de toda movimentação financeira.
+
+### Tipos de transação
+
+| Tipo       | Descrição                                              |
+|------------|--------------------------------------------------------|
+| Receita    | Entrada de dinheiro. Exige conta bancária.             |
+| Despesa    | Saída de dinheiro. Exige conta bancária ou cartão.     |
+| Transferência | Movimentação entre contas. Exige origem e destino. |
+
+### Status
+
+| Status     | Significado                               |
+|------------|-------------------------------------------|
+| Pago       | Lançamento já realizado                   |
+| Pendente   | Lançamento a vencer ou aguardando         |
+| Cancelado  | Lançamento cancelado                      |
+
+### Métodos de pagamento
+
+PIX, cartão de crédito, cartão de débito, boleto, dinheiro, transferência, cheque e débito automático.
+
+### Campos opcionais
+
+- Categoria e subcategoria — para classificação financeira
+- Tag / Centro de custo — segmentação gerencial adicional
+- Relacionamento — vincula o lançamento a um cliente ou fornecedor
+- Descrição — texto livre até 500 caracteres
+- Anexos — arquivos associados ao lançamento
+- Data de vencimento — para controle de pendências
+- Parcelamento — grupo, número e total de parcelas
+- Recorrência — diária, semanal, quinzenal ou mensal
+- Conta de destino — usada apenas em transferências
+
+### Recorrência
+
+Transações podem ser configuradas como recorrentes com frequência diária, semanal, quinzenal ou mensal. Cada ocorrência futura é gerada automaticamente e pode ser pausada individualmente.
+
+## Categorias
+
+Categorias organizam os lançamentos financeiros por tipo (receita, despesa ou transferência).
+
+**Características:**
+- Podem ter subcategorias (hierarquia de até 2 níveis)
+- Cada time define suas próprias categorias
+- Cores e ícones para identificação visual
+- Participação no DRE — categorias podem ser marcadas para compor o Demonstrativo de Resultados
+- Grupos DRE — agrupamento dentro do DRE quando a categoria participa
+
+## Tags e centro de custo
+
+No Montte, o recurso de **tags** é usado como **Centro de Custo**. Cada tag tem:
+
+- Nome único por time
+- Cor personalizada
+- Descrição opcional
+- Participação opcional no DRE com tipo (receita/despesa) e ordem
+
+Uma tag pode ser vinculada a transações para segmentação gerencial.
+
+## Importação de dados
+
+O Montte permite importar transações de arquivos nos formatos:
+
+- **CSV** — arquivos de texto com valores separados por vírgula
+- **XLSX** — planilhas do Excel
+- **OFX** — formato financeiro padronizado usado por bancos
+
+Durante a importação, você pode mapear colunas do arquivo para os campos do Montte e revisar os dados antes de confirmar.
+
+## Inbox operacional
+
+O inbox do Montte agrega notificações operacionais do seu time, como:
+
+- transações sem categoria ou sem tag atribuída
+- pagamentos a vencer
+- alertas de inconsistência
+
+Cada item pode ser lido, dispensado ou adiado (snooze). O inbox é filtrado por time.
+
+## Erros comuns
+
+- Criar contas bancárias sem preencher código do banco (obrigatório para contas que não são caixa).
+- Vincular um cartão de crédito a uma conta e depois tentar excluir a conta.
+- Não definir categoria e centro de custo desde o início, dificultando a análise depois.
+- Importar dados sem revisar o mapeamento de colunas e valores.
+
+## Próximos passos
+
+- [Clientes e fornecedores](/docs/clientes-e-servicos) — vincule transações a relacionamentos
+- [Relatórios e automações](/docs/relatorios-e-automacoes) — crie DRE, fluxo de caixa e relatórios periódicos
+- [Montte AI](/docs/montte-ai) — tire dúvidas sobre seus dados financeiros

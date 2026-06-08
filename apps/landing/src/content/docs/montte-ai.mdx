@@ -1,0 +1,88 @@
+---
+title: "Montte AI"
+description: "Entenda como o Montte AI funciona, quais dados ele acessa, como fazer perguntas e quais são os limites do assistente inteligente da plataforma."
+category: "Operação"
+order: 30
+updatedAt: "2026-06-08"
+aiSummary: "Guia do Montte AI, o assistente inteligente da plataforma: como funciona o chat, quais dados são acessados, configurações do agente, boas práticas e limitações."
+commonQuestions:
+   - "O que o Montte AI pode fazer?"
+   - "Quais dados o Montte AI acessa?"
+   - "Como configurar o Montte AI?"
+   - "O Montte AI pode alterar dados?"
+   - "Qual modelo de IA o Montte usa?"
+---
+
+O Montte AI é o assistente inteligente integrado ao produto. Ele usa o contexto da sua operação — transações, contas, clientes e fornecedores — para responder perguntas e ajudar na tomada de decisão.
+
+## Como acessar
+
+O Montte AI fica disponível no chat dentro do dashboard autenticado. Você pode fazer perguntas em linguagem natural sobre qualquer área do produto.
+
+## O que o Montte AI pode fazer
+
+O assistente opera com ferramentas de leitura que consultam os dados da sua operação:
+
+- **Transações financeiras** — consultar lançamentos, saldos, pendências e histórico
+- **Contatos** — buscar informações de clientes e fornecedores
+- **Serviços** — acessar dados de contratos e serviços quando disponíveis
+
+O Montte AI **não escreve diretamente no banco de dados**. Ele é um assistente de consulta e orientação, não um executor de ações.
+
+## Configurações do agente
+
+Nas configurações do Montte AI, você pode ajustar:
+
+| Configuração       | Opções                          | Padrão                               |
+|--------------------|---------------------------------|--------------------------------------|
+| Modelo de IA       | Diversos via OpenRouter         | `openrouter/moonshotai/kimi-k2.5`   |
+| Esforço de raciocínio | Alto ou muito alto            | Alto                                 |
+| Idioma             | Personalizável                  | pt-BR                                |
+| Tom                | Formal ou outros                | Formal                               |
+| Fontes de dados    | Transações, contatos, serviços  | Todas ativas                         |
+
+### Fontes de dados
+
+Você pode ativar ou desativar quais fontes de dados o Montte AI pode consultar:
+
+- **Transações** — dados financeiros da operação
+- **Contatos** — clientes e fornecedores cadastrados
+- **Serviços** — serviços e contratos (quando disponíveis)
+
+Se uma fonte estiver desativada, o assistente não terá acesso àqueles dados.
+
+## Boas perguntas
+
+O Montte AI responde melhor quando a pergunta é específica e contextualizada:
+
+- "Por que esta cobrança aparece como pendente?"
+- "O que falta para organizar este cliente?"
+- "Como este lançamento afeta meu financeiro?"
+- "Qual é o próximo passo para configurar cobranças recorrentes?"
+- "Mostre os lançamentos deste mês sem categoria"
+
+## Como o Montte AI usa a documentação
+
+O Montte AI utiliza estas páginas de documentação como fonte de conhecimento. Quando você faz uma pergunta, ele pode consultar as docs para dar uma resposta mais precisa e referenciar o caminho correto dentro do produto.
+
+## Limitações
+
+- O Montte AI **não executa ações** como criar, alterar ou excluir registros.
+- O assistente depende da qualidade dos dados cadastrados — dados incompletos geram respostas limitadas.
+- A precisão das respostas varia conforme o modelo de IA configurado.
+- O histórico de conversas é armazenado em threads dentro do produto.
+
+## Privacidade
+
+O Montte AI opera dentro do contexto da sua organização e time. Os dados consultados são os mesmos que você vê no produto — não há acesso a dados de outras organizações.
+
+## Erros comuns
+
+- Esperar que o Montte AI corrija dados incompletos sem contexto suficiente.
+- Fazer perguntas muito genéricas ("como está meu negócio?") sem especificar período ou área.
+- Desativar fontes de dados e depois perguntar sobre informações dessas fontes.
+
+## Próximos passos
+
+- [Financeiro](/docs/financeiro) — entenda os dados que o Montte AI consulta
+- [Configurações](/docs/configuracoes) — gerencie time e permissões de acesso

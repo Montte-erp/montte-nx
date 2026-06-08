@@ -1,0 +1,89 @@
+---
+title: "Clientes e fornecedores"
+description: "Cadastre e gerencie clientes e fornecedores no Montte com validação de CPF/CNPJ, telefone e vínculo com transações financeiras."
+category: "Operação"
+order: 20
+updatedAt: "2026-06-08"
+aiSummary: "Guia do módulo de relacionamentos do Montte: cadastro de clientes e fornecedores, tipos de pessoa, validação de documentos, importação e vínculo com transações."
+commonQuestions:
+   - "Como cadastrar um cliente no Montte?"
+   - "Qual a diferença entre cliente e fornecedor?"
+   - "O Montte valida CPF e CNPJ?"
+   - "Como importar clientes de uma planilha?"
+   - "Posso excluir um cliente que tem transações?"
+---
+
+O módulo de relacionamentos do Montte organiza clientes e fornecedores da sua operação. Ele não é um CRM completo — funil de vendas, atividades comerciais e campanhas ficam fora do escopo.
+
+## Clientes e fornecedores
+
+Todo relacionamento no Montte tem duas classificações principais:
+
+**Por função:**
+- **Cliente** — quem compra ou contrata seus serviços
+- **Fornecedor** — quem presta serviço ou vende para você
+
+**Por tipo de pessoa:**
+- **Pessoa física** — CPF com validação de dígitos verificadores
+- **Pessoa jurídica** — CNPJ com validação completa
+
+### Campos do cadastro
+
+| Campo          | Obrigatório | Detalhes                                      |
+|----------------|-------------|-----------------------------------------------|
+| Nome           | Sim         | Mínimo 2, máximo 160 caracteres               |
+| Papel          | Sim         | Cliente ou fornecedor                         |
+| Tipo           | Sim         | Pessoa física ou jurídica                     |
+| CPF/CNPJ       | Não         | Validado conforme o tipo de pessoa            |
+| E-mail         | Não         | Validado como e-mail                          |
+| Telefone       | Não         | 10 ou 11 dígitos (validação de formato)       |
+
+### Validação de documentos
+
+O Montte valida CPF e CNPJ no momento do cadastro. A validação inclui:
+
+- **CPF:** formato de 11 dígitos, dígitos verificadores, rejeição de sequências repetidas (ex: 111.111.111-11)
+- **CNPJ:** formato alfanumérico de 14 caracteres, dígitos verificadores, rejeição de sequências repetidas
+
+O documento é armazenado sem máscara (apenas dígitos) para facilitar buscas e evitar duplicatas.
+
+### Vinculação com transações
+
+Uma transação financeira pode ser vinculada a um cliente ou fornecedor. Isso permite:
+
+- filtrar lançamentos por relacionamento;
+- consultar o histórico financeiro de cada contraparte;
+- evitar exclusão acidental de relacionamentos com movimentação.
+
+### Arquivamente
+
+Relacionamentos podem ser arquivados em vez de excluídos. Um relacionamento arquivado:
+
+- fica oculto nas telas principais;
+- pode ser restaurado se necessário;
+- mantém o vínculo com transações existentes.
+
+## Importação de clientes e fornecedores
+
+Você pode importar dados de clientes e fornecedores a partir de arquivos CSV ou XLSX. Durante a importação, o sistema valida os dados e mostra erros de formato antes de confirmar a operação.
+
+## Exportação
+
+Relacionamentos podem ser exportados para XLSX, facilitando o backup ou a integração com outras ferramentas.
+
+## Limitações
+
+- Não há funil de vendas, atividades comerciais, lead scoring ou campanhas.
+- Não há integração com CRM no momento (Twenty é a primeira integração planejada).
+- O módulo não gerencia contratos — essa funcionalidade está em desenvolvimento.
+
+## Erros comuns
+
+- Tentar excluir um relacionamento que possui transações vinculadas (operação bloqueada).
+- Cadastrar CNPJ sem informar o tipo de pessoa como jurídica.
+- Inserir telefone com formato incompleto (menos de 10 dígitos).
+
+## Próximos passos
+
+- [Financeiro](/docs/financeiro) — vincule transações a clientes e fornecedores
+- [Montte AI](/docs/montte-ai) — pergunte sobre situação de clientes e pendências
