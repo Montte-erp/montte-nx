@@ -47,6 +47,27 @@ export type CategoryOption = { id: string; name: string };
 export type CreditCardOption = { id: string; name: string };
 export type RelationshipOption = { id: string; name: string };
 
+type PaymentMethod = NonNullable<TransactionRow["paymentMethod"]>;
+
+const PAYMENT_METHOD_NONE_VALUE = "__none";
+
+const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
+   { value: "pix", label: "Pix" },
+   { value: "credit_card", label: "Cartão de crédito" },
+   { value: "debit_card", label: "Cartão de débito" },
+   { value: "boleto", label: "Boleto" },
+   { value: "cash", label: "Dinheiro" },
+   { value: "transfer", label: "Transferência" },
+   { value: "cheque", label: "Cheque" },
+   { value: "automatic_debit", label: "Débito automático" },
+   { value: "other", label: "Outro" },
+];
+
+const PAYMENT_METHOD_EDIT_OPTIONS = [
+   { value: PAYMENT_METHOD_NONE_VALUE, label: "Não informado" },
+   ...PAYMENT_METHOD_OPTIONS,
+];
+
 export function formatBRL(value: string | number): string {
    const raw = String(value).trim();
    return format(of(raw === "" ? "0" : raw, "BRL"), "pt-BR");
@@ -339,6 +360,38 @@ export function buildTransactionColumns(options?: {
                onSave={async (value) => dispatchPatch(row, { type: value })}
                options={typeOptions}
                value={row.original.type}
+            />
+         ),
+      },
+      {
+         accessorKey: "paymentMethod",
+         header: "Forma de pagamento",
+         meta: {
+            label: "Forma de pagamento",
+            cellComponent: "select",
+            isEditable: true,
+            editMode: "inline",
+            bulkEditIcon: CreditCard,
+            bulkEditAction: "Definir forma de pagamento",
+            editOptions: PAYMENT_METHOD_EDIT_OPTIONS,
+            filterVariant: "select",
+            groupable: true,
+            formatGroupLabel: (value) =>
+               PAYMENT_METHOD_EDIT_OPTIONS.find(
+                  (option) => option.value === value,
+               )?.label ?? "Não informado",
+         },
+         cell: ({ row }) => (
+            <InlineEditSelect
+               ariaLabel="Forma de pagamento"
+               onSave={async (value) =>
+                  dispatchPatch(row, {
+                     paymentMethod:
+                        value === PAYMENT_METHOD_NONE_VALUE ? null : value,
+                  })
+               }
+               options={PAYMENT_METHOD_EDIT_OPTIONS}
+               value={row.original.paymentMethod ?? PAYMENT_METHOD_NONE_VALUE}
             />
          ),
       },

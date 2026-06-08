@@ -71,6 +71,7 @@ export type TransactionSortId =
    | "date"
    | "dueDate"
    | "name"
+   | "paymentMethod"
    | "relationshipName"
    | "status"
    | "type";
@@ -115,6 +116,9 @@ function buildTransactionOrderBy(
             break;
          case "name":
             orderBy.push(direction(transactions.name));
+            break;
+         case "paymentMethod":
+            orderBy.push(direction(transactions.paymentMethod));
             break;
          case "relationshipName":
             orderBy.push(direction(parties.name));

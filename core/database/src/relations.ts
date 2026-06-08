@@ -13,6 +13,11 @@ import {
 } from "@core/database/schemas/auth";
 import { bankAccounts } from "@core/database/schemas/bank-accounts";
 import { categories } from "@core/database/schemas/categories";
+import {
+   contractDocuments,
+   contractExtractions,
+   contracts,
+} from "@core/database/schemas/contracts";
 import { creditCards } from "@core/database/schemas/credit-cards";
 import { creditCardStatements } from "@core/database/schemas/credit-card-statements";
 import { parties } from "@core/database/schemas/relationships";
@@ -206,3 +211,36 @@ export const transactionItemsRelations = relations(
       }),
    }),
 );
+
+export const contractDocumentsRelations = relations(
+   contractDocuments,
+   ({ many }) => ({
+      extractions: many(contractExtractions),
+      contracts: many(contracts),
+   }),
+);
+
+export const contractExtractionsRelations = relations(
+   contractExtractions,
+   ({ one }) => ({
+      document: one(contractDocuments, {
+         fields: [contractExtractions.documentId],
+         references: [contractDocuments.id],
+      }),
+   }),
+);
+
+export const contractsRelations = relations(contracts, ({ one }) => ({
+   document: one(contractDocuments, {
+      fields: [contracts.documentId],
+      references: [contractDocuments.id],
+   }),
+   approvedExtraction: one(contractExtractions, {
+      fields: [contracts.approvedExtractionId],
+      references: [contractExtractions.id],
+   }),
+   relationship: one(parties, {
+      fields: [contracts.relationshipId],
+      references: [parties.id],
+   }),
+}));

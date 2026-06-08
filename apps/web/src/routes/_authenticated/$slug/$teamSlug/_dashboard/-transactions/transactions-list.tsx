@@ -33,6 +33,7 @@ import {
    createCollection,
    eq,
    ilike,
+   isNull,
    or,
    useLiveQuery,
 } from "@tanstack/react-db";
@@ -136,6 +137,7 @@ const routeApi = getRouteApi(
 );
 
 type ImportLookupItem = { id: string; name: string };
+type PaymentMethod = NonNullable<TransactionCreateInput["paymentMethod"]>;
 function isTransactionStatus(value: unknown): value is "pending" | "paid" {
    return value === "pending" || value === "paid";
 }
@@ -183,6 +185,10 @@ const IMPORT_HEADER_LABELS: Record<string, string> = {
    cliente: "Cliente",
    fornecedor: "Fornecedor",
    cartao: "Cartão",
+   formapagamento: "Forma de pagamento",
+   formadepagamento: "Forma de pagamento",
+   paymentmethod: "Forma de pagamento",
+   payment: "Forma de pagamento",
    card: "Cartão",
    creditcard: "Cartão",
    creditcardname: "Cartão",
@@ -296,6 +302,34 @@ function parseImportType(
 function cleanImportText(value: unknown): string {
    const text = String(value ?? "").trim();
    return text === "-" ? "" : text;
+}
+
+function parseImportPaymentMethod(value: unknown): PaymentMethod | null {
+   const normalized = normalizeImportLookup(value);
+   if (!normalized) return null;
+   if (normalized === "pix") return "pix";
+   if (normalized.includes("credito") || normalized.includes("crédito")) {
+      return "credit_card";
+   }
+   if (normalized.includes("debito") || normalized.includes("débito")) {
+      if (
+         normalized.includes("automatico") ||
+         normalized.includes("automático")
+      ) {
+         return "automatic_debit";
+      }
+      return "debit_card";
+   }
+   if (normalized.includes("boleto")) return "boleto";
+   if (normalized.includes("dinheiro") || normalized.includes("cash")) {
+      return "cash";
+   }
+   if (normalized.includes("transfer")) return "transfer";
+   if (normalized.includes("cheque")) return "cheque";
+   if (normalized.includes("outro") || normalized.includes("other")) {
+      return "other";
+   }
+   return null;
 }
 
 function parseImportStatus(value: unknown): {
@@ -649,6 +683,23 @@ export function TransactionsList() {
             );
          }
 
+         const paymentMethodFilterValue = columnFilters.find(
+            (filter) => filter.id === "paymentMethod",
+         )?.value;
+         if (paymentMethodFilterValue === "__none") {
+            query = query.where(({ transaction }) =>
+               isNull(transaction.paymentMethod),
+            );
+         }
+         if (
+            typeof paymentMethodFilterValue === "string" &&
+            paymentMethodFilterValue !== "__none"
+         ) {
+            query = query.where(({ transaction }) =>
+               eq(transaction.paymentMethod, paymentMethodFilterValue),
+            );
+         }
+
          const normalizedSorting = normalizeTransactionSorting(sorting);
          if (normalizedSorting.length > 0) {
             for (const rule of normalizedSorting) {
@@ -692,6 +743,12 @@ export function TransactionsList() {
                   case "name":
                      query = query.orderBy(
                         ({ transaction }) => transaction.name,
+                        rule.desc ? "desc" : "asc",
+                     );
+                     break;
+                  case "paymentMethod":
+                     query = query.orderBy(
+                        ({ transaction }) => transaction.paymentMethod,
                         rule.desc ? "desc" : "asc",
                      );
                      break;
@@ -1285,6 +1342,7 @@ export function TransactionsList() {
                   safeCreditCards,
                   row.creditCardName,
                ),
+               paymentMethod: parseImportPaymentMethod(row.paymentMethod),
                suggestedCategoryId: null,
                suggestedCategoryName: null,
             };
@@ -1306,6 +1364,7 @@ export function TransactionsList() {
                               Tipo: "Receita",
                               Valor: "1500.00",
                               Status: "Efetivado",
+                              "Forma de pagamento": "Pix",
                               Vencimento: "",
                               Conta: safeBankAccounts[0]?.name ?? "",
                               Cartão: "",
@@ -1318,6 +1377,7 @@ export function TransactionsList() {
                            "Tipo",
                            "Valor",
                            "Status",
+                           "Forma de pagamento",
                            "Vencimento",
                            "Conta",
                            "Cartão",
@@ -1337,6 +1397,7 @@ export function TransactionsList() {
                               Tipo: "Receita",
                               Valor: "1500.00",
                               Status: "Efetivado",
+                              "Forma de pagamento": "Pix",
                               Vencimento: "",
                               Conta: safeBankAccounts[0]?.name ?? "",
                               Cartão: "",
@@ -1349,6 +1410,7 @@ export function TransactionsList() {
                            "Tipo",
                            "Valor",
                            "Status",
+                           "Forma de pagamento",
                            "Vencimento",
                            "Conta",
                            "Cartão",
@@ -1445,7 +1507,7 @@ export function TransactionsList() {
                      attachments: [],
                      description: null,
                      creditCardId,
-                     paymentMethod: null,
+                     paymentMethod: parseImportPaymentMethod(r.paymentMethod),
                      status: parseImportStatus(r.status).status,
                      ignored:
                         r.ignored === true ||

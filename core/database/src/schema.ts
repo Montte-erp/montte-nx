@@ -2,6 +2,7 @@ export * from "@core/database/schemas/agents";
 export * from "@core/database/schemas/auth";
 export * from "@core/database/schemas/bank-accounts";
 export * from "@core/database/schemas/categories";
+export * from "@core/database/schemas/contracts";
 export * from "@core/database/schemas/credit-cards";
 export * from "@core/database/schemas/credit-card-statements";
 export * from "@core/database/schemas/credit-card-statement-totals";
