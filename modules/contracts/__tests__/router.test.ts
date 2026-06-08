@@ -100,6 +100,7 @@ describe("contracts router", () => {
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.originalFileName).toBe("alpha contrato.pdf");
       expect(result.items[0]?.teamId).toBe(owner.teamId);
+      expect(Object.hasOwn(result.items[0] ?? {}, "fileKey")).toBe(false);
    });
 
    it("busca documento com extrações e contratos do mesmo time", async () => {
@@ -147,6 +148,33 @@ describe("contracts router", () => {
       expect(result.extractions).toHaveLength(1);
       expect(result.contracts).toHaveLength(1);
       expect(result.contracts[0]?.id).toBe(contract?.id);
+   });
+
+   it("não expõe contrato de outro time vinculado ao documento", async () => {
+      const owner = await createContext();
+      const other = await createContext();
+      const document = await insertDocument({
+         organizationId: owner.organizationId,
+         teamId: owner.teamId,
+         name: "contrato owner.pdf",
+      });
+      await testDb.db.insert(contracts).values({
+         organizationId: other.organizationId,
+         teamId: other.teamId,
+         documentId: document.id,
+         title: "Contrato malformado",
+         type: "service",
+         status: "active",
+         counterpartyName: "Cliente Externo",
+      });
+
+      const result = await call(
+         contractsRouter.getDocument,
+         { id: document.id },
+         { context: owner.ctx },
+      );
+
+      expect(result.contracts).toHaveLength(0);
    });
 
    it("bloqueia leitura de documento de outro time", async () => {
@@ -221,6 +249,7 @@ describe("contracts router", () => {
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.title).toBe("Contrato A");
       expect(result.items[0]?.teamId).toBe(owner.teamId);
+      expect(Object.hasOwn(result.items[0] ?? {}, "content")).toBe(false);
    });
 
    it("busca contrato aprovado com documento e extração", async () => {
@@ -265,6 +294,50 @@ describe("contracts router", () => {
       expect(result.id).toBe(contract?.id);
       expect(result.document?.id).toBe(document.id);
       expect(result.approvedExtraction?.id).toBe(extraction?.id);
+   });
+
+   it("não expõe documento e extração de outro time no detalhe do contrato", async () => {
+      const owner = await createContext();
+      const other = await createContext();
+      const otherDocument = await insertDocument({
+         organizationId: other.organizationId,
+         teamId: other.teamId,
+         name: "contrato outro time.pdf",
+      });
+      const [otherExtraction] = await testDb.db
+         .insert(contractExtractions)
+         .values({
+            documentId: otherDocument.id,
+            model: "openrouter/test",
+            promptVersion: "v1",
+            status: "completed",
+         })
+         .returning();
+      expect(otherExtraction).toBeDefined();
+      const [contract] = await testDb.db
+         .insert(contracts)
+         .values({
+            organizationId: owner.organizationId,
+            teamId: owner.teamId,
+            documentId: otherDocument.id,
+            approvedExtractionId: otherExtraction?.id,
+            title: "Contrato malformado",
+            type: "service",
+            status: "active",
+            counterpartyName: "Cliente Teste",
+         })
+         .returning();
+      expect(contract).toBeDefined();
+
+      const result = await call(
+         contractsRouter.getContract,
+         { id: contract?.id ?? crypto.randomUUID() },
+         { context: owner.ctx },
+      );
+
+      expect(result.id).toBe(contract?.id);
+      expect(result.document).toBeNull();
+      expect(result.approvedExtraction).toBeNull();
    });
 
    it("bloqueia leitura de contrato de outro time", async () => {
