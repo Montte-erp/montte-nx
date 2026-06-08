@@ -113,6 +113,41 @@ type ContractSortRule = NonNullable<
 const defaultDocumentSort: DocumentSortRule = { id: "updatedAt", desc: true };
 const defaultContractSort: ContractSortRule = { id: "updatedAt", desc: true };
 
+const documentListColumns = {
+   id: contractDocuments.id,
+   organizationId: contractDocuments.organizationId,
+   teamId: contractDocuments.teamId,
+   originalFileName: contractDocuments.originalFileName,
+   mimeType: contractDocuments.mimeType,
+   fileSize: contractDocuments.fileSize,
+   pageCount: contractDocuments.pageCount,
+   ingestionStatus: contractDocuments.ingestionStatus,
+   uploadedByUserId: contractDocuments.uploadedByUserId,
+   createdAt: contractDocuments.createdAt,
+   updatedAt: contractDocuments.updatedAt,
+};
+
+const contractListColumns = {
+   id: contracts.id,
+   organizationId: contracts.organizationId,
+   teamId: contracts.teamId,
+   relationshipId: contracts.relationshipId,
+   documentId: contracts.documentId,
+   approvedExtractionId: contracts.approvedExtractionId,
+   title: contracts.title,
+   type: contracts.type,
+   status: contracts.status,
+   counterpartyName: contracts.counterpartyName,
+   signatureStatus: contracts.signatureStatus,
+   startsAt: contracts.startsAt,
+   endsAt: contracts.endsAt,
+   amount: contracts.amount,
+   approvedByUserId: contracts.approvedByUserId,
+   approvedAt: contracts.approvedAt,
+   createdAt: contracts.createdAt,
+   updatedAt: contracts.updatedAt,
+};
+
 function buildDocumentOrderBy(sorting: DocumentSortRule[] | undefined): SQL[] {
    const rules = sorting?.length ? sorting : [defaultDocumentSort];
    const orderBy: SQL[] = [];
@@ -197,7 +232,7 @@ export const listDocuments = protectedProcedure
          try: () =>
             Promise.all([
                context.db
-                  .select(getTableColumns(contractDocuments))
+                  .select(documentListColumns)
                   .from(contractDocuments)
                   .where(where)
                   .orderBy(...buildDocumentOrderBy(input.sorting))
@@ -236,6 +271,7 @@ export const getDocument = protectedProcedure
                      limit: 10,
                   },
                   contracts: {
+                     where: (f, { eq }) => eq(f.teamId, context.teamId),
                      orderBy: (f, { desc }) => [desc(f.updatedAt)],
                      limit: 10,
                   },
@@ -282,7 +318,7 @@ export const listContracts = protectedProcedure
          try: () =>
             Promise.all([
                context.db
-                  .select(getTableColumns(contracts))
+                  .select(contractListColumns)
                   .from(contracts)
                   .where(where)
                   .orderBy(...buildContractOrderBy(input.sorting))
@@ -310,15 +346,11 @@ export const listContracts = protectedProcedure
 export const getContract = protectedProcedure
    .input(idInput)
    .handler(async ({ context, input }) => {
-      const result = await Result.tryPromise({
+      const contractResult = await Result.tryPromise({
          try: () =>
             context.db.query.contracts.findFirst({
                where: (f, { and, eq }) =>
                   and(eq(f.id, input.id), eq(f.teamId, context.teamId)),
-               with: {
-                  document: true,
-                  approvedExtraction: true,
-               },
             }),
          catch: () =>
             new ContractsRouterError({
@@ -326,15 +358,64 @@ export const getContract = protectedProcedure
                message: "Falha ao buscar contrato.",
             }),
       });
-      if (Result.isError(result)) throw result.error;
-      if (!result.value) {
+      if (Result.isError(contractResult)) throw contractResult.error;
+      if (!contractResult.value) {
          throw new ContractsRouterError({
             error: contractsRouterErrors.NOT_FOUND(),
             message: "Contrato não encontrado.",
          });
       }
 
-      return result.value;
+      const contract = contractResult.value;
+      const documentId = contract.documentId;
+      const approvedExtractionId = contract.approvedExtractionId;
+      const relationResult = await Result.tryPromise({
+         try: () =>
+            Promise.all([
+               documentId
+                  ? context.db.query.contractDocuments.findFirst({
+                       where: (f, { and, eq }) =>
+                          and(
+                             eq(f.id, documentId),
+                             eq(f.teamId, context.teamId),
+                          ),
+                    })
+                  : Promise.resolve(null),
+               approvedExtractionId
+                  ? context.db
+                       .select(getTableColumns(contractExtractions))
+                       .from(contractExtractions)
+                       .innerJoin(
+                          contractDocuments,
+                          eq(
+                             contractDocuments.id,
+                             contractExtractions.documentId,
+                          ),
+                       )
+                       .where(
+                          and(
+                             eq(contractExtractions.id, approvedExtractionId),
+                             eq(contractDocuments.teamId, context.teamId),
+                          ),
+                       )
+                       .limit(1)
+                  : Promise.resolve([]),
+            ]),
+         catch: () =>
+            new ContractsRouterError({
+               error: contractsRouterErrors.INTERNAL(),
+               message: "Falha ao buscar vínculos do contrato.",
+            }),
+      });
+      if (Result.isError(relationResult)) throw relationResult.error;
+
+      const [document, extractionRows] = relationResult.value;
+
+      return {
+         ...contract,
+         document: document ?? null,
+         approvedExtraction: extractionRows[0] ?? null,
+      };
    });
 
 export const getExtraction = protectedProcedure
