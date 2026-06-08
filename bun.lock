@@ -116,6 +116,7 @@
         "@modules/cards": "workspace:*",
         "@modules/cashbook": "workspace:*",
         "@modules/classification": "workspace:*",
+        "@modules/contracts": "workspace:*",
         "@modules/inbox": "workspace:*",
         "@modules/insights": "workspace:*",
         "@modules/relationships": "workspace:*",
@@ -614,6 +615,23 @@
         "drizzle-kit": "catalog:database",
         "drizzle-seed": "catalog:database",
         "pg": "catalog:database",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
+    "modules/contracts": {
+      "name": "@modules/contracts",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "better-result": "catalog:validation",
+        "drizzle-orm": "catalog:database",
+        "evlog": "catalog:logging",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
         "vitest": "catalog:testing",
       },
@@ -1771,6 +1789,8 @@
     "@modules/cashbook": ["@modules/cashbook@workspace:modules/cashbook"],
 
     "@modules/classification": ["@modules/classification@workspace:modules/classification"],
+
+    "@modules/contracts": ["@modules/contracts@workspace:modules/contracts"],
 
     "@modules/inbox": ["@modules/inbox@workspace:modules/inbox"],
 
