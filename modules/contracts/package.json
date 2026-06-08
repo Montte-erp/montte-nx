@@ -1,0 +1,33 @@
+{
+   "name": "@modules/contracts",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "type": "module",
+   "exports": {
+      "./router": "./src/router/index.ts",
+      "./router/*": "./src/router/*.ts"
+   },
+   "scripts": {
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/database": "workspace:*",
+      "@core/orpc": "workspace:*",
+      "better-result": "catalog:validation",
+      "drizzle-orm": "catalog:database",
+      "evlog": "catalog:logging",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@electric-sql/pglite": "^0.3.15",
+      "@orpc/server": "catalog:orpc",
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   }
+}

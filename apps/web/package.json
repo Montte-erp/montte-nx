@@ -54,6 +54,7 @@
       "@modules/cards": "workspace:*",
       "@modules/cashbook": "workspace:*",
       "@modules/classification": "workspace:*",
+      "@modules/contracts": "workspace:*",
       "@modules/inbox": "workspace:*",
       "@modules/insights": "workspace:*",
       "@modules/relationships": "workspace:*",

@@ -4,6 +4,7 @@ import * as agentSettingsRouter from "@modules/account/router/agent-settings";
 import * as apiKeysRouter from "@modules/account/router/api-keys";
 import * as bankAccountsRouter from "@modules/cashbook/router/bank-accounts";
 import * as creditCardsRouter from "@modules/cards/router/credit-cards";
+import * as contractsRouter from "@modules/contracts/router";
 import * as statementsRouter from "@modules/cards/router/statements";
 import * as categoriesRouter from "@modules/classification/router/categories";
 import * as categoriesBulkRouter from "@modules/classification/router/categories-bulk";
@@ -41,6 +42,7 @@ export default {
    categories: categoriesRouter,
    categoriesBulk: categoriesBulkRouter,
    cnpj: cnpjRouter,
+   contracts: contractsRouter,
    financialSettings: financialSettingsRouter,
    inbox: inboxRouter,
    reports: reportsRouter,
