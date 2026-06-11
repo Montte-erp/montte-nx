@@ -5,28 +5,37 @@
    "license": "Apache-2.0",
    "type": "module",
    "exports": {
+      "./extraction": "./src/extraction/contract-ai-extraction.ts",
       "./router": "./src/router/index.ts",
       "./router/*": "./src/router/*.ts"
    },
    "scripts": {
       "check": "oxlint ./src",
+      "eval": "evalite ./__evals__/*.eval.ts",
       "format": "oxfmt --write ./src",
       "format:check": "oxfmt --check ./src",
       "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {
+      "@core/ai": "workspace:*",
       "@core/database": "workspace:*",
       "@core/orpc": "workspace:*",
+      "@core/posthog": "workspace:*",
+      "@tanstack/ai": "catalog:tanstack-ai",
       "better-result": "catalog:validation",
       "drizzle-orm": "catalog:database",
       "evlog": "catalog:logging",
       "zod": "catalog:validation"
    },
    "devDependencies": {
+      "@copilotkit/aimock": "^1.15.1",
       "@electric-sql/pglite": "^0.3.15",
       "@orpc/server": "catalog:orpc",
       "@tooling/typescript": "workspace:*",
+      "dotenv": "catalog:environment",
+      "evalite": "catalog:testing",
+      "fflate": "0.4.8",
       "typescript": "catalog:development",
       "vitest": "catalog:testing"
    }

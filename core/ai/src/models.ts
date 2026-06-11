@@ -1,21 +1,17 @@
-import { createModel, extendAdapter, type AnyTextAdapter } from "@tanstack/ai";
-import { openRouterText } from "@tanstack/ai-openrouter";
-
-const customModels = [
-   createModel("deepseek/deepseek-v4-pro", ["text"]),
-   createModel("deepseek/deepseek-v4-flash", ["text"]),
-] as const;
-
-const openRouter = extendAdapter(openRouterText, customModels);
+import {
+   openRouterResponsesText,
+   openRouterText,
+} from "@tanstack/ai-openrouter";
 
 const serverURL = process.env.OPENROUTER_BASE_URL || undefined;
 const baseConfig = serverURL ? { serverURL } : undefined;
 
-export const proModel: AnyTextAdapter = openRouter(
-   "deepseek/deepseek-v4-pro",
+export const proModel = openRouterText("deepseek/deepseek-v4-pro", baseConfig);
+export const flashModel = openRouterText(
+   "deepseek/deepseek-v4-flash",
    baseConfig,
 );
-export const flashModel: AnyTextAdapter = openRouter(
-   "deepseek/deepseek-v4-flash",
+export const fileModel = openRouterResponsesText(
+   "google/gemini-3.1-flash-lite",
    baseConfig,
 );
