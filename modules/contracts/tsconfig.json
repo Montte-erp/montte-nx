@@ -7,16 +7,24 @@
       "noEmit": true,
       "rootDir": "../..",
       "paths": {
+         "@core/ai/*": ["../../core/ai/src/*"],
          "@core/database": ["../../core/database/src/index.ts"],
          "@core/database/*": ["../../core/database/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@core/posthog/*": ["../../core/posthog/src/*"],
          "@modules/contracts/*": ["./src/*"]
       }
    },
    "include": ["src"],
    "references": [
       {
+         "path": "../../core/ai"
+      },
+      {
          "path": "../../core/database"
+      },
+      {
+         "path": "../../core/posthog"
       }
    ]
 }
