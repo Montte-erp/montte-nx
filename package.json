@@ -242,6 +242,7 @@
       "dev:pgboss-dashboard": "DATABASE_URL=${DATABASE_URL:-postgres://postgres:password@localhost:5432/montte} PGBOSS_SCHEMA=${PGBOSS_SCHEMA:-pgboss} PORT=${PGBOSS_DASHBOARD_PORT:-3010} bunx @pg-boss/dashboard",
       "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
       "setup": "bun run scripts/setup.ts",
+      "seed:transactions": "bun run scripts/seed-transactions-screenshot.ts",
       "dev:all": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=6",
       "doctor": "bun run scripts/doctor.ts",
       "bucket:cors": "bun run scripts/set-bucket-cors.ts",
