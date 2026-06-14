@@ -1,14 +1,10 @@
 import { useForm } from "@tanstack/react-form";
-import {
-   useMutation,
-   useQuery,
-   useQueryClient,
-   useSuspenseQueries,
-} from "@tanstack/react-query";
+import { createCollection, eq, ilike, useLiveQuery } from "@tanstack/react-db";
 import {
    getCoreRowModel,
    useReactTable,
    type ColumnDef,
+   type ColumnFiltersState,
    type SortingState,
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
@@ -17,6 +13,7 @@ import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
 import {
    SheetDescription,
@@ -41,19 +38,31 @@ import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { SearchInput } from "@packages/ui/components/search-input";
-import { Skeleton } from "@packages/ui/components/skeleton";
 import { Table } from "@packages/ui/components/table";
 import { UploadDropzone } from "@packages/ui/components/upload-dropzone";
 import { UploadProgress } from "@packages/ui/components/upload-progress";
-import { Archive, FileText, Plus, ReceiptText } from "lucide-react";
+import { Archive, ExternalLink, Plus } from "lucide-react";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
+import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
+import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
+import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
-import { QueryBoundary } from "@/components/query-boundary";
-import { orpc } from "@/integrations/orpc/client";
-import type { Outputs } from "@/integrations/orpc/client";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
+import {
+   bulkArchiveVaultDocumentsAction,
+   createVaultDocumentAction,
+   createVaultFolderAction,
+   vaultDocumentsCollectionOptions,
+   vaultFoldersCollectionOptions,
+   type VaultDocumentRow,
+} from "@/integrations/tanstack-db/vault";
 import { useSheet } from "@/hooks/use-sheet";
 import { useContextPanelInfo } from "../-context-panel/use-context-panel";
 import { DefaultHeader } from "../-layout/default-header";
@@ -76,13 +85,14 @@ export const Route = createFileRoute(
       search: z.string().catch("").default(""),
       folderId: z.string().catch("all").default("all"),
    }),
+   pendingMs: 300,
+   pendingComponent: VaultSkeleton,
    head: () => ({
       meta: [{ title: "Vault — Montte" }],
    }),
    component: VaultPage,
 });
 
-type VaultDocumentRow = Outputs["vault"]["listDocuments"]["items"][number];
 type UploadedVaultFile = {
    fileKey: string;
    name: string;
@@ -110,7 +120,13 @@ function getMetadataString(metadata: unknown, key: string) {
    return typeof value === "string" ? value : undefined;
 }
 
-const vaultSortIdSchema = z.enum(["title", "status", "source", "updatedAt"]);
+const vaultSortIdSchema = z.enum([
+   "description",
+   "title",
+   "status",
+   "source",
+   "updatedAt",
+]);
 
 function normalizeVaultSorting(sorting: SortingState) {
    const normalized: Array<{
@@ -125,45 +141,150 @@ function normalizeVaultSorting(sorting: SortingState) {
    return normalized;
 }
 
-function documentIcon(document: VaultDocumentRow) {
-   if (document.source === "fiscal") return ReceiptText;
-   if (document.source === "finance") return Archive;
-   return FileText;
+const skeletonColumns = buildVaultColumns();
+
+type LiveVaultDocumentRow = VaultDocumentRow & {
+   $synced: boolean;
+};
+
+function vaultDocumentDedupeKey(document: VaultDocumentRow) {
+   return `${document.teamId}:${document.fileKey ?? ""}:${document.title.trim().toLocaleLowerCase()}`;
+}
+
+function removeConfirmedOptimisticDuplicates(
+   documents: LiveVaultDocumentRow[],
+) {
+   const syncedKeys = new Set<string>();
+   for (const document of documents) {
+      if (!document.$synced) continue;
+      syncedKeys.add(vaultDocumentDedupeKey(document));
+   }
+
+   return documents.filter(
+      (document) =>
+         document.$synced || !syncedKeys.has(vaultDocumentDedupeKey(document)),
+   );
+}
+
+function compareVaultDocumentValues(
+   left: VaultDocumentRow,
+   right: VaultDocumentRow,
+   sortId: z.infer<typeof vaultSortIdSchema>,
+) {
+   switch (sortId) {
+      case "description":
+         return String(left.description ?? "").localeCompare(
+            String(right.description ?? ""),
+            "pt-BR",
+         );
+      case "source":
+         return left.source.localeCompare(right.source, "pt-BR");
+      case "status":
+         return left.status.localeCompare(right.status, "pt-BR");
+      case "title":
+         return left.title.localeCompare(right.title, "pt-BR");
+      case "updatedAt":
+         return (
+            new Date(left.updatedAt).getTime() -
+            new Date(right.updatedAt).getTime()
+         );
+   }
+}
+
+function sortVaultDocuments(rows: VaultDocumentRow[], sorting: SortingState) {
+   const normalized = normalizeVaultSorting(sorting);
+   return [...rows].sort((left, right) => {
+      if (normalized.length === 0) {
+         return (
+            new Date(right.updatedAt).getTime() -
+            new Date(left.updatedAt).getTime()
+         );
+      }
+      for (const rule of normalized) {
+         const result = compareVaultDocumentValues(left, right, rule.id);
+         if (result !== 0) return rule.desc ? -result : result;
+      }
+      return left.title.localeCompare(right.title, "pt-BR");
+   });
+}
+
+function matchesVaultFilter(
+   document: VaultDocumentRow,
+   filter: ColumnFiltersState[number],
+) {
+   if (typeof filter.value !== "string") return true;
+   const value = filter.value.trim().toLowerCase();
+   if (!value) return true;
+   if (filter.id === "title") {
+      return document.title.toLowerCase().includes(value);
+   }
+   if (filter.id === "description") {
+      return String(document.description ?? "")
+         .toLowerCase()
+         .includes(value);
+   }
+   if (filter.id === "folderName") {
+      return document.folderName.toLowerCase().includes(value);
+   }
+   if (filter.id === "status") return document.status === value;
+   if (filter.id === "source") return document.source === value;
+   return true;
+}
+
+function filterVaultDocuments(
+   rows: VaultDocumentRow[],
+   filters: ColumnFiltersState,
+) {
+   if (filters.length === 0) return rows;
+   return rows.filter((document) =>
+      filters.every((filter) => matchesVaultFilter(document, filter)),
+   );
+}
+
+function documentMatchesSearch(document: VaultDocumentRow, search: string) {
+   const value = search.trim().toLowerCase();
+   if (!value) return true;
+   return (
+      document.title.toLowerCase().includes(value) ||
+      String(document.description ?? "")
+         .toLowerCase()
+         .includes(value) ||
+      String(document.originalFileName ?? "")
+         .toLowerCase()
+         .includes(value)
+   );
 }
 
 function buildVaultColumns(): ColumnDef<VaultDocumentRow>[] {
    return [
       {
          accessorKey: "title",
-         header: "Documento",
-         size: 420,
-         cell: ({ row }) => {
-            const document = row.original;
-            const Icon = documentIcon(document);
-            return (
-               <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-muted/40">
-                     <Icon className="size-4 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0">
-                     <div className="truncate font-medium">
-                        {document.title}
-                     </div>
-                     <div className="truncate text-xs text-muted-foreground">
-                        {document.description ||
-                           document.originalFileName ||
-                           "Sem descrição"}
-                     </div>
-                  </div>
-               </div>
-            );
-         },
+         header: "Nome",
+         size: 260,
+         meta: { label: "Nome", filterVariant: "text" },
+         cell: ({ row }) => (
+            <span className="truncate font-medium">{row.original.title}</span>
+         ),
+      },
+      {
+         accessorKey: "description",
+         header: "Descrição",
+         size: 320,
+         meta: { label: "Descrição", filterVariant: "text" },
+         cell: ({ row }) => (
+            <span className="truncate text-muted-foreground">
+               {row.original.description ||
+                  row.original.originalFileName ||
+                  "—"}
+            </span>
+         ),
       },
       {
          accessorKey: "folderName",
          header: "Pasta",
          enableSorting: false,
          size: 180,
+         meta: { label: "Pasta", filterVariant: "text" },
          cell: ({ row }) => (
             <span className="text-muted-foreground">
                {row.original.folderName}
@@ -174,6 +295,7 @@ function buildVaultColumns(): ColumnDef<VaultDocumentRow>[] {
          accessorKey: "status",
          header: "Status",
          size: 140,
+         meta: { label: "Status", filterVariant: "select" },
          cell: ({ row }) => (
             <Badge variant="outline">{row.original.statusLabel}</Badge>
          ),
@@ -182,67 +304,39 @@ function buildVaultColumns(): ColumnDef<VaultDocumentRow>[] {
          accessorKey: "source",
          header: "Origem",
          size: 140,
+         meta: { label: "Origem", filterVariant: "select" },
          cell: ({ row }) => (
             <span className="text-muted-foreground">
                {row.original.sourceLabel}
             </span>
          ),
       },
-      {
-         id: "actions",
-         header: "Ações",
-         enableSorting: false,
-         size: 96,
-         meta: { align: "right" },
-         cell: ({ row }) => {
-            const href = row.original.fileKey
-               ? `/api/files/${row.original.fileKey}`
-               : undefined;
-            return (
-               <Button
-                  asChild={Boolean(href)}
-                  disabled={!href}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-               >
-                  {href ? (
-                     <a href={href} rel="noreferrer" target="_blank">
-                        Abrir
-                     </a>
-                  ) : (
-                     <span>Abrir</span>
-                  )}
-               </Button>
-            );
-         },
-      },
    ];
 }
 
 function UploadDocumentSheet() {
-   const queryClient = useQueryClient();
+   const { queryClient } = Route.useRouteContext();
    const { closeTopSheet } = useSheet();
-   const foldersQuery = useQuery(orpc.vault.listFolders.queryOptions());
-   const documentMutation = useMutation(
-      orpc.vault.createDocument.mutationOptions({
-         onSuccess: async () => {
-            await Promise.all([
-               queryClient.invalidateQueries(
-                  orpc.vault.listDocuments.queryOptions({ input: {} }),
-               ),
-               queryClient.invalidateQueries(
-                  orpc.vault.listFolders.queryOptions(),
-               ),
-               queryClient.invalidateQueries(
-                  orpc.vault.getSummary.queryOptions(),
-               ),
-            ]);
-            toast.success("Documento salvo no Vault.");
-            closeTopSheet();
-         },
-         onError: (error) => toast.error(error.message),
-      }),
+   const documentsCollection = useMemo(
+      () => createCollection(vaultDocumentsCollectionOptions({ queryClient })),
+      [queryClient],
+   );
+   const foldersCollection = useMemo(
+      () => createCollection(vaultFoldersCollectionOptions({ queryClient })),
+      [queryClient],
+   );
+   const { data: folders, isLoading: isLoadingFolders } = useLiveQuery(
+      (q) =>
+         q.from({ folder: foldersCollection }).select(({ folder }) => folder),
+      [foldersCollection],
+   );
+   const documentAction = useMemo(
+      () => createVaultDocumentAction(documentsCollection),
+      [documentsCollection],
+   );
+   const folderAction = useMemo(
+      () => createVaultFolderAction(foldersCollection),
+      [foldersCollection],
    );
 
    const form = useForm({
@@ -257,36 +351,33 @@ function UploadDocumentSheet() {
       },
       validators: { onSubmit: createDocumentSchema },
       onSubmit: ({ value }) => {
-         documentMutation.mutate({
-            title: value.title,
-            description: value.description || undefined,
-            folderId: value.folderId || undefined,
-            fileKey: value.fileKey || undefined,
-            originalFileName: value.originalFileName || undefined,
-            mimeType: value.mimeType || undefined,
-            fileSize: value.fileSize || undefined,
-            status: value.fileKey ? "stored" : "draft",
-            source: "manual",
+         const action = documentAction({
+            input: {
+               title: value.title,
+               description: value.description || undefined,
+               folderId: value.folderId || undefined,
+               fileKey: value.fileKey || undefined,
+               originalFileName: value.originalFileName || undefined,
+               mimeType: value.mimeType || undefined,
+               fileSize: value.fileSize || undefined,
+               status: value.fileKey ? "stored" : "draft",
+               source: "manual",
+            },
          });
+         action.isPersisted.promise
+            .then(() => {
+               toast.success("Documento salvo no Vault.");
+               closeTopSheet();
+            })
+            .catch((error: unknown) =>
+               toast.error(
+                  error instanceof Error
+                     ? error.message
+                     : "Falha ao salvar documento no Vault.",
+               ),
+            );
       },
    });
-   const folderMutation = useMutation(
-      orpc.vault.createFolder.mutationOptions({
-         onSuccess: async (folder) => {
-            await Promise.all([
-               queryClient.invalidateQueries(
-                  orpc.vault.listFolders.queryOptions(),
-               ),
-               queryClient.invalidateQueries(
-                  orpc.vault.getSummary.queryOptions(),
-               ),
-            ]);
-            form.setFieldValue("folderId", folder.id);
-            toast.success("Pasta criada no Vault.");
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
 
    const upload = useUploadFiles({
       api: "/api/upload",
@@ -389,7 +480,7 @@ function UploadDocumentSheet() {
                <form.Field
                   name="folderId"
                   children={(field) => {
-                     const options = (foldersQuery.data ?? [])
+                     const options = folders
                         .filter((folder) => folder.id !== "all")
                         .map((folder) => ({
                            value: folder.id,
@@ -402,16 +493,30 @@ function UploadDocumentSheet() {
                            <Combobox
                               className="w-full"
                               createLabel="Criar pasta"
-                              disabled={
-                                 foldersQuery.isLoading ||
-                                 folderMutation.isPending
-                              }
+                              disabled={isLoadingFolders}
                               emptyMessage="Nenhuma pasta encontrada."
                               id={field.name}
                               onBlur={field.handleBlur}
-                              onCreate={(name) =>
-                                 folderMutation.mutate({ name })
-                              }
+                              onCreate={(name) => {
+                                 const action = folderAction({
+                                    input: { name },
+                                 });
+                                 action.isPersisted.promise
+                                    .then((folder) => {
+                                       form.setFieldValue(
+                                          "folderId",
+                                          folder.id,
+                                       );
+                                       toast.success("Pasta criada no Vault.");
+                                    })
+                                    .catch((error: unknown) =>
+                                       toast.error(
+                                          error instanceof Error
+                                             ? error.message
+                                             : "Falha ao criar pasta no Vault.",
+                                       ),
+                                    );
+                              }}
                               onValueChange={field.handleChange}
                               options={options}
                               placeholder="Selecionar pasta"
@@ -462,10 +567,7 @@ function UploadDocumentSheet() {
                {({ canSubmit, isSubmitting }) => (
                   <Button
                      disabled={
-                        !canSubmit ||
-                        isSubmitting ||
-                        documentMutation.isPending ||
-                        upload.control.isPending
+                        !canSubmit || isSubmitting || upload.control.isPending
                      }
                      form="create-vault-document-form"
                      type="submit"
@@ -513,12 +615,12 @@ function VaultInfoContent() {
 }
 
 function VaultToolbar({
+   searchInput,
    table,
 }: {
+   searchInput: ReturnType<typeof useDebouncedSearch>;
    table: ReturnType<typeof useReactTable<VaultDocumentRow>>;
 }) {
-   const { search } = Route.useSearch();
-   const navigate = Route.useNavigate();
    const { openSheet } = useSheet();
 
    return (
@@ -526,18 +628,9 @@ function VaultToolbar({
          <SearchInput
             aria-label="Buscar documentos"
             className="max-w-sm"
-            onChange={(event) =>
-               navigate({
-                  search: (prev) => ({
-                     ...prev,
-                     search: event.target.value,
-                     page: 1,
-                  }),
-                  replace: true,
-               })
-            }
+            onChange={(event) => searchInput.onChange(event.target.value)}
             placeholder="Buscar documentos..."
-            value={search}
+            value={searchInput.value}
          />
          <div className="flex flex-wrap items-center gap-2">
             <DataTableColumnVisibility table={table} />
@@ -562,85 +655,234 @@ function VaultToolbar({
 }
 
 function VaultSkeleton() {
-   return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
-         <div className="flex items-center justify-between gap-2">
-            <Skeleton className="h-9 w-full max-w-sm" />
-            <Skeleton className="h-8 w-20" />
-         </div>
-         <Skeleton className="min-h-0 flex-1 rounded-md" />
-      </div>
-   );
+   return <DataTableSkeleton columns={skeletonColumns} />;
 }
 
 function VaultContent() {
-   const search = Route.useSearch();
    const navigate = Route.useNavigate();
-   const columns = useMemo(() => buildVaultColumns(), []);
-   const documentInput = {
-      search: search.search,
-      folderId: search.folderId === "all" ? undefined : search.folderId,
-      page: search.page,
-      pageSize: search.pageSize,
-      sorting: normalizeVaultSorting(search.sorting),
-   };
+   const { queryClient } = Route.useRouteContext();
+   const { sorting, columnFilters, folderId, search, page, pageSize } =
+      Route.useSearch();
+   const layout = useDataTableLayout("vault-documents");
+
+   const searchInput = useDebouncedSearch({
+      value: search,
+      onCommit: (value) =>
+         navigate({
+            search: (prev) => ({ ...prev, search: value, page: 1 }),
+            replace: true,
+         }),
+   });
+
+   const documentsCollection = useMemo(
+      () => createCollection(vaultDocumentsCollectionOptions({ queryClient })),
+      [queryClient],
+   );
+
    useContextPanelInfo(() => <VaultInfoContent />);
 
-   const [documentsQuery] = useSuspenseQueries({
-      queries: [
-         orpc.vault.listDocuments.queryOptions({ input: documentInput }),
-      ],
-   });
-   const tableUrlState = useTableUrlState({
-      search,
-      totalRows: documentsQuery.data.total,
+   const { data: liveDocuments, isLoading } = useLiveQuery(
+      (q) => {
+         let query = q.from({ document: documentsCollection });
+         if (folderId !== "all") {
+            query = query.where(({ document }) =>
+               eq(document.folderId, folderId),
+            );
+         }
+         if (search.trim()) {
+            query = query.where(({ document }) =>
+               ilike(document.title, `%${search.trim()}%`),
+            );
+         }
+         return query.select(({ document }) => document);
+      },
+      [documentsCollection, folderId, search],
+   );
+
+   const documents = useMemo(() => {
+      const normalized = removeConfirmedOptimisticDuplicates(
+         liveDocuments as LiveVaultDocumentRow[],
+      );
+      const searched = normalized.filter((document) =>
+         documentMatchesSearch(document, search),
+      );
+      const filtered = filterVaultDocuments(searched, columnFilters);
+      const sorted = sortVaultDocuments(filtered, sorting);
+      const start = (page - 1) * pageSize;
+      return {
+         all: sorted,
+         rows: sorted.slice(start, start + pageSize),
+      };
+   }, [columnFilters, liveDocuments, page, pageSize, search, sorting]);
+
+   const columns = useMemo<ColumnDef<VaultDocumentRow>[]>(() => {
+      const base = buildVaultColumns();
+      const selectColumn: ColumnDef<VaultDocumentRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true },
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todos"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(value) =>
+                  table.toggleAllPageRowsSelected(Boolean(value))
+               }
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar linha"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<VaultDocumentRow> = {
+         id: "__actions",
+         size: 48,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true, align: "right" },
+         cell: ({ row }) => {
+            const href = row.original.fileKey
+               ? `/api/files/${row.original.fileKey}`
+               : undefined;
+            return (
+               <div className="flex justify-end">
+                  <Button
+                     asChild={Boolean(href)}
+                     disabled={!href}
+                     size="icon-sm"
+                     tooltip="Abrir documento"
+                     type="button"
+                     variant="ghost"
+                  >
+                     {href ? (
+                        <a href={href} rel="noreferrer" target="_blank">
+                           <ExternalLink className="size-4" />
+                           <span className="sr-only">Abrir documento</span>
+                        </a>
+                     ) : (
+                        <span>
+                           <ExternalLink className="size-4" />
+                           <span className="sr-only">Abrir documento</span>
+                        </span>
+                     )}
+                  </Button>
+               </div>
+            );
+         },
+      };
+      return [selectColumn, ...base, actionsColumn];
+   }, []);
+
+   const urlState = useTableUrlState({
+      search: { sorting, columnFilters, page, pageSize },
+      totalRows: documents.all.length,
       onUpdate: (next) =>
          navigate({
             search: (prev) => ({ ...prev, ...next }),
             replace: true,
          }),
    });
+
    const table = useReactTable({
-      data: documentsQuery.data.items,
+      data: documents.rows,
       columns,
-      getCoreRowModel: getCoreRowModel(),
-      manualFiltering: true,
+      getRowId: (row) => row.id,
+      rowCount: documents.all.length,
+      pageCount: urlState.pageCount,
       manualPagination: true,
       manualSorting: true,
-      pageCount: tableUrlState.pageCount,
-      rowCount: documentsQuery.data.total,
-      state: tableUrlState.state,
-      onSortingChange: tableUrlState.onSortingChange,
-      onColumnFiltersChange: tableUrlState.onColumnFiltersChange,
-      onPaginationChange: tableUrlState.onPaginationChange,
-      onRowSelectionChange: tableUrlState.onRowSelectionChange,
-      enableRowSelection: false,
+      manualFiltering: true,
+      columnResizeMode: "onChange",
+      defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      state: { ...urlState.state, ...layout.state },
+      onSortingChange: urlState.onSortingChange,
+      onColumnFiltersChange: urlState.onColumnFiltersChange,
+      onPaginationChange: urlState.onPaginationChange,
+      onRowSelectionChange: urlState.onRowSelectionChange,
+      onColumnSizingChange: layout.onColumnSizingChange,
+      onColumnOrderChange: layout.onColumnOrderChange,
+      onColumnVisibilityChange: layout.onColumnVisibilityChange,
+      onColumnPinningChange: layout.onColumnPinningChange,
+      getCoreRowModel: getCoreRowModel(),
    });
 
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedIds = selectedRows.map((row) => row.original.id);
+   useTableBulkActions({
+      selectedCount: selectedRows.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <SelectionActionButton
+            icon={<Archive className="size-4" />}
+            onClick={() => {
+               const bulkArchive =
+                  bulkArchiveVaultDocumentsAction(documentsCollection);
+               const action = bulkArchive({ ids: selectedIds });
+               action.isPersisted.promise
+                  .then(() => {
+                     toast.success(
+                        `${selectedIds.length} ${selectedIds.length === 1 ? "documento arquivado" : "documentos arquivados"}.`,
+                     );
+                     table.resetRowSelection();
+                  })
+                  .catch((error: unknown) =>
+                     toast.error(
+                        error instanceof Error
+                           ? error.message
+                           : "Erro ao arquivar documentos.",
+                     ),
+                  );
+            }}
+         >
+            Arquivar
+         </SelectionActionButton>
+      ),
+   });
+
+   if (isLoading) return <VaultSkeleton />;
+
    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
-         <VaultToolbar table={table} />
-         <ScrollArea className="min-h-0 flex-1 rounded-md border bg-card">
-            <Table>
-               <DataTableHeader table={table} />
-               <DataTableBody<VaultDocumentRow> table={table} />
-            </Table>
-            {table.getRowCount() === 0 ? (
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyMedia variant="icon">
-                        <Archive className="size-6" />
-                     </EmptyMedia>
-                     <EmptyTitle>Nenhum documento encontrado</EmptyTitle>
-                     <EmptyDescription>
-                        Envie um arquivo ou ajuste a busca para ver documentos
-                        do Vault.
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
+      <div className="flex flex-1 flex-col gap-4 min-h-0">
+         <div className="flex flex-1 flex-col gap-4 min-h-0">
+            <VaultToolbar searchInput={searchInput} table={table} />
+            <DataTableFilterChips table={table} />
+            <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
+               <Table>
+                  <DataTableHeader table={table} />
+                  <DataTableBody<VaultDocumentRow> table={table} />
+               </Table>
+               {table.getRowCount() === 0 ? (
+                  <Empty>
+                     <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                           <Archive className="size-6" />
+                        </EmptyMedia>
+                        <EmptyTitle>Nenhum documento encontrado</EmptyTitle>
+                        <EmptyDescription>
+                           Envie um arquivo ou ajuste a busca para ver
+                           documentos do Vault.
+                        </EmptyDescription>
+                     </EmptyHeader>
+                  </Empty>
+               ) : null}
+            </ScrollArea>
+            {documents.all.length > 0 ? (
+               <DataTablePagination table={table} />
             ) : null}
-         </ScrollArea>
-         <DataTablePagination table={table} />
+         </div>
       </div>
    );
 }
@@ -652,12 +894,7 @@ function VaultPage() {
             description="Organize documentos fiscais, contratos e anexos do espaço."
             title="Vault"
          />
-         <QueryBoundary
-            errorTitle="Erro ao carregar Vault"
-            fallback={<VaultSkeleton />}
-         >
-            <VaultContent />
-         </QueryBoundary>
+         <VaultContent />
       </main>
    );
 }

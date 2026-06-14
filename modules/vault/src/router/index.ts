@@ -57,7 +57,13 @@ const listDocumentsInput = z.object({
    sorting: z
       .array(
          z.object({
-            id: z.enum(["title", "status", "source", "updatedAt"]),
+            id: z.enum([
+               "description",
+               "title",
+               "status",
+               "source",
+               "updatedAt",
+            ]),
             desc: z.boolean(),
          }),
       )
@@ -67,6 +73,9 @@ const listDocumentsInput = z.object({
 });
 
 const createFolderInput = z.object({ name: z.string().trim().min(1).max(80) });
+const bulkArchiveDocumentsInput = z.object({
+   ids: z.array(z.string().uuid()).min(1).max(100),
+});
 
 const createDocumentInput = z.object({
    title: z.string().trim().min(1).max(180),
@@ -154,6 +163,9 @@ function buildOrderBy(sorting: SortRule[]): SQL[] {
    for (const sort of rules) {
       const direction = sort.desc ? desc : asc;
       switch (sort.id) {
+         case "description":
+            orderBy.push(direction(vaultDocuments.description));
+            break;
          case "title":
             orderBy.push(direction(vaultDocuments.title));
             break;
@@ -349,6 +361,33 @@ export const listDocuments = protectedProcedure
          page: input.page,
          pageSize: input.pageSize,
       };
+   });
+
+export const bulkArchiveDocuments = protectedProcedure
+   .input(bulkArchiveDocumentsInput)
+   .handler(async ({ context, input }) => {
+      const result = await Result.tryPromise({
+         try: async () => {
+            const archived = await context.db
+               .update(vaultDocuments)
+               .set({ status: "archived" })
+               .where(
+                  and(
+                     eq(vaultDocuments.teamId, context.teamId),
+                     inArray(vaultDocuments.id, input.ids),
+                  ),
+               )
+               .returning({ id: vaultDocuments.id });
+            return { archived: archived.length };
+         },
+         catch: () =>
+            new VaultRouterError({
+               error: vaultRouterErrors.INTERNAL(),
+               message: "Falha ao arquivar documentos do Vault.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
+      return result.value;
    });
 
 export const createDocument = protectedProcedure

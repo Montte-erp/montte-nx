@@ -1,6 +1,6 @@
 ---
 title: "Montte Vault começa pelo GED"
-description: "O Montte Vault começa como GED do produto: uma área para guardar NFS-e, contratos, comprovantes e documentos da empresa no mesmo lugar em que o founder já acompanha cobrança, uso, fatura e cliente. A primeira versão entrega pastas, lista de documentos, busca e upload visual."
+description: "O Montte Vault nasceu como GED dentro do produto: documentos no bucket, metadados no backend, pastas criadas pelo usuário e anexos financeiros entrando automaticamente na pasta Anexos."
 publishedAt: 2026-06-14
 author: "Manoel Neto"
 tags: ["ged", "vault", "documentos", "fiscal"]
@@ -9,62 +9,81 @@ coverImage: "../../assets/blog/montte-vault-ged.png"
 featured: true
 readingMinutes: 3
 keyTakeaways:
-   - "Montte Vault começa como GED dentro do Montte."
-   - "A primeira tela organiza documentos em pastas como Fiscal, Contratos e Empresa."
-   - "A UI já tem busca, lista de documentos, resumo lateral e upload visual em Credenza."
-   - "O próximo passo é ligar documentos aos módulos de NF-e, contratos e financeiro."
+   - "Montte Vault começa como GED real dentro do Montte, não como mock de UI."
+   - "Uploads já vão para o bucket e são registrados no backend do Vault."
+   - "A primeira pasta padrão é Anexos, usada também pelos anexos financeiros."
+   - "O usuário pode escolher ou criar uma pasta ao adicionar um documento."
 faq:
    - question: "O que é o Montte Vault?"
-     answer: "Montte Vault é o início do GED do Montte, uma área para organizar documentos fiscais, contratos, comprovantes, anexos e arquivos da empresa dentro do mesmo produto."
+     answer: "Montte Vault é o início do GED do Montte: uma área para guardar documentos, comprovantes, anexos e arquivos operacionais dentro do mesmo produto onde a empresa já controla financeiro, fiscal e rotinas do time."
    - question: "O Vault já armazena documentos?"
-     answer: "A primeira versão entrega a interface, navegação por pastas, lista de documentos, busca, resumo lateral e fluxo visual de upload. A persistência completa dos documentos entra na próxima etapa do GED."
-   - question: "Por que o GED fica dentro do Montte?"
-     answer: "Porque documento fiscal, contrato e anexo operacional quase sempre pertencem a uma cobrança, cliente, fornecedor ou rotina financeira. O Montte guarda o arquivo perto desse contexto."
+     answer: "Sim. A primeira versão já envia arquivos para o bucket, registra metadados no backend, lista documentos em uma data table e permite organizar arquivos por pasta."
+   - question: "Quais pastas vêm por padrão?"
+     answer: "Apenas Anexos. Outras pastas são criadas pelo usuário no próprio fluxo de novo documento."
+   - question: "O Vault já conversa com outros módulos?"
+     answer: "Sim. Anexos de lançamentos financeiros já são registrados no Vault automaticamente, na pasta Anexos."
 ---
 
-Montte Vault começou como uma tela pequena.
+Montte Vault começou do jeito certo: pequeno, mas conectado.
 
-Colocamos uma rota nova no produto, `/$slug/$teamSlug/vault`, com pastas, busca, lista de documentos, resumo lateral e um fluxo visual de upload. Ainda não é o GED completo. É o primeiro corte da superfície que vai receber NFS-e, contratos, comprovantes e anexos da operação.
+A primeira versão não é uma tela falsa esperando o backend chegar depois. Já existe schema no banco, módulo backend, rota no app, upload para o bucket e integração com anexos financeiros. O usuário abre `/$slug/$teamSlug/vault`, vê uma tabela de documentos e consegue adicionar arquivo com nome, descrição e pasta.
 
-A razão veio de um incômodo simples: documento importante termina rápido demais em pasta errada. Uma nota fiscal fica no download. Um contrato vai para o Drive. Um comprovante some em conversa antiga. Depois alguém precisa fechar o mês e caça tudo de novo.
+Parece simples. Era para ser.
 
-## Documento precisa carregar contexto
+O problema que o Vault resolve também é simples: documento importante some rápido demais.
 
-Um GED genérico guarda arquivo. O Montte Vault precisa guardar arquivo com contexto.
+Um comprovante fica preso em um lançamento. Um XML fica na pasta de downloads. Um PDF vai para o Drive de alguém. Depois, na hora de fechar uma pendência, conferir uma cobrança ou responder uma solicitação, o time precisa procurar o arquivo fora do fluxo onde ele nasceu.
 
-Uma NFS-e pertence a uma emissão. Um contrato pertence a um cliente ou fornecedor. Um comprovante pode pertencer a uma cobrança, centro de custo ou rotina financeira. Se o arquivo perde essa ligação, o time volta para planilha, pasta e mensagem antiga.
+O Vault começa para cortar esse caminho.
 
-A gente quer cortar essa volta. O documento deve aparecer perto do fluxo que criou ou usou aquele arquivo.
+## GED dentro do fluxo, não uma gaveta separada
 
-## A primeira versão tem 4 peças
+Um GED genérico guarda arquivo.
 
-A UI inicial do Vault tem quatro peças visíveis.
+O Montte Vault precisa guardar arquivo com contexto.
 
-- **Pastas:** começamos com Fiscal, Contratos e Empresa.
-- **Lista:** documentos aparecem em itens compactos, no mesmo padrão visual do resto do Montte.
-- **Busca:** a tela já reserva o lugar da busca documental.
-- **Upload:** a ação de novo documento abre em Credenza, com nome, pasta e área de envio.
+Se um anexo veio de um lançamento financeiro, ele não deveria existir só no financeiro. Ele também deve aparecer no lugar onde a empresa procura documentos. Por isso, anexos de lançamentos agora entram automaticamente no Vault, na pasta **Anexos**.
 
-Nada disso finge que o backend documental já ficou pronto. A persistência, os metadados e as permissões entram depois. Preferimos subir a tela cedo para testar o formato antes de amarrar banco, armazenamento e vínculo entre módulos.
+Esse detalhe importa. O Vault não começa como uma biblioteca vazia que depende de disciplina manual. Ele já recebe documento de um fluxo operacional real.
 
-## Por que chamamos de Vault
+## O que entrou nesta primeira versão
 
-Vault costuma lembrar cofre de segredo. No Montte, a palavra ficou maior que isso.
+A primeira versão do Vault tem a base que precisava existir antes de qualquer automação maior.
 
-O cofre que uma empresa pequena precisa não guarda só token. Guarda XML, PDF, contrato, comprovante, cadastro, anexo de fornecedor e documento que alguém vai pedir na pior hora possível.
+- **Backend próprio:** módulo `vault` com rotas para listar pastas, criar pasta, listar documentos, criar documento e arquivar em lote.
+- **Banco próprio:** schema `vault` com tabelas de pastas e documentos.
+- **Upload real:** arquivos enviados pelo Vault vão para o bucket em `vault-documents`.
+- **Tabela padrão do app:** documentos aparecem em data table com busca, filtros, paginação, seleção e actions.
+- **Pastas do usuário:** ao criar documento, o usuário escolhe uma pasta ou cria uma nova no próprio campo.
+- **Pasta padrão única:** começamos só com **Anexos**. Fiscal, Contratos e Empresa não são pastas mágicas por padrão.
+- **Integração financeira:** anexos de lançamentos financeiros são registrados no Vault sem trabalho extra.
 
-Esse é o recorte. Montte Vault é o cofre documental da operação.
+A decisão de ter apenas Anexos como pasta padrão foi proposital. Pastas como Fiscal, Contratos, Cliente ou Fornecedor dependem do jeito que cada empresa trabalha. O produto não precisa inventar essa organização cedo demais.
 
-## Onde ele encaixa no Montte
+## A tela segue o padrão operacional do Montte
 
-O Montte já puxa cobrança, uso, fatura e estado do cliente para o mesmo lugar. O Vault adiciona a parte documental desse fluxo.
+O Vault usa a mesma lógica das telas de operação do Montte: header simples, tabela, toolbar, filtros, paginação e painel de contexto à direita.
 
-Quando a NF-e emitir uma NFS-e, o arquivo deve cair no Vault. Quando a IA ler um contrato, o arquivo original e os campos extraídos devem ficar juntos. Quando o financeiro precisar de um comprovante, o anexo não deveria depender da memória de quem salvou.
+A ação de novo documento fica na toolbar, não no header. O formulário abre em sheet. O upload mostra progresso. O documento tem nome e descrição separados. As ações da linha ficam em icon buttons.
 
-Esse é o trabalho agora: ligar a UI aos módulos que já produzem ou consomem documentos.
+Isso parece detalhe visual, mas evita uma categoria inteira de tela que nasce bonita e morre diferente do resto do produto.
 
-## O que vem por aí
+Vault é operação. A UI precisa parecer operação.
 
-Vamos conectar upload real, armazenamento por espaço, metadados, permissões e vínculo com NF-e, contratos e financeiro.
+## Por que chamar de Vault
 
-Depois disso, o Vault deixa de ser uma tela de documentos e vira a memória operacional do Montte. Não é Bling, Omie ou Conta Azul. É mais uma peça da camada que falta no SaaS brasileiro pra facilitar a vida do founder.
+Vault lembra cofre de segredo. No Montte, o cofre começa pelos documentos da empresa.
+
+Não é só token, chave ou credencial. É comprovante, PDF, XML, contrato, anexo e arquivo que alguém vai precisar encontrar quando a operação apertar.
+
+O nome ficou porque a ambição é essa: um lugar confiável para guardar o que não pode se perder.
+
+## O próximo passo
+
+Agora que o básico existe de ponta a ponta, o trabalho muda.
+
+O Vault precisa receber documentos de mais módulos. NF-e e NFS-e devem cair ali. Contratos devem guardar arquivo original e metadados extraídos. Documentos precisam ganhar vínculos melhores com cliente, fornecedor, lançamento, cobrança e rotina fiscal.
+
+Essa primeira versão não tenta resolver tudo. Ela coloca a fundação no lugar certo: arquivo no bucket, metadado no banco, pasta no produto e documento aparecendo onde o time já trabalha.
+
+É assim que o Montte Vault começa pelo GED.
