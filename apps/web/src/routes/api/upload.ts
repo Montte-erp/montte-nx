@@ -10,6 +10,7 @@ const BUCKET = env.AWS_S3_BUCKET_NAME;
 const ORG_LOGO_PREFIX = "organization-logos";
 const USER_AVATAR_PREFIX = "user-avatars";
 const TRANSACTION_ATTACHMENT_PREFIX = "transaction-attachments";
+const VAULT_DOCUMENT_PREFIX = "vault-documents";
 
 function publicUrlFor(objectKey: string) {
    return `/api/files/${BUCKET}/${objectKey}`;
@@ -118,6 +119,43 @@ function uploadRouter(organizationId: string, userId: string): Router {
                   count: files.length,
                });
                return { metadata: { publicUrls } };
+            },
+         }),
+         vaultDocument: route({
+            fileTypes: [
+               "image/*",
+               "application/pdf",
+               "text/xml",
+               "application/xml",
+               "application/json",
+               "text/plain",
+               "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+               "application/msword",
+            ],
+            maxFileSize: 25 * 1024 * 1024,
+            multipleFiles: false,
+            signedUrlExpiresIn: 300,
+            onBeforeUpload: ({ file }) => ({
+               metadata: { organizationId, userId },
+               objectInfo: {
+                  key: `${VAULT_DOCUMENT_PREFIX}/org-${organizationId}/${crypto.randomUUID()}.${fileExtension(file.name)}`,
+               },
+            }),
+            onAfterSignedUrl: ({ file, metadata }) => {
+               const publicUrl = absolutePublicUrlFor(file.objectInfo.key);
+               log.info({
+                  module: "api:upload",
+                  message: "vault document presigned",
+                  organizationId: metadata.organizationId,
+                  userId: metadata.userId,
+                  key: file.objectInfo.key,
+               });
+               return {
+                  metadata: {
+                     publicUrl,
+                     fileKey: `${BUCKET}/${file.objectInfo.key}`,
+                  },
+               };
             },
          }),
       },

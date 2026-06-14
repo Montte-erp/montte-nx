@@ -9,6 +9,7 @@ export * from "@core/database/schemas/credit-card-statement-totals";
 export * from "@core/database/schemas/inbox";
 export * from "@core/database/schemas/reports";
 export * from "@core/database/schemas/relationships";
+export * from "@core/database/schemas/vault";
 export * from "@core/database/schemas/workflows";
 export * from "@core/database/schemas/settings-financial";
 export * from "@core/database/schemas/tags";
@@ -24,4 +25,5 @@ export {
    settingsSchema,
    agentsSchema,
    inboxSchema,
+   vaultSchema,
 } from "@core/database/schemas/schemas";

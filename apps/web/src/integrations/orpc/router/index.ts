@@ -24,6 +24,7 @@ import * as transactionsImports from "@modules/cashbook/router/imports";
 import * as transactionsList from "@modules/cashbook/router/transactions-list";
 import * as transactionsStatus from "@modules/cashbook/router/transactions-status";
 import * as transactionsSuggestions from "@modules/cashbook/router/transactions-suggestions";
+import * as vaultRouter from "@modules/vault/router";
 
 const transactionsRouter = {
    ...transactionsCrud,
@@ -53,6 +54,7 @@ export default {
    team: teamRouter,
    relationships: relationshipsRouter,
    transactions: transactionsRouter,
+   vault: vaultRouter,
    workflows: workflowsRouter,
    organization: organizationRouter,
    threads: {

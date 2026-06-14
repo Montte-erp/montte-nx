@@ -21,5 +21,6 @@ export default {
       "agents",
       "settings",
       "relationships",
+      "vault",
    ],
 } satisfies Config;

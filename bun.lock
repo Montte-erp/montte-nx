@@ -120,6 +120,7 @@
         "@modules/inbox": "workspace:*",
         "@modules/insights": "workspace:*",
         "@modules/relationships": "workspace:*",
+        "@modules/vault": "workspace:*",
         "@modules/workflows": "workspace:*",
         "@orpc/client": "catalog:orpc",
         "@orpc/json-schema": "catalog:orpc",
@@ -282,6 +283,7 @@
         "@core/environment": "workspace:*",
         "@core/logging": "workspace:*",
         "@core/utils": "workspace:*",
+        "@core/vault": "workspace:*",
         "@f-o-t/condition-evaluator": "catalog:fot",
         "@f-o-t/money": "catalog:fot",
         "@tanstack/ai": "catalog:tanstack-ai",
@@ -473,6 +475,15 @@
         "typescript": "catalog:development",
       },
     },
+    "core/vault": {
+      "name": "@core/vault",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
     "modules/account": {
       "name": "@modules/account",
       "version": "0.1.0",
@@ -563,6 +574,7 @@
         "@core/orpc": "workspace:*",
         "@core/redis": "workspace:*",
         "@core/utils": "workspace:*",
+        "@core/vault": "workspace:*",
         "@f-o-t/condition-evaluator": "catalog:fot",
         "@f-o-t/money": "catalog:fot",
         "@modules/classification": "workspace:*",
@@ -693,6 +705,24 @@
         "@core/orpc": "workspace:*",
         "better-result": "catalog:validation",
         "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "evlog": "catalog:logging",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
+    "modules/vault": {
+      "name": "@modules/vault",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "@core/vault": "workspace:*",
+        "better-result": "catalog:validation",
         "drizzle-orm": "catalog:database",
         "evlog": "catalog:logging",
         "zod": "catalog:validation",
@@ -1504,6 +1534,8 @@
 
     "@core/utils": ["@core/utils@workspace:core/utils"],
 
+    "@core/vault": ["@core/vault@workspace:core/vault"],
+
     "@dabh/diagnostics": ["@dabh/diagnostics@2.0.8", "", { "dependencies": { "@so-ric/colorspace": "^1.1.6", "enabled": "2.0.x", "kuler": "^2.0.0" } }, "sha512-R4MSXTVnuMzGD7bzHdW2ZhhdPC/igELENcq5IjEverBvq5hn1SXCWcsi6eSsdWP0/Ur+SItRRjAktmdoX/8R/Q=="],
 
     "@date-fns/tz": ["@date-fns/tz@1.4.1", "", {}, "sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA=="],
@@ -1831,6 +1863,8 @@
     "@modules/insights": ["@modules/insights@workspace:modules/insights"],
 
     "@modules/relationships": ["@modules/relationships@workspace:modules/relationships"],
+
+    "@modules/vault": ["@modules/vault@workspace:modules/vault"],
 
     "@modules/workflows": ["@modules/workflows@workspace:modules/workflows"],
 

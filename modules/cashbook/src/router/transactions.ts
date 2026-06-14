@@ -10,7 +10,14 @@ import {
    transactionItems,
    transactions,
    updateTransactionSchema,
+   type Attachment,
 } from "@core/database/schemas/transactions";
+import {
+   vaultDocuments,
+   vaultFolders,
+   type NewVaultDocument,
+} from "@core/database/schemas/vault";
+import { VAULT_DEFAULT_FOLDER_KEYS } from "@core/vault/catalog";
 import { protectedProcedure } from "@core/orpc/server";
 import {
    enqueueClassifyTransactionsBatchWorkflow,
@@ -74,6 +81,51 @@ class TransactionRouterError extends TaggedError("TransactionRouterError")<{
 }>() {}
 
 const idSchema = z.object({ id: z.string().uuid() });
+
+function extractObjectKeyFromFileUrl(url: string) {
+   const marker = "/api/files/";
+   const markerIndex = url.indexOf(marker);
+   if (markerIndex < 0) return undefined;
+
+   const rest = url.slice(markerIndex + marker.length);
+   const separatorIndex = rest.indexOf("/");
+   if (separatorIndex < 0) return undefined;
+
+   return rest;
+}
+
+function buildVaultRowsForTransactionAttachments(input: {
+   attachments: Attachment[] | null | undefined;
+   organizationId: string;
+   teamId: string;
+   userId: string;
+   transactionName: string | null | undefined;
+   folderId: string;
+}): NewVaultDocument[] {
+   return (input.attachments ?? []).flatMap((attachment) => {
+      const fileKey = extractObjectKeyFromFileUrl(attachment.url);
+      if (!fileKey) return [];
+
+      return [
+         {
+            organizationId: input.organizationId,
+            teamId: input.teamId,
+            title: attachment.filename,
+            description: input.transactionName
+               ? `Anexo do lançamento ${input.transactionName}.`
+               : "Anexo de lançamento financeiro.",
+            folderId: input.folderId,
+            status: "stored",
+            source: "finance",
+            fileKey,
+            originalFileName: attachment.filename,
+            mimeType: attachment.mimeType,
+            fileSize: attachment.size,
+            uploadedByUserId: input.userId,
+         },
+      ];
+   });
+}
 
 const tagAndItemsSchema = z.object({
    tagId: z.string().uuid().nullable().optional(),
@@ -361,6 +413,39 @@ export const create = protectedProcedure
                      ),
                   );
                }
+               await tx
+                  .insert(vaultFolders)
+                  .values({
+                     organizationId: context.organizationId,
+                     teamId: context.teamId,
+                     name: "Anexos",
+                     systemKey: VAULT_DEFAULT_FOLDER_KEYS.attachments,
+                     isDefault: true,
+                  })
+                  .onConflictDoNothing();
+               const attachmentsFolder = await tx.query.vaultFolders.findFirst({
+                  where: (folder, { and, eq }) =>
+                     and(
+                        eq(folder.teamId, context.teamId),
+                        eq(
+                           folder.systemKey,
+                           VAULT_DEFAULT_FOLDER_KEYS.attachments,
+                        ),
+                     ),
+               });
+               const vaultRows = attachmentsFolder
+                  ? buildVaultRowsForTransactionAttachments({
+                       attachments: row.attachments,
+                       organizationId: context.organizationId,
+                       teamId: context.teamId,
+                       userId: context.userId,
+                       transactionName: row.name,
+                       folderId: attachmentsFolder.id,
+                    })
+                  : [];
+               if (vaultRows.length > 0) {
+                  await tx.insert(vaultDocuments).values(vaultRows);
+               }
                return row;
             }),
          catch: () =>
@@ -643,6 +728,67 @@ export const update = protectedProcedure
                            unitPrice: item.unitPrice,
                         })),
                      );
+                  }
+               }
+               if (data.attachments !== undefined) {
+                  await tx
+                     .insert(vaultFolders)
+                     .values({
+                        organizationId: context.organizationId,
+                        teamId: context.teamId,
+                        name: "Anexos",
+                        systemKey: VAULT_DEFAULT_FOLDER_KEYS.attachments,
+                        isDefault: true,
+                     })
+                     .onConflictDoNothing();
+                  const attachmentsFolder =
+                     await tx.query.vaultFolders.findFirst({
+                        where: (folder, { and, eq }) =>
+                           and(
+                              eq(folder.teamId, context.teamId),
+                              eq(
+                                 folder.systemKey,
+                                 VAULT_DEFAULT_FOLDER_KEYS.attachments,
+                              ),
+                           ),
+                     });
+                  const vaultRows = attachmentsFolder
+                     ? buildVaultRowsForTransactionAttachments({
+                          attachments: row.attachments,
+                          organizationId: context.organizationId,
+                          teamId: context.teamId,
+                          userId: context.userId,
+                          transactionName: row.name,
+                          folderId: attachmentsFolder.id,
+                       })
+                     : [];
+                  const fileKeys = vaultRows.flatMap((vaultRow) =>
+                     vaultRow.fileKey ? [vaultRow.fileKey] : [],
+                  );
+                  const existingVaultRows =
+                     fileKeys.length > 0
+                        ? await tx
+                             .select({ fileKey: vaultDocuments.fileKey })
+                             .from(vaultDocuments)
+                             .where(
+                                and(
+                                   eq(vaultDocuments.teamId, context.teamId),
+                                   inArray(vaultDocuments.fileKey, fileKeys),
+                                ),
+                             )
+                        : [];
+                  const existingFileKeys = new Set(
+                     existingVaultRows.flatMap((vaultRow) =>
+                        vaultRow.fileKey ? [vaultRow.fileKey] : [],
+                     ),
+                  );
+                  const newVaultRows = vaultRows.filter(
+                     (vaultRow) =>
+                        vaultRow.fileKey &&
+                        !existingFileKeys.has(vaultRow.fileKey),
+                  );
+                  if (newVaultRows.length > 0) {
+                     await tx.insert(vaultDocuments).values(newVaultRows);
                   }
                }
                return row;

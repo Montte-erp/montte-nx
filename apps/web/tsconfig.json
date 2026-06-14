@@ -29,6 +29,7 @@
          "@modules/contracts/*": ["../../modules/contracts/src/*"],
          "@modules/inbox/*": ["../../modules/inbox/src/*"],
          "@modules/relationships/*": ["../../modules/relationships/src/*"],
+         "@modules/vault/*": ["../../modules/vault/src/*"],
          "@modules/workflows/*": ["../../modules/workflows/src/*"]
       }
    },
@@ -60,6 +61,9 @@
       },
       {
          "path": "../../core/database"
+      },
+      {
+         "path": "../../core/vault"
       }
    ]
 }
