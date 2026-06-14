@@ -11,6 +11,7 @@
          "@core/database/*": ["../../core/database/src/*"],
          "@core/environment/*": ["../../core/environment/src/*"],
          "@core/orpc/*": ["../../core/orpc/src/*"],
+         "@core/vault/*": ["../../core/vault/src/*"],
          "@modules/fiscal/*": ["./src/*"]
       }
    },
@@ -21,6 +22,9 @@
       },
       {
          "path": "../../core/environment"
+      },
+      {
+         "path": "../../core/vault"
       }
    ]
 }

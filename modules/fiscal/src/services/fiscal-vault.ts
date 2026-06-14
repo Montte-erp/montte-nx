@@ -1,25 +1,15 @@
-import { webcrypto } from "node:crypto";
 import { eq } from "drizzle-orm";
 import {
    Result,
    TaggedError,
    type Result as BetterResult,
 } from "better-result";
+import { decryptSecret, encryptSecret } from "@core/vault/crypto";
 import { defineErrorCatalog } from "evlog";
 import { fiscalProviderSecrets } from "@core/database/schemas/fiscal";
 import type { ORPCContextWithOrganization } from "@core/orpc/context";
 
 const fiscalVaultErrors = defineErrorCatalog("fiscal.vault", {
-   CONFIG_MISSING: {
-      status: 500,
-      message: "Chave do vault fiscal não configurada.",
-      tags: ["fiscal", "vault"],
-   },
-   CONFIG_INVALID: {
-      status: 500,
-      message: "Chave do vault fiscal inválida.",
-      tags: ["fiscal", "vault"],
-   },
    CRYPTO_FAILED: {
       status: 500,
       message: "Falha ao proteger segredo fiscal.",
@@ -39,8 +29,6 @@ declare module "evlog" {
 }
 
 type FiscalVaultCatalogError =
-   | ReturnType<typeof fiscalVaultErrors.CONFIG_MISSING>
-   | ReturnType<typeof fiscalVaultErrors.CONFIG_INVALID>
    | ReturnType<typeof fiscalVaultErrors.CRYPTO_FAILED>
    | ReturnType<typeof fiscalVaultErrors.NOT_FOUND>;
 
@@ -72,89 +60,38 @@ export type JacobinaSaatriSecret = {
    password: string;
 };
 
-const textEncoder = new TextEncoder();
-const textDecoder = new TextDecoder();
+const fiscalVaultKeyName = "FISCAL_VAULT_ENCRYPTION_KEY";
 
-function decodeVaultKey(key: FiscalVaultKey) {
-   if (!key.value) {
-      return Result.err(
-         new FiscalVaultError({
-            error: fiscalVaultErrors.CONFIG_MISSING(),
-            message:
-               "Configure FISCAL_VAULT_ENCRYPTION_KEY antes de salvar credenciais fiscais.",
-         }),
-      );
-   }
-
-   const decoded = Buffer.from(key.value, "base64");
-   if (decoded.byteLength !== 32) {
-      return Result.err(
-         new FiscalVaultError({
-            error: fiscalVaultErrors.CONFIG_INVALID(),
-            message: "FISCAL_VAULT_ENCRYPTION_KEY deve ser base64 de 32 bytes.",
-         }),
-      );
-   }
-
-   return Result.ok(decoded);
+function mapCryptoError(message: string) {
+   return new FiscalVaultError({
+      error: fiscalVaultErrors.CRYPTO_FAILED(),
+      message,
+   });
 }
-
-async function importAesKey(key: Buffer) {
-   return webcrypto.subtle.importKey("raw", key, "AES-GCM", false, [
-      "encrypt",
-      "decrypt",
-   ]);
-}
-
-async function encryptValue(value: string, vaultKey: CryptoKey) {
-   const iv = webcrypto.getRandomValues(new Uint8Array(12));
-   const encrypted = await webcrypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      vaultKey,
-      textEncoder.encode(value),
-   );
-
-   return `${Buffer.from(iv).toString("base64")}.${Buffer.from(encrypted).toString("base64")}`;
-}
-
-async function decryptValue(value: string, vaultKey: CryptoKey) {
-   const [ivText, encryptedText] = value.split(".");
-   if (!ivText || !encryptedText) {
-      throw new Error("invalid fiscal secret format");
-   }
-
-   const decrypted = await webcrypto.subtle.decrypt(
-      { name: "AES-GCM", iv: Buffer.from(ivText, "base64") },
-      vaultKey,
-      Buffer.from(encryptedText, "base64"),
-   );
-
-   return textDecoder.decode(decrypted);
-}
-
 export async function saveJacobinaSaatriSecret(
    db: DbClient,
    vaultKey: FiscalVaultKey,
    input: JacobinaSaatriSecretInput,
 ): Promise<BetterResult<{ configured: true }, FiscalVaultError>> {
-   const keyResult = decodeVaultKey(vaultKey);
-   if (Result.isError(keyResult)) return keyResult;
+   const usernameResult = await encryptSecret(
+      { value: vaultKey.value, envName: fiscalVaultKeyName },
+      input.username,
+   );
+   if (Result.isError(usernameResult)) {
+      return Result.err(
+         mapCryptoError("Falha ao criptografar usuário do SAATRI Jacobina."),
+      );
+   }
 
-   const encryptedResult = await Result.tryPromise({
-      try: async () => {
-         const key = await importAesKey(keyResult.value);
-         const usernameCiphertext = await encryptValue(input.username, key);
-         const passwordCiphertext = await encryptValue(input.password, key);
-         return { usernameCiphertext, passwordCiphertext };
-      },
-      catch: () =>
-         new FiscalVaultError({
-            error: fiscalVaultErrors.CRYPTO_FAILED(),
-            message: "Falha ao criptografar credenciais do SAATRI Jacobina.",
-         }),
-   });
-   if (Result.isError(encryptedResult))
-      return Result.err(encryptedResult.error);
+   const passwordResult = await encryptSecret(
+      { value: vaultKey.value, envName: fiscalVaultKeyName },
+      input.password,
+   );
+   if (Result.isError(passwordResult)) {
+      return Result.err(
+         mapCryptoError("Falha ao criptografar senha do SAATRI Jacobina."),
+      );
+   }
 
    const savedResult = await Result.tryPromise({
       try: () =>
@@ -172,10 +109,8 @@ export async function saveJacobinaSaatriSecret(
                      environment: input.environment,
                      issuerTaxId: input.issuerTaxId,
                      municipalRegistration: input.municipalRegistration,
-                     usernameCiphertext:
-                        encryptedResult.value.usernameCiphertext,
-                     passwordCiphertext:
-                        encryptedResult.value.passwordCiphertext,
+                     usernameCiphertext: usernameResult.value,
+                     passwordCiphertext: passwordResult.value,
                   })
                   .where(eq(fiscalProviderSecrets.id, existing.id))
                   .returning();
@@ -191,8 +126,8 @@ export async function saveJacobinaSaatriSecret(
                   environment: input.environment,
                   issuerTaxId: input.issuerTaxId,
                   municipalRegistration: input.municipalRegistration,
-                  usernameCiphertext: encryptedResult.value.usernameCiphertext,
-                  passwordCiphertext: encryptedResult.value.passwordCiphertext,
+                  usernameCiphertext: usernameResult.value,
+                  passwordCiphertext: passwordResult.value,
                })
                .returning();
             return created;
@@ -213,9 +148,6 @@ export async function loadJacobinaSaatriSecret(
    vaultKey: FiscalVaultKey,
    teamId: string,
 ): Promise<BetterResult<JacobinaSaatriSecret, FiscalVaultError>> {
-   const keyResult = decodeVaultKey(vaultKey);
-   if (Result.isError(keyResult)) return keyResult;
-
    const rowResult = await Result.tryPromise({
       try: () =>
          db.query.fiscalProviderSecrets.findFirst({
@@ -239,26 +171,30 @@ export async function loadJacobinaSaatriSecret(
    }
 
    const row = rowResult.value;
-   const decryptedResult = await Result.tryPromise({
-      try: async () => {
-         const key = await importAesKey(keyResult.value);
-         const username = await decryptValue(row.usernameCiphertext, key);
-         const password = await decryptValue(row.passwordCiphertext, key);
-         return { username, password };
-      },
-      catch: () =>
-         new FiscalVaultError({
-            error: fiscalVaultErrors.CRYPTO_FAILED(),
-            message: "Falha ao descriptografar credenciais fiscais.",
-         }),
-   });
-   if (Result.isError(decryptedResult))
-      return Result.err(decryptedResult.error);
+   const usernameResult = await decryptSecret(
+      { value: vaultKey.value, envName: fiscalVaultKeyName },
+      row.usernameCiphertext,
+   );
+   if (Result.isError(usernameResult)) {
+      return Result.err(
+         mapCryptoError("Falha ao descriptografar usuário fiscal."),
+      );
+   }
+
+   const passwordResult = await decryptSecret(
+      { value: vaultKey.value, envName: fiscalVaultKeyName },
+      row.passwordCiphertext,
+   );
+   if (Result.isError(passwordResult)) {
+      return Result.err(
+         mapCryptoError("Falha ao descriptografar senha fiscal."),
+      );
+   }
 
    return Result.ok({
       issuerTaxId: row.issuerTaxId,
       municipalRegistration: row.municipalRegistration,
-      username: decryptedResult.value.username,
-      password: decryptedResult.value.password,
+      username: usernameResult.value,
+      password: passwordResult.value,
    });
 }

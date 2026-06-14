@@ -1,0 +1,33 @@
+{
+   "name": "@core/vault",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "files": [
+      "dist"
+   ],
+   "type": "module",
+   "exports": {
+      "./crypto": {
+         "types": "./dist/crypto.d.ts",
+         "default": "./dist/crypto.js"
+      }
+   },
+   "scripts": {
+      "build": "tsc --build",
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src",
+      "format:check": "oxfmt --check ./src",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "better-result": "catalog:validation",
+      "evlog": "catalog:logging"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   }
+}

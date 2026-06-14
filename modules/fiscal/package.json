@@ -19,6 +19,7 @@
       "@core/database": "workspace:*",
       "@core/environment": "workspace:*",
       "@core/orpc": "workspace:*",
+      "@core/vault": "workspace:*",
       "@dfe-kit/jacobina-saatri": "0.1.0",
       "better-result": "catalog:validation",
       "drizzle-orm": "catalog:database",

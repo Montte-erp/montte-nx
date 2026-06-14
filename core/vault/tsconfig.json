@@ -1,0 +1,10 @@
+{
+   "extends": "@tooling/typescript/core.json",
+   "compilerOptions": {
+      "paths": {
+         "@core/vault/*": ["./src/*"]
+      }
+   },
+   "include": ["src"],
+   "references": []
+}
