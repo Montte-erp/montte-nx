@@ -1,6 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import {
    useMutation,
+   useQuery,
    useQueryClient,
    useSuspenseQueries,
 } from "@tanstack/react-query";
@@ -16,6 +17,7 @@ import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { Combobox } from "@packages/ui/components/combobox";
 import {
    SheetDescription,
    SheetFooter,
@@ -221,7 +223,8 @@ function buildVaultColumns(): ColumnDef<VaultDocumentRow>[] {
 function UploadDocumentSheet() {
    const queryClient = useQueryClient();
    const { closeTopSheet } = useSheet();
-   const mutation = useMutation(
+   const foldersQuery = useQuery(orpc.vault.listFolders.queryOptions());
+   const documentMutation = useMutation(
       orpc.vault.createDocument.mutationOptions({
          onSuccess: async () => {
             await Promise.all([
@@ -254,7 +257,7 @@ function UploadDocumentSheet() {
       },
       validators: { onSubmit: createDocumentSchema },
       onSubmit: ({ value }) => {
-         mutation.mutate({
+         documentMutation.mutate({
             title: value.title,
             description: value.description || undefined,
             folderId: value.folderId || undefined,
@@ -267,6 +270,23 @@ function UploadDocumentSheet() {
          });
       },
    });
+   const folderMutation = useMutation(
+      orpc.vault.createFolder.mutationOptions({
+         onSuccess: async (folder) => {
+            await Promise.all([
+               queryClient.invalidateQueries(
+                  orpc.vault.listFolders.queryOptions(),
+               ),
+               queryClient.invalidateQueries(
+                  orpc.vault.getSummary.queryOptions(),
+               ),
+            ]);
+            form.setFieldValue("folderId", folder.id);
+            toast.success("Pasta criada no Vault.");
+         },
+         onError: (error) => toast.error(error.message),
+      }),
+   );
 
    const upload = useUploadFiles({
       api: "/api/upload",
@@ -366,6 +386,46 @@ function UploadDocumentSheet() {
                      </Field>
                   )}
                />
+               <form.Field
+                  name="folderId"
+                  children={(field) => {
+                     const options = (foldersQuery.data ?? [])
+                        .filter((folder) => folder.id !== "all")
+                        .map((folder) => ({
+                           value: folder.id,
+                           label: folder.name,
+                        }));
+
+                     return (
+                        <Field>
+                           <FieldLabel htmlFor={field.name}>Pasta</FieldLabel>
+                           <Combobox
+                              className="w-full"
+                              createLabel="Criar pasta"
+                              disabled={
+                                 foldersQuery.isLoading ||
+                                 folderMutation.isPending
+                              }
+                              emptyMessage="Nenhuma pasta encontrada."
+                              id={field.name}
+                              onBlur={field.handleBlur}
+                              onCreate={(name) =>
+                                 folderMutation.mutate({ name })
+                              }
+                              onValueChange={field.handleChange}
+                              options={options}
+                              placeholder="Selecionar pasta"
+                              searchPlaceholder="Buscar ou criar pasta..."
+                              value={field.state.value}
+                           />
+                           <p className="text-sm text-muted-foreground">
+                              Busque uma pasta existente ou digite um nome para
+                              criar uma nova.
+                           </p>
+                        </Field>
+                     );
+                  }}
+               />
                <Field>
                   <FieldLabel>Arquivo</FieldLabel>
                   <UploadDropzone
@@ -404,7 +464,7 @@ function UploadDocumentSheet() {
                      disabled={
                         !canSubmit ||
                         isSubmitting ||
-                        mutation.isPending ||
+                        documentMutation.isPending ||
                         upload.control.isPending
                      }
                      form="create-vault-document-form"
