@@ -24,11 +24,6 @@ const vaultRouterErrors = defineErrorCatalog("vault.router", {
       message: "Falha interna no Vault.",
       tags: ["vault"],
    },
-   NOT_FOUND: {
-      status: 404,
-      message: "Documento não encontrado no Vault.",
-      tags: ["vault"],
-   },
 });
 
 declare module "evlog" {
@@ -37,9 +32,7 @@ declare module "evlog" {
    }
 }
 
-type VaultRouterCatalogError =
-   | ReturnType<typeof vaultRouterErrors.INTERNAL>
-   | ReturnType<typeof vaultRouterErrors.NOT_FOUND>;
+type VaultRouterCatalogError = ReturnType<typeof vaultRouterErrors.INTERNAL>;
 
 class VaultRouterError extends TaggedError("VaultRouterError")<{
    error: VaultRouterCatalogError;
@@ -51,7 +44,6 @@ const sourceSchema = z.enum(vaultDocumentSourceEnum);
 
 const listDocumentsInput = z.object({
    search: z.string().trim().max(160).catch("").default(""),
-   folderId: z.string().uuid().optional(),
    page: z.number().int().positive().catch(1).default(1),
    pageSize: z.number().int().positive().max(100).catch(50).default(50),
    sorting: z
@@ -271,45 +263,6 @@ export const createFolder = protectedProcedure
       return result.value;
    });
 
-export const getSummary = protectedProcedure.handler(async ({ context }) => {
-   const result = await Result.tryPromise({
-      try: async () => {
-         await ensureDefaultFolders(
-            context.db,
-            context.organizationId,
-            context.teamId,
-         );
-         const folders = await context.db
-            .select({
-               id: vaultFolders.id,
-               name: vaultFolders.name,
-               systemKey: vaultFolders.systemKey,
-               isDefault: vaultFolders.isDefault,
-               total: count(vaultDocuments.id),
-            })
-            .from(vaultFolders)
-            .leftJoin(
-               vaultDocuments,
-               eq(vaultDocuments.folderId, vaultFolders.id),
-            )
-            .where(eq(vaultFolders.teamId, context.teamId))
-            .groupBy(vaultFolders.id)
-            .orderBy(desc(vaultFolders.isDefault), asc(vaultFolders.name));
-         return {
-            total: folders.reduce((sum, folder) => sum + folder.total, 0),
-            folders,
-         };
-      },
-      catch: () =>
-         new VaultRouterError({
-            error: vaultRouterErrors.INTERNAL(),
-            message: "Falha ao carregar resumo do Vault.",
-         }),
-   });
-   if (Result.isError(result)) throw result.error;
-   return result.value;
-});
-
 export const listDocuments = protectedProcedure
    .input(listDocumentsInput)
    .handler(async ({ context, input }) => {
@@ -317,9 +270,6 @@ export const listDocuments = protectedProcedure
       const search = input.search.trim();
       const where = and(
          eq(vaultDocuments.teamId, context.teamId),
-         input.folderId
-            ? eq(vaultDocuments.folderId, input.folderId)
-            : undefined,
          search
             ? or(
                  ilike(vaultDocuments.title, `%${search}%`),

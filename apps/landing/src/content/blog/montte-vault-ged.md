@@ -1,6 +1,6 @@
 ---
-title: "Montte Vault: o GED do Montte"
-description: "Criamos o GED do Montte: upload no bucket, documentos no banco, pastas por workspace e anexos financeiros aparecendo em Anexos."
+title: "GED no Montte"
+description: "O Montte Vault guarda documentos no mesmo lugar em que a operação acontece: upload manual, pastas por workspace e anexos financeiros na pasta Anexos."
 publishedAt: 2026-06-14
 author: "Manoel Neto"
 tags: ["ged", "vault", "documentos", "fiscal"]
@@ -10,58 +10,46 @@ featured: true
 readingMinutes: 2
 keyTakeaways:
    - "Montte Vault é o GED do Montte."
-   - "O upload salva no bucket e cria o documento no backend."
-   - "A única pasta padrão é Anexos."
-   - "Anexos de lançamentos financeiros já entram no Vault."
+   - "Arquivos enviados pelo Vault usam o prefixo vault-documents no bucket."
+   - "A pasta padrão é Anexos. O usuário cria as outras."
+   - "Anexos financeiros já aparecem no GED."
 faq:
    - question: "O que é o Montte Vault?"
-     answer: "É o GED do Montte. Ele guarda documentos, anexos, comprovantes e arquivos ligados aos fluxos do produto."
-   - question: "O Vault já salva arquivos?"
-     answer: "Sim. O arquivo vai para o bucket e o documento é registrado no schema vault."
+     answer: "É o GED do Montte: documentos, comprovantes e anexos ligados aos fluxos do produto."
    - question: "Quais pastas vêm por padrão?"
-     answer: "Só Anexos. As outras pastas são criadas pelo usuário no fluxo de novo documento."
-   - question: "O Vault já recebe arquivos de outros módulos?"
+     answer: "Só Anexos. O usuário cria outras pastas no sheet de novo documento."
+   - question: "O Vault já recebe anexos financeiros?"
      answer: "Sim. Anexos de lançamentos financeiros entram no Vault automaticamente."
 ---
 
-Criamos o GED do Montte.
+Um comprovante anexado no financeiro não deveria morrer dentro do lançamento.
 
-Ele se chama Montte Vault.
+Ele continua ali, porque o lançamento precisa do comprovante. Mas ele também precisa aparecer no GED, onde alguém procura documento depois.
 
-A primeira versão faz o básico sem fingir produto pronto: envia arquivo para o bucket, grava documento no banco e mostra a lista em `/$slug/$teamSlug/vault`.
+Esse foi o primeiro corte do Montte Vault.
 
-O usuário adiciona um documento pelo sheet, preenche nome e descrição, escolhe uma pasta ou cria uma nova no mesmo campo. A tabela mostra nome, descrição, pasta, status, origem e a ação de abrir o arquivo.
+Criamos a rota `/vault`, o schema `vault`, o módulo backend e o upload para `vault-documents`. A tela tem tabela, busca, filtros, seleção, bulk archive e ação para abrir arquivo.
 
-Só existe uma pasta padrão: **Anexos**.
+No sheet de novo documento, o usuário envia o arquivo, escreve nome e descrição, escolhe uma pasta ou cria uma nova. O Montte cria uma única pasta padrão: **Anexos**.
 
-A gente chegou a considerar pastas prontas como Fiscal, Contratos e Empresa. Cortamos. Isso parecia organização, mas era só opinião nossa dentro do workspace do cliente. Se o time quer uma pasta chamada Contratos, ele cria. Se quer Cliente, Fornecedor, 2026 ou Banco, também cria.
+Cortamos as pastas prontas Fiscal, Contratos e Empresa. Era organização inventada por nós. Se o time precisa dessas pastas, ele cria.
 
-## O primeiro uso veio do financeiro
+## O financeiro já escreve no GED
 
-O primeiro módulo conectado ao Vault foi o financeiro.
+Anexo de lançamento financeiro agora vira documento do Vault.
 
-Quando alguém adiciona anexo em um lançamento, o Montte registra o arquivo no Vault. Ele aparece em **Anexos**.
+O arquivo usa o mesmo namespace `vault-documents` no bucket. O backend registra título, descrição, origem `Financeiro`, status e pasta **Anexos** em `vault.documents`.
 
-Isso muda uma rotina pequena. O comprovante continua no lançamento, onde faz sentido na hora de conferir a despesa. Mas ele também fica no GED, onde faz sentido na hora de procurar documento.
+Na prática:
 
-Antes, o anexo era detalhe de uma tela. Agora ele também é documento da empresa.
+- o financeiro mantém o anexo no lançamento;
+- o Vault lista o mesmo arquivo como documento;
+- update de lançamento não duplica documento com o mesmo `fileKey`.
 
-## O que foi implementado
+## O que falta
 
-No banco, adicionamos o schema `vault` com pastas e documentos.
+NF-e e NFS-e ainda precisam escrever XML e PDF no Vault.
 
-No backend, criamos rotas para listar pastas, criar pasta, listar documentos, criar documento, buscar resumo e arquivar documentos em lote.
+Contratos precisam guardar o arquivo original. Extrações precisam apontar para o documento usado. Depois disso, o GED deixa de ser só uma lista de arquivos e vira índice dos documentos que passam pelo Montte.
 
-No upload, adicionamos a rota `vaultDocument`. Ela aceita PDF, XML, JSON, texto, imagem e documentos Office, com limite de 25 MB, e salva usando o prefixo `vault-documents`.
-
-No app, a tela usa o padrão das tabelas do Montte: busca, filtros de coluna, paginação, seleção, bulk action e ações por ícone. O painel da direita explica o contexto sem roubar espaço da tabela.
-
-## O que vem depois
-
-O Vault ainda precisa receber documentos de mais lugares.
-
-NF-e e NFS-e devem gravar XML e PDF ali. Contratos devem guardar o arquivo original. Extrações e automações precisam apontar para o documento que usaram.
-
-Esse é o caminho: o arquivo fica no GED, mas continua ligado ao fluxo que criou o arquivo.
-
-Montte Vault é o GED do Montte. Começa por upload manual e anexos financeiros.
+Esse PR entrega o início: upload manual, pasta **Anexos**, bucket, banco, backend e anexos financeiros entrando no GED.

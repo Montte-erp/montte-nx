@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form";
-import { createCollection, eq, ilike, useLiveQuery } from "@tanstack/react-db";
+import { createCollection, ilike, or, useLiveQuery } from "@tanstack/react-db";
 import {
    getCoreRowModel,
    useReactTable,
@@ -83,7 +83,6 @@ export const Route = createFileRoute(
       page: z.number().int().min(1).catch(1).default(1),
       pageSize: z.number().int().min(1).max(100).catch(20).default(20),
       search: z.string().catch("").default(""),
-      folderId: z.string().catch("all").default("all"),
    }),
    pendingMs: 300,
    pendingComponent: VaultSkeleton,
@@ -142,29 +141,6 @@ function normalizeVaultSorting(sorting: SortingState) {
 }
 
 const skeletonColumns = buildVaultColumns();
-
-type LiveVaultDocumentRow = VaultDocumentRow & {
-   $synced: boolean;
-};
-
-function vaultDocumentDedupeKey(document: VaultDocumentRow) {
-   return `${document.teamId}:${document.fileKey ?? ""}:${document.title.trim().toLocaleLowerCase()}`;
-}
-
-function removeConfirmedOptimisticDuplicates(
-   documents: LiveVaultDocumentRow[],
-) {
-   const syncedKeys = new Set<string>();
-   for (const document of documents) {
-      if (!document.$synced) continue;
-      syncedKeys.add(vaultDocumentDedupeKey(document));
-   }
-
-   return documents.filter(
-      (document) =>
-         document.$synced || !syncedKeys.has(vaultDocumentDedupeKey(document)),
-   );
-}
 
 function compareVaultDocumentValues(
    left: VaultDocumentRow,
@@ -238,20 +214,6 @@ function filterVaultDocuments(
    if (filters.length === 0) return rows;
    return rows.filter((document) =>
       filters.every((filter) => matchesVaultFilter(document, filter)),
-   );
-}
-
-function documentMatchesSearch(document: VaultDocumentRow, search: string) {
-   const value = search.trim().toLowerCase();
-   if (!value) return true;
-   return (
-      document.title.toLowerCase().includes(value) ||
-      String(document.description ?? "")
-         .toLowerCase()
-         .includes(value) ||
-      String(document.originalFileName ?? "")
-         .toLowerCase()
-         .includes(value)
    );
 }
 
@@ -661,8 +623,7 @@ function VaultSkeleton() {
 function VaultContent() {
    const navigate = Route.useNavigate();
    const { queryClient } = Route.useRouteContext();
-   const { sorting, columnFilters, folderId, search, page, pageSize } =
-      Route.useSearch();
+   const { sorting, columnFilters, search, page, pageSize } = Route.useSearch();
    const layout = useDataTableLayout("vault-documents");
 
    const searchInput = useDebouncedSearch({
@@ -684,29 +645,23 @@ function VaultContent() {
    const { data: liveDocuments, isLoading } = useLiveQuery(
       (q) => {
          let query = q.from({ document: documentsCollection });
-         if (folderId !== "all") {
-            query = query.where(({ document }) =>
-               eq(document.folderId, folderId),
-            );
-         }
          if (search.trim()) {
+            const pattern = `%${search.trim()}%`;
             query = query.where(({ document }) =>
-               ilike(document.title, `%${search.trim()}%`),
+               or(
+                  ilike(document.title, pattern),
+                  ilike(document.description, pattern),
+                  ilike(document.originalFileName, pattern),
+               ),
             );
          }
          return query.select(({ document }) => document);
       },
-      [documentsCollection, folderId, search],
+      [documentsCollection, search],
    );
 
    const documents = useMemo(() => {
-      const normalized = removeConfirmedOptimisticDuplicates(
-         liveDocuments as LiveVaultDocumentRow[],
-      );
-      const searched = normalized.filter((document) =>
-         documentMatchesSearch(document, search),
-      );
-      const filtered = filterVaultDocuments(searched, columnFilters);
+      const filtered = filterVaultDocuments(liveDocuments, columnFilters);
       const sorted = sortVaultDocuments(filtered, sorting);
       const start = (page - 1) * pageSize;
       return {

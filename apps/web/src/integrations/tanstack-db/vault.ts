@@ -15,7 +15,6 @@ export type VaultFolderRow = Outputs["vault"]["listFolders"][number];
 
 type VaultWhereInput = {
    search?: string;
-   folderId?: string;
 };
 
 type VaultSortId = NonNullable<VaultDocumentsInput["sorting"]>[number]["id"];
@@ -49,15 +48,6 @@ function parseVaultWhere(options: LoadSubsetOptions | undefined) {
    return (
       parseWhereExpression<VaultWhereInput>(options?.where, {
          handlers: {
-            eq: (field: Array<string | number>, value: unknown) => {
-               if (
-                  field.join(".") === "folderId" &&
-                  typeof value === "string"
-               ) {
-                  return { folderId: value };
-               }
-               return {};
-            },
             ilike: (field: Array<string | number>, value: unknown) => {
                const fieldName = field.join(".");
                if (
@@ -100,7 +90,6 @@ function documentsInputFromLoadSubsetOptions(
 
    return {
       search: where.search,
-      folderId: where.folderId,
       page: Math.floor(offset / limit) + 1,
       pageSize: limit,
       sorting: parseVaultSorting(options),
