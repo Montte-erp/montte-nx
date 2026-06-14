@@ -9,7 +9,6 @@ import { auth, s3Client } from "@/integrations/singletons";
 const BUCKET = env.AWS_S3_BUCKET_NAME;
 const ORG_LOGO_PREFIX = "organization-logos";
 const USER_AVATAR_PREFIX = "user-avatars";
-const TRANSACTION_ATTACHMENT_PREFIX = "transaction-attachments";
 const VAULT_DOCUMENT_PREFIX = "vault-documents";
 
 function publicUrlFor(objectKey: string) {
@@ -101,7 +100,7 @@ function uploadRouter(organizationId: string, userId: string): Router {
             onBeforeUpload: () => ({
                metadata: { organizationId, userId },
                generateObjectInfo: ({ file }) => ({
-                  key: `${TRANSACTION_ATTACHMENT_PREFIX}/attachment-${organizationId}-${crypto.randomUUID()}.${fileExtension(file.name)}`,
+                  key: `${VAULT_DOCUMENT_PREFIX}/attachment-${organizationId}-${crypto.randomUUID()}.${fileExtension(file.name)}`,
                }),
             }),
             onAfterSignedUrl: ({ files, metadata }) => {
