@@ -17,12 +17,11 @@ import { z } from "zod";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import {
-   CredenzaBody,
-   CredenzaDescription,
-   CredenzaFooter,
-   CredenzaHeader,
-   CredenzaTitle,
-} from "@packages/ui/components/credenza";
+   SheetDescription,
+   SheetFooter,
+   SheetHeader,
+   SheetTitle,
+} from "@packages/ui/components/sheet";
 import {
    ContextPanel,
    ContextPanelContent,
@@ -53,7 +52,7 @@ import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
-import { useCredenza } from "@/hooks/use-credenza";
+import { useSheet } from "@/hooks/use-sheet";
 import { useContextPanelInfo } from "../-context-panel/use-context-panel";
 import { DefaultHeader } from "../-layout/default-header";
 import { useMemo } from "react";
@@ -219,9 +218,9 @@ function buildVaultColumns(): ColumnDef<VaultDocumentRow>[] {
    ];
 }
 
-function UploadDocumentCredenza() {
+function UploadDocumentSheet() {
    const queryClient = useQueryClient();
-   const { closeTopCredenza } = useCredenza();
+   const { closeTopSheet } = useSheet();
    const mutation = useMutation(
       orpc.vault.createDocument.mutationOptions({
          onSuccess: async () => {
@@ -237,7 +236,7 @@ function UploadDocumentCredenza() {
                ),
             ]);
             toast.success("Documento salvo no Vault.");
-            closeTopCredenza();
+            closeTopSheet();
          },
          onError: (error) => toast.error(error.message),
       }),
@@ -301,14 +300,14 @@ function UploadDocumentCredenza() {
 
    return (
       <>
-         <CredenzaHeader>
-            <CredenzaTitle>Novo documento</CredenzaTitle>
-            <CredenzaDescription>
+         <SheetHeader>
+            <SheetTitle>Novo documento</SheetTitle>
+            <SheetDescription>
                Envie o arquivo para o bucket e salve os metadados no GED do
                Montte.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
+            </SheetDescription>
+         </SheetHeader>
+         <div className="min-h-0 flex-1 overflow-auto px-4">
             <form
                className="flex flex-col gap-4"
                id="create-vault-document-form"
@@ -392,8 +391,8 @@ function UploadDocumentCredenza() {
                   </form.Subscribe>
                </Field>
             </form>
-         </CredenzaBody>
-         <CredenzaFooter>
+         </div>
+         <SheetFooter>
             <form.Subscribe
                selector={(state) => ({
                   canSubmit: state.canSubmit,
@@ -415,14 +414,14 @@ function UploadDocumentCredenza() {
                   </Button>
                )}
             </form.Subscribe>
-         </CredenzaFooter>
+         </SheetFooter>
       </>
    );
 }
 
-function CreateFolderCredenza() {
+function CreateFolderSheet() {
    const queryClient = useQueryClient();
-   const { closeTopCredenza } = useCredenza();
+   const { closeTopSheet } = useSheet();
    const mutation = useMutation(
       orpc.vault.createFolder.mutationOptions({
          onSuccess: async () => {
@@ -435,7 +434,7 @@ function CreateFolderCredenza() {
                ),
             ]);
             toast.success("Pasta criada no Vault.");
-            closeTopCredenza();
+            closeTopSheet();
          },
          onError: (error) => toast.error(error.message),
       }),
@@ -452,13 +451,13 @@ function CreateFolderCredenza() {
 
    return (
       <>
-         <CredenzaHeader>
-            <CredenzaTitle>Nova pasta</CredenzaTitle>
-            <CredenzaDescription>
+         <SheetHeader>
+            <SheetTitle>Nova pasta</SheetTitle>
+            <SheetDescription>
                Organize documentos do Vault por pasta.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <CredenzaBody>
+            </SheetDescription>
+         </SheetHeader>
+         <div className="min-h-0 flex-1 overflow-auto px-4">
             <form
                className="flex flex-col gap-4"
                id="create-vault-folder-form"
@@ -499,8 +498,8 @@ function CreateFolderCredenza() {
                   }}
                />
             </form>
-         </CredenzaBody>
-         <CredenzaFooter>
+         </div>
+         <SheetFooter>
             <Button
                disabled={mutation.isPending}
                form="create-vault-folder-form"
@@ -508,7 +507,7 @@ function CreateFolderCredenza() {
             >
                Criar pasta
             </Button>
-         </CredenzaFooter>
+         </SheetFooter>
       </>
    );
 }
@@ -553,7 +552,7 @@ function VaultToolbar({
 }) {
    const { search } = Route.useSearch();
    const navigate = Route.useNavigate();
-   const { openCredenza } = useCredenza();
+   const { openSheet } = useSheet();
 
    return (
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -576,9 +575,9 @@ function VaultToolbar({
          <div className="flex flex-wrap items-center gap-2">
             <Button
                onClick={() =>
-                  openCredenza({
+                  openSheet({
                      className: "sm:max-w-md",
-                     renderChildren: () => <CreateFolderCredenza />,
+                     renderChildren: () => <CreateFolderSheet />,
                   })
                }
                size="icon-sm"
@@ -592,9 +591,9 @@ function VaultToolbar({
             <DataTableColumnVisibility table={table} />
             <Button
                onClick={() =>
-                  openCredenza({
+                  openSheet({
                      className: "sm:max-w-lg",
-                     renderChildren: () => <UploadDocumentCredenza />,
+                     renderChildren: () => <UploadDocumentSheet />,
                   })
                }
                size="icon-sm"
