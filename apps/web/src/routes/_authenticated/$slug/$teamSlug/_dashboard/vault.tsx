@@ -45,7 +45,7 @@ import { Skeleton } from "@packages/ui/components/skeleton";
 import { Table } from "@packages/ui/components/table";
 import { UploadDropzone } from "@packages/ui/components/upload-dropzone";
 import { UploadProgress } from "@packages/ui/components/upload-progress";
-import { Archive, FileText, FolderPlus, Plus, ReceiptText } from "lucide-react";
+import { Archive, FileText, Plus, ReceiptText } from "lucide-react";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
@@ -479,99 +479,6 @@ function UploadDocumentSheet() {
    );
 }
 
-function CreateFolderSheet() {
-   const queryClient = useQueryClient();
-   const { closeTopSheet } = useSheet();
-   const mutation = useMutation(
-      orpc.vault.createFolder.mutationOptions({
-         onSuccess: async () => {
-            await Promise.all([
-               queryClient.invalidateQueries(
-                  orpc.vault.listFolders.queryOptions(),
-               ),
-               queryClient.invalidateQueries(
-                  orpc.vault.getSummary.queryOptions(),
-               ),
-            ]);
-            toast.success("Pasta criada no Vault.");
-            closeTopSheet();
-         },
-         onError: (error) => toast.error(error.message),
-      }),
-   );
-   const form = useForm({
-      defaultValues: { name: "" },
-      validators: {
-         onSubmit: z.object({
-            name: z.string().trim().min(1, "Nome obrigatório"),
-         }),
-      },
-      onSubmit: ({ value }) => mutation.mutate({ name: value.name }),
-   });
-
-   return (
-      <>
-         <SheetHeader>
-            <SheetTitle>Nova pasta</SheetTitle>
-            <SheetDescription>
-               Organize documentos do Vault por pasta.
-            </SheetDescription>
-         </SheetHeader>
-         <div className="min-h-0 flex-1 overflow-auto px-4">
-            <form
-               className="flex flex-col gap-4"
-               id="create-vault-folder-form"
-               onSubmit={(event) => {
-                  event.preventDefault();
-                  form.handleSubmit();
-               }}
-            >
-               <form.Field
-                  name="name"
-                  children={(field) => {
-                     const isInvalid =
-                        field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0;
-                     return (
-                        <Field>
-                           <FieldLabel htmlFor={field.name} required>
-                              Nome da pasta
-                           </FieldLabel>
-                           <Input
-                              aria-invalid={isInvalid}
-                              id={field.name}
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onInput={(event) =>
-                                 field.handleChange(event.currentTarget.value)
-                              }
-                              placeholder="Ex.: Jurídico"
-                              value={field.state.value}
-                           />
-                           {isInvalid ? (
-                              <FieldError>
-                                 {String(field.state.meta.errors[0])}
-                              </FieldError>
-                           ) : null}
-                        </Field>
-                     );
-                  }}
-               />
-            </form>
-         </div>
-         <SheetFooter>
-            <Button
-               disabled={mutation.isPending}
-               form="create-vault-folder-form"
-               type="submit"
-            >
-               Criar pasta
-            </Button>
-         </SheetFooter>
-      </>
-   );
-}
-
 function VaultInfoContent() {
    return (
       <ContextPanel className="h-auto shrink-0">
@@ -633,21 +540,6 @@ function VaultToolbar({
             value={search}
          />
          <div className="flex flex-wrap items-center gap-2">
-            <Button
-               onClick={() =>
-                  openSheet({
-                     className: "sm:max-w-md",
-                     renderChildren: () => <CreateFolderSheet />,
-                  })
-               }
-               size="icon-sm"
-               tooltip="Nova pasta"
-               type="button"
-               variant="outline"
-            >
-               <FolderPlus />
-               <span className="sr-only">Nova pasta</span>
-            </Button>
             <DataTableColumnVisibility table={table} />
             <Button
                onClick={() =>

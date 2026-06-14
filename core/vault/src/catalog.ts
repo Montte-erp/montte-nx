@@ -1,8 +1,5 @@
 export const VAULT_DEFAULT_FOLDER_KEYS = {
    attachments: "attachments",
-   fiscal: "fiscal",
-   contracts: "contracts",
-   company: "company",
 } as const;
 
 export type VaultDefaultFolderKey =
@@ -11,12 +8,7 @@ export type VaultDefaultFolderKey =
 export const vaultDefaultFolders: {
    key: VaultDefaultFolderKey;
    name: string;
-}[] = [
-   { key: VAULT_DEFAULT_FOLDER_KEYS.attachments, name: "Anexos" },
-   { key: VAULT_DEFAULT_FOLDER_KEYS.fiscal, name: "Fiscal" },
-   { key: VAULT_DEFAULT_FOLDER_KEYS.contracts, name: "Contratos" },
-   { key: VAULT_DEFAULT_FOLDER_KEYS.company, name: "Empresa" },
-];
+}[] = [{ key: VAULT_DEFAULT_FOLDER_KEYS.attachments, name: "Anexos" }];
 
 export const vaultDocumentStatusEnum = [
    "draft",
