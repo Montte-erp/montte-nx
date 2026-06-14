@@ -36,6 +36,7 @@ import { Route as AuthenticatedSlugTeamSlugDashboardTagsRouteImport } from "./ro
 import { Route as AuthenticatedSlugTeamSlugDashboardSuppliersRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/suppliers";
 import { Route as AuthenticatedSlugTeamSlugDashboardSettingsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/settings";
 import { Route as AuthenticatedSlugTeamSlugDashboardNfeRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/nfe";
+import { Route as AuthenticatedSlugTeamSlugDashboardVaultRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/vault";
 import { Route as AuthenticatedSlugTeamSlugDashboardCustomersRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/customers";
 import { Route as AuthenticatedSlugTeamSlugDashboardCreditCardsRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/credit-cards";
 import { Route as AuthenticatedSlugTeamSlugDashboardChatRouteImport } from "./routes/_authenticated/$slug/$teamSlug/_dashboard/chat";
@@ -205,6 +206,12 @@ const AuthenticatedSlugTeamSlugDashboardNfeRoute =
    AuthenticatedSlugTeamSlugDashboardNfeRouteImport.update({
       id: "/nfe",
       path: "/nfe",
+      getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
+   } as any);
+const AuthenticatedSlugTeamSlugDashboardVaultRoute =
+   AuthenticatedSlugTeamSlugDashboardVaultRouteImport.update({
+      id: "/vault",
+      path: "/vault",
       getParentRoute: () => AuthenticatedSlugTeamSlugDashboardRoute,
    } as any);
 const AuthenticatedSlugTeamSlugDashboardCustomersRoute =
@@ -427,6 +434,7 @@ export interface FileRoutesByFullPath {
    "/$slug/$teamSlug/credit-cards": typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute;
    "/$slug/$teamSlug/customers": typeof AuthenticatedSlugTeamSlugDashboardCustomersRoute;
    "/$slug/$teamSlug/nfe": typeof AuthenticatedSlugTeamSlugDashboardNfeRoute;
+   "/$slug/$teamSlug/vault": typeof AuthenticatedSlugTeamSlugDashboardVaultRoute;
    "/$slug/$teamSlug/settings": typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren;
    "/$slug/$teamSlug/suppliers": typeof AuthenticatedSlugTeamSlugDashboardSuppliersRoute;
    "/$slug/$teamSlug/tags": typeof AuthenticatedSlugTeamSlugDashboardTagsRoute;
@@ -481,6 +489,7 @@ export interface FileRoutesByTo {
    "/$slug/$teamSlug/credit-cards": typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute;
    "/$slug/$teamSlug/customers": typeof AuthenticatedSlugTeamSlugDashboardCustomersRoute;
    "/$slug/$teamSlug/nfe": typeof AuthenticatedSlugTeamSlugDashboardNfeRoute;
+   "/$slug/$teamSlug/vault": typeof AuthenticatedSlugTeamSlugDashboardVaultRoute;
    "/$slug/$teamSlug/suppliers": typeof AuthenticatedSlugTeamSlugDashboardSuppliersRoute;
    "/$slug/$teamSlug/tags": typeof AuthenticatedSlugTeamSlugDashboardTagsRoute;
    "/$slug/$teamSlug/transactions": typeof AuthenticatedSlugTeamSlugDashboardTransactionsRoute;
@@ -539,6 +548,7 @@ export interface FileRoutesById {
    "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards": typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/customers": typeof AuthenticatedSlugTeamSlugDashboardCustomersRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/nfe": typeof AuthenticatedSlugTeamSlugDashboardNfeRoute;
+   "/_authenticated/$slug/$teamSlug/_dashboard/vault": typeof AuthenticatedSlugTeamSlugDashboardVaultRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/settings": typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren;
    "/_authenticated/$slug/$teamSlug/_dashboard/suppliers": typeof AuthenticatedSlugTeamSlugDashboardSuppliersRoute;
    "/_authenticated/$slug/$teamSlug/_dashboard/tags": typeof AuthenticatedSlugTeamSlugDashboardTagsRoute;
@@ -597,6 +607,7 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug/credit-cards"
       | "/$slug/$teamSlug/customers"
       | "/$slug/$teamSlug/nfe"
+      | "/$slug/$teamSlug/vault"
       | "/$slug/$teamSlug/settings"
       | "/$slug/$teamSlug/suppliers"
       | "/$slug/$teamSlug/tags"
@@ -651,6 +662,7 @@ export interface FileRouteTypes {
       | "/$slug/$teamSlug/credit-cards"
       | "/$slug/$teamSlug/customers"
       | "/$slug/$teamSlug/nfe"
+      | "/$slug/$teamSlug/vault"
       | "/$slug/$teamSlug/suppliers"
       | "/$slug/$teamSlug/tags"
       | "/$slug/$teamSlug/transactions"
@@ -708,6 +720,7 @@ export interface FileRouteTypes {
       | "/_authenticated/$slug/$teamSlug/_dashboard/credit-cards"
       | "/_authenticated/$slug/$teamSlug/_dashboard/customers"
       | "/_authenticated/$slug/$teamSlug/_dashboard/nfe"
+      | "/_authenticated/$slug/$teamSlug/_dashboard/vault"
       | "/_authenticated/$slug/$teamSlug/_dashboard/settings"
       | "/_authenticated/$slug/$teamSlug/_dashboard/suppliers"
       | "/_authenticated/$slug/$teamSlug/_dashboard/tags"
@@ -940,6 +953,13 @@ declare module "@tanstack/react-router" {
          path: "/nfe";
          fullPath: "/$slug/$teamSlug/nfe";
          preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardNfeRouteImport;
+         parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
+      };
+      "/_authenticated/$slug/$teamSlug/_dashboard/vault": {
+         id: "/_authenticated/$slug/$teamSlug/_dashboard/vault";
+         path: "/vault";
+         fullPath: "/$slug/$teamSlug/vault";
+         preLoaderRoute: typeof AuthenticatedSlugTeamSlugDashboardVaultRouteImport;
          parentRoute: typeof AuthenticatedSlugTeamSlugDashboardRoute;
       };
       "/_authenticated/$slug/$teamSlug/_dashboard/customers": {
@@ -1233,6 +1253,7 @@ interface AuthenticatedSlugTeamSlugDashboardRouteChildren {
    AuthenticatedSlugTeamSlugDashboardCreditCardsRoute: typeof AuthenticatedSlugTeamSlugDashboardCreditCardsRoute;
    AuthenticatedSlugTeamSlugDashboardCustomersRoute: typeof AuthenticatedSlugTeamSlugDashboardCustomersRoute;
    AuthenticatedSlugTeamSlugDashboardNfeRoute: typeof AuthenticatedSlugTeamSlugDashboardNfeRoute;
+   AuthenticatedSlugTeamSlugDashboardVaultRoute: typeof AuthenticatedSlugTeamSlugDashboardVaultRoute;
    AuthenticatedSlugTeamSlugDashboardSettingsRoute: typeof AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren;
    AuthenticatedSlugTeamSlugDashboardSuppliersRoute: typeof AuthenticatedSlugTeamSlugDashboardSuppliersRoute;
    AuthenticatedSlugTeamSlugDashboardTagsRoute: typeof AuthenticatedSlugTeamSlugDashboardTagsRoute;
@@ -1259,6 +1280,8 @@ const AuthenticatedSlugTeamSlugDashboardRouteChildren: AuthenticatedSlugTeamSlug
          AuthenticatedSlugTeamSlugDashboardCustomersRoute,
       AuthenticatedSlugTeamSlugDashboardNfeRoute:
          AuthenticatedSlugTeamSlugDashboardNfeRoute,
+      AuthenticatedSlugTeamSlugDashboardVaultRoute:
+         AuthenticatedSlugTeamSlugDashboardVaultRoute,
       AuthenticatedSlugTeamSlugDashboardSettingsRoute:
          AuthenticatedSlugTeamSlugDashboardSettingsRouteWithChildren,
       AuthenticatedSlugTeamSlugDashboardSuppliersRoute:
