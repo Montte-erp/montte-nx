@@ -4,6 +4,12 @@ import {
    useQueryClient,
    useSuspenseQueries,
 } from "@tanstack/react-query";
+import {
+   getCoreRowModel,
+   useReactTable,
+   type ColumnDef,
+   type SortingState,
+} from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { useUploadFiles } from "@better-upload/client";
 import { toast } from "@packages/ui/hooks/use-toast";
@@ -18,48 +24,55 @@ import {
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
 import {
+   ContextPanel,
+   ContextPanelContent,
+   ContextPanelHeader,
+   ContextPanelTitle,
+} from "@packages/ui/components/context-panel";
+import {
    Empty,
    EmptyDescription,
    EmptyHeader,
+   EmptyMedia,
    EmptyTitle,
 } from "@packages/ui/components/empty";
 import { Field, FieldError, FieldLabel } from "@packages/ui/components/field";
 import { Input } from "@packages/ui/components/input";
-import {
-   Item,
-   ItemActions,
-   ItemContent,
-   ItemDescription,
-   ItemGroup,
-   ItemMedia,
-   ItemSeparator,
-   ItemTitle,
-} from "@packages/ui/components/item";
-import { Separator } from "@packages/ui/components/separator";
+import { ScrollArea } from "@packages/ui/components/scroll-area";
+import { SearchInput } from "@packages/ui/components/search-input";
 import { Skeleton } from "@packages/ui/components/skeleton";
+import { Table } from "@packages/ui/components/table";
 import { UploadDropzone } from "@packages/ui/components/upload-dropzone";
 import { UploadProgress } from "@packages/ui/components/upload-progress";
-import {
-   Archive,
-   Building2,
-   FileCheck2,
-   FileText,
-   Plus,
-   ReceiptText,
-   Search,
-} from "lucide-react";
-import { Fragment } from "react";
+import { Archive, FileText, FolderPlus, Plus, ReceiptText } from "lucide-react";
+import { DataTableBody } from "@/blocks/data-table/data-table-body";
+import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
+import { DataTableHeader } from "@/blocks/data-table/data-table-header";
+import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
+import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { QueryBoundary } from "@/components/query-boundary";
 import { orpc } from "@/integrations/orpc/client";
 import type { Outputs } from "@/integrations/orpc/client";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useContextPanelInfo } from "../-context-panel/use-context-panel";
 import { DefaultHeader } from "../-layout/default-header";
+import { useMemo } from "react";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/vault",
 )({
    validateSearch: z.object({
-      q: z.string().catch("").default(""),
+      sorting: z
+         .array(z.object({ id: z.string(), desc: z.boolean() }))
+         .catch([])
+         .default([]),
+      columnFilters: z
+         .array(z.object({ id: z.string(), value: z.unknown() }))
+         .catch([])
+         .default([]),
+      page: z.number().int().min(1).catch(1).default(1),
+      pageSize: z.number().int().min(1).max(100).catch(20).default(20),
+      search: z.string().catch("").default(""),
       folderId: z.string().catch("all").default("all"),
    }),
    head: () => ({
@@ -68,10 +81,7 @@ export const Route = createFileRoute(
    component: VaultPage,
 });
 
-type VaultFolderRow = Outputs["vault"]["listFolders"][number];
 type VaultDocumentRow = Outputs["vault"]["listDocuments"]["items"][number];
-type VaultSummary = Outputs["vault"]["getSummary"];
-
 type UploadedVaultFile = {
    fileKey: string;
    name: string;
@@ -89,14 +99,6 @@ const createDocumentSchema = z.object({
    fileSize: z.number().int().nonnegative(),
 });
 
-const folderIcons: Record<string, typeof Archive> = {
-   all: Archive,
-   attachments: Archive,
-   fiscal: ReceiptText,
-   contracts: FileText,
-   company: Building2,
-};
-
 function isRecord(value: unknown): value is Record<string, unknown> {
    return typeof value === "object" && value !== null;
 }
@@ -107,14 +109,114 @@ function getMetadataString(metadata: unknown, key: string) {
    return typeof value === "string" ? value : undefined;
 }
 
-function folderIcon(folder: string) {
-   return folderIcons[folder] ?? FileText;
+const vaultSortIdSchema = z.enum(["title", "status", "source", "updatedAt"]);
+
+function normalizeVaultSorting(sorting: SortingState) {
+   const normalized: Array<{
+      id: z.infer<typeof vaultSortIdSchema>;
+      desc: boolean;
+   }> = [];
+   for (const rule of sorting) {
+      const result = vaultSortIdSchema.safeParse(rule.id);
+      if (!result.success) continue;
+      normalized.push({ id: result.data, desc: rule.desc });
+   }
+   return normalized;
 }
 
 function documentIcon(document: VaultDocumentRow) {
    if (document.source === "fiscal") return ReceiptText;
    if (document.source === "finance") return Archive;
    return FileText;
+}
+
+function buildVaultColumns(): ColumnDef<VaultDocumentRow>[] {
+   return [
+      {
+         accessorKey: "title",
+         header: "Documento",
+         size: 420,
+         cell: ({ row }) => {
+            const document = row.original;
+            const Icon = documentIcon(document);
+            return (
+               <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-muted/40">
+                     <Icon className="size-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                     <div className="truncate font-medium">
+                        {document.title}
+                     </div>
+                     <div className="truncate text-xs text-muted-foreground">
+                        {document.description ||
+                           document.originalFileName ||
+                           "Sem descrição"}
+                     </div>
+                  </div>
+               </div>
+            );
+         },
+      },
+      {
+         accessorKey: "folderName",
+         header: "Pasta",
+         enableSorting: false,
+         size: 180,
+         cell: ({ row }) => (
+            <span className="text-muted-foreground">
+               {row.original.folderName}
+            </span>
+         ),
+      },
+      {
+         accessorKey: "status",
+         header: "Status",
+         size: 140,
+         cell: ({ row }) => (
+            <Badge variant="outline">{row.original.statusLabel}</Badge>
+         ),
+      },
+      {
+         accessorKey: "source",
+         header: "Origem",
+         size: 140,
+         cell: ({ row }) => (
+            <span className="text-muted-foreground">
+               {row.original.sourceLabel}
+            </span>
+         ),
+      },
+      {
+         id: "actions",
+         header: "Ações",
+         enableSorting: false,
+         size: 96,
+         meta: { align: "right" },
+         cell: ({ row }) => {
+            const href = row.original.fileKey
+               ? `/api/files/${row.original.fileKey}`
+               : undefined;
+            return (
+               <Button
+                  asChild={Boolean(href)}
+                  disabled={!href}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+               >
+                  {href ? (
+                     <a href={href} rel="noreferrer" target="_blank">
+                        Abrir
+                     </a>
+                  ) : (
+                     <span>Abrir</span>
+                  )}
+               </Button>
+            );
+         },
+      },
+   ];
 }
 
 function UploadDocumentCredenza() {
@@ -411,95 +513,67 @@ function CreateFolderCredenza() {
    );
 }
 
-function FolderItem({ folder }: { folder: VaultFolderRow }) {
-   const Icon = folderIcon(folder.id);
-   const { folderId: selectedFolder } = Route.useSearch();
+function VaultInfoContent() {
+   return (
+      <ContextPanel className="h-auto shrink-0">
+         <ContextPanelHeader>
+            <ContextPanelTitle>Sobre o Vault</ContextPanelTitle>
+         </ContextPanelHeader>
+         <ContextPanelContent className="flex-none gap-4">
+            <p className="px-2 text-sm text-muted-foreground">
+               O Vault é o GED do Montte. Use para centralizar documentos
+               fiscais, contratos, documentos da empresa e anexos gerados por
+               outros módulos.
+            </p>
+            <div className="grid gap-2 px-2 text-sm">
+               <div>
+                  <div className="font-medium">Pasta Anexos</div>
+                  <p className="text-muted-foreground">
+                     Pasta padrão criada automaticamente. Anexos de lançamentos
+                     financeiros entram aqui.
+                  </p>
+               </div>
+               <div>
+                  <div className="font-medium">Documentos</div>
+                  <p className="text-muted-foreground">
+                     Arquivos são enviados para o bucket e registrados no Vault
+                     com pasta, origem e status.
+                  </p>
+               </div>
+            </div>
+         </ContextPanelContent>
+      </ContextPanel>
+   );
+}
+
+function VaultToolbar({
+   table,
+}: {
+   table: ReturnType<typeof useReactTable<VaultDocumentRow>>;
+}) {
+   const { search } = Route.useSearch();
    const navigate = Route.useNavigate();
-   const active = selectedFolder === folder.id;
-
-   return (
-      <Item size="sm" asChild variant={active ? "muted" : "default"}>
-         <li>
-            <button
-               className="contents text-left"
-               onClick={() =>
-                  navigate({
-                     search: (prev) => ({ ...prev, folderId: folder.id }),
-                     replace: true,
-                  })
-               }
-               type="button"
-            >
-               <ItemMedia>
-                  <Icon className="size-4 text-muted-foreground" />
-               </ItemMedia>
-               <ItemContent>
-                  <ItemTitle>{folder.name}</ItemTitle>
-               </ItemContent>
-               <ItemActions>
-                  <span className="text-sm text-muted-foreground">
-                     {folder.total}
-                  </span>
-               </ItemActions>
-            </button>
-         </li>
-      </Item>
-   );
-}
-
-function DocumentItem({ document }: { document: VaultDocumentRow }) {
-   const Icon = documentIcon(document);
-   const href = document.fileKey ? `/api/files/${document.fileKey}` : undefined;
-
-   return (
-      <Item asChild>
-         <li>
-            <ItemMedia variant="icon">
-               <Icon className="text-muted-foreground" />
-            </ItemMedia>
-            <ItemContent>
-               <ItemTitle>{document.title}</ItemTitle>
-               <ItemDescription>
-                  {document.description || "Documento sem descrição."}
-               </ItemDescription>
-               <ItemDescription>
-                  {document.folderName} · {document.sourceLabel}
-               </ItemDescription>
-            </ItemContent>
-            <ItemActions>
-               <Badge variant="outline">{document.statusLabel}</Badge>
-               <Button
-                  asChild={Boolean(href)}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-               >
-                  {href ? (
-                     <a href={href} rel="noreferrer" target="_blank">
-                        Abrir
-                     </a>
-                  ) : (
-                     <span>Abrir</span>
-                  )}
-               </Button>
-            </ItemActions>
-         </li>
-      </Item>
-   );
-}
-
-function VaultFoldersPanel({ folders }: { folders: VaultFolderRow[] }) {
    const { openCredenza } = useCredenza();
 
    return (
-      <aside className="flex flex-col gap-3 lg:w-64 lg:shrink-0">
-         <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-col gap-1">
-               <h2 className="text-sm font-medium">Pastas</h2>
-               <p className="text-sm text-muted-foreground">
-                  Anexos é a pasta padrão do GED.
-               </p>
-            </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+         <SearchInput
+            aria-label="Buscar documentos"
+            className="max-w-sm"
+            onChange={(event) =>
+               navigate({
+                  search: (prev) => ({
+                     ...prev,
+                     search: event.target.value,
+                     page: 1,
+                  }),
+                  replace: true,
+               })
+            }
+            placeholder="Buscar documentos..."
+            value={search}
+         />
+         <div className="flex flex-wrap items-center gap-2">
             <Button
                onClick={() =>
                   openCredenza({
@@ -508,47 +582,14 @@ function VaultFoldersPanel({ folders }: { folders: VaultFolderRow[] }) {
                   })
                }
                size="icon-sm"
+               tooltip="Nova pasta"
                type="button"
                variant="outline"
             >
-               <Plus className="size-4" />
+               <FolderPlus />
                <span className="sr-only">Nova pasta</span>
             </Button>
-         </div>
-         <ItemGroup className="overflow-hidden rounded-lg border bg-card">
-            {folders.map((folder, index) => (
-               <Fragment key={folder.id}>
-                  {index > 0 ? <ItemSeparator /> : null}
-                  <FolderItem folder={folder} />
-               </Fragment>
-            ))}
-         </ItemGroup>
-      </aside>
-   );
-}
-
-function VaultDocumentsPanel({ documents }: { documents: VaultDocumentRow[] }) {
-   const { openCredenza } = useCredenza();
-   const { q } = Route.useSearch();
-   const navigate = Route.useNavigate();
-
-   return (
-      <section className="flex min-w-0 flex-1 flex-col gap-4">
-         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative min-w-0 flex-1">
-               <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-muted-foreground" />
-               <Input
-                  className="pl-9"
-                  onChange={(event) =>
-                     navigate({
-                        search: (prev) => ({ ...prev, q: event.target.value }),
-                        replace: true,
-                     })
-                  }
-                  placeholder="Buscar documentos..."
-                  value={q}
-               />
-            </div>
+            <DataTableColumnVisibility table={table} />
             <Button
                onClick={() =>
                   openCredenza({
@@ -556,114 +597,99 @@ function VaultDocumentsPanel({ documents }: { documents: VaultDocumentRow[] }) {
                      renderChildren: () => <UploadDocumentCredenza />,
                   })
                }
+               size="icon-sm"
+               tooltip="Novo documento"
                type="button"
+               variant="outline"
             >
-               <Plus className="size-4" />
-               Novo documento
+               <Plus />
+               <span className="sr-only">Novo documento</span>
             </Button>
          </div>
-
-         {documents.length > 0 ? (
-            <ItemGroup className="overflow-hidden rounded-lg border bg-card">
-               {documents.map((document, index) => (
-                  <Fragment key={document.id}>
-                     {index > 0 ? <ItemSeparator /> : null}
-                     <DocumentItem document={document} />
-                  </Fragment>
-               ))}
-            </ItemGroup>
-         ) : (
-            <div className="rounded-lg border bg-card">
-               <Empty>
-                  <EmptyHeader>
-                     <EmptyTitle>Nenhum documento no Vault</EmptyTitle>
-                     <EmptyDescription>
-                        Envie o primeiro arquivo para começar o GED deste
-                        espaço.
-                     </EmptyDescription>
-                  </EmptyHeader>
-               </Empty>
-            </div>
-         )}
-      </section>
-   );
-}
-
-function VaultSummaryPanel({ summary }: { summary: VaultSummary }) {
-   return (
-      <aside className="flex flex-col gap-4 lg:w-72 lg:shrink-0">
-         <div className="rounded-lg border bg-card p-4">
-            <div className="flex items-center gap-3">
-               <div className="flex size-9 items-center justify-center rounded-md border bg-muted/40">
-                  <FileCheck2 className="size-4 text-muted-foreground" />
-               </div>
-               <div>
-                  <div className="font-medium">GED Montte</div>
-                  <div className="text-sm text-muted-foreground">
-                     {summary.total} documento{summary.total === 1 ? "" : "s"}
-                  </div>
-               </div>
-            </div>
-            <Separator className="my-4" />
-            <dl className="grid gap-3 text-sm">
-               {summary.folders.map((folder) => (
-                  <div
-                     className="flex items-center justify-between"
-                     key={folder.id}
-                  >
-                     <dt className="text-muted-foreground">{folder.name}</dt>
-                     <dd className="font-medium">{folder.total}</dd>
-                  </div>
-               ))}
-            </dl>
-         </div>
-
-         <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-            O Vault começa como cofre documental: emissão fiscal, anexos,
-            contratos e documentos da empresa em um só lugar.
-         </div>
-      </aside>
+      </div>
    );
 }
 
 function VaultSkeleton() {
    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-         <Skeleton className="h-72 lg:w-64" />
-         <Skeleton className="h-96 flex-1" />
-         <Skeleton className="h-72 lg:w-72" />
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+         <div className="flex items-center justify-between gap-2">
+            <Skeleton className="h-9 w-full max-w-sm" />
+            <Skeleton className="h-8 w-20" />
+         </div>
+         <Skeleton className="min-h-0 flex-1 rounded-md" />
       </div>
    );
 }
 
 function VaultContent() {
-   const { q, folderId } = Route.useSearch();
+   const search = Route.useSearch();
+   const navigate = Route.useNavigate();
+   const columns = useMemo(() => buildVaultColumns(), []);
    const documentInput = {
-      search: q,
-      folderId: folderId === "all" ? undefined : folderId,
-      page: 1,
-      pageSize: 50,
-      sorting: [{ id: "updatedAt", desc: true }],
-   } satisfies {
-      search: string;
-      folderId?: string;
-      page: number;
-      pageSize: number;
-      sorting: { id: "updatedAt"; desc: boolean }[];
+      search: search.search,
+      folderId: search.folderId === "all" ? undefined : search.folderId,
+      page: search.page,
+      pageSize: search.pageSize,
+      sorting: normalizeVaultSorting(search.sorting),
    };
-   const [foldersQuery, documentsQuery, summaryQuery] = useSuspenseQueries({
+   useContextPanelInfo(() => <VaultInfoContent />);
+
+   const [documentsQuery] = useSuspenseQueries({
       queries: [
-         orpc.vault.listFolders.queryOptions(),
          orpc.vault.listDocuments.queryOptions({ input: documentInput }),
-         orpc.vault.getSummary.queryOptions(),
       ],
+   });
+   const tableUrlState = useTableUrlState({
+      search,
+      totalRows: documentsQuery.data.total,
+      onUpdate: (next) =>
+         navigate({
+            search: (prev) => ({ ...prev, ...next }),
+            replace: true,
+         }),
+   });
+   const table = useReactTable({
+      data: documentsQuery.data.items,
+      columns,
+      getCoreRowModel: getCoreRowModel(),
+      manualFiltering: true,
+      manualPagination: true,
+      manualSorting: true,
+      pageCount: tableUrlState.pageCount,
+      rowCount: documentsQuery.data.total,
+      state: tableUrlState.state,
+      onSortingChange: tableUrlState.onSortingChange,
+      onColumnFiltersChange: tableUrlState.onColumnFiltersChange,
+      onPaginationChange: tableUrlState.onPaginationChange,
+      onRowSelectionChange: tableUrlState.onRowSelectionChange,
+      enableRowSelection: false,
    });
 
    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto lg:flex-row">
-         <VaultFoldersPanel folders={foldersQuery.data} />
-         <VaultDocumentsPanel documents={documentsQuery.data.items} />
-         <VaultSummaryPanel summary={summaryQuery.data} />
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+         <VaultToolbar table={table} />
+         <ScrollArea className="min-h-0 flex-1 rounded-md border bg-card">
+            <Table>
+               <DataTableHeader table={table} />
+               <DataTableBody<VaultDocumentRow> table={table} />
+            </Table>
+            {table.getRowCount() === 0 ? (
+               <Empty>
+                  <EmptyHeader>
+                     <EmptyMedia variant="icon">
+                        <Archive className="size-6" />
+                     </EmptyMedia>
+                     <EmptyTitle>Nenhum documento encontrado</EmptyTitle>
+                     <EmptyDescription>
+                        Envie um arquivo ou ajuste a busca para ver documentos
+                        do Vault.
+                     </EmptyDescription>
+                  </EmptyHeader>
+               </Empty>
+            ) : null}
+         </ScrollArea>
+         <DataTablePagination table={table} />
       </div>
    );
 }
@@ -672,7 +698,7 @@ function VaultPage() {
    return (
       <main className="flex flex-1 min-h-0 flex-col gap-4 overflow-hidden">
          <DefaultHeader
-            description="GED do Montte para organizar documentos fiscais, contratos e anexos do espaço."
+            description="Organize documentos fiscais, contratos e anexos do espaço."
             title="Vault"
          />
          <QueryBoundary
