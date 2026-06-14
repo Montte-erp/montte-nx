@@ -7,3 +7,4 @@ export const platformSchema = pgSchema("platform");
 export const settingsSchema = pgSchema("settings");
 export const agentsSchema = pgSchema("agents");
 export const inboxSchema = pgSchema("inbox");
+export const fiscalSchema = pgSchema("fiscal");

@@ -10,6 +10,7 @@ import * as categoriesRouter from "@modules/classification/router/categories";
 import * as categoriesBulkRouter from "@modules/classification/router/categories-bulk";
 import * as cnpjRouter from "@modules/account/router/cnpj";
 import * as financialSettingsRouter from "@modules/account/router/financial-settings";
+import * as fiscalRouter from "@modules/fiscal/router";
 import * as inboxRouter from "@modules/inbox/router/inbox";
 import * as reportsRouter from "@modules/insights/router/reports";
 import * as relationshipsRouter from "@modules/relationships/router";
@@ -44,6 +45,7 @@ export default {
    cnpj: cnpjRouter,
    contracts: contractsRouter,
    financialSettings: financialSettingsRouter,
+   fiscal: fiscalRouter,
    inbox: inboxRouter,
    reports: reportsRouter,
    onboarding: onboardingRouter,

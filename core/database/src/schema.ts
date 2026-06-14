@@ -7,6 +7,7 @@ export * from "@core/database/schemas/credit-cards";
 export * from "@core/database/schemas/credit-card-statements";
 export * from "@core/database/schemas/credit-card-statement-totals";
 export * from "@core/database/schemas/inbox";
+export * from "@core/database/schemas/fiscal";
 export * from "@core/database/schemas/reports";
 export * from "@core/database/schemas/relationships";
 export * from "@core/database/schemas/workflows";
@@ -24,4 +25,5 @@ export {
    settingsSchema,
    agentsSchema,
    inboxSchema,
+   fiscalSchema,
 } from "@core/database/schemas/schemas";

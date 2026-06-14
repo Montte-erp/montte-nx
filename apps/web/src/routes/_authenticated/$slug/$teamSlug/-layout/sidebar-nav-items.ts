@@ -7,6 +7,7 @@ import {
    CreditCard,
    Inbox,
    PackageCheck,
+   ReceiptText,
    Tag,
    Tags,
    Workflow,
@@ -124,7 +125,7 @@ export const navGroups: NavGroupDef[] = [
    },
    {
       id: "automation",
-      label: "Automação",
+      label: "Ferramentas",
       items: [
          {
             id: "workflows",
@@ -132,6 +133,13 @@ export const navGroups: NavGroupDef[] = [
             icon: Workflow,
             iconColor: "text-violet-500",
             route: "/$slug/$teamSlug/workflows",
+         },
+         {
+            id: "nfe",
+            label: "NF-e",
+            icon: ReceiptText,
+            iconColor: "text-amber-500",
+            route: "/$slug/$teamSlug/nfe",
          },
       ],
    },

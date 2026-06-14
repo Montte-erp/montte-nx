@@ -21,5 +21,6 @@ export default {
       "agents",
       "settings",
       "relationships",
+      "fiscal",
    ],
 } satisfies Config;

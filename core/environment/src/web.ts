@@ -25,6 +25,8 @@ export const env = createEnv({
 
       OPENROUTER_API_KEY: z.string().optional(),
 
+      FISCAL_VAULT_ENCRYPTION_KEY: z.string().optional(),
+
       NODE_ENV: z
          .enum(["development", "production", "test"])
          .optional()

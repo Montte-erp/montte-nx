@@ -27,6 +27,7 @@
          "@modules/cashbook/*": ["../../modules/cashbook/src/*"],
          "@modules/classification/*": ["../../modules/classification/src/*"],
          "@modules/contracts/*": ["../../modules/contracts/src/*"],
+         "@modules/fiscal/*": ["../../modules/fiscal/src/*"],
          "@modules/inbox/*": ["../../modules/inbox/src/*"],
          "@modules/relationships/*": ["../../modules/relationships/src/*"],
          "@modules/workflows/*": ["../../modules/workflows/src/*"]

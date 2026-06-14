@@ -14,6 +14,7 @@ const REQUIRED_SCHEMAS = [
    "agents",
    "settings",
    "relationships",
+   "fiscal",
 ];
 
 const colors = {
