@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { Result, TaggedError } from "better-result";
 import { defineErrorCatalog } from "evlog";
@@ -82,6 +82,7 @@ const createDocumentInput = z.object({
 
 type SortRule = z.infer<typeof listDocumentsInput>["sorting"][number];
 const defaultSort: SortRule = { id: "updatedAt", desc: true };
+const deprecatedDefaultFolderKeys = ["fiscal", "contracts", "company"];
 
 type DbClient = ORPCContextWithOrganization["db"];
 
@@ -90,6 +91,15 @@ async function ensureDefaultFolders(
    organizationId: string,
    teamId: string,
 ) {
+   await db
+      .delete(vaultFolders)
+      .where(
+         and(
+            eq(vaultFolders.teamId, teamId),
+            inArray(vaultFolders.systemKey, deprecatedDefaultFolderKeys),
+         ),
+      );
+
    await db
       .insert(vaultFolders)
       .values(
