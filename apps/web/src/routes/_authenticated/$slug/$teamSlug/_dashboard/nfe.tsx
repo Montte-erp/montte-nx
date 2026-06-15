@@ -1,6 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
    getCoreRowModel,
+   getExpandedRowModel,
+   getGroupedRowModel,
    useReactTable,
    type ColumnDef,
 } from "@tanstack/react-table";
@@ -64,6 +66,7 @@ export const Route = createFileRoute(
          .default([]),
       page: z.number().int().min(1).catch(1).default(1),
       pageSize: z.number().int().min(1).max(100).catch(20).default(20),
+      grouping: z.array(z.string()).catch(["status"]).default(["status"]),
       search: z.string().catch("").default(""),
    }),
    pendingMs: 300,
@@ -82,6 +85,12 @@ const nfeSortIdSchema = z.enum([
    "totalAmountCents",
    "updatedAt",
 ]);
+
+const nfeStatusLabels = {
+   authorized: "Autorizada",
+   cancelled: "Cancelada",
+   received: "Recebida",
+} as const;
 
 const skeletonColumns = buildNfeColumns();
 
@@ -126,7 +135,7 @@ function buildNfeColumns(): ColumnDef<NfeRow>[] {
          accessorKey: "totalAmountCents",
          header: "Valor",
          size: 140,
-         meta: { label: "Valor", align: "right" },
+         meta: { label: "Valor" },
          cell: ({ row }) => formatMoneyFromCents(row.original.totalAmountCents),
       },
       {
@@ -143,7 +152,12 @@ function buildNfeColumns(): ColumnDef<NfeRow>[] {
          accessorKey: "status",
          header: "Status",
          size: 140,
-         meta: { label: "Status" },
+         meta: {
+            label: "Status",
+            formatGroupLabel: (value) =>
+               nfeStatusLabels[String(value) as keyof typeof nfeStatusLabels] ??
+               String(value || "Sem status"),
+         },
          cell: ({ row }) => (
             <Badge variant="outline">{row.original.statusLabel}</Badge>
          ),
@@ -282,7 +296,8 @@ function NfeContent() {
    const { slug, teamSlug } = Route.useParams();
    const { closeCredenza, openCredenza } = useCredenza();
    const didOpenSetup = useRef(false);
-   const { sorting, columnFilters, search, page, pageSize } = Route.useSearch();
+   const { sorting, columnFilters, search, page, pageSize, grouping } =
+      Route.useSearch();
    const layout = useDataTableLayout("fiscal-nfe");
    const searchInput = useDebouncedSearch({
       value: search,
@@ -374,9 +389,9 @@ function NfeContent() {
          size: 132,
          enableSorting: false,
          enableHiding: false,
-         meta: { importIgnore: true, align: "right" },
+         meta: { importIgnore: true },
          cell: ({ row }) => (
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-start gap-2">
                <Button
                   onClick={() =>
                      openCredenza({
@@ -428,7 +443,7 @@ function NfeContent() {
    }, [openCredenza]);
 
    const urlState = useTableUrlState({
-      search: { sorting, columnFilters, page, pageSize },
+      search: { sorting, columnFilters, page, pageSize, grouping },
       totalRows: data.total,
       onUpdate: (next) =>
          navigate({
@@ -447,16 +462,20 @@ function NfeContent() {
       manualFiltering: true,
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
-      state: { ...urlState.state, ...layout.state },
+      groupedColumnMode: false,
+      state: { ...urlState.state, ...layout.state, expanded: true },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
       onRowSelectionChange: urlState.onRowSelectionChange,
+      onGroupingChange: urlState.onGroupingChange,
       onColumnSizingChange: layout.onColumnSizingChange,
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
       getCoreRowModel: getCoreRowModel(),
+      getGroupedRowModel: getGroupedRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
    });
 
    const selectedRows = table.getSelectedRowModel().rows;
@@ -521,7 +540,26 @@ function NfeContent() {
          <ScrollArea className="min-h-0 flex-1 rounded-md border bg-card">
             <Table>
                <DataTableHeader table={table} />
-               <DataTableBody<NfeRow> table={table} />
+               <DataTableBody<NfeRow>
+                  renderGroupLabel={({ row }) => {
+                     const status = String(row.groupingValue || "received");
+                     const label =
+                        nfeStatusLabels[
+                           status as keyof typeof nfeStatusLabels
+                        ] ?? "Sem status";
+                     const count = row.subRows.length;
+                     return (
+                        <div className="flex items-center gap-2">
+                           <span className="font-medium">{label}</span>
+                           <span className="text-muted-foreground text-xs">
+                              {count} {count === 1 ? "item" : "itens"}
+                           </span>
+                        </div>
+                     );
+                  }}
+                  showGroupToggle={false}
+                  table={table}
+               />
             </Table>
             {table.getRowCount() === 0 ? (
                <Empty>
