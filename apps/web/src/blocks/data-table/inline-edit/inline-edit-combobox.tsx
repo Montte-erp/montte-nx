@@ -15,6 +15,7 @@ interface InlineEditComboboxProps {
    placeholder?: string;
    className?: string;
    startContent?: React.ReactNode;
+   renderOption?: (option: ComboboxOption) => React.ReactNode;
    renderSelected?: (option: ComboboxOption) => React.ReactNode;
 }
 
@@ -27,6 +28,7 @@ export function InlineEditCombobox({
    placeholder,
    className,
    startContent,
+   renderOption,
    renderSelected,
 }: InlineEditComboboxProps) {
    const [editing, setEditing] = useState(false);
@@ -99,6 +101,7 @@ export function InlineEditCombobox({
          onOpenChange={setEditing}
          onValueChange={commit}
          options={options}
+         renderOption={renderOption}
          placeholder={placeholder ?? "—"}
          renderSelected={
             renderSelected ??

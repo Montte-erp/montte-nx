@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import type { Table } from "@tanstack/react-table";
@@ -20,6 +21,9 @@ function formatValue(
    }
    if (typeof value === "object") return JSON.stringify(value);
    const raw = String(value);
+   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return dayjs(raw).format("DD/MM/YYYY");
+   }
    return options?.find((option) => option.value === raw)?.label ?? raw;
 }
 
