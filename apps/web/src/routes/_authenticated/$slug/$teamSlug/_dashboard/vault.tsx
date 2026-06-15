@@ -68,6 +68,7 @@ import {
    bulkArchiveVaultDocumentsAction,
    bulkDeleteVaultDocumentsAction,
    createVaultDocumentAction,
+   createVaultDocumentShareLink,
    createVaultFolderAction,
    vaultDocumentsCollectionOptions,
    updateVaultDocumentAction,
@@ -248,6 +249,34 @@ function buildVaultColumns(options?: {
    const onUpdate = options?.onUpdate;
    return [
       {
+         accessorKey: "folderName",
+         header: "Pasta",
+         size: 180,
+         meta: {
+            label: "Pasta",
+            filterVariant: "text",
+            formatGroupLabel: (value) => String(value || "Sem pasta"),
+            isEditable: true,
+            editMode: "inline",
+         },
+         cell: ({ row }) =>
+            onUpdate ? (
+               <InlineEditSelect
+                  ariaLabel="Pasta"
+                  onSave={async (value) =>
+                     onUpdate(row.original.id, { folderId: String(value) })
+                  }
+                  options={folderOptions}
+                  placeholder="Sem pasta"
+                  value={row.original.folderId ?? ""}
+               />
+            ) : (
+               <span className="text-muted-foreground">
+                  {row.original.folderName}
+               </span>
+            ),
+      },
+      {
          accessorKey: "title",
          header: "Nome",
          size: 260,
@@ -300,34 +329,6 @@ function buildVaultColumns(options?: {
                   {row.original.description ||
                      row.original.originalFileName ||
                      "—"}
-               </span>
-            ),
-      },
-      {
-         accessorKey: "folderName",
-         header: "Pasta",
-         size: 180,
-         meta: {
-            label: "Pasta",
-            filterVariant: "text",
-            formatGroupLabel: (value) => String(value || "Sem pasta"),
-            isEditable: true,
-            editMode: "inline",
-         },
-         cell: ({ row }) =>
-            onUpdate ? (
-               <InlineEditSelect
-                  ariaLabel="Pasta"
-                  onSave={async (value) =>
-                     onUpdate(row.original.id, { folderId: String(value) })
-                  }
-                  options={folderOptions}
-                  placeholder="Sem pasta"
-                  value={row.original.folderId ?? ""}
-               />
-            ) : (
-               <span className="text-muted-foreground">
-                  {row.original.folderName}
                </span>
             ),
       },
@@ -734,7 +735,7 @@ function VaultContent() {
    const { queryClient } = Route.useRouteContext();
    const { sorting, columnFilters, search, page, pageSize, grouping } =
       Route.useSearch();
-   const layout = useDataTableLayout("vault-documents");
+   const layout = useDataTableLayout("vault-documents-v2");
 
    const searchInput = useDebouncedSearch({
       value: search,
@@ -791,7 +792,7 @@ function VaultContent() {
          all: sorted,
          rows: sorted.slice(start, start + pageSize),
       };
-   }, [columnFilters, liveDocuments, page, pageSize, search, sorting]);
+   }, [columnFilters, liveDocuments, page, pageSize, sorting]);
 
    const handleUpdateDocument = useCallback(
       async (
@@ -831,6 +832,15 @@ function VaultContent() {
       },
       [documentsCollection],
    );
+
+   const handleCreateShareLink = useCallback(async (documentId: string) => {
+      const { url, expiresIn } = await createVaultDocumentShareLink(documentId);
+      await navigator.clipboard.writeText(url);
+      const minutes = Math.round(expiresIn / 60);
+      toast.success(
+         `Link público copiado. Ele expira em ${minutes} ${minutes === 1 ? "minuto" : "minutos"}.`,
+      );
+   }, []);
 
    const handleDeleteDocuments = useCallback(
       (rows: VaultDocumentRow[]) => {
@@ -944,8 +954,13 @@ function VaultContent() {
                   <Button
                      disabled={!href}
                      onClick={() =>
-                        toast.info(
-                           "Link de compartilhamento público ainda não está disponível.",
+                        handleCreateShareLink(row.original.id).catch(
+                           (error: unknown) =>
+                              toast.error(
+                                 error instanceof Error
+                                    ? error.message
+                                    : "Erro ao gerar link de compartilhamento.",
+                              ),
                         )
                      }
                      size="icon-sm"
@@ -985,6 +1000,7 @@ function VaultContent() {
    }, [
       folders,
       handleArchiveDocuments,
+      handleCreateShareLink,
       handleDeleteDocuments,
       handleUpdateDocument,
       openCredenza,
@@ -1011,6 +1027,7 @@ function VaultContent() {
       manualFiltering: true,
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
+      groupedColumnMode: false,
       state: { ...urlState.state, ...layout.state },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,

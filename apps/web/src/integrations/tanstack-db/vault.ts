@@ -206,6 +206,10 @@ export function bulkDeleteVaultDocumentsAction(
    });
 }
 
+export async function createVaultDocumentShareLink(id: string) {
+   return orpc.vault.createShareLink.call({ id });
+}
+
 export function bulkArchiveVaultDocumentsAction(
    collection: Collection<VaultDocumentRow, string>,
 ) {

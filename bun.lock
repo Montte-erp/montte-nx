@@ -735,6 +735,7 @@
       "name": "@modules/vault",
       "version": "0.1.0",
       "dependencies": {
+        "@better-upload/server": "catalog:files",
         "@core/database": "workspace:*",
         "@core/orpc": "workspace:*",
         "@core/vault": "workspace:*",
