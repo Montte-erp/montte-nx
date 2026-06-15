@@ -664,10 +664,7 @@
       "dependencies": {
         "@core/database": "workspace:*",
         "@core/orpc": "workspace:*",
-        "better-result": "catalog:validation",
-        "dayjs": "catalog:ui",
         "drizzle-orm": "catalog:database",
-        "evlog": "catalog:logging",
         "zod": "catalog:validation",
       },
       "devDependencies": {

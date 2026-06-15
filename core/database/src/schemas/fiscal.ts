@@ -8,7 +8,6 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { organization, team } from "@core/database/schemas/auth";
-import { vaultDocuments } from "@core/database/schemas/vault";
 import { fiscalSchema } from "@core/database/schemas/schemas";
 
 export const fiscalSettings = fiscalSchema.table(
@@ -23,9 +22,7 @@ export const fiscalSettings = fiscalSchema.table(
       teamId: uuid("team_id")
          .notNull()
          .references(() => team.id, { onDelete: "cascade" }),
-      dfeProvider: text("dfe_provider").notNull().default("dfe_kit_jacobina"),
-      dfeEnvironment: text("dfe_environment").notNull().default("homologation"),
-      dfeApiBaseUrl: text("dfe_api_base_url"),
+      dfeProvider: text("dfe_provider").notNull().default("jacobina-saatri"),
       dfeUsername: text("dfe_username"),
       dfePassword: text("dfe_password"),
       municipalRegistration: text("municipal_registration"),
@@ -53,10 +50,6 @@ export const nfeDocuments = fiscalSchema.table(
       teamId: uuid("team_id")
          .notNull()
          .references(() => team.id, { onDelete: "cascade" }),
-      vaultDocumentId: uuid("vault_document_id").references(
-         () => vaultDocuments.id,
-         { onDelete: "set null" },
-      ),
       accessKey: text("access_key").notNull(),
       number: text("number").notNull(),
       series: text("series").notNull(),
@@ -65,10 +58,6 @@ export const nfeDocuments = fiscalSchema.table(
       totalAmountCents: integer("total_amount_cents").notNull().default(0),
       issuedAt: timestamp("issued_at", { withTimezone: true }),
       status: text("status").notNull().default("received"),
-      fileKey: text("file_key"),
-      originalFileName: text("original_file_name"),
-      mimeType: text("mime_type"),
-      fileSize: integer("file_size"),
       createdAt: timestamp("created_at", { withTimezone: true })
          .notNull()
          .defaultNow(),
@@ -81,9 +70,6 @@ export const nfeDocuments = fiscalSchema.table(
       uniqueIndex("nfe_documents_team_access_key_idx").on(
          table.teamId,
          table.accessKey,
-      ),
-      uniqueIndex("nfe_documents_vault_document_id_idx").on(
-         table.vaultDocumentId,
       ),
    ],
 );

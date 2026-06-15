@@ -46,7 +46,7 @@ export const settingsNavSections: SettingsNavSection[] = [
          {
             id: "project-modules",
             title: "Módulos",
-            href: "/$slug/$teamSlug/settings/project/modules",
+            href: "/$slug/$teamSlug/settings/project/modules/nfe",
             icon: Box,
             children: [
                {
@@ -58,7 +58,7 @@ export const settingsNavSections: SettingsNavSection[] = [
                {
                   id: "module-nfe",
                   title: "NF-e",
-                  href: "/$slug/$teamSlug/settings/project/modules",
+                  href: "/$slug/$teamSlug/settings/project/modules/nfe",
                   icon: ReceiptText,
                },
             ],
