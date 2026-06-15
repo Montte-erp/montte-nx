@@ -8,9 +8,14 @@ import {
 } from "@tanstack/react-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { format, of } from "@f-o-t/money";
+import {
+   Autocomplete,
+   type AutocompleteOption,
+} from "@packages/ui/components/autocomplete";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
+import { DatePicker } from "@packages/ui/components/date-picker";
 import {
    Empty,
    EmptyDescription,
@@ -26,6 +31,14 @@ import {
    CredenzaHeader,
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
+import { Input } from "@packages/ui/components/input";
+import { MoneyInput } from "@packages/ui/components/money-input";
+import {
+   SheetDescription,
+   SheetFooter,
+   SheetHeader,
+   SheetTitle,
+} from "@packages/ui/components/sheet";
 import { Table } from "@packages/ui/components/table";
 import { toast } from "@packages/ui/hooks/use-toast";
 import dayjs from "dayjs";
@@ -46,9 +59,10 @@ import {
    useTableBulkActions,
 } from "@/hooks/use-selection-toolbar";
 import { useCredenza } from "@/hooks/use-credenza";
+import { useSheet } from "@/hooks/use-sheet";
 import { orpc, type Outputs } from "@/integrations/orpc/client";
 import { DefaultHeader } from "../-layout/default-header";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type NfeRow = Outputs["fiscal"]["listNfe"]["items"][number];
 
@@ -152,15 +166,13 @@ function buildNfeColumns(): ColumnDef<NfeRow>[] {
          accessorKey: "status",
          header: "Status",
          size: 140,
+         enableHiding: false,
          meta: {
             label: "Status",
             formatGroupLabel: (value) =>
                nfeStatusLabels[String(value) as keyof typeof nfeStatusLabels] ??
                String(value || "Sem status"),
          },
-         cell: ({ row }) => (
-            <Badge variant="outline">{row.original.statusLabel}</Badge>
-         ),
       },
       {
          accessorKey: "accessKey",
@@ -231,37 +243,131 @@ function NfeDetailsCredenza({ document }: { document: NfeRow }) {
    );
 }
 
-function IssueNfeCredenza({ onConfigure }: { onConfigure: () => void }) {
+function IssueNfeSheet() {
+   const { data: suppliers } = useSuspenseQuery(
+      orpc.relationships.list.queryOptions({
+         input: { archived: false, limit: 100, offset: 0, role: "supplier" },
+      }),
+   );
+   const supplierOptions = useMemo<AutocompleteOption[]>(
+      () =>
+         suppliers.data.map((supplier) => ({
+            documentNumber: supplier.documentNumber ?? "",
+            label: supplier.name,
+            value: supplier.id,
+         })),
+      [suppliers.data],
+   );
+   const [supplier, setSupplier] = useState<AutocompleteOption | undefined>();
+   const [issuedAt, setIssuedAt] = useState<Date | undefined>(dayjs().toDate());
+   const [amountCents, setAmountCents] = useState<number | undefined>();
+
    return (
       <>
-         <CredenzaHeader>
-            <CredenzaTitle>Emitir NF-e</CredenzaTitle>
-            <CredenzaDescription>
-               A emissão real será feita pelo portal jacobina-saatri. Configure
-               o portal e use esta ação para iniciar novas emissões assim que o
-               conector de emissão estiver ativo.
-            </CredenzaDescription>
-         </CredenzaHeader>
-         <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
-            O Montte já está preparando a área de emissão. A integração real de
-            envio, XML e DANFE depende do conector fiscal do portal.
+         <SheetHeader>
+            <SheetTitle>Emitir NFS-e</SheetTitle>
+            <SheetDescription>
+               Emissão pelo portal jacobina-saatri via GerarNfse.
+            </SheetDescription>
+         </SheetHeader>
+         <div className="flex-1 space-y-4 overflow-y-auto px-4">
+            <div className="space-y-2">
+               <label className="text-sm font-medium" htmlFor="nfe-supplier">
+                  Fornecedor
+               </label>
+               <Autocomplete
+                  emptyMessage="Nenhum fornecedor encontrado"
+                  id="nfe-supplier"
+                  onValueChange={setSupplier}
+                  options={supplierOptions}
+                  placeholder="Buscar fornecedor cadastrado"
+                  renderOption={(option) => (
+                     <div className="min-w-0">
+                        <div className="truncate font-medium">
+                           {option.label}
+                        </div>
+                        {option.documentNumber ? (
+                           <div className="truncate text-xs text-muted-foreground">
+                              {option.documentNumber}
+                           </div>
+                        ) : null}
+                     </div>
+                  )}
+                  value={supplier}
+               />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+               <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="nfe-series">
+                     Série do RPS
+                  </label>
+                  <Input id="nfe-series" placeholder="Ex.: 1" />
+               </div>
+               <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="nfe-number">
+                     Número do RPS
+                  </label>
+                  <Input
+                     id="nfe-number"
+                     inputMode="numeric"
+                     placeholder="Ex.: 123"
+                  />
+               </div>
+            </div>
+            <div className="space-y-2">
+               <label className="text-sm font-medium" htmlFor="nfe-issued-at">
+                  Data de emissão
+               </label>
+               <DatePicker
+                  className="w-full"
+                  date={issuedAt}
+                  onSelect={setIssuedAt}
+                  placeholder="Selecione a data de emissão"
+               />
+            </div>
+            <div className="space-y-2">
+               <label
+                  className="text-sm font-medium"
+                  htmlFor="nfe-service-code"
+               >
+                  Código do serviço
+               </label>
+               <Input id="nfe-service-code" placeholder="LC 116, ex.: 14.01" />
+            </div>
+            <div className="space-y-2">
+               <label className="text-sm font-medium" htmlFor="nfe-description">
+                  Discriminação do serviço
+               </label>
+               <Input
+                  id="nfe-description"
+                  placeholder="Descrição do serviço prestado"
+               />
+            </div>
+            <div className="space-y-2">
+               <label className="text-sm font-medium" htmlFor="nfe-amount">
+                  Valor do serviço
+               </label>
+               <MoneyInput
+                  id="nfe-amount"
+                  onChange={setAmountCents}
+                  placeholder="0,00"
+                  value={amountCents}
+               />
+            </div>
          </div>
-         <CredenzaFooter>
-            <Button onClick={onConfigure} type="button" variant="outline">
-               Configurar portal
-            </Button>
+         <SheetFooter>
             <Button
                onClick={() =>
                   toast.info(
-                     "Emissão de NF-e em Early Access. O conector real ainda será ativado.",
+                     "Próximo passo: enviar estes dados para o provider jacobina-saatri.",
                   )
                }
                type="button"
             >
                <FileText />
-               Iniciar emissão
+               Emitir pelo portal
             </Button>
-         </CredenzaFooter>
+         </SheetFooter>
       </>
    );
 }
@@ -295,6 +401,7 @@ function NfeContent() {
    const navigate = Route.useNavigate();
    const { slug, teamSlug } = Route.useParams();
    const { closeCredenza, openCredenza } = useCredenza();
+   const { openSheet } = useSheet();
    const didOpenSetup = useRef(false);
    const { sorting, columnFilters, search, page, pageSize, grouping } =
       Route.useSearch();
@@ -347,11 +454,15 @@ function NfeContent() {
    }, [closeCredenza, openCredenza, openSettings, ready]);
 
    const handleIssueNfe = useCallback(() => {
-      openCredenza({
-         className: "sm:max-w-lg",
-         renderChildren: () => <IssueNfeCredenza onConfigure={openSettings} />,
+      if (!ready) {
+         openSettings();
+         return;
+      }
+      openSheet({
+         className: "sm:max-w-xl",
+         renderChildren: () => <IssueNfeSheet />,
       });
-   }, [openCredenza, openSettings]);
+   }, [openSettings, openSheet, ready]);
 
    const columns = useMemo<ColumnDef<NfeRow>[]>(() => {
       const selectColumn: ColumnDef<NfeRow> = {
@@ -463,7 +574,12 @@ function NfeContent() {
       columnResizeMode: "onChange",
       defaultColumn: { minSize: 80, size: 160, maxSize: 600 },
       groupedColumnMode: false,
-      state: { ...urlState.state, ...layout.state, expanded: true },
+      state: {
+         ...urlState.state,
+         ...layout.state,
+         columnVisibility: { ...layout.state.columnVisibility, status: false },
+         expanded: true,
+      },
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,

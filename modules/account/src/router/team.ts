@@ -2,17 +2,50 @@ import dayjs from "dayjs";
 import { and, eq } from "drizzle-orm";
 import { Result } from "better-result";
 import { z } from "zod";
-import { teamMember } from "@core/database/schemas/auth";
+import { team, teamMember } from "@core/database/schemas/auth";
 import { protectedProcedure } from "@core/orpc/server";
 import { AccountError, accountErrors } from "@modules/account/router/errors";
 import { requireOrganizationTeam } from "@modules/account/router/middlewares";
+import { fetchActiveCnpjData } from "@modules/account/router/cnpj-utils";
 
 const teamIdSchema = z.object({ teamId: z.uuid() });
+const updateCnpjInput = z.object({
+   teamId: z.uuid(),
+   cnpj: z.string().regex(/^\d{14}$/, "CNPJ deve conter 14 dígitos"),
+});
 
 export const get = protectedProcedure
    .input(teamIdSchema)
    .use(requireOrganizationTeam, (input) => input.teamId)
    .handler(async ({ context }) => context.organizationTeam);
+
+export const updateCnpj = protectedProcedure
+   .input(updateCnpjInput)
+   .use(requireOrganizationTeam, (input) => input.teamId)
+   .handler(async ({ context, input }) => {
+      const cnpjData = await fetchActiveCnpjData(input.cnpj);
+      const [updated] = await context.db
+         .update(team)
+         .set({ cnpj: input.cnpj, cnpjData, updatedAt: new Date() })
+         .where(
+            and(
+               eq(team.id, input.teamId),
+               eq(team.organizationId, context.organizationId),
+            ),
+         )
+         .returning();
+
+      if (!updated) {
+         throw new AccountError({
+            error: accountErrors.NOT_FOUND(),
+            message: "Espaço não encontrado.",
+            organizationId: context.organizationId,
+            teamId: input.teamId,
+         });
+      }
+
+      return { ...updated, cnpjData };
+   });
 
 export const getMembers = protectedProcedure
    .input(teamIdSchema)
