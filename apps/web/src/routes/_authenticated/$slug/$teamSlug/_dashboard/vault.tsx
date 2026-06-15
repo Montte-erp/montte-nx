@@ -1094,7 +1094,24 @@ function VaultContent() {
             <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                <Table>
                   <DataTableHeader table={table} />
-                  <DataTableBody<VaultDocumentRow> table={table} />
+                  <DataTableBody<VaultDocumentRow>
+                     renderGroupLabel={({ row }) => {
+                        const folderName = String(
+                           row.groupingValue || "Sem pasta",
+                        );
+                        const count = row.subRows.length;
+                        return (
+                           <div className="flex items-center gap-2">
+                              <span className="font-medium">{folderName}</span>
+                              <span className="text-muted-foreground text-xs">
+                                 {count} {count === 1 ? "item" : "itens"}
+                              </span>
+                           </div>
+                        );
+                     }}
+                     showGroupToggle={false}
+                     table={table}
+                  />
                </Table>
                {table.getRowCount() === 0 ? (
                   <Empty>
