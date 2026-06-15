@@ -117,6 +117,7 @@
         "@modules/cashbook": "workspace:*",
         "@modules/classification": "workspace:*",
         "@modules/contracts": "workspace:*",
+        "@modules/fiscal": "workspace:*",
         "@modules/inbox": "workspace:*",
         "@modules/insights": "workspace:*",
         "@modules/relationships": "workspace:*",
@@ -657,6 +658,21 @@
         "vitest": "catalog:testing",
       },
     },
+    "modules/fiscal": {
+      "name": "@modules/fiscal",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "drizzle-orm": "catalog:database",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
     "modules/inbox": {
       "name": "@modules/inbox",
       "version": "0.1.0",
@@ -719,6 +735,7 @@
       "name": "@modules/vault",
       "version": "0.1.0",
       "dependencies": {
+        "@better-upload/server": "catalog:files",
         "@core/database": "workspace:*",
         "@core/orpc": "workspace:*",
         "@core/vault": "workspace:*",
@@ -1857,6 +1874,8 @@
     "@modules/classification": ["@modules/classification@workspace:modules/classification"],
 
     "@modules/contracts": ["@modules/contracts@workspace:modules/contracts"],
+
+    "@modules/fiscal": ["@modules/fiscal@workspace:modules/fiscal"],
 
     "@modules/inbox": ["@modules/inbox@workspace:modules/inbox"],
 

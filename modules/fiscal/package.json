@@ -1,5 +1,5 @@
 {
-   "name": "@modules/vault",
+   "name": "@modules/fiscal",
    "version": "0.1.0",
    "private": true,
    "license": "Apache-2.0",
@@ -15,13 +15,9 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "@better-upload/server": "catalog:files",
       "@core/database": "workspace:*",
       "@core/orpc": "workspace:*",
-      "@core/vault": "workspace:*",
-      "better-result": "catalog:validation",
       "drizzle-orm": "catalog:database",
-      "evlog": "catalog:logging",
       "zod": "catalog:validation"
    },
    "devDependencies": {

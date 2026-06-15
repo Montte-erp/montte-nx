@@ -51,6 +51,7 @@ const REQUIRED_SCHEMAS = [
    "settings",
    "relationships",
    "vault",
+   "fiscal",
 ];
 
 async function ensureSchemas(envFile: string): Promise<void> {

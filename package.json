@@ -244,6 +244,7 @@
       "dev:staging": "bun run scripts/check-env.ts --env staging && nx run-many -t dev:staging --parallel=3 -p web",
       "setup": "bun run scripts/setup.ts",
       "seed:transactions": "bun run scripts/seed-transactions-screenshot.ts",
+      "seed:vault-nfe": "bun run scripts/seed-vault-nfe.ts",
       "dev:all": "bun run scripts/dev-init.ts && nx run-many -t dev --parallel=6",
       "doctor": "bun run scripts/doctor.ts",
       "bucket:cors": "bun run scripts/set-bucket-cors.ts",

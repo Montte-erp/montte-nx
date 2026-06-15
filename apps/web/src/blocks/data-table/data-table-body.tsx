@@ -37,6 +37,7 @@ interface DataTableBodyProps<TData> {
    renderRow?: (props: { row: Row<TData> }) => React.ReactNode;
    renderExpandedRow?: (props: { row: Row<TData> }) => ReactNode;
    renderGroupLabel?: (props: { row: Row<TData> }) => ReactNode;
+   showGroupToggle?: boolean;
    virtualized?: boolean;
    estimateRowHeight?: number;
    overscan?: number;
@@ -81,6 +82,7 @@ export function DataTableBody<TData>({
    renderRow,
    renderExpandedRow,
    renderGroupLabel,
+   showGroupToggle = true,
    virtualized = false,
    estimateRowHeight = 48,
    overscan = 5,
@@ -165,18 +167,24 @@ export function DataTableBody<TData>({
          >
             <TableCell className="py-2 text-foreground" colSpan={colSpan}>
                <div className="flex items-center gap-2">
-                  <Button
-                     aria-label={
-                        row.getIsExpanded()
-                           ? "Recolher grupo"
-                           : "Expandir grupo"
-                     }
-                     onClick={row.getToggleExpandedHandler()}
-                     size="icon-sm"
-                     variant="ghost"
-                  >
-                     {row.getIsExpanded() ? <ChevronDown /> : <ChevronRight />}
-                  </Button>
+                  {showGroupToggle ? (
+                     <Button
+                        aria-label={
+                           row.getIsExpanded()
+                              ? "Recolher grupo"
+                              : "Expandir grupo"
+                        }
+                        onClick={row.getToggleExpandedHandler()}
+                        size="icon-sm"
+                        variant="ghost"
+                     >
+                        {row.getIsExpanded() ? (
+                           <ChevronDown />
+                        ) : (
+                           <ChevronRight />
+                        )}
+                     </Button>
+                  ) : null}
                   {renderGroupLabel
                      ? renderGroupLabel({ row })
                      : defaultGroupLabel(row)}
@@ -184,7 +192,7 @@ export function DataTableBody<TData>({
             </TableCell>
          </TableRow>
       ),
-      [colSpan, renderGroupLabel],
+      [colSpan, renderGroupLabel, showGroupToggle],
    );
 
    const renderDataRow = useCallback(

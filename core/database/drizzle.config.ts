@@ -22,5 +22,6 @@ export default {
       "settings",
       "relationships",
       "vault",
+      "fiscal",
    ],
 } satisfies Config;

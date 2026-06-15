@@ -20,6 +20,7 @@ type VaultWhereInput = {
 type VaultSortId = NonNullable<VaultDocumentsInput["sorting"]>[number]["id"];
 
 type CreateDocumentInput = Inputs["vault"]["createDocument"];
+type UpdateDocumentInput = Inputs["vault"]["updateDocument"];
 type CreateFolderInput = Inputs["vault"]["createFolder"];
 type BulkIdsInput = { ids: string[] };
 
@@ -53,7 +54,8 @@ function parseVaultWhere(options: LoadSubsetOptions | undefined) {
                if (
                   fieldName !== "title" &&
                   fieldName !== "description" &&
-                  fieldName !== "originalFileName"
+                  fieldName !== "originalFileName" &&
+                  fieldName !== "folderName"
                ) {
                   return {};
                }
@@ -156,6 +158,26 @@ export function createVaultDocumentAction(
    });
 }
 
+export function updateVaultDocumentAction(
+   collection: Collection<VaultDocumentRow, string>,
+) {
+   return createOptimisticAction<UpdateDocumentInput>({
+      onMutate: ({ id, patch }) => {
+         collection.update(id, (draft) => {
+            if (patch.title !== undefined) draft.title = patch.title;
+            if (patch.description !== undefined)
+               draft.description = patch.description;
+            if (patch.folderId !== undefined) draft.folderId = patch.folderId;
+         });
+      },
+      mutationFn: async (input) => {
+         const updated = await orpc.vault.updateDocument.call(input);
+         await collection.utils.refetch();
+         return updated;
+      },
+   });
+}
+
 export function createVaultFolderAction(
    collection: Collection<VaultFolderRow, string>,
 ) {
@@ -167,6 +189,25 @@ export function createVaultFolderAction(
          return created;
       },
    });
+}
+
+export function bulkDeleteVaultDocumentsAction(
+   collection: Collection<VaultDocumentRow, string>,
+) {
+   return createOptimisticAction<BulkIdsInput>({
+      onMutate: ({ ids }) => {
+         collection.delete(ids);
+      },
+      mutationFn: async ({ ids }) => {
+         const deleted = await orpc.vault.bulkDeleteDocuments.call({ ids });
+         await collection.utils.refetch();
+         return deleted;
+      },
+   });
+}
+
+export async function createVaultDocumentShareLink(id: string) {
+   return orpc.vault.createShareLink.call({ id });
 }
 
 export function bulkArchiveVaultDocumentsAction(

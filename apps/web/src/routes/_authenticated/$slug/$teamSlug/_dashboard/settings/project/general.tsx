@@ -10,11 +10,11 @@ import {
 } from "@packages/ui/components/item";
 import { Separator } from "@packages/ui/components/separator";
 import { Skeleton } from "@packages/ui/components/skeleton";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
-import { Hash, Loader2, Settings2 } from "lucide-react";
+import { Building2, Hash, Loader2, RefreshCw, Settings2 } from "lucide-react";
 import { Suspense, useState, useTransition } from "react";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { toast } from "@packages/ui/hooks/use-toast";
@@ -129,6 +129,131 @@ function DisplayNameSection({
    );
 }
 
+function onlyDigits(value: string) {
+   return value.replace(/\D/g, "").slice(0, 14);
+}
+
+function formatCnpj(value: string | null | undefined) {
+   const digits = onlyDigits(value ?? "");
+   if (digits.length !== 14) return digits;
+   return digits.replace(
+      /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+      "$1.$2.$3/$4-$5",
+   );
+}
+
+function CompanyDataSection({
+   cnpj,
+   cnpjData,
+   teamId,
+}: {
+   cnpj: string | null | undefined;
+   cnpjData: {
+      cnpj: string;
+      razao_social: string;
+      nome_fantasia: string | null;
+      municipio: string | null;
+      uf: string | null;
+      cnae_fiscal_descricao: string | null;
+      descricao_situacao_cadastral: string;
+      data_inicio_atividade: string;
+   } | null;
+   teamId: string;
+}) {
+   const queryClient = useQueryClient();
+   const [value, setValue] = useState(cnpj ?? cnpjData?.cnpj ?? "");
+   const [isPending, startTransition] = useTransition();
+   const digits = onlyDigits(value);
+   const canSubmit = digits.length === 14 && digits !== (cnpj ?? "");
+
+   function handleSave() {
+      if (!canSubmit) return;
+      startTransition(async () => {
+         try {
+            await orpc.team.updateCnpj.call({ teamId, cnpj: digits });
+            await queryClient.invalidateQueries(
+               orpc.team.get.queryOptions({ input: { teamId } }),
+            );
+            toast.success("Dados da empresa atualizados.");
+         } catch (error) {
+            toast.error(
+               error instanceof Error
+                  ? error.message
+                  : "Não foi possível consultar o CNPJ.",
+            );
+         }
+      });
+   }
+
+   return (
+      <section className="space-y-3">
+         <div>
+            <h2 className="text-lg font-medium">Dados da empresa</h2>
+            <p className="text-sm text-muted-foreground">
+               CNPJ do emitente usado nas rotinas fiscais deste espaço.
+            </p>
+         </div>
+         <div className="max-w-md space-y-3">
+            <Input
+               inputMode="numeric"
+               onChange={(event) => setValue(onlyDigits(event.target.value))}
+               placeholder="00.000.000/0000-00"
+               value={formatCnpj(value)}
+            />
+            <Button disabled={!canSubmit || isPending} onClick={handleSave}>
+               {isPending ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+               ) : (
+                  <RefreshCw className="size-4 mr-2" />
+               )}
+               Consultar e salvar CNPJ
+            </Button>
+         </div>
+         {cnpjData ? (
+            <ItemGroup>
+               <Item variant="muted">
+                  <Building2 className="size-4 text-muted-foreground" />
+                  <ItemContent className="min-w-0">
+                     <ItemTitle>{cnpjData.razao_social}</ItemTitle>
+                     <ItemDescription>
+                        {cnpjData.nome_fantasia ||
+                           "Nome fantasia não informado"}
+                     </ItemDescription>
+                  </ItemContent>
+               </Item>
+               <ItemSeparator />
+               <Item variant="muted">
+                  <Hash className="size-4 text-muted-foreground" />
+                  <ItemContent className="min-w-0">
+                     <ItemTitle>{formatCnpj(cnpjData.cnpj)}</ItemTitle>
+                     <ItemDescription>
+                        {cnpjData.municipio || "Município não informado"}
+                        {cnpjData.uf ? `/${cnpjData.uf}` : ""} ·{" "}
+                        {cnpjData.descricao_situacao_cadastral}
+                     </ItemDescription>
+                  </ItemContent>
+               </Item>
+               <ItemSeparator />
+               <Item variant="muted">
+                  <Settings2 className="size-4 text-muted-foreground" />
+                  <ItemContent className="min-w-0">
+                     <ItemTitle>
+                        {cnpjData.cnae_fiscal_descricao || "CNAE não informado"}
+                     </ItemTitle>
+                     <ItemDescription>
+                        Aberta em{" "}
+                        {dayjs(cnpjData.data_inicio_atividade).format(
+                           "DD/MM/YYYY",
+                        )}
+                     </ItemDescription>
+                  </ItemContent>
+               </Item>
+            </ItemGroup>
+         ) : null}
+      </section>
+   );
+}
+
 function SpaceDetailsSection({
    teamId,
    createdAt,
@@ -187,6 +312,14 @@ function ProjectGeneralContent() {
          />
 
          <DisplayNameSection currentName={teamData.name} teamId={teamId} />
+
+         <Separator />
+
+         <CompanyDataSection
+            cnpj={teamData.cnpj}
+            cnpjData={teamData.cnpjData}
+            teamId={teamId}
+         />
 
          <Separator />
 
