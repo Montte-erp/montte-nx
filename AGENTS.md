@@ -45,6 +45,7 @@ Before working in any Montte area, open the skill for that area first. The skill
 | Implementation in `apps/`, `modules/`, `core/`, `packages/`, or `tooling/` | [implementation](.agents/skills/implementation/SKILL.md) |
 | Review comments, PR findings, reported bugs, diffs, CI findings | [code-review](.agents/skills/code-review/SKILL.md) |
 | UI, UX, product copy, layout, dashboards, forms, sheets, authenticated surfaces | [design](.agents/skills/design/SKILL.md) |
+| React/TSX, hooks, effects, TanStack Start/Query UI changes, React Doctor triage | [react-doctor](.agents/skills/react-doctor/SKILL.md) |
 | Release workflows, release notes, tags, GitHub Releases, recovery | [release](.agents/skills/release/SKILL.md) |
 | Project documentation, `docs/project`, documentation automation | [docs](.agents/skills/docs/SKILL.md) |
 | Blog, LinkedIn, X, release blog posts, marketing drafts | [marketing](.agents/skills/marketing/SKILL.md) |
