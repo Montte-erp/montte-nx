@@ -61,6 +61,7 @@
       "@core/environment": "workspace:*",
       "@core/logging": "workspace:*",
       "@core/utils": "workspace:*",
+      "@core/vault": "workspace:*",
       "@f-o-t/condition-evaluator": "catalog:fot",
       "@f-o-t/money": "catalog:fot",
       "@tanstack/ai": "catalog:tanstack-ai",

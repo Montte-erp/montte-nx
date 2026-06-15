@@ -1,37 +1,26 @@
 {
-   "name": "@modules/cashbook",
+   "name": "@modules/vault",
    "version": "0.1.0",
    "private": true,
    "license": "Apache-2.0",
    "type": "module",
    "exports": {
-      "./router/*": "./src/router/*.ts",
-      "./jobs/*": "./src/jobs/*.ts",
-      "./*": "./src/*.ts"
+      "./router": "./src/router/index.ts"
    },
    "scripts": {
       "check": "oxlint ./src",
-      "format": "oxfmt --write ./src",
-      "format:check": "oxfmt --check ./src",
+      "format": "oxfmt --write ./src __tests__",
+      "format:check": "oxfmt --check ./src __tests__",
       "test": "vitest run --passWithNoTests",
       "typecheck": "tsgo"
    },
    "dependencies": {
       "@core/database": "workspace:*",
-      "@core/logging": "workspace:*",
       "@core/orpc": "workspace:*",
-      "@core/redis": "workspace:*",
-      "@core/utils": "workspace:*",
       "@core/vault": "workspace:*",
-      "@f-o-t/condition-evaluator": "catalog:fot",
-      "@f-o-t/money": "catalog:fot",
-      "@modules/classification": "workspace:*",
-      "@orpc/server": "catalog:orpc",
       "better-result": "catalog:validation",
-      "dayjs": "catalog:ui",
       "drizzle-orm": "catalog:database",
       "evlog": "catalog:logging",
-      "neverthrow": "catalog:validation",
       "zod": "catalog:validation"
    },
    "devDependencies": {

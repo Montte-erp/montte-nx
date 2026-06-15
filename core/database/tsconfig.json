@@ -11,13 +11,17 @@
          "@core/logging/*": ["../../core/logging/src/*"],
          "@core/posthog/*": ["../../core/posthog/src/*"],
          "@core/redis/*": ["../../core/redis/src/*"],
-         "@core/utils/*": ["../../core/utils/src/*"]
+         "@core/utils/*": ["../../core/utils/src/*"],
+         "@core/vault/*": ["../../core/vault/src/*"]
       }
    },
    "include": ["src"],
    "references": [
       {
          "path": "../utils"
+      },
+      {
+         "path": "../vault"
       },
       {
          "path": "../logging"

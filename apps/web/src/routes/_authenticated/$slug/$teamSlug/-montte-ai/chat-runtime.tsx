@@ -161,12 +161,30 @@ function jsonPartResult(value: unknown): unknown {
    return z.json().catch(value).parse(value);
 }
 
+function contentToString(value: unknown): string {
+   if (typeof value === "string") return value;
+   if (!Array.isArray(value)) return JSON.stringify(value);
+   return value
+      .map((part) => {
+         if (
+            typeof part === "object" &&
+            part !== null &&
+            "text" in part &&
+            typeof part.text === "string"
+         ) {
+            return part.text;
+         }
+         return JSON.stringify(part);
+      })
+      .join("\n");
+}
+
 function convertMessageLike(message: ChatMessage): ThreadMessageLike {
    const toolResults = new Map<string, { content: string; error?: string }>();
    for (const part of message.parts) {
       if (part.type !== "tool-result") continue;
       toolResults.set(part.toolCallId, {
-         content: part.content,
+         content: contentToString(part.content),
          ...(part.error && { error: part.error }),
       });
    }

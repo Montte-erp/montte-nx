@@ -5,6 +5,7 @@ import {
    ChartNoAxesCombined,
    Handshake,
    CreditCard,
+   FolderArchive,
    Inbox,
    PackageCheck,
    Tag,
@@ -124,7 +125,7 @@ export const navGroups: NavGroupDef[] = [
    },
    {
       id: "automation",
-      label: "Automação",
+      label: "Ferramentas",
       items: [
          {
             id: "workflows",
@@ -132,6 +133,13 @@ export const navGroups: NavGroupDef[] = [
             icon: Workflow,
             iconColor: "text-violet-500",
             route: "/$slug/$teamSlug/workflows",
+         },
+         {
+            id: "vault",
+            label: "Vault",
+            icon: FolderArchive,
+            iconColor: "text-cyan-500",
+            route: "/$slug/$teamSlug/vault",
          },
       ],
    },

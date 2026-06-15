@@ -20,6 +20,7 @@ export async function setupTestDb() {
       "platform",
       "relationships",
       "contracts",
+      "vault",
    ]);
    await apply();
 
