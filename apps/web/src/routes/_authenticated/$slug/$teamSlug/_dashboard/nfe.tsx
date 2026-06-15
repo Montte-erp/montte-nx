@@ -126,9 +126,9 @@ function buildNfeColumns(): ColumnDef<NfeRow>[] {
       },
       {
          accessorKey: "recipientName",
-         header: "Destinatário",
+         header: "Fornecedor",
          size: 260,
-         meta: { label: "Destinatário" },
+         meta: { label: "Fornecedor" },
          cell: ({ row }) => row.original.recipientName || "—",
       },
       {
@@ -185,7 +185,7 @@ function NfeDetailsCredenza({ document }: { document: NfeRow }) {
             </CredenzaTitle>
             <CredenzaDescription>
                {document.issuerName} →{" "}
-               {document.recipientName || "Destinatário não informado"}
+               {document.recipientName || "Fornecedor não informado"}
             </CredenzaDescription>
          </CredenzaHeader>
          <div className="grid gap-3 rounded-md border bg-muted/20 p-4 text-sm">

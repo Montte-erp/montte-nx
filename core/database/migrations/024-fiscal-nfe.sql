@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS "fiscal"."nfe_documents" (
   "number" text NOT NULL,
   "series" text NOT NULL,
   "issuer_name" text NOT NULL,
+  "supplier_id" uuid NOT NULL REFERENCES "relationships"."parties"("id"),
   "recipient_name" text,
   "total_amount_cents" integer DEFAULT 0 NOT NULL,
   "issued_at" timestamp with time zone,

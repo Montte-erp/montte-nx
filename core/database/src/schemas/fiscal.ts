@@ -8,6 +8,7 @@ import {
    uuid,
 } from "drizzle-orm/pg-core";
 import { organization, team } from "@core/database/schemas/auth";
+import { parties } from "@core/database/schemas/relationships";
 import { fiscalSchema } from "@core/database/schemas/schemas";
 
 export const fiscalSettings = fiscalSchema.table(
@@ -54,6 +55,9 @@ export const nfeDocuments = fiscalSchema.table(
       number: text("number").notNull(),
       series: text("series").notNull(),
       issuerName: text("issuer_name").notNull(),
+      supplierId: uuid("supplier_id")
+         .notNull()
+         .references(() => parties.id),
       recipientName: text("recipient_name"),
       totalAmountCents: integer("total_amount_cents").notNull().default(0),
       issuedAt: timestamp("issued_at", { withTimezone: true }),

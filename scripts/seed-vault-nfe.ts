@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { createDb } from "@core/database/client";
 import { fiscalSettings, nfeDocuments } from "@core/database/schemas/fiscal";
+import { parties } from "@core/database/schemas/relationships";
 import { vaultDocuments, vaultFolders } from "@core/database/schemas/vault";
 import { VAULT_DEFAULT_FOLDER_KEYS } from "@core/vault/catalog";
 import dayjs from "dayjs";
@@ -114,13 +115,41 @@ const VAULT_DOCUMENT_SEEDS = [
    > & { folder: string; daysAgo: number }
 >;
 
+const SUPPLIER_SEEDS = [
+   {
+      name: "Clínica Aurora",
+      documentNumber: "11222333000181",
+      email: "financeiro@clinicaaurora.com.br",
+   },
+   {
+      name: "Oficina Prado",
+      documentNumber: "22333444000172",
+      email: "notas@oficinaprado.com.br",
+   },
+   {
+      name: "Mercado Jardim",
+      documentNumber: "33444555000163",
+      email: "fiscal@mercadojardim.com.br",
+   },
+   {
+      name: "Studio Bento",
+      documentNumber: "44555666000154",
+      email: "admin@studiobento.com.br",
+   },
+   {
+      name: "Contabilidade Norte",
+      documentNumber: "55666777000145",
+      email: "contato@contabilidadenorte.com.br",
+   },
+] as const;
+
 const NFE_SEEDS = [
    {
       accessKey: "29260611222333000181550010000001281000001281",
       number: "000128",
       series: "1",
       issuerName: "Montte Tecnologia LTDA",
-      recipientName: "Clínica Aurora",
+      supplierName: "Clínica Aurora",
       totalAmountCents: 12_900_00,
       issuedAtDaysAgo: 2,
       status: "authorized",
@@ -130,7 +159,7 @@ const NFE_SEEDS = [
       number: "000129",
       series: "1",
       issuerName: "Montte Tecnologia LTDA",
-      recipientName: "Oficina Prado",
+      supplierName: "Oficina Prado",
       totalAmountCents: 8_450_00,
       issuedAtDaysAgo: 4,
       status: "authorized",
@@ -140,7 +169,7 @@ const NFE_SEEDS = [
       number: "000130",
       series: "1",
       issuerName: "Montte Tecnologia LTDA",
-      recipientName: "Mercado Jardim",
+      supplierName: "Mercado Jardim",
       totalAmountCents: 15_300_00,
       issuedAtDaysAgo: 6,
       status: "received",
@@ -150,7 +179,7 @@ const NFE_SEEDS = [
       number: "000131",
       series: "1",
       issuerName: "Montte Tecnologia LTDA",
-      recipientName: "Studio Bento",
+      supplierName: "Studio Bento",
       totalAmountCents: 4_790_00,
       issuedAtDaysAgo: 9,
       status: "cancelled",
@@ -160,7 +189,7 @@ const NFE_SEEDS = [
       number: "000132",
       series: "1",
       issuerName: "Montte Tecnologia LTDA",
-      recipientName: "Contabilidade Norte",
+      supplierName: "Contabilidade Norte",
       totalAmountCents: 2_100_00,
       issuedAtDaysAgo: 13,
       status: "authorized",
@@ -172,10 +201,9 @@ const NFE_SEEDS = [
       | "number"
       | "series"
       | "issuerName"
-      | "recipientName"
       | "totalAmountCents"
       | "status"
-   > & { issuedAtDaysAgo: number }
+   > & { issuedAtDaysAgo: number; supplierName: string }
 >;
 
 function getEnvFilePath(env: string) {
@@ -251,6 +279,38 @@ async function ensureFolder(
    return created;
 }
 
+async function ensureSupplier(
+   db: Db,
+   team: Awaited<ReturnType<typeof resolveTeam>>,
+   seed: (typeof SUPPLIER_SEEDS)[number],
+) {
+   const existing = await db.query.parties.findFirst({
+      where: (fields) =>
+         and(
+            eq(fields.teamId, team.id),
+            eq(fields.role, "supplier"),
+            eq(fields.documentNumber, seed.documentNumber),
+         ),
+      columns: { id: true, name: true },
+   });
+   if (existing) return { ...existing, name: seed.name };
+
+   const [created] = await db
+      .insert(parties)
+      .values({
+         teamId: team.id,
+         role: "supplier",
+         kind: "company",
+         name: seed.name,
+         documentNumber: seed.documentNumber,
+         email: seed.email,
+      })
+      .returning({ id: parties.id, name: parties.name });
+
+   if (!created) throw new Error(`Falha ao criar fornecedor ${seed.name}.`);
+   return created;
+}
+
 async function seedFiscalSettings(
    db: Db,
    team: Awaited<ReturnType<typeof resolveTeam>>,
@@ -295,6 +355,14 @@ async function main() {
    }
    const foldersByName = new Map(
       folders.map((folder) => [folder.name, folder.id]),
+   );
+
+   const suppliers = [];
+   for (const seed of SUPPLIER_SEEDS) {
+      suppliers.push(await ensureSupplier(db, team, seed));
+   }
+   const suppliersByName = new Map(
+      suppliers.map((supplier) => [supplier.name, supplier.id]),
    );
 
    await seedFiscalSettings(db, team);
@@ -345,7 +413,8 @@ async function main() {
             number: seed.number,
             series: seed.series,
             issuerName: seed.issuerName,
-            recipientName: seed.recipientName,
+            supplierId: suppliersByName.get(seed.supplierName),
+            recipientName: seed.supplierName,
             totalAmountCents: seed.totalAmountCents,
             issuedAt: dayjs().subtract(seed.issuedAtDaysAgo, "day").toDate(),
             status: seed.status,

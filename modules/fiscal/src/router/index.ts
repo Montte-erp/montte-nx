@@ -1,7 +1,17 @@
-import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm";
+import {
+   and,
+   asc,
+   count,
+   desc,
+   eq,
+   getTableColumns,
+   ilike,
+   or,
+} from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import { fiscalSettings, nfeDocuments } from "@core/database/schemas/fiscal";
+import { parties } from "@core/database/schemas/relationships";
 import { protectedProcedure } from "@core/orpc/server";
 
 const dfeProviderSchema = z.enum(["jacobina-saatri"]);
@@ -48,6 +58,8 @@ const listNfeInput = z.object({
 
 type SortRule = z.infer<typeof listNfeInput>["sorting"][number];
 
+const nfeDocumentColumns = getTableColumns(nfeDocuments);
+
 const defaultFiscalSettings = {
    dfeProvider: "jacobina-saatri",
    dfeUsername: null,
@@ -71,9 +83,18 @@ function mapFiscalSettings(
    };
 }
 
-function mapNfe(row: typeof nfeDocuments.$inferSelect) {
+function mapNfe(
+   row: typeof nfeDocuments.$inferSelect & { supplierName?: string | null },
+) {
    const status = nfeStatusSchema.catch("received").parse(row.status);
-   return { ...row, status, statusLabel: nfeStatusLabels[status] };
+   const recipientName = row.supplierName ?? row.recipientName;
+   return {
+      ...row,
+      recipientName,
+      supplierName: recipientName,
+      status,
+      statusLabel: nfeStatusLabels[status],
+   };
 }
 
 function buildOrderBy(sorting: SortRule[]): SQL[] {
@@ -144,24 +165,31 @@ export const listNfe = protectedProcedure
       const search = input.search.trim();
       const where = and(
          eq(nfeDocuments.teamId, context.teamId),
+         eq(parties.role, "supplier"),
          search
             ? or(
                  ilike(nfeDocuments.accessKey, `%${search}%`),
                  ilike(nfeDocuments.number, `%${search}%`),
                  ilike(nfeDocuments.issuerName, `%${search}%`),
                  ilike(nfeDocuments.recipientName, `%${search}%`),
+                 ilike(parties.name, `%${search}%`),
               )
             : undefined,
       );
       const [items, totalRows] = await Promise.all([
          context.db
-            .select()
+            .select({ ...nfeDocumentColumns, supplierName: parties.name })
             .from(nfeDocuments)
+            .innerJoin(parties, eq(nfeDocuments.supplierId, parties.id))
             .where(where)
             .orderBy(...buildOrderBy(input.sorting))
             .limit(input.pageSize)
             .offset((input.page - 1) * input.pageSize),
-         context.db.select({ total: count() }).from(nfeDocuments).where(where),
+         context.db
+            .select({ total: count() })
+            .from(nfeDocuments)
+            .innerJoin(parties, eq(nfeDocuments.supplierId, parties.id))
+            .where(where),
       ]);
       return {
          items: items.map(mapNfe),
