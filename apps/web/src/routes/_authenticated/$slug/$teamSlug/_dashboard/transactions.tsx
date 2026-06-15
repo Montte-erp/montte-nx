@@ -8,6 +8,12 @@ import { buildTransactionColumns } from "./-transactions/transactions-columns";
 
 const skeletonColumns = buildTransactionColumns();
 
+const isoDateSearchParam = z
+   .string()
+   .regex(/^\d{4}-\d{2}-\d{2}$/)
+   .catch("")
+   .default("");
+
 const transactionsSearchSchema = z.object({
    sorting: z
       .array(z.object({ id: z.string(), desc: z.boolean() }))
@@ -31,6 +37,8 @@ const transactionsSearchSchema = z.object({
       .default([]),
    bankId: z.string().catch("").default(""),
    relationshipId: z.string().catch("").default(""),
+   dateFrom: isoDateSearchParam,
+   dateTo: isoDateSearchParam,
    grouping: z.array(z.string()).catch([]).default([]),
 });
 

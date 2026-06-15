@@ -1,3 +1,4 @@
+import { Badge } from "@packages/ui/components/badge";
 import { ScrollArea } from "@packages/ui/components/scroll-area";
 import { SearchInput } from "@packages/ui/components/search-input";
 import { Table } from "@packages/ui/components/table";
@@ -5,6 +6,7 @@ import { TooltipProvider } from "@packages/ui/components/tooltip";
 import { Button } from "@packages/ui/components/button";
 import { Calendar } from "@packages/ui/components/calendar";
 import { Checkbox } from "@packages/ui/components/checkbox";
+import { DateRangePicker } from "@packages/ui/components/date-range-picker";
 import {
    Command,
    CommandEmpty,
@@ -59,6 +61,7 @@ import {
    RotateCcw,
    Trash2,
    Undo2,
+   X,
 } from "lucide-react";
 import { Result } from "better-result";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -138,6 +141,14 @@ const routeApi = getRouteApi(
 
 type ImportLookupItem = { id: string; name: string };
 type PaymentMethod = NonNullable<TransactionCreateInput["paymentMethod"]>;
+
+const DATE_RANGE_PRESETS = [
+   { label: "Hoje", value: "today" },
+   { label: "Este mês", value: "this-month" },
+   { label: "Últimos 30 dias", value: "last-30-days" },
+   { label: "Próximo mês", value: "next-month" },
+];
+
 function isTransactionStatus(value: unknown): value is "pending" | "paid" {
    return value === "pending" || value === "paid";
 }
@@ -148,6 +159,34 @@ function getStringColumnFilterValue(
 ): string | undefined {
    const value = filters.find((filter) => filter.id === id)?.value;
    return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function getDateRangePresetRange(value: string) {
+   const today = dayjs();
+   switch (value) {
+      case "today":
+         return { from: today, to: today };
+      case "this-month":
+         return { from: today.startOf("month"), to: today.endOf("month") };
+      case "last-30-days":
+         return { from: today.subtract(29, "day"), to: today };
+      case "next-month": {
+         const nextMonth = today.add(1, "month");
+         return {
+            from: nextMonth.startOf("month"),
+            to: nextMonth.endOf("month"),
+         };
+      }
+      default:
+         return { from: today.startOf("month"), to: today.endOf("month") };
+   }
+}
+
+function formatDateRangeLabel(dateFrom: string, dateTo: string) {
+   const from = dateFrom ? dayjs(dateFrom).format("DD/MM/YYYY") : "início";
+   const to = dateTo ? dayjs(dateTo).format("DD/MM/YYYY") : "hoje";
+   if (dateFrom && dateTo && dateFrom === dateTo) return from;
+   return `${from} – ${to}`;
 }
 
 function normalizeImportLookup(value: unknown): string {
@@ -459,6 +498,8 @@ export function TransactionsList() {
       status,
       search,
       bankId,
+      dateFrom,
+      dateTo,
       relationshipId,
    } = routeApi.useSearch();
 
@@ -508,11 +549,15 @@ export function TransactionsList() {
                overdueOnly: false,
                status: effectiveStatus.length > 0 ? effectiveStatus : undefined,
                bankAccountId: effectiveBankId || undefined,
+               dateFrom: dateFrom || undefined,
+               dateTo: dateTo || undefined,
                relationshipId: effectiveRelationshipId || undefined,
             }),
          ),
       [
          collectionTeamId,
+         dateFrom,
+         dateTo,
          effectiveBankId,
          effectiveRelationshipId,
          effectiveStatus,
@@ -532,11 +577,15 @@ export function TransactionsList() {
                overdueOnly: false,
                status: effectiveStatus.length > 0 ? effectiveStatus : undefined,
                bankAccountId: effectiveBankId || undefined,
+               dateFrom: dateFrom || undefined,
+               dateTo: dateTo || undefined,
                relationshipId: effectiveRelationshipId || undefined,
             }),
          ),
       [
          collectionTeamId,
+         dateFrom,
+         dateTo,
          effectiveBankId,
          effectiveRelationshipId,
          effectiveStatus,
@@ -1855,6 +1904,30 @@ export function TransactionsList() {
    const importApi = useDataImport({ table, config: importConfig });
    importUpdateRef.current = importApi.updateRow;
 
+   const selectedDateRange = useMemo(() => {
+      if (!dateFrom) return null;
+      const from = dayjs(dateFrom);
+      const to = dateTo ? dayjs(dateTo) : from;
+      if (!from.isValid() || !to.isValid()) return null;
+      return { from: from.toDate(), to: to.toDate() };
+   }, [dateFrom, dateTo]);
+   const dateRangeLabel = dateFrom
+      ? formatDateRangeLabel(dateFrom, dateTo || dateFrom)
+      : "Período";
+   const clearDateRange = useCallback(
+      () =>
+         navigate({
+            search: (prev) => ({
+               ...prev,
+               dateFrom: "",
+               dateTo: "",
+               page: 1,
+            }),
+            replace: true,
+         }),
+      [navigate],
+   );
+
    const selectedRows = table.getSelectedRowModel().rows;
    const selectedIds = selectedRows.map((r) => r.original.id);
    const resetSelection = () => table.resetRowSelection();
@@ -1944,6 +2017,37 @@ export function TransactionsList() {
                   value={searchInput.value}
                />
                <div className="flex flex-wrap items-center gap-2">
+                  <DateRangePicker
+                     presets={DATE_RANGE_PRESETS}
+                     selectedRange={selectedDateRange}
+                     onPresetSelect={(preset) => {
+                        const range = getDateRangePresetRange(preset);
+                        navigate({
+                           search: (prev) => ({
+                              ...prev,
+                              dateFrom: range.from.format("YYYY-MM-DD"),
+                              dateTo: range.to.format("YYYY-MM-DD"),
+                              page: 1,
+                           }),
+                           replace: true,
+                        });
+                     }}
+                     onRangeSelect={(range) =>
+                        navigate({
+                           search: (prev) => ({
+                              ...prev,
+                              dateFrom: dayjs(range.from).format("YYYY-MM-DD"),
+                              dateTo: dayjs(range.to).format("YYYY-MM-DD"),
+                              page: 1,
+                           }),
+                           replace: true,
+                        })
+                     }
+                     label={dateRangeLabel}
+                     onClear={dateFrom ? clearDateRange : undefined}
+                     clearIcon={<X className="size-4" />}
+                     triggerClassName="h-8"
+                  />
                   <DataTableColumnVisibility table={table} />
                   <ExportButton table={table} fileBase="lancamentos" />
                   <DataImportButton api={importApi} config={importConfig} />
@@ -1959,7 +2063,29 @@ export function TransactionsList() {
                </div>
             </div>
             <TooltipProvider>
-               <DataTableFilterChips table={table} />
+               <div className="flex flex-wrap items-center gap-2">
+                  {dateFrom ? (
+                     <Badge variant="secondary" className="gap-2 pr-2">
+                        <span className="text-xs">
+                           Período:{" "}
+                           {formatDateRangeLabel(dateFrom, dateTo || dateFrom)}
+                        </span>
+                        <Button
+                           className="size-4"
+                           onClick={clearDateRange}
+                           size="icon"
+                           type="button"
+                           variant="ghost"
+                        >
+                           <X className="size-2" />
+                           <span className="sr-only">
+                              Remover filtro período
+                           </span>
+                        </Button>
+                     </Badge>
+                  ) : null}
+                  <DataTableFilterChips table={table} />
+               </div>
                <ScrollArea className="flex-1 min-h-0 rounded-md border bg-card">
                   <Table
                      className="min-w-max"

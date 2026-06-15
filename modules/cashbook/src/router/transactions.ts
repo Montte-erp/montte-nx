@@ -1100,11 +1100,19 @@ export const bulkRemove = protectedProcedure
    .handler(async ({ context, input }) => {
       const result = await Result.tryPromise({
          try: () =>
-            context.db.transaction(async (tx) =>
-               tx
+            context.db.transaction(async (tx) => {
+               await tx
+                  .delete(transactionRecurrences)
+                  .where(
+                     inArray(
+                        transactionRecurrences.sourceTransactionId,
+                        input.ids,
+                     ),
+                  );
+               return tx
                   .delete(transactions)
-                  .where(inArray(transactions.id, input.ids)),
-            ),
+                  .where(inArray(transactions.id, input.ids));
+            }),
          catch: () =>
             new TransactionRouterError({
                error: transactionRouterErrors.INTERNAL(),
