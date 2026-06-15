@@ -8,6 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { format, of } from "@f-o-t/money";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { Checkbox } from "@packages/ui/components/checkbox";
 import {
    Empty,
    EmptyDescription,
@@ -24,8 +25,9 @@ import {
    CredenzaTitle,
 } from "@packages/ui/components/credenza";
 import { Table } from "@packages/ui/components/table";
+import { toast } from "@packages/ui/hooks/use-toast";
 import dayjs from "dayjs";
-import { ReceiptText } from "lucide-react";
+import { Copy, Download, Eye, FileText, Plus, ReceiptText } from "lucide-react";
 import { z } from "zod";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
@@ -37,10 +39,14 @@ import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
 import { QueryBoundary } from "@/components/query-boundary";
+import {
+   SelectionActionButton,
+   useTableBulkActions,
+} from "@/hooks/use-selection-toolbar";
 import { useCredenza } from "@/hooks/use-credenza";
 import { orpc, type Outputs } from "@/integrations/orpc/client";
 import { DefaultHeader } from "../-layout/default-header";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 type NfeRow = Outputs["fiscal"]["listNfe"]["items"][number];
 
@@ -77,7 +83,7 @@ const nfeSortIdSchema = z.enum([
    "updatedAt",
 ]);
 
-const columns = buildNfeColumns();
+const skeletonColumns = buildNfeColumns();
 
 function formatMoneyFromCents(value: number) {
    return format(of(String(value / 100), "BRL"), "pt-BR");
@@ -156,6 +162,96 @@ function buildNfeColumns(): ColumnDef<NfeRow>[] {
    ];
 }
 
+function NfeDetailsCredenza({ document }: { document: NfeRow }) {
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>
+               NF-e {document.number}/{document.series}
+            </CredenzaTitle>
+            <CredenzaDescription>
+               {document.issuerName} →{" "}
+               {document.recipientName || "Destinatário não informado"}
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <div className="grid gap-3 rounded-md border bg-muted/20 p-4 text-sm">
+            <div className="flex items-center justify-between gap-4">
+               <span className="text-muted-foreground">Status</span>
+               <Badge variant="outline">{document.statusLabel}</Badge>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+               <span className="text-muted-foreground">Valor</span>
+               <span className="font-medium">
+                  {formatMoneyFromCents(document.totalAmountCents)}
+               </span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+               <span className="text-muted-foreground">Emissão</span>
+               <span>
+                  {document.issuedAt
+                     ? dayjs(document.issuedAt).format("DD/MM/YYYY")
+                     : "—"}
+               </span>
+            </div>
+            <div className="grid gap-1">
+               <span className="text-muted-foreground">Chave de acesso</span>
+               <code className="break-all rounded bg-background px-2 py-1 font-mono text-xs">
+                  {document.accessKey}
+               </code>
+            </div>
+         </div>
+         <CredenzaFooter>
+            <Button
+               onClick={() => {
+                  void navigator.clipboard.writeText(document.accessKey);
+                  toast.success("Chave de acesso copiada.");
+               }}
+               type="button"
+               variant="outline"
+            >
+               <Copy />
+               Copiar chave
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
+function IssueNfeCredenza({ onConfigure }: { onConfigure: () => void }) {
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>Emitir NF-e</CredenzaTitle>
+            <CredenzaDescription>
+               A emissão real será feita pelo portal jacobina-saatri. Configure
+               o portal e use esta ação para iniciar novas emissões assim que o
+               conector de emissão estiver ativo.
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <div className="rounded-md border bg-muted/20 p-4 text-sm text-muted-foreground">
+            O Montte já está preparando a área de emissão. A integração real de
+            envio, XML e DANFE depende do conector fiscal do portal.
+         </div>
+         <CredenzaFooter>
+            <Button onClick={onConfigure} type="button" variant="outline">
+               Configurar portal
+            </Button>
+            <Button
+               onClick={() =>
+                  toast.info(
+                     "Emissão de NF-e em Early Access. O conector real ainda será ativado.",
+                  )
+               }
+               type="button"
+            >
+               <FileText />
+               Iniciar emissão
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
 function ConfigurePortalCredenza({ onConfigure }: { onConfigure: () => void }) {
    const { closeCredenza } = useCredenza();
    return (
@@ -215,24 +311,121 @@ function NfeContent() {
       settings.hasDfePassword,
    );
 
+   const openSettings = useCallback(() => {
+      closeCredenza();
+      navigate({
+         params: { slug, teamSlug },
+         to: "/$slug/$teamSlug/settings/project/modules/nfe",
+      });
+   }, [closeCredenza, navigate, slug, teamSlug]);
+
    useEffect(() => {
       if (ready || didOpenSetup.current) return;
       didOpenSetup.current = true;
       openCredenza({
          className: "sm:max-w-md",
          renderChildren: () => (
-            <ConfigurePortalCredenza
-               onConfigure={() =>
-                  navigate({
-                     params: { slug, teamSlug },
-                     to: "/$slug/$teamSlug/settings/project/modules/nfe",
-                  })
-               }
-            />
+            <ConfigurePortalCredenza onConfigure={openSettings} />
          ),
       });
       return closeCredenza;
-   }, [closeCredenza, navigate, openCredenza, ready, slug, teamSlug]);
+   }, [closeCredenza, openCredenza, openSettings, ready]);
+
+   const handleIssueNfe = useCallback(() => {
+      openCredenza({
+         className: "sm:max-w-lg",
+         renderChildren: () => <IssueNfeCredenza onConfigure={openSettings} />,
+      });
+   }, [openCredenza, openSettings]);
+
+   const columns = useMemo<ColumnDef<NfeRow>[]>(() => {
+      const selectColumn: ColumnDef<NfeRow> = {
+         id: "__select",
+         size: 40,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true },
+         header: ({ table }) => (
+            <Checkbox
+               aria-label="Selecionar todas"
+               checked={
+                  table.getIsAllPageRowsSelected()
+                     ? true
+                     : table.getIsSomePageRowsSelected()
+                       ? "indeterminate"
+                       : false
+               }
+               onCheckedChange={(value) =>
+                  table.toggleAllPageRowsSelected(Boolean(value))
+               }
+            />
+         ),
+         cell: ({ row }) => (
+            <Checkbox
+               aria-label="Selecionar NF-e"
+               checked={row.getIsSelected()}
+               disabled={!row.getCanSelect()}
+               onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+            />
+         ),
+      };
+      const actionsColumn: ColumnDef<NfeRow> = {
+         id: "__actions",
+         size: 132,
+         enableSorting: false,
+         enableHiding: false,
+         meta: { importIgnore: true, align: "right" },
+         cell: ({ row }) => (
+            <div className="flex justify-end gap-2">
+               <Button
+                  onClick={() =>
+                     openCredenza({
+                        className: "sm:max-w-xl",
+                        renderChildren: () => (
+                           <NfeDetailsCredenza document={row.original} />
+                        ),
+                     })
+                  }
+                  size="icon-sm"
+                  tooltip="Visualizar"
+                  type="button"
+                  variant="ghost"
+               >
+                  <Eye />
+                  <span className="sr-only">Visualizar</span>
+               </Button>
+               <Button
+                  onClick={() => {
+                     void navigator.clipboard.writeText(row.original.accessKey);
+                     toast.success("Chave de acesso copiada.");
+                  }}
+                  size="icon-sm"
+                  tooltip="Copiar chave"
+                  type="button"
+                  variant="ghost"
+               >
+                  <Copy />
+                  <span className="sr-only">Copiar chave</span>
+               </Button>
+               <Button
+                  onClick={() =>
+                     toast.info(
+                        "Download de XML/DANFE será liberado com a consulta real do portal.",
+                     )
+                  }
+                  size="icon-sm"
+                  tooltip="Baixar XML/DANFE"
+                  type="button"
+                  variant="ghost"
+               >
+                  <Download />
+                  <span className="sr-only">Baixar XML/DANFE</span>
+               </Button>
+            </div>
+         ),
+      };
+      return [selectColumn, ...buildNfeColumns(), actionsColumn];
+   }, [openCredenza]);
 
    const urlState = useTableUrlState({
       search: { sorting, columnFilters, page, pageSize },
@@ -258,11 +451,46 @@ function NfeContent() {
       onSortingChange: urlState.onSortingChange,
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
+      onRowSelectionChange: urlState.onRowSelectionChange,
       onColumnSizingChange: layout.onColumnSizingChange,
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
       getCoreRowModel: getCoreRowModel(),
+   });
+
+   const selectedRows = table.getSelectedRowModel().rows;
+   const selectedNfe = selectedRows.map((row) => row.original);
+   useTableBulkActions({
+      selectedCount: selectedNfe.length,
+      onClear: () => table.resetRowSelection(),
+      children: (
+         <>
+            <SelectionActionButton
+               icon={<Copy className="size-4" />}
+               onClick={() => {
+                  void navigator.clipboard.writeText(
+                     selectedNfe.map((row) => row.accessKey).join("\n"),
+                  );
+                  toast.success(
+                     `${selectedNfe.length} ${selectedNfe.length === 1 ? "chave copiada" : "chaves copiadas"}.`,
+                  );
+               }}
+            >
+               Copiar chaves
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<Download className="size-4" />}
+               onClick={() =>
+                  toast.info(
+                     "Download em lote de XML/DANFE será liberado com a consulta real do portal.",
+                  )
+               }
+            >
+               Baixar XML/DANFE
+            </SelectionActionButton>
+         </>
+      ),
    });
 
    return (
@@ -275,7 +503,19 @@ function NfeContent() {
                placeholder="Buscar NF-e..."
                value={searchInput.value}
             />
-            <DataTableColumnVisibility table={table} />
+            <div className="flex flex-wrap items-center gap-2">
+               <DataTableColumnVisibility table={table} />
+               <Button
+                  onClick={handleIssueNfe}
+                  size="icon-sm"
+                  tooltip="Emitir NF-e"
+                  type="button"
+                  variant="outline"
+               >
+                  <Plus />
+                  <span className="sr-only">Emitir NF-e</span>
+               </Button>
+            </div>
          </div>
          <DataTableFilterChips table={table} />
          <ScrollArea className="min-h-0 flex-1 rounded-md border bg-card">
@@ -304,7 +544,7 @@ function NfeContent() {
 }
 
 function NfeSkeleton() {
-   return <DataTableSkeleton columns={columns} />;
+   return <DataTableSkeleton columns={skeletonColumns} />;
 }
 
 function NfePage() {
