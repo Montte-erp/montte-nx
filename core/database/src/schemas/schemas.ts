@@ -8,3 +8,4 @@ export const settingsSchema = pgSchema("settings");
 export const agentsSchema = pgSchema("agents");
 export const inboxSchema = pgSchema("inbox");
 export const vaultSchema = pgSchema("vault");
+export const fiscalSchema = pgSchema("fiscal");

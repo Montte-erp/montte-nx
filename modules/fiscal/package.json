@@ -1,0 +1,31 @@
+{
+   "name": "@modules/fiscal",
+   "version": "0.1.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "type": "module",
+   "exports": {
+      "./router": "./src/router/index.ts"
+   },
+   "scripts": {
+      "check": "oxlint ./src",
+      "format": "oxfmt --write ./src __tests__",
+      "format:check": "oxfmt --check ./src __tests__",
+      "test": "vitest run --passWithNoTests",
+      "typecheck": "tsgo"
+   },
+   "dependencies": {
+      "@core/database": "workspace:*",
+      "@core/orpc": "workspace:*",
+      "better-result": "catalog:validation",
+      "dayjs": "catalog:ui",
+      "drizzle-orm": "catalog:database",
+      "evlog": "catalog:logging",
+      "zod": "catalog:validation"
+   },
+   "devDependencies": {
+      "@tooling/typescript": "workspace:*",
+      "typescript": "catalog:development",
+      "vitest": "catalog:testing"
+   }
+}

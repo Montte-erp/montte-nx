@@ -15,6 +15,7 @@ const REQUIRED_SCHEMAS = [
    "settings",
    "relationships",
    "vault",
+   "fiscal",
 ];
 
 const colors = {

@@ -117,6 +117,7 @@
         "@modules/cashbook": "workspace:*",
         "@modules/classification": "workspace:*",
         "@modules/contracts": "workspace:*",
+        "@modules/fiscal": "workspace:*",
         "@modules/inbox": "workspace:*",
         "@modules/insights": "workspace:*",
         "@modules/relationships": "workspace:*",
@@ -653,6 +654,24 @@
         "dotenv": "catalog:environment",
         "evalite": "catalog:testing",
         "fflate": "0.4.8",
+        "typescript": "catalog:development",
+        "vitest": "catalog:testing",
+      },
+    },
+    "modules/fiscal": {
+      "name": "@modules/fiscal",
+      "version": "0.1.0",
+      "dependencies": {
+        "@core/database": "workspace:*",
+        "@core/orpc": "workspace:*",
+        "better-result": "catalog:validation",
+        "dayjs": "catalog:ui",
+        "drizzle-orm": "catalog:database",
+        "evlog": "catalog:logging",
+        "zod": "catalog:validation",
+      },
+      "devDependencies": {
+        "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
         "vitest": "catalog:testing",
       },
@@ -1857,6 +1876,8 @@
     "@modules/classification": ["@modules/classification@workspace:modules/classification"],
 
     "@modules/contracts": ["@modules/contracts@workspace:modules/contracts"],
+
+    "@modules/fiscal": ["@modules/fiscal@workspace:modules/fiscal"],
 
     "@modules/inbox": ["@modules/inbox@workspace:modules/inbox"],
 
