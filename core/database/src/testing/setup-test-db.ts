@@ -21,7 +21,6 @@ export async function setupTestDb() {
       "relationships",
       "contracts",
       "vault",
-      "fiscal",
    ]);
    await apply();
 
