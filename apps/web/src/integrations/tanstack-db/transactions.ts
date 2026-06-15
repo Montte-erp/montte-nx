@@ -34,6 +34,8 @@ type TransactionsCollectionOptionsParams = {
    bankAccountId?: string;
    dateFrom?: string;
    dateTo?: string;
+   dueDateFrom?: string;
+   dueDateTo?: string;
    relationshipId?: string;
 };
 
@@ -47,6 +49,8 @@ type TransactionsPageInfoCollectionOptionsParams = {
    bankAccountId?: string;
    dateFrom?: string;
    dateTo?: string;
+   dueDateFrom?: string;
+   dueDateTo?: string;
    relationshipId?: string;
 };
 
@@ -59,6 +63,8 @@ type TransactionsWhereInput = {
    bankAccountId?: string;
    dateFrom?: string;
    dateTo?: string;
+   dueDateFrom?: string;
+   dueDateTo?: string;
    paymentMethod?: string;
    relationshipId?: string;
    overdueOnly?: boolean;
@@ -145,6 +151,9 @@ function parseTransactionsWhere(options: LoadSubsetOptions | undefined) {
                if (key === "date" && typeof value === "string") {
                   return { dateFrom: value, dateTo: value };
                }
+               if (key === "dueDate" && typeof value === "string") {
+                  return { dueDateFrom: value, dueDateTo: value };
+               }
                if (key === "paymentMethod" && typeof value === "string") {
                   return { paymentMethod: value };
                }
@@ -230,6 +239,8 @@ function transactionsInputFromLoadSubsetOptions(
       bankAccountId: where.bankAccountId ?? base.bankAccountId,
       dateFrom: where.dateFrom ?? base.dateFrom,
       dateTo: where.dateTo ?? base.dateTo,
+      dueDateFrom: where.dueDateFrom ?? base.dueDateFrom,
+      dueDateTo: where.dueDateTo ?? base.dueDateTo,
       paymentMethod: where.paymentMethod,
       relationshipId: where.relationshipId ?? base.relationshipId,
       sorting,
@@ -347,6 +358,8 @@ export function transactionsCollectionOptions({
    bankAccountId,
    dateFrom,
    dateTo,
+   dueDateFrom,
+   dueDateTo,
    relationshipId,
 }: TransactionsCollectionOptionsParams) {
    const base = {
@@ -357,6 +370,8 @@ export function transactionsCollectionOptions({
       bankAccountId,
       dateFrom,
       dateTo,
+      dueDateFrom,
+      dueDateTo,
       relationshipId,
    };
    return queryCollectionOptions({
@@ -370,6 +385,8 @@ export function transactionsCollectionOptions({
          bankAccountId ?? "all-accounts",
          dateFrom ?? "open-start",
          dateTo ?? "open-end",
+         dueDateFrom ?? "open-due-start",
+         dueDateTo ?? "open-due-end",
          relationshipId ?? "all-relationships",
       ].join(":"),
       queryKey: (options) =>
@@ -415,6 +432,8 @@ export function transactionsPageInfoCollectionOptions({
    bankAccountId,
    dateFrom,
    dateTo,
+   dueDateFrom,
+   dueDateTo,
    relationshipId,
 }: TransactionsPageInfoCollectionOptionsParams) {
    const id = [
@@ -426,6 +445,8 @@ export function transactionsPageInfoCollectionOptions({
       bankAccountId ?? "all-accounts",
       dateFrom ?? "open-start",
       dateTo ?? "open-end",
+      dueDateFrom ?? "open-due-start",
+      dueDateTo ?? "open-due-end",
       relationshipId ?? "all-relationships",
    ].join(":");
    return queryCollectionOptions({
@@ -441,6 +462,8 @@ export function transactionsPageInfoCollectionOptions({
          bankAccountId,
          dateFrom,
          dateTo,
+         dueDateFrom,
+         dueDateTo,
          relationshipId,
       ],
       queryFn: async () => {
@@ -454,6 +477,8 @@ export function transactionsPageInfoCollectionOptions({
             bankAccountId,
             dateFrom,
             dateTo,
+            dueDateFrom,
+            dueDateTo,
             relationshipId,
          });
          return [{ id, total: result.total }];

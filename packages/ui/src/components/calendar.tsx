@@ -1,5 +1,6 @@
 "use client";
 
+import { ptBR } from "react-day-picker/locale";
 import { Button, buttonVariants } from "@packages/ui/components/button";
 import { cn } from "@packages/ui/lib/utils";
 import {
@@ -29,6 +30,7 @@ function Calendar({
    buttonVariant?: React.ComponentProps<typeof Button>["variant"];
 }) {
    const defaultClassNames = getDefaultClassNames();
+   const calendarLocale = locale ?? ptBR;
 
    return (
       <DayPicker
@@ -167,7 +169,7 @@ function Calendar({
                );
             },
             DayButton: ({ ...props }) => (
-               <CalendarDayButton locale={locale} {...props} />
+               <CalendarDayButton locale={calendarLocale} {...props} />
             ),
             WeekNumber: ({ children, ...props }) => {
                return (
@@ -182,10 +184,10 @@ function Calendar({
          }}
          formatters={{
             formatMonthDropdown: (date) =>
-               date.toLocaleString(locale?.code, { month: "short" }),
+               date.toLocaleString(calendarLocale.code, { month: "short" }),
             ...formatters,
          }}
-         locale={locale}
+         locale={calendarLocale}
          showOutsideDays={showOutsideDays}
          {...props}
       />
