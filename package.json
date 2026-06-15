@@ -305,6 +305,7 @@
       "nx": "22.6.5",
       "oxfmt": "^0.45.0",
       "oxlint": "^1.60.0",
+      "oxlint-plugin-react-doctor": "^0.5.6",
       "typescript": "^6.0.3",
       "vite-tsconfig-paths": "catalog:vite",
       "vitest": "catalog:testing",
