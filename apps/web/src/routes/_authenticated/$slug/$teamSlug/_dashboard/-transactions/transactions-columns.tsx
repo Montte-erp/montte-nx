@@ -33,6 +33,7 @@ import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-se
 import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 import { BankLogoAvatar } from "@/components/bank-logo-avatar";
 import type { Outputs } from "@/integrations/orpc/client";
+import { CATEGORY_ICON_MAP } from "../-categories/category-icons";
 
 export type TransactionRow = Outputs["transactions"]["getAll"]["data"][number];
 
@@ -43,7 +44,13 @@ export type BankAccountOption = {
    bankName?: string | null;
    color?: string | null;
 };
-export type CategoryOption = { id: string; name: string };
+export type CategoryOption = {
+   id: string;
+   name: string;
+   color?: string | null;
+   icon?: string | null;
+   parentId?: string | null;
+};
 export type CreditCardOption = { id: string; name: string };
 export type RelationshipOption = { id: string; name: string };
 
@@ -193,6 +200,39 @@ export function buildTransactionColumns(options?: {
       await options?.onUpdate?.(row.original.id, patch);
    }
 
+   const categoriesById = new Map(
+      (options?.categories ?? []).map((category) => [category.id, category]),
+   );
+   function getCategoryVisual(categoryId: string) {
+      const category = categoriesById.get(categoryId);
+      if (!category) return { color: null, icon: null };
+      if (!category.parentId) {
+         return { color: category.color ?? null, icon: category.icon ?? null };
+      }
+      const parent = categoriesById.get(category.parentId);
+      return {
+         color: parent?.color ?? category.color ?? null,
+         icon: parent?.icon ?? category.icon ?? null,
+      };
+   }
+   function renderCategoryOption(option: { value: string; label: string }) {
+      const visual = getCategoryVisual(option.value);
+      const Icon = visual.icon
+         ? (CATEGORY_ICON_MAP[visual.icon] ?? CATEGORY_ICON_MAP.briefcase)
+         : CATEGORY_ICON_MAP.briefcase;
+      const color = visual.color ?? "#71717a";
+      return (
+         <span className="flex min-w-0 items-center gap-2">
+            <span
+               className="flex size-4 shrink-0 items-center justify-center rounded-full"
+               style={{ backgroundColor: `${color}1f`, color }}
+            >
+               <Icon className="size-3" />
+            </span>
+            <span className="truncate">{option.label}</span>
+         </span>
+      );
+   }
    const categoryOptionsList = (options?.categories ?? []).map((c) => ({
       value: c.id,
       label: c.name,
@@ -265,6 +305,7 @@ export function buildTransactionColumns(options?: {
             bulkEditIcon: CalendarDays,
             bulkEditAction: "Alterar data",
             required: true,
+            filterVariant: "date",
             groupable: true,
             formatGroupLabel: (value) => {
                if (!value) return "Sem data";
@@ -308,6 +349,7 @@ export function buildTransactionColumns(options?: {
             editMode: "inline",
             bulkEditIcon: CalendarClock,
             bulkEditAction: "Alterar vencimento",
+            filterVariant: "date",
          },
          cell: ({ row }) => (
             <InlineEditDate
@@ -345,6 +387,7 @@ export function buildTransactionColumns(options?: {
          header: "Observações",
          meta: {
             label: "Observações",
+            filterVariant: "text",
             cellComponent: "text",
             isEditable: true,
             editMode: "inline",
@@ -467,6 +510,8 @@ export function buildTransactionColumns(options?: {
                      });
                   }}
                   options={categoryOptionsList}
+                  renderOption={renderCategoryOption}
+                  renderSelected={renderCategoryOption}
                   value={
                      categoryOptionsList.find(
                         (o) => o.label === row.original.categoryName,
@@ -679,6 +724,7 @@ export function buildTransactionColumns(options?: {
             bulkEditIcon: CreditCard,
             bulkEditAction: "Definir cartão",
             editOptions: creditCardOptions,
+            filterVariant: "select",
          },
          cell: ({ row }) => (
             <InlineEditCombobox

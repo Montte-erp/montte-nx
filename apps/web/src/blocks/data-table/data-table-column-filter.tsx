@@ -1,14 +1,15 @@
+import dayjs from "dayjs";
 import { Badge } from "@packages/ui/components/badge";
 import { Button } from "@packages/ui/components/button";
+import { DateRangePicker } from "@packages/ui/components/date-range-picker";
 import {
-   DropdownMenu,
-   DropdownMenuContent,
-   DropdownMenuLabel,
-   DropdownMenuRadioGroup,
-   DropdownMenuRadioItem,
-   DropdownMenuSeparator,
-   DropdownMenuTrigger,
-} from "@packages/ui/components/dropdown-menu";
+   Command,
+   CommandEmpty,
+   CommandGroup,
+   CommandInput,
+   CommandItem,
+   CommandList,
+} from "@packages/ui/components/command";
 import { Input } from "@packages/ui/components/input";
 import { NumberInput } from "@packages/ui/components/number-input";
 import {
@@ -19,7 +20,13 @@ import {
 import { cn } from "@packages/ui/lib/utils";
 import type { Column } from "@tanstack/react-table";
 import { Filter, X } from "lucide-react";
-import { forwardRef, useId, type ComponentPropsWithoutRef } from "react";
+import {
+   forwardRef,
+   useId,
+   useMemo,
+   useState,
+   type ComponentPropsWithoutRef,
+} from "react";
 
 function isString(value: unknown): value is string {
    return typeof value === "string";
@@ -30,6 +37,44 @@ function isRangeTuple(
 ): value is [number | undefined, number | undefined] {
    if (!Array.isArray(value) || value.length !== 2) return false;
    return value.every((item) => typeof item === "number" || item === undefined);
+}
+
+function isDateRangeValue(
+   value: unknown,
+): value is { from?: string; to?: string } {
+   return (
+      typeof value === "object" &&
+      value !== null &&
+      ("from" in value || "to" in value)
+   );
+}
+
+const DATE_RANGE_PRESETS = [
+   { label: "Hoje", value: "today" },
+   { label: "Este mês", value: "this-month" },
+   { label: "Últimos 30 dias", value: "last-30-days" },
+   { label: "Próximo mês", value: "next-month" },
+];
+
+function getDateRangePresetRange(value: string) {
+   const today = dayjs();
+   switch (value) {
+      case "today":
+         return { from: today, to: today };
+      case "this-month":
+         return { from: today.startOf("month"), to: today.endOf("month") };
+      case "last-30-days":
+         return { from: today.subtract(29, "day"), to: today };
+      case "next-month": {
+         const nextMonth = today.add(1, "month");
+         return {
+            from: nextMonth.startOf("month"),
+            to: nextMonth.endOf("month"),
+         };
+      }
+      default:
+         return { from: today.startOf("month"), to: today.endOf("month") };
+   }
 }
 
 function hasFilterValue(value: unknown) {
@@ -99,6 +144,7 @@ export function DataTableColumnFilter<TData>({
    if (!variant) return null;
 
    if (variant === "select") return <SelectFilterDropdown column={column} />;
+   if (variant === "date") return <DateRangeFilter column={column} />;
 
    return <FilterPopover column={column} variant={variant} />;
 }
@@ -108,6 +154,8 @@ function SelectFilterDropdown<TData>({
 }: {
    column: Column<TData, unknown>;
 }) {
+   const [open, setOpen] = useState(false);
+   const [search, setSearch] = useState("");
    const value = column.getFilterValue();
    const selected = isString(value) ? value : undefined;
    const active = hasFilterValue(value);
@@ -120,42 +168,65 @@ function SelectFilterDropdown<TData>({
       .sort()
       .map((item) => ({ value: item, label: item }));
    const options = editOptions.length > 0 ? editOptions : facetOptions;
+   const filteredOptions = useMemo(() => {
+      const term = search.trim().toLowerCase();
+      if (!term) return options;
+      return options.filter((option) =>
+         option.label.toLowerCase().includes(term),
+      );
+   }, [options, search]);
 
    return (
-      <DropdownMenu>
-         <DropdownMenuTrigger asChild>
+      <Popover open={open} onOpenChange={setOpen}>
+         <PopoverTrigger asChild>
             <FilterTrigger active={active} label={label} />
-         </DropdownMenuTrigger>
-         <DropdownMenuContent
+         </PopoverTrigger>
+         <PopoverContent
             align="start"
-            className="z-[80] w-56"
+            className="z-[80] w-64 p-0"
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
          >
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
-               Filtrar por {label}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuRadioGroup
-               onValueChange={(next) =>
-                  column.setFilterValue(next === "__all" ? undefined : next)
-               }
-               value={selected ?? "__all"}
-            >
-               <DropdownMenuRadioItem value="__all">
-                  Todos
-               </DropdownMenuRadioItem>
-               {options.map((option) => (
-                  <DropdownMenuRadioItem
-                     key={option.value}
-                     value={option.value}
-                  >
-                     <span className="truncate">{option.label}</span>
-                  </DropdownMenuRadioItem>
-               ))}
-            </DropdownMenuRadioGroup>
-         </DropdownMenuContent>
-      </DropdownMenu>
+            <Command shouldFilter={false}>
+               <CommandInput
+                  onValueChange={setSearch}
+                  placeholder={`Buscar ${label.toLowerCase()}...`}
+                  value={search}
+               />
+               <CommandList>
+                  <CommandEmpty>Nenhuma opção encontrada.</CommandEmpty>
+                  <CommandGroup>
+                     <CommandItem
+                        onSelect={() => {
+                           column.setFilterValue(undefined);
+                           setOpen(false);
+                        }}
+                        value="__all"
+                     >
+                        Todos
+                     </CommandItem>
+                     {filteredOptions.map((option) => (
+                        <CommandItem
+                           key={option.value}
+                           onSelect={() => {
+                              column.setFilterValue(option.value);
+                              setOpen(false);
+                           }}
+                           value={option.label}
+                        >
+                           <span className="truncate">{option.label}</span>
+                           {selected === option.value ? (
+                              <span className="text-xs text-muted-foreground">
+                                 selecionado
+                              </span>
+                           ) : null}
+                        </CommandItem>
+                     ))}
+                  </CommandGroup>
+               </CommandList>
+            </Command>
+         </PopoverContent>
+      </Popover>
    );
 }
 
@@ -164,7 +235,7 @@ function FilterPopover<TData>({
    variant,
 }: {
    column: Column<TData, unknown>;
-   variant: "date" | "range" | "text";
+   variant: "range" | "text";
 }) {
    const value = column.getFilterValue();
    const active = hasFilterValue(value);
@@ -207,9 +278,6 @@ function FilterPopover<TData>({
                {variant === "range" && (
                   <RangeFilter column={column} value={value} />
                )}
-               {variant === "date" && (
-                  <DateFilter column={column} value={value} />
-               )}
             </div>
          </PopoverContent>
       </Popover>
@@ -246,32 +314,48 @@ function TextFilter<TData>({
    );
 }
 
-function DateFilter<TData>({
+function DateRangeFilter<TData>({
    column,
-   value,
 }: {
    column: Column<TData, unknown>;
-   value: unknown;
 }) {
-   const inputId = useId();
+   const value = column.getFilterValue();
+   const active = hasFilterValue(value);
+   const range = isDateRangeValue(value)
+      ? value
+      : isString(value)
+        ? { from: value, to: value }
+        : {};
+   const selectedRange = (() => {
+      if (!range.from) return null;
+      const from = dayjs(range.from);
+      const to = range.to ? dayjs(range.to) : from;
+      if (!from.isValid() || !to.isValid()) return null;
+      return { from: from.toDate(), to: to.toDate() };
+   })();
+
    return (
-      <div className="flex flex-col gap-2">
-         <label
-            className="px-1 text-xs text-muted-foreground"
-            htmlFor={inputId}
-         >
-            Data
-         </label>
-         <Input
-            className="h-8"
-            id={inputId}
-            onChange={(event) =>
-               column.setFilterValue(event.target.value || undefined)
-            }
-            type="date"
-            value={isString(value) ? value : ""}
-         />
-      </div>
+      <DateRangePicker
+         presets={DATE_RANGE_PRESETS}
+         selectedRange={selectedRange}
+         onPresetSelect={(preset) => {
+            const next = getDateRangePresetRange(preset);
+            column.setFilterValue({
+               from: next.from.format("YYYY-MM-DD"),
+               to: next.to.format("YYYY-MM-DD"),
+            });
+         }}
+         onRangeSelect={(next) =>
+            column.setFilterValue({
+               from: dayjs(next.from).format("YYYY-MM-DD"),
+               to: dayjs(next.to).format("YYYY-MM-DD"),
+            })
+         }
+         label=""
+         onClear={active ? () => column.setFilterValue(undefined) : undefined}
+         triggerClassName="size-6"
+         triggerVariant={active ? "secondary" : "ghost"}
+      />
    );
 }
 
