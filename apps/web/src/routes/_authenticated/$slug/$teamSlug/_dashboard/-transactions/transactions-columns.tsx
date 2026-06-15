@@ -341,6 +341,26 @@ export function buildTransactionColumns(options?: {
          ),
       },
       {
+         accessorKey: "description",
+         header: "Observações",
+         meta: {
+            label: "Observações",
+            cellComponent: "text",
+            isEditable: true,
+            editMode: "inline",
+         },
+         cell: ({ row }) => (
+            <InlineEditText
+               ariaLabel="Observações"
+               onSave={async (value) =>
+                  dispatchPatch(row, { description: value.trim() || null })
+               }
+               placeholder="—"
+               value={row.original.description ?? ""}
+            />
+         ),
+      },
+      {
          accessorKey: "type",
          header: "Tipo",
          meta: {
@@ -714,7 +734,7 @@ export function buildTransactionColumns(options?: {
                   ariaLabel="Valor"
                   className={colorClass}
                   onSave={async (value) =>
-                     dispatchPatch(row, { amount: value })
+                     dispatchPatch(row, { amount: value.toFixed(2) })
                   }
                   value={numeric}
                   valueInCents={false}

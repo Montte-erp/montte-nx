@@ -365,6 +365,123 @@ describe("transactions router", () => {
       expect(result.data.map((row) => row.name)).toEqual(["Oculto"]);
    });
 
+   it("getAll filtra lançamentos por intervalo de data", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const ctx = createTestContext(testDb.db, { teamId, organizationId });
+      const [account] = await testDb.db
+         .insert(bankAccounts)
+         .values({
+            teamId,
+            name: "Conta Período",
+            type: "checking",
+            initialBalance: "0",
+            status: "active",
+         })
+         .returning();
+
+      await testDb.db.insert(transactions).values([
+         {
+            teamId,
+            type: "income",
+            name: "Antes",
+            amount: "10.00",
+            date: "2026-05-01",
+            status: "paid",
+            ignored: false,
+            bankAccountId: account.id,
+         },
+         {
+            teamId,
+            type: "income",
+            name: "Dentro",
+            amount: "20.00",
+            date: "2026-05-15",
+            status: "paid",
+            ignored: false,
+            bankAccountId: account.id,
+         },
+         {
+            teamId,
+            type: "income",
+            name: "Depois",
+            amount: "30.00",
+            date: "2026-06-01",
+            status: "paid",
+            ignored: false,
+            bankAccountId: account.id,
+         },
+      ]);
+
+      const result = await call(
+         transactionsListRouter.getAll,
+         { dateFrom: "2026-05-10", dateTo: "2026-05-20" },
+         { context: ctx },
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.data.map((row) => row.name)).toEqual(["Dentro"]);
+   });
+
+   it("bulkRemove exclui lançamento origem de recorrência sem erro de chave estrangeira", async () => {
+      const { teamId, organizationId } = await seedTeam(testDb.db);
+      const ctx = createTestContext(testDb.db, { teamId, organizationId });
+      const [account] = await testDb.db
+         .insert(bankAccounts)
+         .values({
+            teamId,
+            name: "Conta Exclusão Recorrente",
+            type: "checking",
+            initialBalance: "0",
+            status: "active",
+         })
+         .returning();
+
+      await call(
+         transactionsRouter.create,
+         {
+            type: "income",
+            name: "Receita recorrente removível",
+            amount: "150.00",
+            date: "2026-05-15",
+            status: "pending",
+            ignored: false,
+            bankAccountId: account.id,
+            isRecurring: true,
+            recurrenceFrequency: "monthly",
+         },
+         { context: ctx },
+      );
+
+      const rows = await testDb.db
+         .select()
+         .from(transactions)
+         .where(eq(transactions.teamId, teamId))
+         .orderBy(asc(transactions.recurrenceOccurrenceNumber));
+      const source = rows[0];
+      expect(source).toBeDefined();
+      if (!source) return;
+
+      await expect(
+         call(
+            transactionsRouter.bulkRemove,
+            { ids: [source.id] },
+            { context: ctx },
+         ),
+      ).resolves.toEqual({ success: true });
+
+      const recurrences = await testDb.db
+         .select()
+         .from(transactionRecurrences)
+         .where(eq(transactionRecurrences.teamId, teamId));
+      const remainingRows = await testDb.db
+         .select()
+         .from(transactions)
+         .where(eq(transactions.teamId, teamId));
+
+      expect(recurrences).toHaveLength(0);
+      expect(remainingRows.some((row) => row.id === source.id)).toBe(false);
+   });
+
    it("getAll ignora operador textual em coluna monetária", async () => {
       const { teamId, organizationId } = await seedTeam(testDb.db);
       const ctx = createTestContext(testDb.db, { teamId, organizationId });

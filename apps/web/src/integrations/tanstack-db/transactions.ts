@@ -32,6 +32,8 @@ type TransactionsCollectionOptionsParams = {
    overdueOnly?: boolean;
    status?: Array<"pending" | "paid">;
    bankAccountId?: string;
+   dateFrom?: string;
+   dateTo?: string;
    relationshipId?: string;
 };
 
@@ -43,6 +45,8 @@ type TransactionsPageInfoCollectionOptionsParams = {
    overdueOnly?: boolean;
    status?: Array<"pending" | "paid">;
    bankAccountId?: string;
+   dateFrom?: string;
+   dateTo?: string;
    relationshipId?: string;
 };
 
@@ -53,6 +57,8 @@ type TransactionCreateActionInput = {
 
 type TransactionsWhereInput = {
    bankAccountId?: string;
+   dateFrom?: string;
+   dateTo?: string;
    paymentMethod?: string;
    relationshipId?: string;
    overdueOnly?: boolean;
@@ -135,6 +141,9 @@ function parseTransactionsWhere(options: LoadSubsetOptions | undefined) {
                const key = field.join(".");
                if (key === "bankAccountId" && typeof value === "string") {
                   return { bankAccountId: value };
+               }
+               if (key === "date" && typeof value === "string") {
+                  return { dateFrom: value, dateTo: value };
                }
                if (key === "paymentMethod" && typeof value === "string") {
                   return { paymentMethod: value };
@@ -219,6 +228,8 @@ function transactionsInputFromLoadSubsetOptions(
       status:
          where.status && where.status.length > 0 ? where.status : base.status,
       bankAccountId: where.bankAccountId ?? base.bankAccountId,
+      dateFrom: where.dateFrom ?? base.dateFrom,
+      dateTo: where.dateTo ?? base.dateTo,
       paymentMethod: where.paymentMethod,
       relationshipId: where.relationshipId ?? base.relationshipId,
       sorting,
@@ -334,6 +345,8 @@ export function transactionsCollectionOptions({
    overdueOnly,
    status,
    bankAccountId,
+   dateFrom,
+   dateTo,
    relationshipId,
 }: TransactionsCollectionOptionsParams) {
    const base = {
@@ -342,6 +355,8 @@ export function transactionsCollectionOptions({
       overdueOnly,
       status,
       bankAccountId,
+      dateFrom,
+      dateTo,
       relationshipId,
    };
    return queryCollectionOptions({
@@ -353,6 +368,8 @@ export function transactionsCollectionOptions({
          overdueOnly ? "overdue" : "all-dates",
          status?.join(",") ?? "all-status",
          bankAccountId ?? "all-accounts",
+         dateFrom ?? "open-start",
+         dateTo ?? "open-end",
          relationshipId ?? "all-relationships",
       ].join(":"),
       queryKey: (options) =>
@@ -396,6 +413,8 @@ export function transactionsPageInfoCollectionOptions({
    overdueOnly,
    status,
    bankAccountId,
+   dateFrom,
+   dateTo,
    relationshipId,
 }: TransactionsPageInfoCollectionOptionsParams) {
    const id = [
@@ -405,6 +424,8 @@ export function transactionsPageInfoCollectionOptions({
       overdueOnly ? "overdue" : "all-dates",
       status?.join(",") ?? "all-status",
       bankAccountId ?? "all-accounts",
+      dateFrom ?? "open-start",
+      dateTo ?? "open-end",
       relationshipId ?? "all-relationships",
    ].join(":");
    return queryCollectionOptions({
@@ -418,6 +439,8 @@ export function transactionsPageInfoCollectionOptions({
          overdueOnly,
          status,
          bankAccountId,
+         dateFrom,
+         dateTo,
          relationshipId,
       ],
       queryFn: async () => {
@@ -429,6 +452,8 @@ export function transactionsPageInfoCollectionOptions({
             overdueOnly,
             status,
             bankAccountId,
+            dateFrom,
+            dateTo,
             relationshipId,
          });
          return [{ id, total: result.total }];
