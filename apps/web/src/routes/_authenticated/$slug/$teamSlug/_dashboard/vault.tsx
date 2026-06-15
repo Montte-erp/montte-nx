@@ -2,6 +2,8 @@ import { useForm } from "@tanstack/react-form";
 import { createCollection, ilike, or, useLiveQuery } from "@tanstack/react-db";
 import {
    getCoreRowModel,
+   getExpandedRowModel,
+   getGroupedRowModel,
    useReactTable,
    type ColumnDef,
    type ColumnFiltersState,
@@ -11,7 +13,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useUploadFiles } from "@better-upload/client";
 import { toast } from "@packages/ui/hooks/use-toast";
 import { z } from "zod";
-import { Badge } from "@packages/ui/components/badge";
+import {
+   CredenzaDescription,
+   CredenzaFooter,
+   CredenzaHeader,
+   CredenzaTitle,
+} from "@packages/ui/components/credenza";
 import { Button } from "@packages/ui/components/button";
 import { Checkbox } from "@packages/ui/components/checkbox";
 import { Combobox } from "@packages/ui/components/combobox";
@@ -41,13 +48,15 @@ import { SearchInput } from "@packages/ui/components/search-input";
 import { Table } from "@packages/ui/components/table";
 import { UploadDropzone } from "@packages/ui/components/upload-dropzone";
 import { UploadProgress } from "@packages/ui/components/upload-progress";
-import { Archive, ExternalLink, Plus } from "lucide-react";
+import { Archive, Download, Eye, Link, Plus, Trash2 } from "lucide-react";
 import { DataTableBody } from "@/blocks/data-table/data-table-body";
 import { DataTableColumnVisibility } from "@/blocks/data-table/data-table-column-visibility";
 import { DataTableSkeleton } from "@/blocks/data-table/data-table-skeleton";
 import { DataTableFilterChips } from "@/blocks/data-table/data-table-filter-chips";
 import { DataTableHeader } from "@/blocks/data-table/data-table-header";
 import { DataTablePagination } from "@/blocks/data-table/data-table-pagination";
+import { InlineEditSelect } from "@/blocks/data-table/inline-edit/inline-edit-select";
+import { InlineEditText } from "@/blocks/data-table/inline-edit/inline-edit-text";
 import { useDataTableLayout } from "@/blocks/data-table/use-data-table-layout";
 import { useDebouncedSearch } from "@/blocks/data-table/use-debounced-search";
 import { useTableUrlState } from "@/blocks/data-table/use-table-url-state";
@@ -57,16 +66,21 @@ import {
 } from "@/hooks/use-selection-toolbar";
 import {
    bulkArchiveVaultDocumentsAction,
+   bulkDeleteVaultDocumentsAction,
    createVaultDocumentAction,
    createVaultFolderAction,
    vaultDocumentsCollectionOptions,
+   updateVaultDocumentAction,
    vaultFoldersCollectionOptions,
    type VaultDocumentRow,
+   type VaultFolderRow,
 } from "@/integrations/tanstack-db/vault";
+import { useAlertDialog } from "@/hooks/use-alert-dialog";
+import { useCredenza } from "@/hooks/use-credenza";
 import { useSheet } from "@/hooks/use-sheet";
 import { useContextPanelInfo } from "../-context-panel/use-context-panel";
 import { DefaultHeader } from "../-layout/default-header";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 export const Route = createFileRoute(
    "/_authenticated/$slug/$teamSlug/_dashboard/vault",
@@ -82,6 +96,10 @@ export const Route = createFileRoute(
          .default([]),
       page: z.number().int().min(1).catch(1).default(1),
       pageSize: z.number().int().min(1).max(100).catch(20).default(20),
+      grouping: z
+         .array(z.string())
+         .catch(["folderName"])
+         .default(["folderName"]),
       search: z.string().catch("").default(""),
    }),
    pendingMs: 300,
@@ -121,9 +139,8 @@ function getMetadataString(metadata: unknown, key: string) {
 
 const vaultSortIdSchema = z.enum([
    "description",
+   "folderName",
    "title",
-   "status",
-   "source",
    "updatedAt",
 ]);
 
@@ -153,10 +170,8 @@ function compareVaultDocumentValues(
             String(right.description ?? ""),
             "pt-BR",
          );
-      case "source":
-         return left.source.localeCompare(right.source, "pt-BR");
-      case "status":
-         return left.status.localeCompare(right.status, "pt-BR");
+      case "folderName":
+         return left.folderName.localeCompare(right.folderName, "pt-BR");
       case "title":
          return left.title.localeCompare(right.title, "pt-BR");
       case "updatedAt":
@@ -202,8 +217,6 @@ function matchesVaultFilter(
    if (filter.id === "folderName") {
       return document.folderName.toLowerCase().includes(value);
    }
-   if (filter.id === "status") return document.status === value;
-   if (filter.id === "source") return document.source === value;
    return true;
 }
 
@@ -217,61 +230,106 @@ function filterVaultDocuments(
    );
 }
 
-function buildVaultColumns(): ColumnDef<VaultDocumentRow>[] {
+function buildVaultColumns(options?: {
+   folders?: VaultFolderRow[];
+   onUpdate?: (
+      id: string,
+      patch: {
+         title?: string;
+         description?: string | null;
+         folderId?: string | null;
+      },
+   ) => Promise<void>;
+}): ColumnDef<VaultDocumentRow>[] {
+   const folders = options?.folders ?? [];
+   const folderOptions = folders
+      .filter((folder) => folder.id !== "all")
+      .map((folder) => ({ value: folder.id, label: folder.name }));
+   const onUpdate = options?.onUpdate;
    return [
       {
          accessorKey: "title",
          header: "Nome",
          size: 260,
-         meta: { label: "Nome", filterVariant: "text" },
-         cell: ({ row }) => (
-            <span className="truncate font-medium">{row.original.title}</span>
-         ),
+         meta: {
+            label: "Nome",
+            filterVariant: "text",
+            isEditable: true,
+            editMode: "inline",
+         },
+         cell: ({ row }) =>
+            onUpdate ? (
+               <InlineEditText
+                  ariaLabel="Nome"
+                  onSave={async (value) =>
+                     onUpdate(row.original.id, { title: value.trim() })
+                  }
+                  placeholder="Nome do documento"
+                  value={row.original.title}
+               />
+            ) : (
+               <span className="truncate font-medium">
+                  {row.original.title}
+               </span>
+            ),
       },
       {
          accessorKey: "description",
          header: "Descrição",
          size: 320,
-         meta: { label: "Descrição", filterVariant: "text" },
-         cell: ({ row }) => (
-            <span className="truncate text-muted-foreground">
-               {row.original.description ||
-                  row.original.originalFileName ||
-                  "—"}
-            </span>
-         ),
+         meta: {
+            label: "Descrição",
+            filterVariant: "text",
+            isEditable: true,
+            editMode: "inline",
+         },
+         cell: ({ row }) =>
+            onUpdate ? (
+               <InlineEditText
+                  ariaLabel="Descrição"
+                  onSave={async (value) =>
+                     onUpdate(row.original.id, {
+                        description: value.trim() ? value.trim() : null,
+                     })
+                  }
+                  placeholder="—"
+                  value={row.original.description ?? ""}
+               />
+            ) : (
+               <span className="truncate text-muted-foreground">
+                  {row.original.description ||
+                     row.original.originalFileName ||
+                     "—"}
+               </span>
+            ),
       },
       {
          accessorKey: "folderName",
          header: "Pasta",
-         enableSorting: false,
          size: 180,
-         meta: { label: "Pasta", filterVariant: "text" },
-         cell: ({ row }) => (
-            <span className="text-muted-foreground">
-               {row.original.folderName}
-            </span>
-         ),
-      },
-      {
-         accessorKey: "status",
-         header: "Status",
-         size: 140,
-         meta: { label: "Status", filterVariant: "select" },
-         cell: ({ row }) => (
-            <Badge variant="outline">{row.original.statusLabel}</Badge>
-         ),
-      },
-      {
-         accessorKey: "source",
-         header: "Origem",
-         size: 140,
-         meta: { label: "Origem", filterVariant: "select" },
-         cell: ({ row }) => (
-            <span className="text-muted-foreground">
-               {row.original.sourceLabel}
-            </span>
-         ),
+         meta: {
+            label: "Pasta",
+            filterVariant: "text",
+            formatGroupLabel: (value) => String(value || "Sem pasta"),
+            isEditable: true,
+            editMode: "inline",
+         },
+         cell: ({ row }) =>
+            onUpdate ? (
+               <InlineEditSelect
+                  ariaLabel="Pasta"
+                  onSave={async (value) =>
+                     onUpdate(row.original.id, { folderId: String(value) })
+                  }
+                  options={folderOptions}
+                  placeholder="Sem pasta"
+                  value={row.original.folderId ?? ""}
+               />
+            ) : (
+               <span className="text-muted-foreground">
+                  {row.original.folderName}
+               </span>
+            ),
       },
    ];
 }
@@ -543,6 +601,43 @@ function UploadDocumentSheet() {
    );
 }
 
+function VaultDocumentViewer({ document }: { document: VaultDocumentRow }) {
+   const href = document.fileKey ? `/api/files/${document.fileKey}` : undefined;
+   return (
+      <>
+         <CredenzaHeader>
+            <CredenzaTitle>{document.title}</CredenzaTitle>
+            <CredenzaDescription>
+               {document.description ||
+                  document.originalFileName ||
+                  "Documento do Vault"}
+            </CredenzaDescription>
+         </CredenzaHeader>
+         <div className="min-h-[70vh] overflow-hidden rounded-md border bg-muted/20">
+            {href ? (
+               <iframe
+                  className="h-[70vh] w-full"
+                  src={href}
+                  title={document.title}
+               />
+            ) : (
+               <div className="flex h-[70vh] items-center justify-center text-sm text-muted-foreground">
+                  Este documento ainda não tem arquivo.
+               </div>
+            )}
+         </div>
+         <CredenzaFooter>
+            <Button asChild disabled={!href} type="button" variant="outline">
+               <a download href={href ?? "#"}>
+                  <Download />
+                  Baixar
+               </a>
+            </Button>
+         </CredenzaFooter>
+      </>
+   );
+}
+
 function VaultInfoContent() {
    return (
       <ContextPanel className="h-auto shrink-0">
@@ -567,7 +662,7 @@ function VaultInfoContent() {
                   <div className="font-medium">Documentos</div>
                   <p className="text-muted-foreground">
                      Arquivos são enviados para o bucket e registrados no Vault
-                     com pasta, origem e status.
+                     com nome, descrição e pasta.
                   </p>
                </div>
             </div>
@@ -620,10 +715,25 @@ function VaultSkeleton() {
    return <DataTableSkeleton columns={skeletonColumns} />;
 }
 
+function downloadVaultFiles(rows: VaultDocumentRow[]) {
+   for (const row of rows) {
+      if (!row.fileKey) continue;
+      const anchor = document.createElement("a");
+      anchor.href = `/api/files/${row.fileKey}`;
+      anchor.download = row.originalFileName ?? row.title;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+   }
+}
+
 function VaultContent() {
    const navigate = Route.useNavigate();
+   const { openAlertDialog } = useAlertDialog();
+   const { openCredenza } = useCredenza();
    const { queryClient } = Route.useRouteContext();
-   const { sorting, columnFilters, search, page, pageSize } = Route.useSearch();
+   const { sorting, columnFilters, search, page, pageSize, grouping } =
+      Route.useSearch();
    const layout = useDataTableLayout("vault-documents");
 
    const searchInput = useDebouncedSearch({
@@ -639,6 +749,10 @@ function VaultContent() {
       () => createCollection(vaultDocumentsCollectionOptions({ queryClient })),
       [queryClient],
    );
+   const foldersCollection = useMemo(
+      () => createCollection(vaultFoldersCollectionOptions({ queryClient })),
+      [queryClient],
+   );
 
    useContextPanelInfo(() => <VaultInfoContent />);
 
@@ -652,6 +766,7 @@ function VaultContent() {
                   ilike(document.title, pattern),
                   ilike(document.description, pattern),
                   ilike(document.originalFileName, pattern),
+                  ilike(document.folderName, pattern),
                ),
             );
          }
@@ -659,9 +774,17 @@ function VaultContent() {
       },
       [documentsCollection, search],
    );
+   const { data: folders } = useLiveQuery(
+      (q) =>
+         q.from({ folder: foldersCollection }).select(({ folder }) => folder),
+      [foldersCollection],
+   );
 
    const documents = useMemo(() => {
-      const filtered = filterVaultDocuments(liveDocuments, columnFilters);
+      const activeDocuments = liveDocuments.filter(
+         (document) => document.status !== "archived",
+      );
+      const filtered = filterVaultDocuments(activeDocuments, columnFilters);
       const sorted = sortVaultDocuments(filtered, sorting);
       const start = (page - 1) * pageSize;
       return {
@@ -670,8 +793,74 @@ function VaultContent() {
       };
    }, [columnFilters, liveDocuments, page, pageSize, search, sorting]);
 
+   const handleUpdateDocument = useCallback(
+      async (
+         id: string,
+         patch: {
+            title?: string;
+            description?: string | null;
+            folderId?: string | null;
+         },
+      ) => {
+         const updateDocument = updateVaultDocumentAction(documentsCollection);
+         const action = updateDocument({ id, patch });
+         await action.isPersisted.promise;
+      },
+      [documentsCollection],
+   );
+
+   const handleArchiveDocuments = useCallback(
+      (rows: VaultDocumentRow[]) => {
+         const ids = rows.map((row) => row.id);
+         const bulkArchive =
+            bulkArchiveVaultDocumentsAction(documentsCollection);
+         const action = bulkArchive({ ids });
+         action.isPersisted.promise
+            .then(() => {
+               toast.success(
+                  `${ids.length} ${ids.length === 1 ? "documento arquivado" : "documentos arquivados"}.`,
+               );
+            })
+            .catch((error: unknown) =>
+               toast.error(
+                  error instanceof Error
+                     ? error.message
+                     : "Erro ao arquivar documentos.",
+               ),
+            );
+      },
+      [documentsCollection],
+   );
+
+   const handleDeleteDocuments = useCallback(
+      (rows: VaultDocumentRow[]) => {
+         const ids = rows.map((row) => row.id);
+         openAlertDialog({
+            title: `Excluir ${ids.length} ${ids.length === 1 ? "documento" : "documentos"}`,
+            description:
+               "Tem certeza que deseja excluir os documentos selecionados? Esta ação não pode ser desfeita.",
+            actionLabel: "Excluir",
+            cancelLabel: "Cancelar",
+            variant: "destructive",
+            onAction: async () => {
+               const bulkDelete =
+                  bulkDeleteVaultDocumentsAction(documentsCollection);
+               const action = bulkDelete({ ids });
+               await action.isPersisted.promise;
+               toast.success(
+                  `${ids.length} ${ids.length === 1 ? "documento excluído" : "documentos excluídos"}.`,
+               );
+            },
+         });
+      },
+      [documentsCollection, openAlertDialog],
+   );
+
    const columns = useMemo<ColumnDef<VaultDocumentRow>[]>(() => {
-      const base = buildVaultColumns();
+      const base = buildVaultColumns({
+         folders,
+         onUpdate: handleUpdateDocument,
+      });
       const selectColumn: ColumnDef<VaultDocumentRow> = {
          id: "__select",
          size: 40,
@@ -704,7 +893,7 @@ function VaultContent() {
       };
       const actionsColumn: ColumnDef<VaultDocumentRow> = {
          id: "__actions",
-         size: 48,
+         size: 176,
          enableSorting: false,
          enableHiding: false,
          meta: { importIgnore: true, align: "right" },
@@ -713,36 +902,96 @@ function VaultContent() {
                ? `/api/files/${row.original.fileKey}`
                : undefined;
             return (
-               <div className="flex justify-end">
+               <div className="flex justify-end gap-2">
+                  <Button
+                     disabled={!href}
+                     onClick={() =>
+                        openCredenza({
+                           className: "sm:max-w-5xl",
+                           renderChildren: () => (
+                              <VaultDocumentViewer document={row.original} />
+                           ),
+                        })
+                     }
+                     size="icon-sm"
+                     tooltip="Visualizar"
+                     type="button"
+                     variant="ghost"
+                  >
+                     <Eye />
+                     <span className="sr-only">Visualizar</span>
+                  </Button>
                   <Button
                      asChild={Boolean(href)}
                      disabled={!href}
                      size="icon-sm"
-                     tooltip="Abrir documento"
+                     tooltip="Baixar"
                      type="button"
                      variant="ghost"
                   >
                      {href ? (
-                        <a href={href} rel="noreferrer" target="_blank">
-                           <ExternalLink className="size-4" />
-                           <span className="sr-only">Abrir documento</span>
+                        <a download href={href}>
+                           <Download className="size-4" />
+                           <span className="sr-only">Baixar</span>
                         </a>
                      ) : (
                         <span>
-                           <ExternalLink className="size-4" />
-                           <span className="sr-only">Abrir documento</span>
+                           <Download className="size-4" />
+                           <span className="sr-only">Baixar</span>
                         </span>
                      )}
+                  </Button>
+                  <Button
+                     disabled={!href}
+                     onClick={() =>
+                        toast.info(
+                           "Link de compartilhamento público ainda não está disponível.",
+                        )
+                     }
+                     size="icon-sm"
+                     tooltip="Compartilhar"
+                     type="button"
+                     variant="ghost"
+                  >
+                     <Link />
+                     <span className="sr-only">Compartilhar</span>
+                  </Button>
+                  <Button
+                     onClick={() => handleArchiveDocuments([row.original])}
+                     size="icon-sm"
+                     tooltip="Arquivar"
+                     type="button"
+                     variant="ghost"
+                  >
+                     <Archive />
+                     <span className="sr-only">Arquivar</span>
+                  </Button>
+                  <Button
+                     className="text-destructive hover:text-destructive"
+                     onClick={() => handleDeleteDocuments([row.original])}
+                     size="icon-sm"
+                     tooltip="Excluir"
+                     type="button"
+                     variant="ghost"
+                  >
+                     <Trash2 />
+                     <span className="sr-only">Excluir</span>
                   </Button>
                </div>
             );
          },
       };
       return [selectColumn, ...base, actionsColumn];
-   }, []);
+   }, [
+      folders,
+      handleArchiveDocuments,
+      handleDeleteDocuments,
+      handleUpdateDocument,
+      openCredenza,
+   ]);
 
    const urlState = useTableUrlState({
-      search: { sorting, columnFilters, page, pageSize },
+      search: { sorting, columnFilters, page, pageSize, grouping },
       totalRows: documents.all.length,
       onUpdate: (next) =>
          navigate({
@@ -767,43 +1016,54 @@ function VaultContent() {
       onColumnFiltersChange: urlState.onColumnFiltersChange,
       onPaginationChange: urlState.onPaginationChange,
       onRowSelectionChange: urlState.onRowSelectionChange,
+      onGroupingChange: urlState.onGroupingChange,
+      onExpandedChange: urlState.onExpandedChange,
       onColumnSizingChange: layout.onColumnSizingChange,
       onColumnOrderChange: layout.onColumnOrderChange,
       onColumnVisibilityChange: layout.onColumnVisibilityChange,
       onColumnPinningChange: layout.onColumnPinningChange,
       getCoreRowModel: getCoreRowModel(),
+      getGroupedRowModel: getGroupedRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
    });
 
    const selectedRows = table.getSelectedRowModel().rows;
-   const selectedIds = selectedRows.map((row) => row.original.id);
+   const selectedDocuments = selectedRows
+      .filter((row) => !row.getIsGrouped())
+      .map((row) => row.original);
+   const downloadableDocuments = selectedDocuments.filter((row) => row.fileKey);
    useTableBulkActions({
-      selectedCount: selectedRows.length,
+      selectedCount: selectedDocuments.length,
       onClear: () => table.resetRowSelection(),
       children: (
-         <SelectionActionButton
-            icon={<Archive className="size-4" />}
-            onClick={() => {
-               const bulkArchive =
-                  bulkArchiveVaultDocumentsAction(documentsCollection);
-               const action = bulkArchive({ ids: selectedIds });
-               action.isPersisted.promise
-                  .then(() => {
-                     toast.success(
-                        `${selectedIds.length} ${selectedIds.length === 1 ? "documento arquivado" : "documentos arquivados"}.`,
-                     );
-                     table.resetRowSelection();
-                  })
-                  .catch((error: unknown) =>
-                     toast.error(
-                        error instanceof Error
-                           ? error.message
-                           : "Erro ao arquivar documentos.",
-                     ),
-                  );
-            }}
-         >
-            Arquivar
-         </SelectionActionButton>
+         <>
+            <SelectionActionButton
+               disabled={downloadableDocuments.length === 0}
+               icon={<Download className="size-4" />}
+               onClick={() => downloadVaultFiles(downloadableDocuments)}
+            >
+               Baixar
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<Archive className="size-4" />}
+               onClick={() => {
+                  handleArchiveDocuments(selectedDocuments);
+                  table.resetRowSelection();
+               }}
+            >
+               Arquivar
+            </SelectionActionButton>
+            <SelectionActionButton
+               icon={<Trash2 className="size-4" />}
+               onClick={() => {
+                  handleDeleteDocuments(selectedDocuments);
+                  table.resetRowSelection();
+               }}
+               variant="destructive"
+            >
+               Excluir
+            </SelectionActionButton>
+         </>
       ),
    });
 

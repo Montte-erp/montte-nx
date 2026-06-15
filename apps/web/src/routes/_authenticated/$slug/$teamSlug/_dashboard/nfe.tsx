@@ -184,7 +184,7 @@ function ConfigurePortalCredenza({ onConfigure }: { onConfigure: () => void }) {
 function NfeContent() {
    const navigate = Route.useNavigate();
    const { slug, teamSlug } = Route.useParams();
-   const { openCredenza } = useCredenza();
+   const { closeCredenza, openCredenza } = useCredenza();
    const didOpenSetup = useRef(false);
    const { sorting, columnFilters, search, page, pageSize } = Route.useSearch();
    const layout = useDataTableLayout("fiscal-nfe");
@@ -231,7 +231,8 @@ function NfeContent() {
             />
          ),
       });
-   }, [openCredenza, ready, slug, teamSlug]);
+      return closeCredenza;
+   }, [closeCredenza, navigate, openCredenza, ready, slug, teamSlug]);
 
    const urlState = useTableUrlState({
       search: { sorting, columnFilters, page, pageSize },

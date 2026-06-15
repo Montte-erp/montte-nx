@@ -65,7 +65,18 @@ const listDocumentsInput = z.object({
 });
 
 const createFolderInput = z.object({ name: z.string().trim().min(1).max(80) });
+const updateDocumentInput = z.object({
+   id: z.string().uuid(),
+   patch: z.object({
+      title: z.string().trim().min(1).max(180).optional(),
+      description: z.string().trim().max(500).nullable().optional(),
+      folderId: z.string().uuid().nullable().optional(),
+   }),
+});
 const bulkArchiveDocumentsInput = z.object({
+   ids: z.array(z.string().uuid()).min(1).max(100),
+});
+const bulkDeleteDocumentsInput = z.object({
    ids: z.array(z.string().uuid()).min(1).max(100),
 });
 
@@ -313,27 +324,96 @@ export const listDocuments = protectedProcedure
       };
    });
 
+export const updateDocument = protectedProcedure
+   .input(updateDocumentInput)
+   .handler(async ({ context, input }) => {
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) => {
+               const patch = {
+                  ...input.patch,
+                  description:
+                     input.patch.description === undefined
+                        ? undefined
+                        : input.patch.description?.trim() || null,
+                  updatedAt: new Date(),
+               };
+               const [updated] = await tx
+                  .update(vaultDocuments)
+                  .set(patch)
+                  .where(
+                     and(
+                        eq(vaultDocuments.teamId, context.teamId),
+                        eq(vaultDocuments.id, input.id),
+                     ),
+                  )
+                  .returning();
+               return updated;
+            }),
+         catch: () =>
+            new VaultRouterError({
+               error: vaultRouterErrors.INTERNAL(),
+               message: "Falha ao atualizar documento do Vault.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
+      if (!result.value)
+         throw new VaultRouterError({
+            error: vaultRouterErrors.INTERNAL(),
+            message: "Documento não encontrado.",
+         });
+      return mapDocument(result.value);
+   });
+
 export const bulkArchiveDocuments = protectedProcedure
    .input(bulkArchiveDocumentsInput)
    .handler(async ({ context, input }) => {
       const result = await Result.tryPromise({
-         try: async () => {
-            const archived = await context.db
-               .update(vaultDocuments)
-               .set({ status: "archived" })
-               .where(
-                  and(
-                     eq(vaultDocuments.teamId, context.teamId),
-                     inArray(vaultDocuments.id, input.ids),
-                  ),
-               )
-               .returning({ id: vaultDocuments.id });
-            return { archived: archived.length };
-         },
+         try: () =>
+            context.db.transaction(async (tx) => {
+               const archived = await tx
+                  .update(vaultDocuments)
+                  .set({ status: "archived", updatedAt: new Date() })
+                  .where(
+                     and(
+                        eq(vaultDocuments.teamId, context.teamId),
+                        inArray(vaultDocuments.id, input.ids),
+                     ),
+                  )
+                  .returning({ id: vaultDocuments.id });
+               return { archived: archived.length };
+            }),
          catch: () =>
             new VaultRouterError({
                error: vaultRouterErrors.INTERNAL(),
                message: "Falha ao arquivar documentos do Vault.",
+            }),
+      });
+      if (Result.isError(result)) throw result.error;
+      return result.value;
+   });
+
+export const bulkDeleteDocuments = protectedProcedure
+   .input(bulkDeleteDocumentsInput)
+   .handler(async ({ context, input }) => {
+      const result = await Result.tryPromise({
+         try: () =>
+            context.db.transaction(async (tx) => {
+               const deleted = await tx
+                  .delete(vaultDocuments)
+                  .where(
+                     and(
+                        eq(vaultDocuments.teamId, context.teamId),
+                        inArray(vaultDocuments.id, input.ids),
+                     ),
+                  )
+                  .returning({ id: vaultDocuments.id });
+               return { deleted: deleted.length };
+            }),
+         catch: () =>
+            new VaultRouterError({
+               error: vaultRouterErrors.INTERNAL(),
+               message: "Falha ao excluir documentos do Vault.",
             }),
       });
       if (Result.isError(result)) throw result.error;
