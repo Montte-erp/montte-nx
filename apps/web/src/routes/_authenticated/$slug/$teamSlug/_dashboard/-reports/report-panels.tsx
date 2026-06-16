@@ -19,19 +19,8 @@ import { cn } from "@packages/ui/lib/utils";
 import { createCollection, useLiveQuery } from "@tanstack/react-db";
 import type { QueryClient } from "@tanstack/query-core";
 import dayjs from "dayjs";
-import {
-   AlertCircle,
-   ArrowDownRight,
-   ArrowUpRight,
-   BarChart3,
-   CircleDollarSign,
-   ListChecks,
-   ReceiptText,
-   Scale,
-   Table2,
-   TrendingUp,
-} from "lucide-react";
-import { useMemo } from "react";
+import { CircleDollarSign } from "lucide-react";
+import { Fragment, useMemo } from "react";
 import type { ReactNode } from "react";
 import {
    agingReportCollectionOptions,
@@ -506,6 +495,113 @@ function EmptyReport({ title }: { title: string }) {
    );
 }
 
+type SummaryItem = {
+   label: string;
+   value: string;
+   tone?: string;
+   hint?: string;
+};
+
+/** Flat statement-header strip — figures separated by dividers, no card chrome. */
+function SummaryStrip({ items }: { items: SummaryItem[] }) {
+   return (
+      <dl className="flex flex-wrap items-stretch border-b">
+         {items.map((item, index) => (
+            <div
+               className={cn(
+                  "flex flex-col gap-2 py-4 pr-4",
+                  index > 0 && "border-l pl-4",
+               )}
+               key={item.label}
+            >
+               <dt className="text-muted-foreground text-xs">{item.label}</dt>
+               <dd
+                  className={cn(
+                     "text-lg font-semibold tabular-nums",
+                     item.tone,
+                  )}
+               >
+                  {item.value}
+               </dd>
+               {item.hint ? (
+                  <dd className="text-muted-foreground truncate text-xs">
+                     {item.hint}
+                  </dd>
+               ) : null}
+            </div>
+         ))}
+      </dl>
+   );
+}
+
+/** Proportion bar rendered inside a `%` table cell — table-native, not a card. */
+function ShareBar({
+   percent,
+   color,
+   barClass,
+}: {
+   percent: number;
+   color?: string;
+   barClass?: string;
+}) {
+   const width = Math.max(2, Math.min(100, percent * 100));
+   return (
+      <div className="flex items-center justify-end gap-2">
+         <span className="bg-muted relative h-1.5 w-20 overflow-hidden rounded-full">
+            <span
+               className={cn(
+                  "absolute inset-y-0 left-0 rounded-full",
+                  !color && (barClass ?? "bg-primary"),
+               )}
+               style={{
+                  width: `${width}%`,
+                  ...(color ? { backgroundColor: color } : {}),
+               }}
+            />
+         </span>
+         <span className="text-muted-foreground w-12 text-right tabular-nums">
+            {formatPercent(percent)}
+         </span>
+      </div>
+   );
+}
+
+function TableShell({
+   children,
+   className,
+}: {
+   children: ReactNode;
+   className?: string;
+}) {
+   return (
+      <ScrollArea className={cn("min-h-0 rounded-md border", className)}>
+         <Table>{children}</Table>
+      </ScrollArea>
+   );
+}
+
+function ReportBlock({
+   children,
+   subtitle,
+   title,
+}: {
+   children: ReactNode;
+   subtitle?: string;
+   title: string;
+}) {
+   return (
+      <section className="flex flex-col gap-4">
+         <div className="flex flex-col gap-2">
+            <h2 className="text-sm font-medium">{title}</h2>
+            {subtitle ? (
+               <p className="text-muted-foreground text-sm">{subtitle}</p>
+            ) : null}
+         </div>
+         {children}
+      </section>
+   );
+}
+
 function ProfitAndLossPanel({
    report,
    transactions,
@@ -523,13 +619,8 @@ function ProfitAndLossPanel({
             report={report}
             transactionTotal={transactionTotal}
          />
-         <div className="grid gap-4 xl:grid-cols-2">
-            <ProfitAndLossTrend report={report} />
-            <ProfitAndLossBreakdown report={report} />
-         </div>
-         <ReportSection
-            icon={<Table2 className="size-4" />}
-            subtitle="Visão agregada por grupo contábil e período."
+         <ReportBlock
+            subtitle="Resultado por grupo contábil e período."
             title="DRE"
          >
             {report.groups.length > 0 ? (
@@ -537,18 +628,17 @@ function ProfitAndLossPanel({
             ) : (
                <EmptyReport title="Nenhum dado para DRE" />
             )}
-         </ReportSection>
-         <ReportSection
-            icon={<ReceiptText className="size-4" />}
-            subtitle="Lançamentos usados como base para este relatório."
-            title="Lançamentos da snapshot"
+         </ReportBlock>
+         <ReportBlock
+            subtitle="Lançamentos usados como base deste relatório."
+            title="Lançamentos da base"
          >
             {transactions.length > 0 ? (
                <SnapshotTransactionsTable transactions={transactions} />
             ) : (
                <EmptyReport title="Nenhum lançamento encontrado" />
             )}
-         </ReportSection>
+         </ReportBlock>
          <ReportQuality
             hasData={hasData}
             report={report}
@@ -556,35 +646,6 @@ function ProfitAndLossPanel({
             transactionTotal={transactionTotal}
          />
       </div>
-   );
-}
-
-function ReportSection({
-   children,
-   icon,
-   subtitle,
-   title,
-}: {
-   children: ReactNode;
-   icon: ReactNode;
-   subtitle: string;
-   title: string;
-}) {
-   return (
-      <section className="bg-card flex flex-col gap-4 rounded-md border p-4">
-         <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-2">
-               <span className="text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-md border">
-                  {icon}
-               </span>
-               <div className="flex min-w-0 flex-col gap-1">
-                  <h2 className="truncate text-sm font-medium">{title}</h2>
-                  <p className="text-muted-foreground text-sm">{subtitle}</p>
-               </div>
-            </div>
-         </div>
-         {children}
-      </section>
    );
 }
 
@@ -596,225 +657,202 @@ function ProfitAndLossSummary({
    transactionTotal: number;
 }) {
    const result = numberValue(report.totals.result);
-   const items = [
-      {
-         label: "Receita",
-         value: formatBRL(report.totals.income),
-         icon: ArrowUpRight,
-         tone: "text-emerald-500",
-      },
-      {
-         label: "Despesas",
-         value: formatBRL(report.totals.expense),
-         icon: ArrowDownRight,
-         tone: "text-destructive",
-      },
-      {
-         label: "Resultado líquido",
-         value: formatBRL(report.totals.result),
-         icon: Scale,
-         tone: result >= 0 ? "text-emerald-500" : "text-destructive",
-      },
-      {
-         label: "Margem",
-         value: formatPercent(marginValue(report)),
-         icon: TrendingUp,
-         tone: "text-muted-foreground",
-      },
-      {
-         label: "Lançamentos",
-         value: String(transactionTotal),
-         icon: ListChecks,
-         tone: "text-muted-foreground",
-      },
-   ];
-
    return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-         {items.map((item) => {
-            const Icon = item.icon;
-            return (
-               <div
-                  className="bg-card flex min-h-24 flex-col justify-between gap-4 rounded-md border p-4"
-                  key={item.label}
-               >
-                  <div className="flex items-center justify-between gap-2">
-                     <span className="text-muted-foreground text-sm">
-                        {item.label}
-                     </span>
-                     <Icon className={cn("size-4", item.tone)} />
-                  </div>
-                  <p className="truncate text-lg font-semibold">{item.value}</p>
-               </div>
-            );
-         })}
-      </div>
+      <SummaryStrip
+         items={[
+            {
+               label: "Receita",
+               value: formatBRL(report.totals.income),
+               tone: "text-emerald-500",
+            },
+            {
+               label: "Despesas",
+               value: formatBRL(report.totals.expense),
+               tone: "text-destructive",
+            },
+            {
+               label: "Resultado líquido",
+               value: formatBRL(report.totals.result),
+               tone: result >= 0 ? "text-emerald-500" : "text-destructive",
+            },
+            {
+               label: "Margem",
+               value: formatPercent(marginValue(report)),
+            },
+            {
+               label: "Lançamentos",
+               value: String(transactionTotal),
+            },
+         ]}
+      />
    );
 }
 
-function ProfitAndLossTrend({ report }: { report: ProfitAndLossReport }) {
-   const rows = report.periods.map((period) => {
-      const income = report.groups.reduce((total, group) => {
-         if (group.type !== "income") return total;
-         const row = group.periods.find(
-            (item) => item.period === period.period,
-         );
-         return total + numberValue(row?.amount);
-      }, 0);
-      const expense = report.groups.reduce((total, group) => {
-         if (group.type !== "expense") return total;
-         const row = group.periods.find(
-            (item) => item.period === period.period,
-         );
-         return total + numberValue(row?.amount);
-      }, 0);
-      return { ...period, income, expense, result: income - expense };
-   });
-   const max = Math.max(
-      1,
-      ...rows.flatMap((row) => [row.income, row.expense, Math.abs(row.result)]),
-   );
+type PnLGroup = ProfitAndLossReport["groups"][number];
+type PnLPeriods = ProfitAndLossReport["periods"];
 
+function sumGroupsForPeriod(
+   groups: PnLGroup[],
+   type: "income" | "expense",
+   period: string,
+) {
+   return groups.reduce((total, group) => {
+      if (group.type !== type) return total;
+      const row = group.periods.find((item) => item.period === period);
+      return total + numberValue(row?.amount);
+   }, 0);
+}
+
+function PeriodAmountCells({
+   periods,
+   getAmount,
+   className,
+}: {
+   periods: PnLPeriods;
+   getAmount: (period: string) => number;
+   className?: string;
+}) {
    return (
-      <ReportSection
-         icon={<BarChart3 className="size-4" />}
-         subtitle="Receita, despesas e resultado por mês."
-         title="Evolução"
-      >
-         <div className="flex min-h-48 items-end gap-4">
-            {rows.map((row) => (
-               <div className="flex flex-1 flex-col gap-2" key={row.period}>
-                  <div className="flex h-40 items-end gap-2">
-                     <div
-                        className="bg-emerald-500/70 min-h-2 flex-1 rounded-sm"
-                        style={{
-                           height: `${Math.max(4, (row.income / max) * 100)}%`,
-                        }}
-                        title={`Receita ${formatBRL(row.income)}`}
-                     />
-                     <div
-                        className="bg-destructive/70 min-h-2 flex-1 rounded-sm"
-                        style={{
-                           height: `${Math.max(4, (row.expense / max) * 100)}%`,
-                        }}
-                        title={`Despesas ${formatBRL(row.expense)}`}
-                     />
-                  </div>
-                  <span className="text-muted-foreground truncate text-center text-xs">
-                     {row.label}
-                  </span>
-               </div>
-            ))}
-         </div>
-      </ReportSection>
+      <>
+         {periods.map((period) => (
+            <TableCell
+               className={cn("text-right tabular-nums", className)}
+               key={period.period}
+            >
+               {formatBRL(getAmount(period.period))}
+            </TableCell>
+         ))}
+      </>
    );
 }
 
-function ProfitAndLossBreakdown({ report }: { report: ProfitAndLossReport }) {
-   const rows = report.groups
-      .filter((group) => group.type === "expense")
-      .sort((a, b) => numberValue(b.total) - numberValue(a.total))
-      .slice(0, 5);
-   const max = Math.max(1, ...rows.map((row) => numberValue(row.total)));
-
-   return (
-      <ReportSection
-         icon={<CircleDollarSign className="size-4" />}
-         subtitle="Maiores grupos de despesa no período."
-         title="Composição"
-      >
-         {rows.length > 0 ? (
-            <div className="flex min-h-48 flex-col justify-center gap-4">
-               {rows.map((row) => (
-                  <div className="flex flex-col gap-2" key={row.id}>
-                     <div className="flex items-center justify-between gap-4 text-sm">
-                        <span className="truncate font-medium">{row.name}</span>
-                        <span className="text-muted-foreground shrink-0">
-                           {formatBRL(row.total)}
-                        </span>
-                     </div>
-                     <div className="bg-muted h-2 overflow-hidden rounded-full">
-                        <div
-                           className="bg-destructive h-2 rounded-full"
-                           style={{
-                              width: `${(numberValue(row.total) / max) * 100}%`,
-                           }}
-                        />
-                     </div>
-                  </div>
-               ))}
-            </div>
-         ) : (
-            <EmptyReport title="Nenhuma despesa encontrada" />
-         )}
-      </ReportSection>
-   );
-}
+const PNL_SECTIONS: {
+   type: "income" | "expense";
+   label: string;
+   totalLabel: string;
+}[] = [
+   { type: "income", label: "Receitas", totalLabel: "Receita total" },
+   { type: "expense", label: "Despesas", totalLabel: "Despesa total" },
+];
 
 function ProfitAndLossTable({ report }: { report: ProfitAndLossReport }) {
    return (
-      <ScrollArea className="min-h-0 rounded-md border">
-         <Table>
-            <TableHeader>
-               <TableRow>
-                  <TableHead>Grupo</TableHead>
-                  {report.periods.map((period) => (
-                     <TableHead className="text-right" key={period.period}>
-                        {period.label}
-                     </TableHead>
-                  ))}
-                  <TableHead className="text-right">Total</TableHead>
-               </TableRow>
-            </TableHeader>
-            <TableBody>
-               {report.groups.map((group) => (
-                  <TableRow key={group.id}>
-                     <TableCell className="font-medium">{group.name}</TableCell>
-                     {group.periods.map((period) => (
-                        <TableCell className="text-right" key={period.period}>
-                           {formatBRL(period.amount)}
-                        </TableCell>
-                     ))}
-                     <TableCell className="text-right font-medium">
-                        {formatBRL(group.total)}
-                     </TableCell>
-                  </TableRow>
+      <TableShell>
+         <TableHeader>
+            <TableRow>
+               <TableHead>Grupo</TableHead>
+               {report.periods.map((period) => (
+                  <TableHead className="text-right" key={period.period}>
+                     {period.label}
+                  </TableHead>
                ))}
-               <TableRow>
-                  <TableCell className="font-semibold">
-                     Resultado líquido
-                  </TableCell>
-                  {report.periods.map((period) => {
-                     const income = report.groups.reduce((total, group) => {
-                        if (group.type !== "income") return total;
-                        const row = group.periods.find(
-                           (item) => item.period === period.period,
-                        );
-                        return total + numberValue(row?.amount);
-                     }, 0);
-                     const expense = report.groups.reduce((total, group) => {
-                        if (group.type !== "expense") return total;
-                        const row = group.periods.find(
-                           (item) => item.period === period.period,
-                        );
-                        return total + numberValue(row?.amount);
-                     }, 0);
-                     return (
+               <TableHead className="text-right">Total</TableHead>
+            </TableRow>
+         </TableHeader>
+         <TableBody>
+            {PNL_SECTIONS.map((section) => {
+               const groups = report.groups.filter(
+                  (group) => group.type === section.type,
+               );
+               if (groups.length === 0) return null;
+               const sectionTotal =
+                  section.type === "income"
+                     ? report.totals.income
+                     : report.totals.expense;
+               return (
+                  <Fragment key={section.type}>
+                     <TableRow className="bg-muted/40">
                         <TableCell
-                           className="text-right font-semibold"
-                           key={period.period}
+                           className="text-muted-foreground text-xs font-semibold uppercase"
+                           colSpan={report.periods.length + 2}
                         >
-                           {formatBRL(income - expense)}
+                           {section.label}
                         </TableCell>
-                     );
-                  })}
-                  <TableCell className="text-right font-semibold">
-                     {formatBRL(report.totals.result)}
-                  </TableCell>
-               </TableRow>
-            </TableBody>
-         </Table>
-      </ScrollArea>
+                     </TableRow>
+                     {groups.map((group) => (
+                        <Fragment key={group.id}>
+                           <TableRow>
+                              <TableCell className="pl-4 font-medium">
+                                 {group.name}
+                              </TableCell>
+                              <PeriodAmountCells
+                                 getAmount={(period) =>
+                                    numberValue(
+                                       group.periods.find(
+                                          (item) => item.period === period,
+                                       )?.amount,
+                                    )
+                                 }
+                                 periods={report.periods}
+                              />
+                              <TableCell className="text-right font-medium tabular-nums">
+                                 {formatBRL(group.total)}
+                              </TableCell>
+                           </TableRow>
+                           {group.rows.length > 1
+                              ? group.rows.map((child) => (
+                                   <TableRow key={child.id}>
+                                      <TableCell className="text-muted-foreground pl-4">
+                                         <span className="pl-4">
+                                            {child.name}
+                                         </span>
+                                      </TableCell>
+                                      <PeriodAmountCells
+                                         className="text-muted-foreground"
+                                         getAmount={(period) =>
+                                            numberValue(
+                                               child.periods.find(
+                                                  (item) =>
+                                                     item.period === period,
+                                               )?.amount,
+                                            )
+                                         }
+                                         periods={report.periods}
+                                      />
+                                      <TableCell className="text-muted-foreground text-right tabular-nums">
+                                         {formatBRL(child.total)}
+                                      </TableCell>
+                                   </TableRow>
+                                ))
+                              : null}
+                        </Fragment>
+                     ))}
+                     <TableRow className="border-t">
+                        <TableCell className="pl-4 font-semibold">
+                           {section.totalLabel}
+                        </TableCell>
+                        <PeriodAmountCells
+                           className="font-semibold"
+                           getAmount={(period) =>
+                              sumGroupsForPeriod(groups, section.type, period)
+                           }
+                           periods={report.periods}
+                        />
+                        <TableCell className="text-right font-semibold tabular-nums">
+                           {formatBRL(sectionTotal)}
+                        </TableCell>
+                     </TableRow>
+                  </Fragment>
+               );
+            })}
+            <TableRow className="border-y-2">
+               <TableCell className="font-semibold">
+                  Resultado líquido
+               </TableCell>
+               <PeriodAmountCells
+                  className="font-semibold"
+                  getAmount={(period) =>
+                     sumGroupsForPeriod(report.groups, "income", period) -
+                     sumGroupsForPeriod(report.groups, "expense", period)
+                  }
+                  periods={report.periods}
+               />
+               <TableCell className="text-right font-semibold tabular-nums">
+                  {formatBRL(report.totals.result)}
+               </TableCell>
+            </TableRow>
+         </TableBody>
+      </TableShell>
    );
 }
 
@@ -824,51 +862,45 @@ function SnapshotTransactionsTable({
    transactions: TransactionRow[];
 }) {
    return (
-      <ScrollArea className="max-h-96 min-h-0 rounded-md border">
-         <Table>
-            <TableHeader>
-               <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Lançamento</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Centro de Custo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
+      <TableShell className="max-h-96">
+         <TableHeader>
+            <TableRow>
+               <TableHead>Data</TableHead>
+               <TableHead>Lançamento</TableHead>
+               <TableHead>Categoria</TableHead>
+               <TableHead>Centro de Custo</TableHead>
+               <TableHead>Status</TableHead>
+               <TableHead className="text-right">Valor</TableHead>
+            </TableRow>
+         </TableHeader>
+         <TableBody>
+            {transactions.map((row) => (
+               <TableRow key={row.id}>
+                  <TableCell className="tabular-nums">
+                     {dayjs(row.date).format("DD/MM/YYYY")}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                     {row.name ?? row.description ?? "Sem descrição"}
+                  </TableCell>
+                  <TableCell>{row.categoryName ?? "Sem categoria"}</TableCell>
+                  <TableCell>{row.tagName ?? "Sem Centro de Custo"}</TableCell>
+                  <TableCell>
+                     {row.status === "paid" ? "Realizado" : "Planejado"}
+                  </TableCell>
+                  <TableCell
+                     className={cn(
+                        "text-right font-medium tabular-nums",
+                        signedAmount(row) < 0
+                           ? "text-destructive"
+                           : "text-emerald-500",
+                     )}
+                  >
+                     {formatBRL(signedAmount(row))}
+                  </TableCell>
                </TableRow>
-            </TableHeader>
-            <TableBody>
-               {transactions.map((row) => (
-                  <TableRow key={row.id}>
-                     <TableCell>
-                        {dayjs(row.date).format("DD/MM/YYYY")}
-                     </TableCell>
-                     <TableCell className="font-medium">
-                        {row.name ?? row.description ?? "Sem descrição"}
-                     </TableCell>
-                     <TableCell>
-                        {row.categoryName ?? "Sem categoria"}
-                     </TableCell>
-                     <TableCell>
-                        {row.tagName ?? "Sem Centro de Custo"}
-                     </TableCell>
-                     <TableCell>
-                        {row.status === "paid" ? "Realizado" : "Planejado"}
-                     </TableCell>
-                     <TableCell
-                        className={cn(
-                           "text-right font-medium",
-                           signedAmount(row) < 0
-                              ? "text-destructive"
-                              : "text-emerald-500",
-                        )}
-                     >
-                        {formatBRL(signedAmount(row))}
-                     </TableCell>
-                  </TableRow>
-               ))}
-            </TableBody>
-         </Table>
-      </ScrollArea>
+            ))}
+         </TableBody>
+      </TableShell>
    );
 }
 
@@ -890,46 +922,41 @@ function ReportQuality({
       numberValue(report.totals.result) >= 0 ? "positivo" : "negativo";
 
    return (
-      <ReportSection
-         icon={<AlertCircle className="size-4" />}
+      <ReportBlock
          subtitle="Pendências e contexto da base do relatório."
          title="Qualidade do relatório"
       >
-         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <QualityItem
-               label="Base encontrada"
-               value={
-                  hasData
+         <SummaryStrip
+            items={[
+               {
+                  label: "Base encontrada",
+                  value: hasData
                      ? `${transactionTotal} lançamentos`
-                     : "Nenhum lançamento"
-               }
-            />
-            <QualityItem
-               label="Sem categoria"
-               value={`${uncategorized} lançamentos`}
-            />
-            <QualityItem
-               label="Sem Centro de Custo"
-               value={`${withoutCostCenter} lançamentos`}
-            />
-            <QualityItem label="Resultado" value={`Período ${resultLabel}`} />
-         </div>
+                     : "Nenhum lançamento",
+               },
+               {
+                  label: "Sem categoria",
+                  value: String(uncategorized),
+                  tone: uncategorized > 0 ? "text-amber-500" : undefined,
+               },
+               {
+                  label: "Sem Centro de Custo",
+                  value: String(withoutCostCenter),
+                  tone: withoutCostCenter > 0 ? "text-amber-500" : undefined,
+               },
+               {
+                  label: "Resultado",
+                  value: `Período ${resultLabel}`,
+               },
+            ]}
+         />
          {omitted > 0 ? (
             <p className="text-muted-foreground text-sm">
                Mostrando os 100 lançamentos mais recentes. Existem {omitted}{" "}
                lançamentos adicionais na base deste relatório.
             </p>
          ) : null}
-      </ReportSection>
-   );
-}
-
-function QualityItem({ label, value }: { label: string; value: string }) {
-   return (
-      <div className="flex flex-col gap-1 rounded-md border p-4">
-         <span className="text-muted-foreground text-sm">{label}</span>
-         <span className="text-sm font-medium">{value}</span>
-      </div>
+      </ReportBlock>
    );
 }
 
@@ -937,37 +964,104 @@ function CashFlowPanel({ report }: { report: CashFlowReport }) {
    if (report.rows.length === 0)
       return <EmptyReport title="Nenhum dado de fluxo de caixa" />;
 
+   const totalIncome = report.rows.reduce(
+      (acc, row) => acc + numberValue(row.income),
+      0,
+   );
+   const totalExpense = report.rows.reduce(
+      (acc, row) => acc + numberValue(row.expense),
+      0,
+   );
+   const initialBalance = numberValue(report.rows[0]?.initialBalance);
+   const endingBalance = numberValue(
+      report.rows[report.rows.length - 1]?.endingBalance,
+   );
+   const variation = endingBalance - initialBalance;
+
    return (
-      <Table>
-         <TableHeader>
-            <TableRow>
-               <TableHead>Período</TableHead>
-               <TableHead className="text-right">Saldo inicial</TableHead>
-               <TableHead className="text-right">Entradas</TableHead>
-               <TableHead className="text-right">Saídas</TableHead>
-               <TableHead className="text-right">Saldo final</TableHead>
-            </TableRow>
-         </TableHeader>
-         <TableBody>
-            {report.rows.map((row) => (
-               <TableRow key={row.period}>
-                  <TableCell className="font-medium">{row.label}</TableCell>
-                  <TableCell className="text-right">
-                     {formatBRL(row.initialBalance)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                     {formatBRL(row.income)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                     {formatBRL(row.expense)}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                     {formatBRL(row.endingBalance)}
-                  </TableCell>
-               </TableRow>
-            ))}
-         </TableBody>
-      </Table>
+      <div className="flex flex-col gap-4">
+         <SummaryStrip
+            items={[
+               { label: "Saldo inicial", value: formatBRL(initialBalance) },
+               {
+                  label: "Entradas",
+                  value: formatBRL(totalIncome),
+                  tone: "text-emerald-500",
+               },
+               {
+                  label: "Saídas",
+                  value: formatBRL(totalExpense),
+                  tone: "text-destructive",
+               },
+               {
+                  label: "Saldo final",
+                  value: formatBRL(endingBalance),
+                  tone:
+                     endingBalance >= 0
+                        ? "text-emerald-500"
+                        : "text-destructive",
+               },
+               {
+                  label: "Variação",
+                  value: formatBRL(variation),
+                  tone:
+                     variation >= 0 ? "text-emerald-500" : "text-destructive",
+               },
+            ]}
+         />
+         <ReportBlock
+            subtitle="Saldo e movimentação por período."
+            title="Fluxo de caixa"
+         >
+            <TableShell>
+               <TableHeader>
+                  <TableRow>
+                     <TableHead>Período</TableHead>
+                     <TableHead className="text-right">Saldo inicial</TableHead>
+                     <TableHead className="text-right">Entradas</TableHead>
+                     <TableHead className="text-right">Saídas</TableHead>
+                     <TableHead className="text-right">Saldo final</TableHead>
+                  </TableRow>
+               </TableHeader>
+               <TableBody>
+                  {report.rows.map((row) => (
+                     <TableRow key={row.period}>
+                        <TableCell className="font-medium">
+                           {row.label}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                           {formatBRL(row.initialBalance)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums text-emerald-500">
+                           {formatBRL(row.income)}
+                        </TableCell>
+                        <TableCell className="text-destructive text-right tabular-nums">
+                           {formatBRL(row.expense)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                           {formatBRL(row.endingBalance)}
+                        </TableCell>
+                     </TableRow>
+                  ))}
+                  <TableRow className="border-t-2">
+                     <TableCell className="font-semibold">Total</TableCell>
+                     <TableCell className="text-right font-semibold tabular-nums">
+                        {formatBRL(initialBalance)}
+                     </TableCell>
+                     <TableCell className="text-right font-semibold tabular-nums text-emerald-500">
+                        {formatBRL(totalIncome)}
+                     </TableCell>
+                     <TableCell className="text-destructive text-right font-semibold tabular-nums">
+                        {formatBRL(totalExpense)}
+                     </TableCell>
+                     <TableCell className="text-right font-semibold tabular-nums">
+                        {formatBRL(endingBalance)}
+                     </TableCell>
+                  </TableRow>
+               </TableBody>
+            </TableShell>
+         </ReportBlock>
+      </div>
    );
 }
 
@@ -975,73 +1069,222 @@ function CostCentersPanel({ report }: { report: CostCenterReport }) {
    if (report.rows.length === 0)
       return <EmptyReport title="Nenhuma despesa por Centro de Custo" />;
 
+   const total = numberValue(report.total);
+   const top = report.rows[0];
+
    return (
-      <Table>
-         <TableHeader>
-            <TableRow>
-               <TableHead>Centro de Custo</TableHead>
-               <TableHead>Categoria</TableHead>
-               <TableHead className="text-right">Valor</TableHead>
-               <TableHead className="text-right">% do total</TableHead>
-            </TableRow>
-         </TableHeader>
-         <TableBody>
-            {report.rows.flatMap((row) =>
-               row.categories.map((category) => (
-                  <TableRow key={`${row.id}:${category.id}`}>
-                     <TableCell className="font-medium">{row.name}</TableCell>
-                     <TableCell>{category.name}</TableCell>
-                     <TableCell className="text-right">
-                        {formatBRL(category.amount)}
+      <div className="flex flex-col gap-4">
+         <SummaryStrip
+            items={[
+               {
+                  label: "Total de despesas",
+                  value: formatBRL(total),
+                  tone: "text-destructive",
+               },
+               {
+                  label: "Centros de custo",
+                  value: String(report.rows.length),
+               },
+               {
+                  label: "Maior centro",
+                  value: top?.name ?? "—",
+                  hint: top
+                     ? `${formatBRL(top.amount)} · ${formatPercent(top.percent)}`
+                     : undefined,
+               },
+            ]}
+         />
+         <ReportBlock
+            subtitle="Despesas por centro de custo e categoria."
+            title="Despesas por centro de custo"
+         >
+            <TableShell>
+               <TableHeader>
+                  <TableRow>
+                     <TableHead>Centro de Custo</TableHead>
+                     <TableHead>Categoria</TableHead>
+                     <TableHead className="text-right">Valor</TableHead>
+                     <TableHead className="text-right">% do total</TableHead>
+                  </TableRow>
+               </TableHeader>
+               <TableBody>
+                  {report.rows.flatMap((row) =>
+                     row.categories.map((category) => (
+                        <TableRow key={`${row.id}:${category.id}`}>
+                           <TableCell className="font-medium">
+                              <span className="flex items-center gap-2">
+                                 <span
+                                    className="size-2 shrink-0 rounded-full"
+                                    style={{ backgroundColor: row.color }}
+                                 />
+                                 {row.name}
+                              </span>
+                           </TableCell>
+                           <TableCell>{category.name}</TableCell>
+                           <TableCell className="text-right tabular-nums">
+                              {formatBRL(category.amount)}
+                           </TableCell>
+                           <TableCell>
+                              <ShareBar
+                                 color={row.color}
+                                 percent={category.percent}
+                              />
+                           </TableCell>
+                        </TableRow>
+                     )),
+                  )}
+                  <TableRow className="border-t-2">
+                     <TableCell className="font-semibold" colSpan={2}>
+                        Total
                      </TableCell>
-                     <TableCell className="text-right">
-                        {formatPercent(category.percent)}
+                     <TableCell className="text-right font-semibold tabular-nums">
+                        {formatBRL(total)}
+                     </TableCell>
+                     <TableCell className="text-muted-foreground text-right tabular-nums">
+                        {formatPercent(1)}
                      </TableCell>
                   </TableRow>
-               )),
-            )}
-         </TableBody>
-      </Table>
+               </TableBody>
+            </TableShell>
+         </ReportBlock>
+      </div>
    );
 }
+
+const AGING_TONE: Record<string, string> = {
+   due: "text-emerald-500",
+   "0-30": "text-amber-500",
+   "31-60": "text-orange-500",
+   ">60": "text-destructive",
+};
+const AGING_BAR: Record<string, string> = {
+   due: "bg-emerald-500",
+   "0-30": "bg-amber-500",
+   "31-60": "bg-orange-500",
+   ">60": "bg-destructive",
+};
 
 function AgingPanel({ report }: { report: AgingReport }) {
    if (report.rows.length === 0)
       return <EmptyReport title="Nenhum título encontrado" />;
 
+   const total = report.buckets.reduce(
+      (acc, bucket) => acc + numberValue(bucket.amount),
+      0,
+   );
+
    return (
-      <Table>
-         <TableHeader>
-            <TableRow>
-               <TableHead>Categoria</TableHead>
-               <TableHead>Tipo</TableHead>
-               <TableHead>Lançamento</TableHead>
-               <TableHead>Vencimento</TableHead>
-               <TableHead>Centro de Custo</TableHead>
-               <TableHead className="text-right">Dias</TableHead>
-               <TableHead className="text-right">Valor</TableHead>
-            </TableRow>
-         </TableHeader>
-         <TableBody>
-            {report.rows.map((row) => (
-               <TableRow key={row.id}>
-                  <TableCell className="font-medium">
-                     {row.categoryName ?? "Sem categoria"}
-                  </TableCell>
-                  <TableCell>{agingTypeLabel(row.type)}</TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>
-                     {dayjs(row.dueDate).format("DD/MM/YYYY")}
-                  </TableCell>
-                  <TableCell>{row.tagName ?? "Sem Centro de Custo"}</TableCell>
-                  <TableCell className="text-right">{row.days}</TableCell>
-                  <TableCell className="text-right">
-                     {formatBRL(row.amount)}
-                  </TableCell>
-               </TableRow>
-            ))}
-         </TableBody>
-      </Table>
+      <div className="flex flex-col gap-4">
+         <SummaryStrip
+            items={[
+               { label: "Total", value: formatBRL(total) },
+               ...report.buckets.map((bucket) => ({
+                  label: bucket.label,
+                  value: formatBRL(bucket.amount),
+                  tone: AGING_TONE[bucket.id],
+               })),
+            ]}
+         />
+         <ReportBlock
+            subtitle="Distribuição por faixa de vencimento."
+            title="Faixas de vencimento"
+         >
+            <TableShell>
+               <TableHeader>
+                  <TableRow>
+                     <TableHead>Faixa</TableHead>
+                     <TableHead className="text-right">Valor</TableHead>
+                     <TableHead className="text-right">% do total</TableHead>
+                  </TableRow>
+               </TableHeader>
+               <TableBody>
+                  {report.buckets.map((bucket) => (
+                     <TableRow key={bucket.id}>
+                        <TableCell className="font-medium">
+                           <span className="flex items-center gap-2">
+                              <span
+                                 className={cn(
+                                    "size-2 shrink-0 rounded-full",
+                                    AGING_BAR[bucket.id] ?? "bg-primary",
+                                 )}
+                              />
+                              {bucket.label}
+                           </span>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                           {formatBRL(bucket.amount)}
+                        </TableCell>
+                        <TableCell>
+                           <ShareBar
+                              barClass={AGING_BAR[bucket.id]}
+                              percent={
+                                 total > 0
+                                    ? numberValue(bucket.amount) / total
+                                    : 0
+                              }
+                           />
+                        </TableCell>
+                     </TableRow>
+                  ))}
+                  <TableRow className="border-t-2">
+                     <TableCell className="font-semibold">Total</TableCell>
+                     <TableCell className="text-right font-semibold tabular-nums">
+                        {formatBRL(total)}
+                     </TableCell>
+                     <TableCell className="text-muted-foreground text-right tabular-nums">
+                        {formatPercent(1)}
+                     </TableCell>
+                  </TableRow>
+               </TableBody>
+            </TableShell>
+         </ReportBlock>
+         <ReportBlock
+            subtitle="Títulos a receber e a pagar no período."
+            title="Títulos"
+         >
+            <TableShell className="max-h-96">
+               <TableHeader>
+                  <TableRow>
+                     <TableHead>Categoria</TableHead>
+                     <TableHead>Tipo</TableHead>
+                     <TableHead>Lançamento</TableHead>
+                     <TableHead>Vencimento</TableHead>
+                     <TableHead>Centro de Custo</TableHead>
+                     <TableHead className="text-right">Dias</TableHead>
+                     <TableHead className="text-right">Valor</TableHead>
+                  </TableRow>
+               </TableHeader>
+               <TableBody>
+                  {report.rows.map((row) => (
+                     <TableRow key={row.id}>
+                        <TableCell className="font-medium">
+                           {row.categoryName ?? "Sem categoria"}
+                        </TableCell>
+                        <TableCell>{agingTypeLabel(row.type)}</TableCell>
+                        <TableCell>{row.name}</TableCell>
+                        <TableCell className="tabular-nums">
+                           {dayjs(row.dueDate).format("DD/MM/YYYY")}
+                        </TableCell>
+                        <TableCell>
+                           {row.tagName ?? "Sem Centro de Custo"}
+                        </TableCell>
+                        <TableCell
+                           className={cn(
+                              "text-right tabular-nums",
+                              AGING_TONE[row.bucket],
+                           )}
+                        >
+                           {row.days}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                           {formatBRL(row.amount)}
+                        </TableCell>
+                     </TableRow>
+                  ))}
+               </TableBody>
+            </TableShell>
+         </ReportBlock>
+      </div>
    );
 }
 
@@ -1049,30 +1292,90 @@ function CategoryExpensesPanel({ report }: { report: CategoryExpenseReport }) {
    if (report.rows.length === 0)
       return <EmptyReport title="Nenhuma despesa por categoria" />;
 
+   const total = numberValue(report.total);
+   const totalCount = report.rows.reduce(
+      (acc, row) => acc + numberValue(row.count),
+      0,
+   );
+   const top = report.rows[0];
+
    return (
-      <Table>
-         <TableHeader>
-            <TableRow>
-               <TableHead>Categoria</TableHead>
-               <TableHead className="text-right">Valor</TableHead>
-               <TableHead className="text-right">% do total</TableHead>
-               <TableHead className="text-right">Lançamentos</TableHead>
-            </TableRow>
-         </TableHeader>
-         <TableBody>
-            {report.rows.map((row) => (
-               <TableRow key={row.id}>
-                  <TableCell className="font-medium">{row.name}</TableCell>
-                  <TableCell className="text-right">
-                     {formatBRL(row.amount)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                     {formatPercent(row.percent)}
-                  </TableCell>
-                  <TableCell className="text-right">{row.count}</TableCell>
-               </TableRow>
-            ))}
-         </TableBody>
-      </Table>
+      <div className="flex flex-col gap-4">
+         <SummaryStrip
+            items={[
+               {
+                  label: "Total de despesas",
+                  value: formatBRL(total),
+                  tone: "text-destructive",
+               },
+               {
+                  label: "Categorias",
+                  value: String(report.rows.length),
+               },
+               {
+                  label: "Lançamentos",
+                  value: String(totalCount),
+               },
+               {
+                  label: "Maior categoria",
+                  value: top?.name ?? "—",
+                  hint: top
+                     ? `${formatBRL(top.amount)} · ${formatPercent(top.percent)}`
+                     : undefined,
+               },
+            ]}
+         />
+         <ReportBlock
+            subtitle="Despesas por categoria no período."
+            title="Despesas por categoria"
+         >
+            <TableShell>
+               <TableHeader>
+                  <TableRow>
+                     <TableHead>Categoria</TableHead>
+                     <TableHead className="text-right">Valor</TableHead>
+                     <TableHead className="text-right">% do total</TableHead>
+                     <TableHead className="text-right">Lançamentos</TableHead>
+                  </TableRow>
+               </TableHeader>
+               <TableBody>
+                  {report.rows.map((row) => (
+                     <TableRow key={row.id}>
+                        <TableCell className="font-medium">
+                           <span className="flex items-center gap-2">
+                              <span
+                                 className="size-2 shrink-0 rounded-full"
+                                 style={{ backgroundColor: row.color }}
+                              />
+                              {row.name}
+                           </span>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                           {formatBRL(row.amount)}
+                        </TableCell>
+                        <TableCell>
+                           <ShareBar color={row.color} percent={row.percent} />
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                           {row.count}
+                        </TableCell>
+                     </TableRow>
+                  ))}
+                  <TableRow className="border-t-2">
+                     <TableCell className="font-semibold">Total</TableCell>
+                     <TableCell className="text-right font-semibold tabular-nums">
+                        {formatBRL(total)}
+                     </TableCell>
+                     <TableCell className="text-muted-foreground text-right tabular-nums">
+                        {formatPercent(1)}
+                     </TableCell>
+                     <TableCell className="text-right font-semibold tabular-nums">
+                        {totalCount}
+                     </TableCell>
+                  </TableRow>
+               </TableBody>
+            </TableShell>
+         </ReportBlock>
+      </div>
    );
 }
