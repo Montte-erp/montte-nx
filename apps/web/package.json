@@ -67,6 +67,7 @@
       "@orpc/tanstack-query": "catalog:orpc",
       "@orpc/zod": "catalog:orpc",
       "@packages/ui": "workspace:*",
+      "@react-pdf/renderer": "catalog:pdf",
       "@tailwindcss/vite": "catalog:vite",
       "@tanstack/ai": "catalog:tanstack-ai",
       "@tanstack/ai-openrouter": "catalog:tanstack-ai",

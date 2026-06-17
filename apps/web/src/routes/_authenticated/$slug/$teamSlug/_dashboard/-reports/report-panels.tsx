@@ -29,7 +29,6 @@ import {
    costCentersReportCollectionOptions,
    profitAndLossReportCollectionOptions,
    reportTransactionsCollectionOptions,
-   reportTransactionsSummaryCollectionOptions,
 } from "@/integrations/tanstack-db/reports";
 import { type Inputs, type Outputs } from "@/integrations/orpc/client";
 import type { SavedReport } from "./report-labels";
@@ -172,8 +171,7 @@ function ProfitAndLossData({
          bankAccountId: config.bankAccountId,
          categoryId: config.categoryId,
          tagId: config.tagId,
-         page: 1,
-         pageSize: 100,
+         all: true,
          sorting: [{ id: "date", desc: true }],
       }),
       [
@@ -185,25 +183,6 @@ function ProfitAndLossData({
          config.tagId,
       ],
    );
-   const summaryInput = useMemo(
-      () => ({
-         dateFrom: config.dateFrom,
-         dateTo: config.dateTo,
-         status: transactionStatusFilter(config.status),
-         bankAccountId: config.bankAccountId,
-         categoryId: config.categoryId,
-         tagId: config.tagId,
-      }),
-      [
-         config.dateFrom,
-         config.dateTo,
-         config.status,
-         config.bankAccountId,
-         config.categoryId,
-         config.tagId,
-      ],
-   );
-
    const reportCollection = useMemo(
       () =>
          createCollection(
@@ -226,17 +205,6 @@ function ProfitAndLossData({
          ),
       [queryClient, teamId, transactionsInput],
    );
-   const transactionsSummaryCollection = useMemo(
-      () =>
-         createCollection(
-            reportTransactionsSummaryCollectionOptions({
-               queryClient,
-               input: summaryInput,
-               teamId,
-            }),
-         ),
-      [queryClient, teamId, summaryInput],
-   );
    const { data: reports, isLoading: isReportLoading } = useLiveQuery(
       (q) =>
          q.from({ report: reportCollection }).select(({ report }) => report),
@@ -250,27 +218,13 @@ function ProfitAndLossData({
                .select(({ transaction }) => transaction),
          [transactionsCollection],
       );
-   const { data: summaries, isLoading: isSummaryLoading } = useLiveQuery(
-      (q) =>
-         q
-            .from({ summary: transactionsSummaryCollection })
-            .select(({ summary }) => summary),
-      [transactionsSummaryCollection],
-   );
-
    const report = reports[0];
    const transactionRows = transactions.filter(
       (row) => row.type !== "transfer",
    );
-   const summary = summaries[0];
-   const transactionTotal = summary?.total ?? transactions.length;
+   const transactionTotal = transactionRows.length;
 
-   if (
-      !report ||
-      isReportLoading ||
-      isTransactionsLoading ||
-      isSummaryLoading
-   ) {
+   if (!report || isReportLoading || isTransactionsLoading) {
       return <EmptyReport title="Carregando relatório DRE" />;
    }
 
@@ -917,7 +871,6 @@ function ReportQuality({
 }) {
    const uncategorized = transactions.filter((row) => !row.categoryId).length;
    const withoutCostCenter = transactions.filter((row) => !row.tagId).length;
-   const omitted = Math.max(0, transactionTotal - transactions.length);
    const resultLabel =
       numberValue(report.totals.result) >= 0 ? "positivo" : "negativo";
 
@@ -950,12 +903,6 @@ function ReportQuality({
                },
             ]}
          />
-         {omitted > 0 ? (
-            <p className="text-muted-foreground text-sm">
-               Mostrando os 100 lançamentos mais recentes. Existem {omitted}{" "}
-               lançamentos adicionais na base deste relatório.
-            </p>
-         ) : null}
       </ReportBlock>
    );
 }
