@@ -53,8 +53,10 @@ import {
    CalendarDays,
    CheckCircle2,
    CircleDot,
+   FileDown,
    FolderOpen,
    Landmark,
+   Loader2,
    Plus,
    RotateCcw,
    Trash2,
@@ -84,6 +86,7 @@ import { useOfxFile } from "@/hooks/use-ofx-file";
 import { useXlsxFile } from "@/hooks/use-xlsx-file";
 import { useAlertDialog } from "@/hooks/use-alert-dialog";
 import { useActiveTeam } from "@/hooks/use-active-team";
+import type { Inputs } from "@/integrations/orpc/client";
 import {
    bankAccountsCollectionOptions,
    buildOptimisticBankAccountRow,
@@ -497,6 +500,7 @@ export function TransactionsList() {
    const { parse: parseXlsx, generate: generateXlsx } = useXlsxFile();
    const { parse: parseOfx } = useOfxFile();
    const layout = useDataTableLayout("transactions");
+   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
    const searchInput = useDebouncedSearch({
       value: search,
@@ -529,6 +533,23 @@ export function TransactionsList() {
       columnFilters,
       "dueDate",
    );
+   const nameFilterValue = getStringColumnFilterValue(columnFilters, "name");
+   const typeFilterValue = columnFilters.find(
+      (filter) => filter.id === "type",
+   )?.value;
+   const effectiveType =
+      typeFilterValue === "income" ||
+      typeFilterValue === "expense" ||
+      typeFilterValue === "transfer"
+         ? typeFilterValue
+         : undefined;
+   const paymentMethodFilterValue = columnFilters.find(
+      (filter) => filter.id === "paymentMethod",
+   )?.value;
+   const effectivePaymentMethod =
+      typeof paymentMethodFilterValue === "string"
+         ? paymentMethodFilterValue
+         : undefined;
    const effectiveDateFrom = dateRangeFilter.from ?? dateFrom;
    const effectiveDateTo = dateRangeFilter.to ?? dateTo;
    const collectionTeamId = activeTeamId ?? "no-team";
@@ -709,45 +730,29 @@ export function TransactionsList() {
             );
          }
 
-         const nameFilterValue = columnFilters.find(
-            (filter) => filter.id === "name",
-         )?.value;
-         if (typeof nameFilterValue === "string" && nameFilterValue.trim()) {
+         if (nameFilterValue) {
             query = query.where(({ transaction }) =>
                ilike(
                   transaction.name,
-                  `%${escapeIlikePattern(nameFilterValue.trim())}%`,
+                  `%${escapeIlikePattern(nameFilterValue)}%`,
                ),
             );
          }
 
-         const typeFilterValue = columnFilters.find(
-            (filter) => filter.id === "type",
-         )?.value;
-         if (
-            typeFilterValue === "income" ||
-            typeFilterValue === "expense" ||
-            typeFilterValue === "transfer"
-         ) {
+         if (effectiveType) {
             query = query.where(({ transaction }) =>
-               eq(transaction.type, typeFilterValue),
+               eq(transaction.type, effectiveType),
             );
          }
 
-         const paymentMethodFilterValue = columnFilters.find(
-            (filter) => filter.id === "paymentMethod",
-         )?.value;
-         if (paymentMethodFilterValue === "__none") {
+         if (effectivePaymentMethod === "__none") {
             query = query.where(({ transaction }) =>
                isNull(transaction.paymentMethod),
             );
          }
-         if (
-            typeof paymentMethodFilterValue === "string" &&
-            paymentMethodFilterValue !== "__none"
-         ) {
+         if (effectivePaymentMethod && effectivePaymentMethod !== "__none") {
             query = query.where(({ transaction }) =>
-               eq(transaction.paymentMethod, paymentMethodFilterValue),
+               eq(transaction.paymentMethod, effectivePaymentMethod),
             );
          }
 
@@ -840,8 +845,11 @@ export function TransactionsList() {
          page,
          pageSize,
          columnFilters,
-         sorting,
+         effectivePaymentMethod,
          effectiveStatus,
+         effectiveType,
+         nameFilterValue,
+         sorting,
          transactionsCollection,
          trimmedSearch,
       ],
@@ -922,6 +930,141 @@ export function TransactionsList() {
    const transactionData = safeTransactions;
    const isTransactionsLoaded = liveTransactions !== undefined;
    const total = pageInfoRows?.[0]?.total ?? 0;
+
+   const transactionsPdfInput = useMemo<Inputs["transactions"]["getAll"]>(
+      () => ({
+         search: trimmedSearch || undefined,
+         view: "all",
+         overdueOnly: false,
+         status: effectiveStatus.length > 0 ? effectiveStatus : undefined,
+         bankAccountId: effectiveBankId || undefined,
+         relationshipId: effectiveRelationshipId || undefined,
+         dateFrom: effectiveDateFrom || undefined,
+         dateTo: effectiveDateTo || undefined,
+         dueDateFrom: dueDateRangeFilter.from,
+         dueDateTo: dueDateRangeFilter.to,
+         type: effectiveType,
+         paymentMethod:
+            effectivePaymentMethod && effectivePaymentMethod !== "__none"
+               ? effectivePaymentMethod
+               : undefined,
+         all: true,
+         sorting:
+            normalizeTransactionSorting(sorting).length > 0
+               ? normalizeTransactionSorting(sorting)
+               : [{ id: "date", desc: true }],
+      }),
+      [
+         dueDateRangeFilter.from,
+         dueDateRangeFilter.to,
+         effectiveBankId,
+         effectiveDateFrom,
+         effectiveDateTo,
+         effectivePaymentMethod,
+         effectiveRelationshipId,
+         effectiveStatus,
+         effectiveType,
+         sorting,
+         trimmedSearch,
+      ],
+   );
+
+   const transactionsPdfFilters = useMemo(() => {
+      const labels: string[] = [];
+      if (effectiveDateFrom || effectiveDateTo) {
+         labels.push(
+            `Data: ${effectiveDateFrom ? dayjs(effectiveDateFrom).format("DD/MM/YYYY") : "início"} — ${effectiveDateTo ? dayjs(effectiveDateTo).format("DD/MM/YYYY") : "hoje"}`,
+         );
+      }
+      if (dueDateRangeFilter.from || dueDateRangeFilter.to) {
+         labels.push(
+            `Vencimento: ${dueDateRangeFilter.from ? dayjs(dueDateRangeFilter.from).format("DD/MM/YYYY") : "início"} — ${dueDateRangeFilter.to ? dayjs(dueDateRangeFilter.to).format("DD/MM/YYYY") : "hoje"}`,
+         );
+      }
+      if (trimmedSearch) labels.push(`Busca: ${trimmedSearch}`);
+      if (nameFilterValue) labels.push(`Lançamento: ${nameFilterValue}`);
+      if (effectiveStatus.length > 0) {
+         labels.push(
+            `Status: ${effectiveStatus
+               .map((item) => (item === "paid" ? "Realizado" : "Planejado"))
+               .join(", ")}`,
+         );
+      }
+      if (effectiveType) {
+         labels.push(
+            `Tipo: ${
+               effectiveType === "income"
+                  ? "Receita"
+                  : effectiveType === "expense"
+                    ? "Despesa"
+                    : "Transferência"
+            }`,
+         );
+      }
+      if (effectivePaymentMethod) {
+         labels.push(
+            `Forma: ${effectivePaymentMethod === "__none" ? "Sem forma de pagamento" : effectivePaymentMethod}`,
+         );
+      }
+      if (effectiveBankId) {
+         labels.push(
+            `Conta: ${
+               safeBankAccounts.find(
+                  (account) => account.id === effectiveBankId,
+               )?.name ?? effectiveBankId
+            }`,
+         );
+      }
+      if (effectiveRelationshipId) {
+         const relationship = [...safeCustomers, ...safeSuppliers].find(
+            (item) => item.id === effectiveRelationshipId,
+         );
+         labels.push(
+            `Contato: ${relationship?.name ?? effectiveRelationshipId}`,
+         );
+      }
+      return labels;
+   }, [
+      dueDateRangeFilter.from,
+      dueDateRangeFilter.to,
+      effectiveBankId,
+      effectiveDateFrom,
+      effectiveDateTo,
+      effectivePaymentMethod,
+      effectiveRelationshipId,
+      effectiveStatus,
+      effectiveType,
+      nameFilterValue,
+      safeBankAccounts,
+      safeCustomers,
+      safeSuppliers,
+      trimmedSearch,
+   ]);
+
+   const handleExportPdf = useCallback(() => {
+      setIsExportingPdf(true);
+      import("./transactions-pdf")
+         .then(({ downloadTransactionsPdf }) =>
+            downloadTransactionsPdf({
+               input: transactionsPdfInput,
+               filters: transactionsPdfFilters,
+               localFilters: {
+                  name: nameFilterValue,
+                  paymentMethod: effectivePaymentMethod,
+                  type: effectiveType,
+               },
+            }),
+         )
+         .then(() => toast.success("PDF exportado."))
+         .catch(() => toast.error("Não foi possível exportar o PDF."))
+         .finally(() => setIsExportingPdf(false));
+   }, [
+      effectivePaymentMethod,
+      effectiveType,
+      nameFilterValue,
+      transactionsPdfFilters,
+      transactionsPdfInput,
+   ]);
 
    const handleUpdate = useCallback(
       async (id: string, patch: Record<string, unknown>) => {
@@ -2023,6 +2166,20 @@ export function TransactionsList() {
                <div className="flex flex-wrap items-center gap-2">
                   <DataTableColumnVisibility table={table} />
                   <ExportButton table={table} fileBase="lancamentos" />
+                  <Button
+                     disabled={isExportingPdf || !isTransactionsLoaded}
+                     onClick={handleExportPdf}
+                     tooltip="Exportar PDF"
+                     variant="outline"
+                     size="icon-sm"
+                  >
+                     {isExportingPdf ? (
+                        <Loader2 className="animate-spin" />
+                     ) : (
+                        <FileDown />
+                     )}
+                     <span className="sr-only">Exportar PDF</span>
+                  </Button>
                   <DataImportButton api={importApi} config={importConfig} />
                   <Button
                      onClick={handleCreate}
