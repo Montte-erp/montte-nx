@@ -102,6 +102,9 @@
          "payments": {
             "stripe": "^22.0.2"
          },
+         "pdf": {
+            "@react-pdf/renderer": "^4.5.1"
+         },
          "react": {
             "@types/react": "19.2.14",
             "@types/react-dom": "19.2.3",

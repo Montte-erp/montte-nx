@@ -2,12 +2,13 @@ import { Button } from "@packages/ui/components/button";
 import { createCollection, useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
    ArrowLeft,
    CalendarDays,
    FileDown,
    Filter,
+   Loader2,
    ReceiptText,
 } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ import { QueryBoundary } from "@/components/query-boundary";
 import { useActiveTeam } from "@/hooks/use-active-team";
 import { useDashboardSlugs } from "@/hooks/use-dashboard-slugs";
 import { reportByIdCollectionOptions } from "@/integrations/tanstack-db/reports";
+import { toast } from "@packages/ui/hooks/use-toast";
 import { REPORT_LABELS, type SavedReport } from "../-reports/report-labels";
 import { ReportData } from "../-reports/report-panels";
 import { DefaultHeader } from "../../-layout/default-header";
@@ -152,6 +154,7 @@ function ReportDetailWithTeam({ teamId }: { teamId: string }) {
 }
 
 function ReportDetailToolbar({ report }: { report: SavedReport }) {
+   const [isExporting, setIsExporting] = useState(false);
    const statusLabel =
       report.config.status === "paid"
          ? "Realizados"
@@ -191,12 +194,26 @@ function ReportDetailToolbar({ report }: { report: SavedReport }) {
          ) : null}
          <div className="flex flex-1 justify-end">
             <Button
-               onClick={() => window.print()}
+               disabled={isExporting}
+               onClick={() => {
+                  setIsExporting(true);
+                  import("../-reports/report-pdf")
+                     .then(({ downloadReportPdf }) => downloadReportPdf(report))
+                     .then(() => toast.success("PDF exportado."))
+                     .catch(() =>
+                        toast.error("Não foi possível exportar o PDF."),
+                     )
+                     .finally(() => setIsExporting(false));
+               }}
                size="icon-sm"
                tooltip="Exportar PDF"
                variant="outline"
             >
-               <FileDown />
+               {isExporting ? (
+                  <Loader2 className="animate-spin" />
+               ) : (
+                  <FileDown />
+               )}
                <span className="sr-only">Exportar PDF</span>
             </Button>
          </div>

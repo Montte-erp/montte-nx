@@ -66,6 +66,7 @@ const filterSchema = z
          .enum(["all", "payable", "receivable", "settled", "ignored"])
          .optional(),
       ignored: z.boolean().optional(),
+      all: z.boolean().optional(),
       page: z.number().int().positive().default(1),
       pageSize: z.number().int().positive().max(100).default(20),
       conditionGroup: ConditionGroup.optional(),
@@ -109,9 +110,12 @@ export const getAll = protectedProcedure
                   },
                }).passed,
          );
-         const offset = (page - 1) * pageSize;
+         const data =
+            input?.all === true
+               ? filtered
+               : filtered.slice((page - 1) * pageSize, page * pageSize);
          return {
-            data: filtered.slice(offset, offset + pageSize),
+            data,
             total: filtered.length,
          };
       }
@@ -121,13 +125,15 @@ export const getAll = protectedProcedure
          .from(transactions)
          .where(where);
 
-      const data = await selectTransactionsWithJoins(
+      const dataQuery = selectTransactionsWithJoins(
          context.db,
          where,
          normalizeSorting(filter.sorting),
-      )
-         .limit(pageSize)
-         .offset((page - 1) * pageSize);
+      );
+      const data =
+         input?.all === true
+            ? await dataQuery
+            : await dataQuery.limit(pageSize).offset((page - 1) * pageSize);
 
       return { data, total: countRow?.total ?? 0 };
    });
