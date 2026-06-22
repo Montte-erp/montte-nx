@@ -1,0 +1,65 @@
+# Montte
+
+> Documentação pública canônica do Montte para usuários e grounding do Montte AI.
+> Plataforma operacional brasileira com IA nativa para gestão financeira, contatos, serviços e cobranças recorrentes.
+
+Site: https://montte.co
+Repositório: https://github.com/Montte-erp/montte-nx
+
+## Comece aqui
+
+- [Documentação do Montte](https://montte.co/docs) — Visão geral, navegação e explicação da documentação. Atualizado em 2026-06-22.
+  - Pergunta comum: O que é o Montte?
+  - Pergunta comum: Como eu começo a usar a documentação?
+  - Pergunta comum: Como o Montte AI usa estas páginas?
+  - Pergunta comum: Quais áreas o Montte cobre hoje?
+- [Primeiros passos](https://montte.co/docs/primeiros-passos) — Guia inicial para novos usuários com conceitos principais. Atualizado em 2026-06-22.
+  - Pergunta comum: Por onde eu começo no Montte?
+  - Pergunta comum: Quais áreas o Montte organiza?
+  - Pergunta comum: O que preciso configurar primeiro?
+
+## Operação
+
+- [Financeiro](https://montte.co/docs/financeiro) — Contas bancárias, cartões, lançamentos, categorias, relatórios, importação de extratos e exportação em PDF. Atualizado em 2026-06-22.
+  - Pergunta comum: Como criar um lançamento financeiro?
+  - Pergunta comum: Como importar extrato bancário?
+  - Pergunta comum: Como vincular um lançamento a um cliente?
+  - Pergunta comum: Como exportar relatórios em PDF?
+  - Pergunta comum: Como configurar categorias e tags?
+- [Relacionamentos](https://montte.co/docs/relacionamentos) — Cadastro de clientes e fornecedores, validação de documento, importação e exportação. Atualizado em 2026-06-22.
+  - Pergunta comum: Como cadastrar um cliente?
+  - Pergunta comum: Como cadastrar um fornecedor?
+  - Pergunta comum: Quais tipos de documento são aceitos?
+  - Pergunta comum: Como importar clientes de uma planilha?
+  - Pergunta comum: O que acontece se eu tentar excluir um relacionamento com transações?
+- [Montte AI](https://montte.co/docs/montte-ai) — Chat inteligente com contexto da operação, ferramentas de leitura e limitações. Atualizado em 2026-06-22.
+  - Pergunta comum: O que o Montte AI pode fazer?
+  - Pergunta comum: Como o Montte AI acessa meus dados?
+  - Pergunta comum: O Montte AI pode modificar lançamentos?
+  - Pergunta comum: Como usar o chat do Montte AI?
+- [Configurações](https://montte.co/docs/configuracoes) — Organização, times, autenticação, API keys, CNPJ e preferências financeiras. Atualizado em 2026-06-22.
+  - Pergunta comum: Como convidar alguém para meu time?
+  - Pergunta comum: Como criar uma API key?
+  - Pergunta comum: Onde configuro os dados fiscais do espaço?
+  - Pergunta comum: Como funciona a autenticação no Montte?
+- [Contratos](https://montte.co/docs/contratos) — Cadastro de contratos com extração por IA, vínculo com relacionamentos. Atualizado em 2026-06-22.
+  - Pergunta comum: Como cadastrar um contrato?
+  - Pergunta comum: O Montte AI extrai dados de contratos automaticamente?
+  - Pergunta comum: Um contrato pode ficar sem extrato?
+  - Pergunta comum: Contratos têm validade?
+- [Fiscal](https://montte.co/docs/fiscal) — Dados fiscais, NF-e com DFe-Kit Jacobina, vinculação com fornecedores. Atualizado em 2026-06-22.
+  - Pergunta comum: Como configurar os dados fiscais do meu espaço?
+  - Pergunta comum: O que é o DFe-Kit Jacobina?
+  - Pergunta comum: Como vincular uma NF-e a um fornecedor?
+  - Pergunta comum: Quais status uma NF-e pode ter?
+- [Vault](https://montte.co/docs/vault) — GED integrado: pastas, documentos, upload, compartilhamento e vinculação com lançamentos. Atualizado em 2026-06-22.
+  - Pergunta comum: O que é o Montte Vault?
+  - Pergunta comum: Como criar uma pasta no Vault?
+  - Pergunta comum: Como anexar um documento a um lançamento?
+  - Pergunta comum: Quem pode ver meus documentos?
+
+## Links principais
+
+- Documentação: https://montte.co/docs
+- Waitlist: https://montte.co/#waitlist
+- Sitemap: https://montte.co/sitemap-index.xml

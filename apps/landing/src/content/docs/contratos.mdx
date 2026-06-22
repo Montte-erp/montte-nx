@@ -1,0 +1,64 @@
+---
+title: "Contratos"
+description: "Cadastre contratos com dados extraídos por IA, vincule a relacionamentos e mantenha o histórico documentado da sua operação."
+category: "Operação"
+order: 50
+updatedAt: "2026-06-22"
+aiSummary: "Documentação do módulo de contratos do Montte: cadastro com extração por IA, vínculo com relacionamentos e histórico documentado."
+commonQuestions:
+   - "Como cadastrar um contrato?"
+   - "O Montte AI extrai dados de contratos automaticamente?"
+   - "Um contrato pode ficar sem extrato?"
+   - "Contratos têm validade?"
+---
+
+O módulo de contratos permite cadastrar e gerenciar contratos da sua operação, com suporte a extração de dados por IA.
+
+## O que você vai aprender
+
+- como cadastrar um contrato;
+- como funciona a extração de dados por IA;
+- como vincular contratos a relacionamentos;
+- quais campos um contrato pode ter.
+
+## Cadastro de contratos
+
+Cada contrato pode ter:
+
+- **título** ou identificação;
+- **partes envolvidas** — vinculadas a relacionamentos (clientes, fornecedores);
+- **corpo em markdown** — conteúdo textual do contrato;
+- **datas** — vigência, assinatura, renovação;
+- **valores** — quando aplicável;
+- **status** — ativo, encerrado, rascunho.
+
+## Extração por IA
+
+O contrato pode conter um corpo em markdown (`.data.body`) que é usado pelo Montte AI para extração de dados estruturados. O sistema conta com:
+
+- pipeline de extração com AI (usando TanStack AI e eval suite);
+- suíte de avaliação (evals) para validar a qualidade da extração.
+
+Isso significa que, ao cadastrar um contrato com o texto completo, o Montte AI pode interpretar cláusulas, prazos, valores e partes envolvidas.
+
+## Escopo por time
+
+O acesso aos contratos segue o escopo do time. Um usuário vê apenas os contratos do time ao qual pertence.
+
+## Limitações atuais
+
+- O módulo de contratos está em fase inicial (scaffold). A extração por IA está funcionando com evals, mas o fluxo completo de contratos como entidade de billing ainda está em desenvolvimento.
+- Contratos não geram cobranças automaticamente no estado atual.
+- O módulo não substitui um sistema de gestão contratual completo.
+
+## Fluxo prático
+
+1. Cadastre um relacionamento (cliente ou fornecedor).
+2. Crie um contrato vinculado a esse relacionamento.
+3. Adicione o corpo do contrato em markdown.
+4. Use o Montte AI para extrair dados estruturados do texto.
+
+## Próximos passos
+
+- [Relacionamentos](/docs/relacionamentos) — cadastre as partes dos contratos.
+- [Montte AI](/docs/montte-ai) — entenda como a IA processa os contratos.

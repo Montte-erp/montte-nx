@@ -1,0 +1,96 @@
+---
+title: "Relacionamentos"
+description: "Gerencie clientes e fornecedores com cadastro completo, validação de documento, importação e exportação de dados."
+category: "Operação"
+order: 20
+updatedAt: "2026-06-22"
+aiSummary: "Documentação do módulo de relacionamentos do Montte: cadastro de clientes e fornecedores, tipos de pessoa, validação de documento, importação e exportação."
+commonQuestions:
+   - "Como cadastrar um cliente?"
+   - "Como cadastrar um fornecedor?"
+   - "Quais tipos de documento são aceitos?"
+   - "Como importar clientes de uma planilha?"
+   - "O que acontece se eu tentar excluir um relacionamento com transações?"
+---
+
+O módulo de relacionamentos gerencia o cadastro de clientes e fornecedores da sua operação. Ele não é um CRM — não inclui funil de vendas, lead scoring, atividades comerciais ou campanhas.
+
+## O que você vai aprender
+
+- como cadastrar e organizar clientes e fornecedores;
+- como funciona a validação de documento;
+- como importar e exportar dados em lote;
+- quais proteções existem ao excluir um relacionamento.
+
+## Cadastro de relacionamentos
+
+Cada relacionamento pode ser:
+
+- **cliente** ou **fornecedor**;
+- **pessoa física** ou **pessoa jurídica**.
+
+Os campos disponíveis incluem:
+
+- nome ou razão social;
+- documento (CPF ou CNPJ) com validação e normalização automática;
+- e-mail e telefone;
+- endereço;
+- observações internas.
+
+### Busca de CNPJ
+
+Ao informar um CNPJ, o sistema faz uma busca automática para preencher dados da empresa (razão social, endereço).
+
+## Vinculação com transações
+
+Um relacionamento pode ser vinculado a lançamentos financeiros. Isso permite:
+
+- ver todo o histórico financeiro de um cliente ou fornecedor;
+- gerar relatórios por relacionamento;
+- evitar exclusão acidental de contrapartes com transações vinculadas.
+
+## Importação e exportação
+
+### Importar
+
+Você pode importar relacionamentos em lotes usando arquivos:
+
+- **CSV** — formato separado por ponto e vírgula;
+- **XLSX** — planilha Excel (suporta o formato de clientes).
+
+O sistema tenta normalizar e validar os documentos automaticamente durante a importação.
+
+### Exportar
+
+Você pode exportar a lista de relacionamentos para XLSX, gerando uma planilha com todos os dados cadastrados.
+
+## Arquivação
+
+Relacionamentos podem ser arquivados em vez de excluídos. O arquivamento remove o item das listas ativas, mas preserva o histórico e os vínculos com transações.
+
+## Proteções
+
+O sistema impede a exclusão de um relacionamento quando:
+
+- existem transações financeiras vinculadas a ele;
+- existem contratos associados.
+
+Nesses casos, a opção recomendada é arquivar o relacionamento.
+
+## Fluxo prático
+
+1. Cadastre seus clientes e fornecedores — um a um ou por importação.
+2. Confira se os documentos foram validados corretamente.
+3. Comece a vincular relacionamentos aos lançamentos financeiros.
+4. Ao precisar remover um contato antigo, prefira arquivar em vez de excluir.
+
+## Erros comuns
+
+- Tentar excluir um relacionamento que já tem transações — o sistema bloqueia.
+- Importar arquivo com colunas fora da ordem esperada.
+- Não preencher o documento e depois perder a rastreabilidade fiscal.
+
+## Próximos passos
+
+- [Financeiro](/docs/financeiro) — vincule relacionamentos a lançamentos.
+- [Contratos](/docs/contratos) — cadastre contratos associados a relacionamentos.

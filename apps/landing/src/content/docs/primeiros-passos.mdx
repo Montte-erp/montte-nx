@@ -3,7 +3,7 @@ title: "Primeiros passos"
 description: "Entenda os conceitos básicos do Montte e saiba por onde começar para organizar sua operação recorrente com menos trabalho manual."
 category: "Comece aqui"
 order: 10
-updatedAt: "2026-05-25"
+updatedAt: "2026-06-22"
 aiSummary: "Guia inicial para usuários novos entenderem o Montte, seus conceitos principais e o caminho recomendado para começar."
 commonQuestions:
    - "Por onde eu começo no Montte?"
@@ -18,7 +18,7 @@ Use esta página para entender o básico antes de entrar nas áreas específicas
 Ao final, você deve saber:
 
 - quais partes da operação o Montte organiza;
-- por que financeiro, clientes, serviços e cobranças ficam conectados;
+- por que financeiro, relacionamentos, contratos e configurações ficam conectados;
 - como usar a documentação para resolver dúvidas comuns;
 - quando pedir ajuda ao Montte AI.
 
@@ -26,44 +26,61 @@ Ao final, você deve saber:
 
 Pense no Montte como a camada operacional do seu negócio recorrente.
 
-Em vez de tratar financeiro, clientes e cobranças como planilhas ou ferramentas separadas, o Montte conecta essas áreas para que a operação tenha mais contexto.
+Em vez de tratar financeiro, clientes e contratos como planilhas ou ferramentas separadas, o Montte conecta essas áreas para que a operação tenha mais contexto.
 
 Por exemplo:
 
-- um cliente pode estar ligado a serviços contratados;
-- um serviço pode gerar cobrança recorrente;
-- uma cobrança pode afetar o financeiro;
+- um cliente ou fornecedor pode estar vinculado a lançamentos financeiros;
+- um contrato pode ter dados extraídos por IA;
+- uma cobrança recorrente pode afetar o extrato bancário;
 - o Montte AI pode usar esse contexto para explicar pendências e próximos passos.
 
 ## Caminho recomendado
 
 Comece nesta ordem:
 
-1. entenda sua organização e time;
-2. revise clientes e serviços;
-3. configure categorias, contas e preferências financeiras;
-4. acompanhe cobranças e pendências;
-5. use o Montte AI para tirar dúvidas sobre fluxos e próximos passos.
+1. revise e configure sua organização, time e permissões;
+2. cadastre ou revise clientes e fornecedores;
+3. configure categorias, contas bancárias e preferências financeiras;
+4. importe extratos e lançamentos;
+5. explore relatórios e o inbox operacional;
+6. use o Montte AI para tirar dúvidas sobre fluxos e próximos passos.
 
 Nem toda conta terá todas as áreas ativadas. Se uma página mencionar um recurso que não aparece para você, isso pode depender do plano, permissão ou etapa de configuração.
 
 ## Exemplo prático
 
-Imagine que você vende um serviço mensal.
+Imagine que você opera serviços mensais para vários clientes.
 
 No Montte, o fluxo esperado é:
 
-1. cadastrar ou revisar o cliente;
-2. associar o serviço ou contrato recorrente;
-3. acompanhar a cobrança;
-4. conferir o reflexo financeiro;
-5. usar o Montte AI para entender pendências, inconsistências ou próximos passos.
+1. cadastrar ou revisar clientes e fornecedores;
+2. configurar as contas bancárias e categorias financeiras;
+3. importar o extrato ou lançar transações manualmente;
+4. vincular lançamentos a relacionamentos quando fizer sentido;
+5. acompanhar relatórios e pendências no inbox;
+6. usar o Montte AI para entender inconsistências ou próximos passos.
 
 Esse fluxo evita que a informação fique espalhada entre atendimento, financeiro e gestão.
 
+## Áreas ativas do produto
+
+Com base no código atual, estas são as áreas disponíveis no Montte:
+
+| Área | O que faz |
+| :--- | :--- |
+| Financeiro | Contas bancárias, cartões de crédito, lançamentos, categorias, relatórios, importação de extratos (CSV/XLSX/OFX), exportação em PDF |
+| Relacionamentos | Cadastro de clientes e fornecedores com validação de documento, importação/exportação CSV/XLSX |
+| Contratos | Cadastro de contratos com extração de dados por IA |
+| Fiscal | Configuração de dados fiscais do espaço, NF-e (entrada e saída) via DFe-Kit Jacobina |
+| Vault | Documentos, pastas, upload e compartilhamento |
+| Montte AI | Chat com contexto da operação, respostas baseadas no produto |
+| Inbox | Pendências operacionais, notificações e ações rápidas |
+| Workflows | Automações e agendamentos |
+
 ## Erros comuns
 
-- Começar pelo financeiro sem revisar clientes e serviços.
+- Começar pelo financeiro sem revisar clientes e fornecedores.
 - Criar categorias sem um padrão claro para análise depois.
 - Ignorar permissões de organização e time ao procurar uma tela.
 - Esperar que a IA corrija dados incompletos sem contexto suficiente.
@@ -74,10 +91,10 @@ Use o Montte AI quando quiser entender uma situação ou decidir o próximo pass
 
 Boas perguntas:
 
-- “Por que esta cobrança aparece como pendente?”
-- “O que falta para organizar este cliente?”
-- “Como este lançamento afeta meu financeiro?”
-- “Qual é o próximo passo para configurar cobranças recorrentes?”
+- "Por que esta pendência aparece no inbox?"
+- "O que falta para organizar este cliente?"
+- "Como este lançamento afeta meu relatório?"
+- "Qual é o próximo passo para configurar cobranças recorrentes?"
 
 O Montte AI deve responder com base no produto e nesta documentação. Quando uma informação não estiver confirmada, a resposta deve deixar a limitação clara.
 

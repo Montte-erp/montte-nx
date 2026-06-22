@@ -1,0 +1,140 @@
+---
+title: "Financeiro"
+description: "Gerencie contas bancárias, cartões de crédito, lançamentos, categorias e relatórios para manter o controle financeiro da sua operação."
+category: "Operação"
+order: 10
+updatedAt: "2026-06-22"
+aiSummary: "Documentação do módulo financeiro do Montte: contas bancárias, cartões, lançamentos, categorias, relatórios, importação de extratos e exportação em PDF."
+commonQuestions:
+   - "Como criar um lançamento financeiro?"
+   - "Como importar extrato bancário?"
+   - "Como vincular um lançamento a um cliente?"
+   - "Como exportar relatórios em PDF?"
+   - "Como configurar categorias e tags?"
+---
+
+O módulo financeiro é o centro da operação no Montte. Ele reúne contas bancárias, cartões de crédito, lançamentos, categorias, centros de custo e relatórios em um lugar só.
+
+## O que você vai aprender
+
+- como configurar contas bancárias e cartões;
+- como criar, importar e organizar lançamentos;
+- como usar categorias e tags para classificar;
+- como gerar relatórios e exportá-los;
+- como funciona a importação de extratos.
+
+## Contas bancárias
+
+As contas bancárias representam suas contas correntes, poupança ou qualquer conta onde o dinheiro entra e sai.
+
+Você pode:
+
+- cadastrar contas com nome, tipo e saldo inicial;
+- editar dados e arquivar contas inativas;
+- visualizar o saldo atualizado com base nos lançamentos.
+
+## Cartões de crédito
+
+O módulo de cartões gerencia cartões de crédito e suas faturas.
+
+Funcionalidades disponíveis:
+
+- cadastro de cartões com bandeira, limite e dia de fechamento;
+- visualização de faturas e totais por período;
+- exclusão segura com verificação de vínculos existentes.
+
+## Lançamentos (transações)
+
+Os lançamentos são a unidade básica do financeiro. Cada entrada ou saída de dinheiro vira um lançamento.
+
+### Criar um lançamento
+
+Para criar um lançamento, informe:
+
+- **descrição** — identificação do que foi pago ou recebido;
+- **valor** — valor da transação;
+- **data** — data de ocorrência;
+- **tipo** — receita ou despesa;
+- **conta bancária** — conta de origem ou destino;
+- **categoria** — classificação do lançamento;
+- **forma de pagamento** — PIX, boleto, cartão, transferência ou dinheiro (configurável em Mais opções).
+
+Você também pode vincular opcionalmente:
+
+- um **relacionamento** (cliente ou fornecedor);
+- um **centro de custo** (tag);
+- um **cartão de crédito**;
+- uma **data de competência**;
+- um **arquivo ou documento** do Vault.
+
+### Listagem e filtros
+
+A tela de lançamentos usa uma tabela com filtros inline. Você pode filtrar por:
+
+- período (data inicial e final);
+- conta bancária;
+- categoria;
+- tipo (receita/despesa);
+- status;
+- texto livre na descrição.
+
+### Ações em lote
+
+Você pode selecionar múltiplos lançamentos e:
+
+- categorizar em lote;
+- excluir em lote;
+- exportar para PDF.
+
+### Importação de extratos
+
+O Montte aceita importação de extratos nos formatos:
+
+- **CSV** — formato separado por ponto e vírgula (otimizado para Excel pt-BR);
+- **XLSX** — planilha Excel;
+- **OFX** — formato bancário padrão.
+
+O assistente de importação mapeia as colunas do arquivo para os campos do sistema. Você pode revisar os dados antes de confirmar a importação.
+
+### Exportação em PDF
+
+Você pode exportar lançamentos e relatórios em PDF diretamente da interface. A exportação respeita os filtros aplicados na tela, permitindo gerar documentos com o recorte desejado.
+
+## Categorias e tags
+
+As categorias organizam os lançamentos por tipo de gasto ou receita.
+
+- **Categorias** têm hierarquia (categoria principal e subcategorias);
+- **Tags** funcionam como centro de custo para alocar despesas por departamento, projeto ou unidade.
+
+O sistema também sugere categorias com base em lançamentos anteriores e palavras-chave (classificação automática via workflow).
+
+## Relatórios
+
+Os relatórios consolidam os dados financeiros para análise.
+
+- Criação e personalização de relatórios;
+- Visualização em tabela (table-first);
+- Exportação em PDF com os filtros aplicados.
+
+## Fluxo prático
+
+1. Cadastre suas contas bancárias e cartões de crédito.
+2. Configure as categorias que fazem sentido para seu negócio.
+3. Importe extratos bancários ou crie lançamentos manualmente.
+4. Vincule lançamentos a relacionamentos quando aplicável.
+5. Acompanhe relatórios para entender o resultado do período.
+6. Use o inbox para revisar pendências como lançamentos sem categoria.
+
+## Erros comuns
+
+- Importar arquivo com encoding diferente do esperado para Excel pt-BR.
+- Não vincular lançamentos a relacionamentos e perder rastreabilidade.
+- Criar categorias demais sem um padrão consistente.
+- Ignorar o centro de custo e depois não conseguir ratear despesas.
+
+## Próximos passos
+
+- [Relacionamentos](/docs/relacionamentos) — cadastre clientes e fornecedores para vincular aos lançamentos.
+- [Configurações](/docs/configuracoes) — gerencie times e permissões do espaço.
+- [Montte AI](/docs/montte-ai) — tire dúvidas sobre seu financeiro com IA.

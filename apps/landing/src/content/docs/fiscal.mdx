@@ -1,0 +1,85 @@
+---
+title: "Fiscal"
+description: "Configure dados fiscais do seu espaço, gerencie NF-e de entrada e saída com DFe-Kit Jacobina e organize notas por status."
+category: "Operação"
+order: 60
+updatedAt: "2026-06-22"
+aiSummary: "Documentação do módulo fiscal do Montte: dados fiscais, NF-e com DFe-Kit Jacobina, vinculação com fornecedores e organização por status."
+commonQuestions:
+   - "Como configurar os dados fiscais do meu espaço?"
+   - "O que é o DFe-Kit Jacobina?"
+   - "Como vincular uma NF-e a um fornecedor?"
+   - "Quais status uma NF-e pode ter?"
+---
+
+O módulo fiscal gerencia as notas fiscais eletrônicas (NF-e) da sua operação, com suporte a DFe-Kit Jacobina para integração com o sistema da Receita Federal.
+
+## O que você vai aprender
+
+- como configurar os dados fiscais do seu espaço;
+- como funciona a gestão de NF-e;
+- como vincular notas a fornecedores;
+- como organizar notas por status.
+
+## Configuração de dados fiscais
+
+Antes de usar o módulo fiscal, é necessário configurar os dados fiscais do espaço na área de configurações:
+
+- CNPJ da empresa;
+- inscrição estadual e municipal;
+- regime tributário;
+- certificado digital (A1 ou A3) para assinatura e transmissão de NF-e.
+
+## NF-e com DFe-Kit Jacobina
+
+O Montte usa o DFe-Kit Jacobina como adaptador para comunicação com os serviços da Receita Federal (SEFAZ). Isso permite:
+
+- **NF-e de entrada** — recebimento e armazenamento de notas de fornecedores;
+- **NF-e de saída** — emissão de notas para clientes.
+
+### Status das NF-e
+
+Cada nota pode ter um status que indica seu estado atual:
+
+| Status | Descrição |
+| :----- | :-------- |
+| Pendente | Nota criada mas ainda não transmitida |
+| Autorizada | Nota transmitida e autorizada pela SEFAZ |
+| Cancelada | Nota cancelada dentro do prazo legal |
+| Denegada | Nota rejeitada pela SEFAZ |
+| Em digitação | Nota sendo preenchida |
+
+## Vinculação com fornecedores
+
+Você pode vincular NF-e de entrada a fornecedores cadastrados no módulo de relacionamentos. Isso permite:
+
+- rastrear notas por fornecedor;
+- conferir estoque de notas recebidas;
+- preparar a apuração de impostos.
+
+## Tabela de NF-e
+
+A listagem de NF-e segue o padrão de tabela com:
+
+- colunas configuráveis;
+- agrupamento por status;
+- ações padronizadas (visualizar, cancelar, baixar XML/PDF);
+- filtros por período, fornecedor e status.
+
+## Limitações atuais
+
+- O módulo fiscal está em estágio inicial. A emissão de NF-e em produção requer homologação completa junto à SEFAZ.
+- A implementação atual cobre NF-e (modelo 55). NFS-e e NFC-e estão no roadmap.
+- É necessário certificado digital válido para transmissão.
+
+## Fluxo prático
+
+1. Configure os dados fiscais do seu espaço (CNPJ, certificado).
+2. Cadastre fornecedores no módulo de relacionamentos.
+3. Receba ou emita NF-e pelo módulo fiscal.
+4. Acompanhe o status de cada nota na tabela.
+
+## Próximos passos
+
+- [Configurações](/docs/configuracoes) — configure dados fiscais e certificado.
+- [Relacionamentos](/docs/relacionamentos) — cadastre fornecedores para vincular notas.

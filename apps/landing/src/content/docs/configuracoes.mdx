@@ -1,0 +1,107 @@
+---
+title: "Configurações"
+description: "Gerencie organização, times, perfis, autenticação, API keys e preferências financeiras do seu espaço no Montte."
+category: "Operação"
+order: 40
+updatedAt: "2026-06-22"
+aiSummary: "Documentação de configurações do Montte: organização, times, permissões, autenticação, API keys, CNPJ e preferências financeiras."
+commonQuestions:
+   - "Como convidar alguém para meu time?"
+   - "Como criar uma API key?"
+   - "Onde configuro os dados fiscais do espaço?"
+   - "Como funciona a autenticação no Montte?"
+---
+
+A área de configurações reúne tudo que envolve a gestão do seu espaço: quem tem acesso, como a autenticação funciona e quais preferências financeiras estão ativas.
+
+## O que você vai aprender
+
+- como funciona a organização e os times;
+- quais métodos de autenticação estão disponíveis;
+- como criar e gerenciar API keys;
+- como configurar dados fiscais e preferências financeiras;
+- como funciona o onboarding.
+
+## Organização e times
+
+O Montte organiza o acesso em dois níveis:
+
+- **Organização** — o espaço principal, com dados e configurações compartilhados.
+- **Times** — subdivisões da organização para separar permissões e acesso.
+
+Cada usuário pertence a uma organização e pode estar em um ou mais times.
+
+### Gerenciamento de time
+
+Você pode:
+
+- criar times dentro da organização;
+- convidar membros por e-mail;
+- gerenciar permissões de cada membro;
+- remover membros quando necessário.
+
+## Autenticação
+
+O Montte usa Better Auth como sistema de autenticação. Os métodos disponíveis são:
+
+- **Magic Link** — link enviado por e-mail para login sem senha;
+- **Email OTP** — código de uso único enviado por e-mail;
+- **2FA** — autenticação em dois fatores para camada extra de segurança.
+
+### Sessões
+
+Você pode visualizar e gerenciar suas sessões ativas, encerrando sessões remotas se necessário.
+
+## API Keys
+
+API Keys permitem acesso programático à API do Montte. Você pode:
+
+- criar chaves com nome descritivo;
+- copiar a chave no momento da criação (ela não é exibida novamente);
+- revogar chaves existentes;
+- listar todas as chaves ativas.
+
+A chave deve ser enviada no header `x-api-key` das requisições.
+
+A referência da API (OpenAPI) está disponível em `/api/openapi/docs` quando o app está rodando.
+
+## CNPJ e dados fiscais
+
+Na área de configurações, você pode registrar os dados fiscais do seu espaço:
+
+- CNPJ da empresa;
+- inscrição estadual e municipal;
+- regime tributário;
+- certificado digital (para NF-e).
+
+Esses dados são usados pelo módulo fiscal para emissão de notas fiscais.
+
+## Preferências financeiras
+
+As preferências financeiras incluem:
+
+- configuração de moeda e formato de valores;
+- defaults para novos lançamentos;
+- preferências de categorização.
+
+## Onboarding
+
+Ao entrar no Montte pela primeira vez, um fluxo de onboarding guia a configuração inicial:
+
+1. criação ou vínculo à organização;
+2. configuração do perfil;
+3. primeiros passos sugeridos.
+
+## Fluxo prático
+
+1. Confirme os dados da sua organização.
+2. Convide os membros do time e ajuste permissões.
+3. Configure sua chave de API se for usar integrações.
+4. Preencha os dados fiscais se for emitir notas.
+5. Ajuste preferências financeiras antes de começar a lançar dados.
+
+## Próximos passos
+
+- [Financeiro](/docs/financeiro) — configure contas e categorias.
+- [Relacionamentos](/docs/relacionamentos) — cadastre clientes e fornecedores.
+- [Fiscal](/docs/fiscal) — configure dados fiscais e NF-e.
