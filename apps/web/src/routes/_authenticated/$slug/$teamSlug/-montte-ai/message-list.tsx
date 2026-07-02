@@ -352,10 +352,12 @@ function UserMessage({ compact }: { compact: boolean }) {
 function AssistantMessage({ compact }: { compact: boolean }) {
    const messageId = useAuiState((s) => s.message.id);
    const isLastAssistantMessage = useAuiState((s) => {
-      const lastAssistantMessage = s.thread.messages.findLast(
-         (message) => message.role === "assistant",
-      );
-      return lastAssistantMessage?.id === messageId;
+      for (let index = s.thread.messages.length - 1; index >= 0; index -= 1) {
+         const message = s.thread.messages[index];
+         if (message?.role === "assistant") return message.id === messageId;
+      }
+
+      return false;
    });
 
    return (
