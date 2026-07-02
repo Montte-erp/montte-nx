@@ -477,8 +477,10 @@
       "version": "0.28.0",
       "dependencies": {
         "dayjs": "catalog:ui",
+        "effect": "catalog:effect",
       },
       "devDependencies": {
+        "@effect/vitest": "catalog:effect",
         "@tooling/typescript": "workspace:*",
         "typescript": "catalog:development",
       },

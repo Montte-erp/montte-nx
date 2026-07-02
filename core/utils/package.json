@@ -30,9 +30,11 @@
       "typecheck": "tsgo"
    },
    "dependencies": {
-      "dayjs": "catalog:ui"
+      "dayjs": "catalog:ui",
+      "effect": "catalog:effect"
    },
    "devDependencies": {
+      "@effect/vitest": "catalog:effect",
       "@tooling/typescript": "workspace:*",
       "typescript": "catalog:development"
    }

@@ -12,7 +12,7 @@ describe("bank account balance", () => {
 
    beforeAll(async () => {
       ctx = await setupTestDb();
-   });
+   }, 30_000);
 
    afterAll(async () => {
       await ctx.cleanup();
