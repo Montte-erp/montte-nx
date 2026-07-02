@@ -1,0 +1,10 @@
+{
+   "name": "@tooling/static-checks",
+   "version": "0.0.0",
+   "private": true,
+   "license": "Apache-2.0",
+   "bin": {
+      "check-workspace-layers": "./check-workspace-layers.ts"
+   },
+   "type": "module"
+}
