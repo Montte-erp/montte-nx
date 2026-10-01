@@ -120,6 +120,15 @@ async function safeRefetchReportCollection(collection: ReportCollection) {
    });
 }
 
+function isNotFoundError(error: unknown) {
+   return (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      error.status === 404
+   );
+}
+
 function stableStringify(value: unknown): string {
    if (value === null || typeof value !== "object") {
       return JSON.stringify(value);
@@ -211,8 +220,13 @@ export function reportByIdCollectionOptions({
       id: `reports-by-id:${teamId}:${id}`,
       queryKey: ["reports", teamId, id],
       queryFn: async () => {
-         const report = await orpc.reports.get.call({ id });
-         return [report];
+         const report = await orpc.reports.get
+            .call({ id })
+            .catch((error: unknown) => {
+               if (isNotFoundError(error)) return null;
+               throw error;
+            });
+         return report ? [report] : [];
       },
       queryClient,
       getKey: (report) => report.id,
